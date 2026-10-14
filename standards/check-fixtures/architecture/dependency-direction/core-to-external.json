@@ -1,0 +1,14 @@
+{
+  "packages": [
+    { "id": "core", "name": "domain-core", "manifest_path": "/workspace/crates/domain-core/Cargo.toml" },
+    { "id": "adapter", "name": "http-adapter", "manifest_path": "/workspace/crates/http-adapter/Cargo.toml" },
+    { "id": "sqlx", "name": "sqlx", "manifest_path": "/cargo/registry/sqlx/Cargo.toml" }
+  ],
+  "resolve": {
+    "nodes": [
+      { "id": "core", "deps": [{ "pkg": "sqlx", "dep_kinds": [{ "kind": null }] }] },
+      { "id": "adapter", "deps": [{ "pkg": "core", "dep_kinds": [{ "kind": null }] }] }
+    ]
+  },
+  "workspace_members": ["core", "adapter"]
+}

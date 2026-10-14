@@ -1,0 +1,11 @@
+id: unsafe-block-review
+language: Rust
+severity: warning
+message: Review this unsafe block at the declared trust boundary.
+note: A syntax match is a review cue, not evidence that the block is unsound.
+rule:
+  pattern: unsafe { $$$BODY }
+metadata:
+  category: trust-boundary
+  promotion-lane: advisory
+  evidence-role: candidate-source-shape

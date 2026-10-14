@@ -1,0 +1,19 @@
+{
+  "has_errors": false,
+  "skip_borrowck": false,
+  "target_triple": "x86_64-unknown-linux-gnu",
+  "pointer_width_bits": 64,
+  "endianness": "little",
+  "mir_start_stage": "borrowck",
+  "drop_policy": "include-drops",
+  "start_from": "crate",
+  "include_rules": [
+    "src/verified"
+  ],
+  "exclude_rules": [],
+  "opaque_rules": [],
+  "transformation_settings": [
+    "preserve-spans"
+  ],
+  "serialization_format": "llbc-json-v1"
+}

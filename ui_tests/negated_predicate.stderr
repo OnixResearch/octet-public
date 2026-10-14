@@ -1,0 +1,66 @@
+warning: negated predicate name `is_not_ready` — prefer a positive form like `is_ready`
+  --> $DIR/negated_predicate.rs:3:4
+   |
+LL | fn is_not_ready(_state: &State) -> bool {
+   |    ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): prefer positive predicate names over negated forms like `is_not_ready` or `no_capacity` Example: fn is_ready(state: &State) -> bool
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Positive Predicates
+   = note: `#[warn(tigerstyle::negated_predicate)]` on by default
+help: rename to `is_ready`
+   |
+LL - fn is_not_ready(_state: &State) -> bool {
+LL + fn is_ready(_state: &State) -> bool {
+   |
+
+warning: negated predicate name `has_no_capacity` — prefer a positive form like `has_capacity`
+  --> $DIR/negated_predicate.rs:7:4
+   |
+LL | fn has_no_capacity() -> bool {
+   |    ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): prefer positive predicate names over negated forms like `is_not_ready` or `no_capacity` Example: fn is_ready(state: &State) -> bool
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Positive Predicates
+help: rename to `has_capacity`
+   |
+LL - fn has_no_capacity() -> bool {
+LL + fn has_capacity() -> bool {
+   |
+
+warning: negated predicate name `no_capacity` — prefer a positive form like `has_capacity`
+  --> $DIR/negated_predicate.rs:24:9
+   |
+LL |     let no_capacity = true;
+   |         ^^^^^^^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): prefer positive predicate names over negated forms like `is_not_ready` or `no_capacity` Example: fn is_ready(state: &State) -> bool
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Positive Predicates
+help: rename to `has_capacity`
+   |
+LL ~     let has_capacity = true;
+LL |     let no_progress: usize = 3;
+LL ~     let _ = (has_capacity, no_progress);
+   |
+
+warning: boolean binding `no_capacity` should have a predicate prefix
+  --> $DIR/negated_predicate.rs:24:9
+   |
+LL |     let no_capacity = true;
+   |         ^^^^^^^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Positive Predicates
+   = note: `#[warn(tigerstyle::bool_naming)]` on by default
+help: rename binding to `is_no_capacity`
+   |
+LL ~     let is_no_capacity = true;
+LL |     let no_progress: usize = 3;
+LL ~     let _ = (is_no_capacity, no_progress);
+   |
+
+warning: 4 warnings emitted
+

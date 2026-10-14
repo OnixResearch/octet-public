@@ -1,0 +1,115 @@
+{
+  "artifact_roles": [
+    "raw-charon-snapshot",
+    "normalized-semantic-projection",
+    "bounded-semantic-analysis",
+    "source-token-comparison",
+    "recorded-only-receipt"
+  ],
+  "effect_candidate_vocabulary": [
+    "panic",
+    "drop",
+    "unsafe-boundary",
+    "unknown-call"
+  ],
+  "extraction": {
+    "borrow_check_preserved": true,
+    "command_argv": [
+      "charon",
+      "cargo",
+      "--preset",
+      "aeneas",
+      "--dest-file",
+      "snapshot.llbc",
+      "--start-from",
+      "real_fixture::safe_add"
+    ],
+    "endianness": "little",
+    "environment_allowlist": [
+      "PATH",
+      "CHARON_TOOLCHAIN_IS_IN_PATH",
+      "LD_LIBRARY_PATH",
+      "HOME"
+    ],
+    "has_errors": false,
+    "pointer_width_bytes": 8,
+    "preset": "Aeneas",
+    "serialization_format": "llbc-json-v1",
+    "skip_borrowck": false,
+    "target_triple": "x86_64-unknown-linux-gnu"
+  },
+  "fact_vocabulary": [
+    "selected-item",
+    "source-span",
+    "local-call",
+    "item-dependency",
+    "trait-resolution",
+    "control-flow-shape",
+    "call-cycle",
+    "opacity",
+    "unsupported-marker",
+    "target-metadata"
+  ],
+  "limits": {
+    "edge_max_count": 128,
+    "item_max_count": 32,
+    "snapshot_max_bytes": 8388608,
+    "stderr_max_bytes": 4096,
+    "stdout_max_bytes": 4096,
+    "timeout_ms": 30000
+  },
+  "non_claims": [
+    "does not prove Charon or rustc correctness",
+    "does not prove complete Rust support or complete runtime reachability",
+    "does not prove effect absence, semantic equivalence, or whole-program correctness",
+    "does not produce formal-proof, property, or release-ready evidence",
+    "does not transfer mechanized-llbc or charon-rudra proof, implementation, or analysis authority",
+    "does not make Valence or Kamacite a compiler IR or semantic-analysis authority"
+  ],
+  "profile_id": "octet-charon-semantic-safe-add-v1",
+  "provider": {
+    "charon_revision": "cb50ff16b9f1066b8a97dc06da704de2da2fa41c",
+    "compatibility_matrix_blake3": "403656d75de41b955cd2493ef289ba17308da65a3d214babc1ea606aeae248f5",
+    "compatibility_matrix_id": "octet-aeneas-lean-compatibility-0.1.0-bc2eb6f-cb50ff16",
+    "executable_env": "OCTET_AENEAS_CHARON",
+    "network_sandbox_env": "OCTET_AENEAS_NETWORK_SANDBOX",
+    "package": "octet-aeneas-lean-provider-closure",
+    "profile_blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625",
+    "profile_id": "octet-aeneas-lean-0.1.0-bc2eb6f"
+  },
+  "references": [
+    {
+      "license": "Apache-2.0",
+      "recorded_only": true,
+      "repository": "https://github.com/AeneasVerif/mechanized-llbc",
+      "revision": "8a9b8bb3823ceceb47026837d23baea0934dfb27",
+      "source_sentinel": "README.md:Mechanized LLBC",
+      "use": "semantic-foundation review corpus only"
+    },
+    {
+      "license": "Apache-2.0",
+      "recorded_only": true,
+      "repository": "https://github.com/AeneasVerif/charon-rudra",
+      "revision": "0923bf7f21d4eb234d14bce86afc9690d0a4d00e",
+      "source_sentinel": "src/main.rs:crate::rudra::lib::analyze",
+      "use": "historical analysis-over-Charon fixture design only"
+    }
+  ],
+  "schema_version": "octet-charon-semantic-profile/v1",
+  "source": {
+    "broad_selection_allowed": false,
+    "crate_name": "real_fixture",
+    "root": "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture",
+    "selected_items": [
+      {
+        "begin_line": 1,
+        "end_line": 3,
+        "kind": "function",
+        "qualified_name": "real_fixture::safe_add",
+        "source_file": "src/lib.rs",
+        "source_identity": "b3:fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+      }
+    ]
+  },
+  "verification_role": "recorded_only"
+}

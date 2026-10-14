@@ -1,0 +1,77 @@
+{
+  "cargo_fuzz_profiles": [
+    {
+      "artifact_dir": "fuzz/artifacts/octet-profile-intake",
+      "command_argv": [
+        "cargo",
+        "fuzz",
+        "run",
+        "octet-profile-intake",
+        "--",
+        "-max_total_time=60",
+        "-runs=100000",
+        "-seed=1"
+      ],
+      "compiler_identity": "nix:fenix-nightly-2026-03-21-x86_64-unknown-linux-gnu",
+      "corpus_dir": "fuzz/corpus/octet-profile-intake",
+      "dictionary_path": "",
+      "engine": "libfuzzer",
+      "evidence_tier": "transcript_assertion",
+      "hash_only_corpus": true,
+      "max_artifact_bytes": 16777216,
+      "max_artifact_count": 128,
+      "max_log_bytes": 1048576,
+      "max_path_bytes": 240,
+      "max_runs": 100000,
+      "max_total_time_seconds": 60,
+      "name": "cargo-fuzz-libfuzzer",
+      "non_claims": [
+        "Cargo-fuzz evidence covers one target, seed, corpus, sanitizer, and bounded run; it is not exhaustive coverage, memory-safety proof, panic-freedom proof, or release eligibility.",
+        "A clean bounded run does not prove that undiscovered crashes do not exist."
+      ],
+      "sanitizer": "address",
+      "seed": 1,
+      "target": "octet-profile-intake",
+      "toolchain": "nightly-2026-03-21"
+    }
+  ],
+  "profiles": [
+    {
+      "allowed_commands": [
+        "cargo miri test"
+      ],
+      "expected_signal": "passed",
+      "name": "miri-unsafe-boundary",
+      "non_claim": "Miri evidence covers the selected interpreter workload only and is not a whole-program correctness proof.",
+      "not_default": true,
+      "risk_class": "unsafe-boundary undefined-behavior smoke",
+      "timing": "pre-release",
+      "tool": "cargo miri"
+    },
+    {
+      "allowed_commands": [
+        "cargo test --cfg loom"
+      ],
+      "expected_signal": "passed",
+      "name": "loom-concurrency",
+      "non_claim": "Loom evidence covers the selected model and bounds only and is not exhaustive runtime verification.",
+      "not_default": true,
+      "risk_class": "bounded concurrency schedule exploration",
+      "timing": "suspected-bug",
+      "tool": "cargo test with loom cfg"
+    },
+    {
+      "allowed_commands": [
+        "cargo fuzz run octet-profile-intake -- -max_total_time=60 -runs=100000 -seed=1"
+      ],
+      "expected_signal": "clean",
+      "name": "cargo-fuzz-libfuzzer",
+      "non_claim": "Cargo-fuzz evidence covers one selected target and bounded run only.",
+      "not_default": true,
+      "risk_class": "bounded coverage-guided crash discovery",
+      "timing": "focused-ci",
+      "tool": "cargo-fuzz with libFuzzer"
+    }
+  ],
+  "schema_version": "octet-dynamic-evidence-profiles/v1"
+}

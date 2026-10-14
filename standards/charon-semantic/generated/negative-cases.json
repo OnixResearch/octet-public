@@ -1,0 +1,185 @@
+{
+  "cases": [
+    {
+      "expected_code": "provider-identity",
+      "id": "wrong-provider-pin",
+      "layer": "profile",
+      "mutation": "change the Charon revision"
+    },
+    {
+      "expected_code": "provider-identity",
+      "id": "wrong-provider-profile",
+      "layer": "profile",
+      "mutation": "change the Aeneas provider profile identity"
+    },
+    {
+      "expected_code": "selected-items",
+      "id": "broad-selection",
+      "layer": "profile",
+      "mutation": "allow broad source or item matching"
+    },
+    {
+      "expected_code": "selected-items",
+      "id": "duplicate-selection",
+      "layer": "profile",
+      "mutation": "repeat a selected item"
+    },
+    {
+      "expected_code": "limits",
+      "id": "missing-limit",
+      "layer": "profile",
+      "mutation": "zero a named execution or graph limit"
+    },
+    {
+      "expected_code": "reference-boundary",
+      "id": "stale-reference",
+      "layer": "profile",
+      "mutation": "change a reference revision or sentinel"
+    },
+    {
+      "expected_code": "claim-boundary",
+      "id": "weakened-non-claims",
+      "layer": "profile",
+      "mutation": "remove a required non-claim"
+    },
+    {
+      "expected_code": "partial-extraction",
+      "id": "errorful-extraction",
+      "layer": "snapshot",
+      "mutation": "set translated.has_errors"
+    },
+    {
+      "expected_code": "borrow-check",
+      "id": "skip-borrowck",
+      "layer": "snapshot",
+      "mutation": "set options.skip_borrowck"
+    },
+    {
+      "expected_code": "target-metadata",
+      "id": "target-drift",
+      "layer": "snapshot",
+      "mutation": "change target triple, width, or endianness"
+    },
+    {
+      "expected_code": "source-identity",
+      "id": "source-drift",
+      "layer": "snapshot",
+      "mutation": "change embedded selected source bytes"
+    },
+    {
+      "expected_code": "selected-items",
+      "id": "item-drift",
+      "layer": "snapshot",
+      "mutation": "change the exact local item set"
+    },
+    {
+      "expected_code": "source-span",
+      "id": "stale-span",
+      "layer": "snapshot",
+      "mutation": "move an item span outside the bound source"
+    },
+    {
+      "expected_code": "graph-endpoint",
+      "id": "missing-call-endpoint",
+      "layer": "projection",
+      "mutation": "refer to an absent local function ID"
+    },
+    {
+      "expected_code": "duplicate-fact",
+      "id": "duplicate-fact",
+      "layer": "projection",
+      "mutation": "repeat a semantic node or edge"
+    },
+    {
+      "expected_code": "unknown-fact",
+      "id": "opaque-item",
+      "layer": "projection",
+      "mutation": "make a required selected item opaque"
+    },
+    {
+      "expected_code": "unsupported-marker",
+      "id": "unsupported-item",
+      "layer": "projection",
+      "mutation": "remove a required selected item body"
+    },
+    {
+      "expected_code": "cycle-observation",
+      "id": "call-cycle",
+      "layer": "analysis",
+      "mutation": "introduce a local call cycle"
+    },
+    {
+      "expected_code": "unknown-effect",
+      "id": "unknown-effect",
+      "layer": "analysis",
+      "mutation": "introduce an unmapped explicit effect tag"
+    },
+    {
+      "expected_code": "comparison-disagree",
+      "id": "comparison-disagreement",
+      "layer": "comparison",
+      "mutation": "change a source-token fact value"
+    },
+    {
+      "expected_code": "comparison-unknown",
+      "id": "stale-comparison-parent",
+      "layer": "comparison",
+      "mutation": "change a parent source identity"
+    },
+    {
+      "expected_code": "resource-limit",
+      "id": "timeout",
+      "layer": "shell",
+      "mutation": "exceed the named provider timeout"
+    },
+    {
+      "expected_code": "resource-limit",
+      "id": "log-overflow",
+      "layer": "shell",
+      "mutation": "exceed a bounded log size"
+    },
+    {
+      "expected_code": "artifact-identity",
+      "id": "snapshot-tamper",
+      "layer": "receipt",
+      "mutation": "change raw snapshot bytes"
+    },
+    {
+      "expected_code": "artifact-identity",
+      "id": "projection-tamper",
+      "layer": "receipt",
+      "mutation": "change normalized projection bytes"
+    },
+    {
+      "expected_code": "reference-boundary",
+      "id": "reference-promotion",
+      "layer": "receipt",
+      "mutation": "promote an upstream reference to property evidence"
+    },
+    {
+      "expected_code": "claim-boundary",
+      "id": "formal-proof-promotion",
+      "layer": "receipt",
+      "mutation": "request formal-proof or property authority"
+    },
+    {
+      "expected_code": "provenance-coverage",
+      "id": "missing-provenance",
+      "layer": "provenance",
+      "mutation": "remove one role-separated artifact provenance record"
+    },
+    {
+      "expected_code": "claim-boundary",
+      "id": "provenance-tier-promotion",
+      "layer": "provenance",
+      "mutation": "promote a Charon artifact above transcript assertion"
+    },
+    {
+      "expected_code": "default-independence",
+      "id": "default-path-coupling",
+      "layer": "cli",
+      "mutation": "make cargo octet check require Charon"
+    }
+  ],
+  "schema_version": "octet-charon-semantic-negative-cases/v1"
+}

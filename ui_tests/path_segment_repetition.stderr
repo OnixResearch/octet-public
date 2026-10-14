@@ -1,0 +1,12 @@
+warning: item name `spawn_guest_vm` repeats `guest` from ancestor path segment `guest`
+  --> $DIR/path_segment_repetition.rs:2:5
+   |
+LL |     pub fn spawn_guest_vm() {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::path_segment_repetition)]` on by default
+
+warning: 1 warning emitted
+

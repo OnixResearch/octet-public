@@ -1,0 +1,13 @@
+{
+  "packages": [
+    { "id": "core", "name": "domain-core", "manifest_path": "/workspace/crates/domain-core/Cargo.toml" },
+    { "id": "adapter", "name": "http-adapter", "manifest_path": "/workspace/crates/http-adapter/Cargo.toml" }
+  ],
+  "resolve": {
+    "nodes": [
+      { "id": "core", "deps": [] },
+      { "id": "adapter", "deps": [] }
+    ]
+  },
+  "workspace_members": ["core", "adapter"]
+}

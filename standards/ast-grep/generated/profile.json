@@ -1,0 +1,72 @@
+{
+  "bundle_identity": "b3:30e021d41c5727e6fb8e39956af08897c13a41da483882e5646109ef2e3b85c2",
+  "bundle_inputs": [
+    "standards/ast-grep/sgconfig.yml",
+    "standards/ast-grep/rules/unsafe-block-review.yml",
+    "standards/ast-grep/rule-tests/unsafe-block-review-test.yml",
+    "standards/ast-grep/rule-tests/__snapshots__/unsafe-block-review-snapshot.yml"
+  ],
+  "codemod_policy": {
+    "mode": "dry-run-only",
+    "preserve_proposed_diff": true,
+    "validation_commands": [
+      "ast-grep test --config standards/ast-grep/sgconfig.yml",
+      "cargo test -p cargo-octet ast_grep"
+    ]
+  },
+  "non_claims": [
+    "ast-grep findings are syntax-only candidate evidence and do not prove behavioral correctness",
+    "ast-grep findings do not prove Rust type correctness, panic freedom, memory safety, proof discharge, release eligibility, or whole-program safety",
+    "ast-grep codemod output is a proposed diff until focused validation accepts the declared migration scope"
+  ],
+  "profile_id": "octet-advisory-source-shape",
+  "promotion_lanes": [
+    {
+      "blocking": false,
+      "lane": "inventory"
+    },
+    {
+      "blocking": false,
+      "lane": "advisory"
+    },
+    {
+      "blocking": false,
+      "lane": "warning"
+    },
+    {
+      "blocking": true,
+      "lane": "error"
+    },
+    {
+      "blocking": false,
+      "lane": "migration"
+    }
+  ],
+  "rule_coverage": [
+    {
+      "lane": "advisory",
+      "negative_cases": 2,
+      "positive_cases": 2,
+      "rule_id": "unsafe-block-review"
+    }
+  ],
+  "scan_scope": {
+    "globs": [
+      "*.rs",
+      "!**/target/**",
+      "!**/tests/fixtures/**"
+    ],
+    "paths": [
+      "src",
+      "cargo-octet/src",
+      "crates"
+    ]
+  },
+  "schema_version": "octet-ast-grep-structural-profile/v1",
+  "severity_posture": "advisory",
+  "sgconfig_path": "standards/ast-grep/sgconfig.yml",
+  "tool": {
+    "name": "ast-grep",
+    "version": "0.41.1"
+  }
+}

@@ -1,0 +1,9 @@
+[package]
+name = "logging-in-core-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "logging_in_core.rs"
+
+[workspace]

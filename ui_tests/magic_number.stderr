@@ -1,0 +1,17 @@
+error: inline numeric literal should be extracted into a named constant or configuration field
+  --> $DIR/magic_number.rs:11:21
+   |
+LL |     if elapsed_ms > 30_000 {
+   |                     ^^^^^^
+   |
+   = help: Tiger Style (Named Constants): extract policy thresholds and domain values into named constants or configuration fields Example: const RECONNECT_TIMEOUT_MS: u64 = 30_000;
+   = note: see Tiger Style guide: Explicit Defaults / Named Constants
+note: the lint level is defined here
+  --> $DIR/magic_number.rs:2:9
+   |
+LL | #![deny(magic_number)]
+   |         ^^^^^^^^^^^^
+   = note: `#[deny(tigerstyle::magic_number)]` implied by `#[deny(magic_number)]`
+
+error: aborting due to 1 previous error
+

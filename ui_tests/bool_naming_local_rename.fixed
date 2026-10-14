@@ -1,0 +1,10 @@
+fn multiple_uses() {
+    let is_active = true;
+    let _a = is_active;
+    let _b = is_active;
+    let _c = is_active;
+}
+
+fn main() {
+    multiple_uses();
+}

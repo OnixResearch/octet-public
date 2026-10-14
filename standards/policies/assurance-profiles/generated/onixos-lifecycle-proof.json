@@ -1,0 +1,289 @@
+{
+  "assumptions": [
+    {
+      "assumption_id": "model-adequacy",
+      "owner": "OnixOS",
+      "statement": "The canonical FSM and the Verus and Kani models cover the lifecycle decisions named by this profile.",
+      "validation": "Review canonical transition rows, named obligations, and exhaustive Rust conformance evidence together."
+    },
+    {
+      "assumption_id": "toolchain-semantics",
+      "owner": "Octet and OnixOS",
+      "statement": "Nickel, Rust, Verus, Z3, Kani, CBMC, and their selected packages behave according to their declared semantics.",
+      "validation": "Bind exact package, solver, evaluator, command, source, and output identities in generated manifests and proof receipts."
+    },
+    {
+      "assumption_id": "identity-input-completeness",
+      "owner": "OnixOS",
+      "statement": "Every promoted receipt identifies the exact FSM, source, tool, and candidate inputs required by its claim.",
+      "validation": "Reject missing, stale, malformed, mismatched, or unlinked identities before proof-chain promotion."
+    }
+  ],
+  "mechanisms": [
+    {
+      "assumption_ids": [
+        "identity-input-completeness"
+      ],
+      "assurance_plane": "construction",
+      "evidence_ids": [
+        "octet-core-conformance"
+      ],
+      "mechanism_id": "strict-rust-construction",
+      "non_claims": [
+        "Source and policy conformance does not prove runtime behavior, dependency correctness, compiler correctness, or whole-program correctness."
+      ],
+      "owner": "OnixOS and Octet",
+      "protected_property": "The selected lifecycle core uses explicit finite types, named bounds, and no shell-owned ambient effects.",
+      "trusted_base_ids": [
+        "onixos-transition-core",
+        "octet-policy-tooling"
+      ]
+    },
+    {
+      "assumption_ids": [
+        "model-adequacy",
+        "identity-input-completeness"
+      ],
+      "assurance_plane": "semantic-design",
+      "evidence_ids": [
+        "canonical-fsm-identity",
+        "rust-fsm-conformance"
+      ],
+      "mechanism_id": "canonical-functional-fsm",
+      "non_claims": [
+        "Finite transition conformance does not prove that the model covers every real host, firmware, disk, network, power-loss, or operator condition."
+      ],
+      "owner": "OnixOS and Kamacite",
+      "protected_property": "Lifecycle and physical-switch decisions are deterministic transitions bound to one reviewed finite FSM identity.",
+      "trusted_base_ids": [
+        "onixos-transition-core",
+        "kamacite-fsm-adapter"
+      ]
+    },
+    {
+      "assumption_ids": [
+        "model-adequacy",
+        "toolchain-semantics",
+        "identity-input-completeness"
+      ],
+      "assurance_plane": "verification",
+      "evidence_ids": [
+        "verus-lifecycle-proof",
+        "kani-physical-switch-proof"
+      ],
+      "mechanism_id": "named-transition-verification",
+      "non_claims": [
+        "Verifier and model-checker success does not prove tool soundness, model completeness, Rust shell conformance, or whole-system correctness."
+      ],
+      "owner": "OnixOS with Octet-packaged Verus and Kani",
+      "protected_property": "Named lifecycle and physical-switch properties hold under the exact recorded models, harnesses, assumptions, and tool identities.",
+      "trusted_base_ids": [
+        "onixos-transition-core",
+        "verus-z3-toolchain",
+        "kani-cbmc-toolchain",
+        "octet-policy-tooling"
+      ]
+    },
+    {
+      "assumption_ids": [
+        "toolchain-semantics",
+        "identity-input-completeness"
+      ],
+      "assurance_plane": "effect-control",
+      "evidence_ids": [
+        "octet-core-conformance",
+        "verus-lifecycle-proof",
+        "kani-physical-switch-proof"
+      ],
+      "mechanism_id": "bounded-proof-execution",
+      "non_claims": [
+        "Bounded proof execution is not hardware isolation, a complete sandbox, or proof that an external tool is correct."
+      ],
+      "owner": "Octet and OnixOS Nix checks",
+      "protected_property": "Proof commands use exact packaged tools, explicit argv, selected sources, and no accepted host-tool fallback.",
+      "trusted_base_ids": [
+        "octet-policy-tooling",
+        "verus-z3-toolchain",
+        "kani-cbmc-toolchain"
+      ]
+    },
+    {
+      "assumption_ids": [
+        "identity-input-completeness"
+      ],
+      "assurance_plane": "provenance-readiness",
+      "evidence_ids": [
+        "canonical-fsm-identity",
+        "valence-proof-linkage",
+        "cairn-proof-chain-readiness"
+      ],
+      "mechanism_id": "proof-chain-provenance-readiness",
+      "non_claims": [
+        "Valid identity and readiness linkage does not prove behavioral correctness, physical readiness, deployment success, or universal release suitability."
+      ],
+      "owner": "Kamacite, Valence, Cairn, and OnixOS",
+      "protected_property": "The selected candidate links current FSM, Rust, Octet, Verus, Kani, and lifecycle evidence without claim promotion.",
+      "trusted_base_ids": [
+        "kamacite-fsm-adapter",
+        "valence-evidence-linker",
+        "cairn-readiness-gate",
+        "nickel-export-core"
+      ]
+    }
+  ],
+  "non_claims": [
+    "This profile declares required mechanisms and evidence; it does not report that any required artifact exists or passes.",
+    "Passing each mechanism does not automatically strengthen another mechanism's claim or create cumulative proof.",
+    "The profile does not prove model completeness, tool soundness, whole-program correctness, hardware isolation, physical-target behavior, deployment success, or release eligibility.",
+    "The profile does not establish a zero-trust system or complete dependency safety."
+  ],
+  "profile_id": "onixos-lifecycle-proof-v1",
+  "required_evidence": [
+    {
+      "artifact_kind": "Octet strict-core and standards artifact bundle",
+      "artifact_path": "target/octet-onixos-lifecycle/",
+      "evidence_id": "octet-core-conformance",
+      "non_claims": [
+        "The artifact bundle does not prove transitive effect absence, dependency correctness, or release eligibility."
+      ],
+      "producer": "Octet and OnixOS",
+      "validation_command": "cargo octet check --profile deterministic-core --artifact-dir target/octet-onixos-lifecycle",
+      "verification_role": "policy-check",
+      "verification_scope": "Extracted OnixOS lifecycle core source, declared boundaries, and selected Octet profile."
+    },
+    {
+      "artifact_kind": "Canonical finite FSM identity artifact",
+      "artifact_path": "target/onixos-lifecycle/canonical-fsm.preserves",
+      "evidence_id": "canonical-fsm-identity",
+      "non_claims": [
+        "Canonical identity does not prove semantic completeness or implementation conformance by itself."
+      ],
+      "producer": "OnixOS through Kamacite",
+      "validation_command": "nix build .#checks.x86_64-linux.onixos-lifecycle-state-machine-rail -L --no-link",
+      "verification_role": "canonical-identity",
+      "verification_scope": "Reviewed state, event, action, transition, rejection, and invariant vocabulary."
+    },
+    {
+      "artifact_kind": "Exhaustive finite Rust transition conformance report",
+      "artifact_path": "target/onixos-lifecycle/rust-fsm-conformance.json",
+      "evidence_id": "rust-fsm-conformance",
+      "non_claims": [
+        "Finite test enumeration does not prove code outside the extracted transition core."
+      ],
+      "producer": "OnixOS",
+      "validation_command": "cargo test --manifest-path cli/onixos-lifecycle-core/Cargo.toml",
+      "verification_role": "test",
+      "verification_scope": "Accepted and forbidden transition rows for the extracted finite core."
+    },
+    {
+      "artifact_kind": "Identity-bound Verus proof receipt",
+      "artifact_path": "result/share/onixos/lifecycle-verus-proof/receipt.json",
+      "evidence_id": "verus-lifecycle-proof",
+      "non_claims": [
+        "The receipt does not prove model completeness, verifier soundness, physical behavior, or the Rust CLI shell."
+      ],
+      "producer": "OnixOS with Octet production Verus",
+      "validation_command": "nix build .#checks.x86_64-linux.onixos-lifecycle-verus-proof-receipt -L --no-link",
+      "verification_role": "formal-proof",
+      "verification_scope": "Four named obligations in cli/verus/onixos_lifecycle_state_machine.rs."
+    },
+    {
+      "artifact_kind": "Identity-bound Kani model-check receipt",
+      "artifact_path": "target/onixos-lifecycle/kani-physical-switch-proof-receipt.json",
+      "evidence_id": "kani-physical-switch-proof",
+      "non_claims": [
+        "The receipt does not prove unmodeled inputs, arbitrary schedules, tool soundness, or physical switch behavior."
+      ],
+      "producer": "OnixOS with Kani",
+      "validation_command": "nix develop -c cargo kani --manifest-path cli/Cargo.toml",
+      "verification_role": "model-check",
+      "verification_scope": "Named physical-switch mutation, observation, rollback, and runtime-argument harnesses in cli/src/pure.rs."
+    },
+    {
+      "artifact_kind": "Valence proof-chain linkage artifact",
+      "artifact_path": "target/onixos-lifecycle/valence-proof-artifact.json",
+      "evidence_id": "valence-proof-linkage",
+      "non_claims": [
+        "Valence linkage does not prove transition behavior, proof soundness, or release eligibility."
+      ],
+      "producer": "OnixOS through Valence",
+      "validation_command": "nix build .#checks.x86_64-linux.onixos-lifecycle-state-machine-rail -L --no-link",
+      "verification_role": "evidence-linkage",
+      "verification_scope": "FSM, Rust core, Octet, Verus, Kani, and lifecycle report identities and roles."
+    },
+    {
+      "artifact_kind": "Candidate-specific lifecycle readiness receipt",
+      "artifact_path": "target/cairn-release-readiness/receipt.json",
+      "evidence_id": "cairn-proof-chain-readiness",
+      "non_claims": [
+        "A passing readiness receipt is not a universal production, deployment, or physical-target guarantee."
+      ],
+      "producer": "OnixOS through Cairn",
+      "validation_command": "nix run .#cairn -- release-readiness --root .",
+      "verification_role": "lifecycle-gate",
+      "verification_scope": "OnixOS candidate proof-chain requirements and repository-owned readiness policy."
+    }
+  ],
+  "schema_version": "octet-assurance-profile/v1",
+  "scope": {
+    "component": "OnixOS lifecycle state machine and physical-switch planner",
+    "repository": "OnixResearch/onix-modules",
+    "source_paths": [
+      "cli/verus/onixos_lifecycle_state_machine.rs",
+      "cli/src/pure.rs",
+      "verification/onixos-lifecycle-verus-receipt/",
+      "cairn/changes/onixos-lifecycle-proof-receipts/"
+    ]
+  },
+  "summary": "Required mechanism and evidence chain for the bounded OnixOS lifecycle and physical-switch transition claims.",
+  "trusted_computing_base": [
+    {
+      "component_id": "onixos-transition-core",
+      "failure_impact": "A defect can invalidate Rust transition and model-conformance claims.",
+      "owner": "OnixOS",
+      "responsibility": "Implement pure finite lifecycle and physical-switch transition decisions."
+    },
+    {
+      "component_id": "octet-policy-tooling",
+      "failure_impact": "A defect can invalidate source-shape, tool-provenance, or artifact-linkage evidence.",
+      "owner": "Octet",
+      "responsibility": "Provide strict-core checks, proof tool packages, source policy, and evidence identity rails."
+    },
+    {
+      "component_id": "verus-z3-toolchain",
+      "failure_impact": "A defect can invalidate the formal-proof result without proving model completeness.",
+      "owner": "Verus provider boundary",
+      "responsibility": "Discharge the named lifecycle proof obligations over the exact Verus model."
+    },
+    {
+      "component_id": "kani-cbmc-toolchain",
+      "failure_impact": "A defect can invalidate the model-check result without proving arbitrary runtime behavior.",
+      "owner": "Kani provider boundary",
+      "responsibility": "Evaluate named physical-switch harness properties under recorded bounds and stubs."
+    },
+    {
+      "component_id": "kamacite-fsm-adapter",
+      "failure_impact": "A defect can link proofs and Rust behavior to the wrong transition specification.",
+      "owner": "Kamacite and OnixOS adapter",
+      "responsibility": "Bind the reviewed finite FSM source to one canonical identity."
+    },
+    {
+      "component_id": "valence-evidence-linker",
+      "failure_impact": "A defect can admit stale or mismatched proof-chain relationships.",
+      "owner": "Valence",
+      "responsibility": "Validate evidence identity, roles, linkage, and non-claim preservation."
+    },
+    {
+      "component_id": "cairn-readiness-gate",
+      "failure_impact": "A defect can misclassify lifecycle conformance or candidate readiness.",
+      "owner": "Cairn and OnixOS lifecycle policy",
+      "responsibility": "Require current proof-chain evidence for the selected OnixOS candidate."
+    },
+    {
+      "component_id": "nickel-export-core",
+      "failure_impact": "A defect can invalidate assurance-profile source and output identity evidence.",
+      "owner": "OnixResearch/nickel-export",
+      "responsibility": "Bind authored profile source, dependencies, evaluator, and generated output with BLAKE3 identities."
+    }
+  ]
+}

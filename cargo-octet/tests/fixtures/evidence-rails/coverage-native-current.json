@@ -1,0 +1,1 @@
+{"data":[{"files":[{"filename":"cargo-octet/src/lib.rs","summary":{}}],"totals":{"branches":{"count":100,"covered":92,"percent":1.0},"functions":{"count":100,"covered":92,"percent":1.0},"lines":{"count":100,"covered":92,"percent":1.0},"regions":{"count":100,"covered":92,"percent":1.0}}}],"type":"llvm.coverage.json.export","version":"2.0.1"}

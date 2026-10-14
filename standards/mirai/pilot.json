@@ -1,0 +1,195 @@
+{
+  "profile": {
+    "comparison_outcomes": [
+      "agree",
+      "disagree",
+      "mirai-only",
+      "charon-only",
+      "source-token-only",
+      "unknown"
+    ],
+    "comparison_parents": {
+      "charon_profile": "b3:9c37280796d04408389e7efc4fd8413b6c3bb3594fc66bed79ea01492b9cdf67",
+      "source_token_catalog": "b3:3be8c6c519ad668d3485c841c87f8ebb04ff3b94ee18490ecd3ec76c2e8ece99"
+    },
+    "corpus": [
+      {
+        "bytes": 124,
+        "expected_observation": "selected-crate-manifest",
+        "fixture_id": "crate-manifest",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/Cargo.toml",
+        "property_class": "support",
+        "source_identity": "b3:7e291249f910d0a9ac9bb1b68ecf45dee40164388bd29707487b6c9a6c9ddfb4",
+        "supported": true,
+        "unsupported_reason": ""
+      },
+      {
+        "bytes": 112,
+        "expected_observation": "selected-crate-module-root",
+        "fixture_id": "crate-root",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/src/lib.rs",
+        "property_class": "support",
+        "source_identity": "b3:d8b49406fd7e30b4f47e40a4e4381cd81b7430cc400fda7b7a8466121569bb30",
+        "supported": true,
+        "unsupported_reason": ""
+      },
+      {
+        "bytes": 115,
+        "expected_observation": "root-calls-helper",
+        "fixture_id": "call-edge",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/src/call_edge.rs",
+        "property_class": "call-edge",
+        "source_identity": "b3:a7d4153d3ded2a66d7e10fdcbfb419945d49eeb8ae9eb9e4ae24543a4b6660e1",
+        "supported": true,
+        "unsupported_reason": ""
+      },
+      {
+        "bytes": 112,
+        "expected_observation": "filesystem-read-call",
+        "fixture_id": "effect-operation",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/src/effect.rs",
+        "property_class": "effect",
+        "source_identity": "b3:fd7e4083059dc115c1a1f57d814cacbc31711296085b16942e5668a36f8f4eb5",
+        "supported": true,
+        "unsupported_reason": ""
+      },
+      {
+        "bytes": 128,
+        "expected_observation": "zero-reaches-assertion",
+        "fixture_id": "reachable-panic",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/src/panic_path.rs",
+        "property_class": "panic",
+        "source_identity": "b3:0a80e237f71f2b55c6fa5bcdaeda7dab4c054085b510f9335b6173e7af78fdc0",
+        "supported": true,
+        "unsupported_reason": ""
+      },
+      {
+        "bytes": 162,
+        "expected_observation": "zero-denominator-rejected",
+        "fixture_id": "checked-precondition",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/src/precondition.rs",
+        "property_class": "precondition",
+        "source_identity": "b3:bafb910681fbeea8ae0094bd1fc3443255336257ba3869c734d4cf4562e0fd83",
+        "supported": true,
+        "unsupported_reason": ""
+      },
+      {
+        "bytes": 81,
+        "expected_observation": "checked-add-has-no-reachable-overflow-panic",
+        "fixture_id": "safe-path",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/src/safe.rs",
+        "property_class": "safe",
+        "source_identity": "b3:378d3f03bece29c1a5f67af9d26c87c1ea4b35650c4de4cc323580a7040392d7",
+        "supported": true,
+        "unsupported_reason": ""
+      },
+      {
+        "bytes": 159,
+        "expected_observation": "blocked-before-normalization",
+        "fixture_id": "macro-generated",
+        "path": "cargo-octet/tests/fixtures/mirai-pilot/src/unsupported.rs",
+        "property_class": "unsupported",
+        "source_identity": "b3:f81b4ac527a8fe4350769457d3b10cba3e44029b7a27968b3ef16a2264886714",
+        "supported": false,
+        "unsupported_reason": "macro-expansion-outside-pilot-normalization-contract"
+      }
+    ],
+    "decision_states": [
+      "adopt",
+      "defer",
+      "reject",
+      "blocked"
+    ],
+    "evidence_tier": "transcript_assertion",
+    "limits": {
+      "max_fixtures": 8,
+      "max_log_bytes": 1048576,
+      "max_source_bytes": 4096,
+      "timeout_ms": 120000
+    },
+    "non_claims": [
+      "The MIRAI pilot records a blocked output-contract decision and does not claim MIRAI semantic evidence.",
+      "Cross-analyzer rows preserve parent authority and do not prove semantic equivalence.",
+      "The source package does not prove provider build success, compiler correctness, whole-program correctness, verifier soundness, or release eligibility.",
+      "The pilot does not add MIRAI to starter, strict-profile, Charon, Aeneas, Kani, Verus, or release paths."
+    ],
+    "output_contract": {
+      "reason_code": "stable-machine-output-unavailable",
+      "stable_machine_schema": false,
+      "status": "blocked"
+    },
+    "profile_id": "octet-mirai-blocked-output-contract-v1",
+    "promotion_criteria": [
+      {
+        "criterion_id": "supported-fixture-rate",
+        "required": true,
+        "threshold": 80
+      },
+      {
+        "criterion_id": "deterministic-replay-rate",
+        "required": true,
+        "threshold": 100
+      },
+      {
+        "criterion_id": "diagnostic-stability-rate",
+        "required": true,
+        "threshold": 100
+      },
+      {
+        "criterion_id": "unique-useful-findings",
+        "required": true,
+        "threshold": 1
+      },
+      {
+        "criterion_id": "false-positive-maximum",
+        "required": true,
+        "threshold": 0
+      },
+      {
+        "criterion_id": "runtime-within-budget",
+        "required": true,
+        "threshold": 100
+      },
+      {
+        "criterion_id": "maintenance-cost-accepted",
+        "required": true,
+        "threshold": 100
+      },
+      {
+        "criterion_id": "stable-machine-output-contract",
+        "required": true,
+        "threshold": 100
+      }
+    ],
+    "provider": {
+      "closure_components": [
+        "endorlabs-mirai-source-aae0a56f91d9a0a62073bb86e7b2c9793cefc24b",
+        "octet-mirai-source-provider-1.1.12"
+      ],
+      "command_argv": [
+        "cargo",
+        "mirai",
+        "--manifest-path",
+        "cargo-octet/tests/fixtures/mirai-pilot/Cargo.toml",
+        "--lib"
+      ],
+      "derivation_attr": "packages.x86_64-linux.mirai-source-provider",
+      "derivation_name": "octet-mirai-source-provider-1.1.12",
+      "environment": [
+        "MIRAI_FLAGS=--diag=verify"
+      ],
+      "features": [
+        "bundled"
+      ],
+      "license": "MIT",
+      "repository": "https://github.com/endorlabs/MIRAI",
+      "revision": "aae0a56f91d9a0a62073bb86e7b2c9793cefc24b",
+      "rust_toolchain": "nightly-2025-01-10",
+      "source_hash": "sha256-+H0JIbrwxMi3uMuxBqgVBzNkDYom8X616rH9y7YqIXg=",
+      "target": "x86_64-unknown-linux-gnu",
+      "version": "1.1.12"
+    },
+    "verification_role": "recorded_only"
+  },
+  "schema_version": "octet-mirai-semantic-pilot-policy/v1"
+}

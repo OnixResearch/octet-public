@@ -1,0 +1,33 @@
+warning: `todo!()` marks unfinished production code
+  --> $DIR/no_todo_legacy_no_panic_allow.rs:7:5
+   |
+LL |     todo!("legacy tool-scoped no_panic attr should not suppress no_todo");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): replace temporary stubs with implemented code or an explicit error path before release Example: return Err(Error::not_ready());
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::no_todo)]` on by default
+help: replace `todo!()` with an explicit error path
+   |
+LL -     todo!("legacy tool-scoped no_panic attr should not suppress no_todo");
+LL +     return Err(/* TODO: implement error */);
+   |
+
+warning: `todo!()` marks unfinished production code
+  --> $DIR/no_todo_legacy_no_panic_allow.rs:13:5
+   |
+LL |     todo!("legacy bare no_panic attr should not suppress no_todo");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): replace temporary stubs with implemented code or an explicit error path before release Example: return Err(Error::not_ready());
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Error Handling / Panics
+help: replace `todo!()` with an explicit error path
+   |
+LL -     todo!("legacy bare no_panic attr should not suppress no_todo");
+LL +     return Err(/* TODO: implement error */);
+   |
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,31 @@
+warning: public `Deref<Target = Engine>` expands the wrapper's API surface implicitly; prefer explicit accessors for domain polymorphism
+  --> $DIR/deref_polymorphism.rs:26:1
+   |
+LL | / impl Deref for EngineHandle {
+LL | |     type Target = Engine;
+LL | |
+LL | |     fn deref(&self) -> &Self::Target {
+...  |
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Explicit Interfaces): prefer explicit accessors over public `Deref` to another nominal domain type Example: pub fn as_inner(&self) -> &Inner
+   = note: see Tiger Style guide: Rust Idioms / Deref Polymorphism
+   = note: `#[warn(tigerstyle::deref_polymorphism)]` on by default
+
+warning: public `Deref<Target = crate::Engine>` expands the wrapper's API surface implicitly; prefer explicit accessors for domain polymorphism
+  --> $DIR/deref_polymorphism.rs:38:1
+   |
+LL | / impl std::ops::Deref for QualifiedHandle {
+LL | |     type Target = crate::Engine;
+LL | |
+LL | |     fn deref(&self) -> &Self::Target {
+...  |
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Explicit Interfaces): prefer explicit accessors over public `Deref` to another nominal domain type Example: pub fn as_inner(&self) -> &Inner
+   = note: see Tiger Style guide: Rust Idioms / Deref Polymorphism
+
+warning: 2 warnings emitted
+

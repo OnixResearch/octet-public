@@ -1,0 +1,57 @@
+{
+  "profiles": [
+    {
+      "driver_name": "CodeQL",
+      "evidence_tier": "static_lint",
+      "max_artifacts": 256,
+      "max_locations_per_result": 1,
+      "max_message_bytes": 4096,
+      "max_path_bytes": 240,
+      "max_report_bytes": 1048576,
+      "max_results": 1024,
+      "max_rules": 256,
+      "max_runs": 1,
+      "non_claims": [
+        "Imported CodeQL findings are external static observations and do not prove complete vulnerability detection or whole-program correctness.",
+        "Local SARIF intake does not require or attest GitHub code scanning or another hosted service."
+      ],
+      "profile_id": "codeql-local",
+      "require_rule_id": true,
+      "source_levels": {
+        "error": "error",
+        "none": "none",
+        "note": "note",
+        "warning": "warning"
+      },
+      "supported_version": "2.1.0",
+      "workspace_relative_only": true
+    },
+    {
+      "driver_name": "Semgrep",
+      "evidence_tier": "static_lint",
+      "max_artifacts": 256,
+      "max_locations_per_result": 1,
+      "max_message_bytes": 4096,
+      "max_path_bytes": 240,
+      "max_report_bytes": 1048576,
+      "max_results": 1024,
+      "max_rules": 256,
+      "max_runs": 1,
+      "non_claims": [
+        "Imported Semgrep findings are external static observations and do not prove complete vulnerability detection or whole-program correctness.",
+        "Local SARIF intake does not require or attest Semgrep Cloud or another hosted service."
+      ],
+      "profile_id": "semgrep-local",
+      "require_rule_id": true,
+      "source_levels": {
+        "error": "error",
+        "none": "none",
+        "note": "note",
+        "warning": "warning"
+      },
+      "supported_version": "2.1.0",
+      "workspace_relative_only": true
+    }
+  ],
+  "schema_version": "octet-sarif-profiles/v1"
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "z4-solver-summary/v1",
+  "solver": {
+    "name": "z4-solver",
+    "version": "0.1.0",
+    "provenance": "nix-store-fixture"
+  },
+  "query": {
+    "identity": "b3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "logic": "AUFLIA",
+    "profile": "timeout-bounded"
+  },
+  "result_status": "unknown",
+  "unknown_reason": "resource-limit",
+  "verification_role": "non_proof_diagnostic",
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "message": "solver exhausted the configured resource budget"
+    }
+  ],
+  "evidence_tier": "transcript_assertion",
+  "non_claims": [
+    "Z4 solver evidence records bounded solver output identity and diagnostics only; it does not prove source correctness, solver soundness, proof validity, requirement satisfaction, release eligibility, or whole-program safety"
+  ]
+}

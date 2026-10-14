@@ -1,0 +1,88 @@
+let NonEmptyString = std.contract.from_predicate (fun value =>
+  std.is_string value && std.string.length value > 0
+) in
+let NonEmptyArray = std.contract.from_predicate (fun value =>
+  std.is_array value && std.array.length value > 0
+) in
+let Positive = std.contract.from_predicate (fun value =>
+  std.is_number value && value > 0
+) in
+let GitRevision = std.contract.from_predicate (fun value =>
+  std.is_string value && std.string.is_match "^[0-9a-f]{40}$" value
+) in
+let Blake3Identity = std.contract.from_predicate (fun value =>
+  std.is_string value && std.string.is_match "^b3:[0-9a-f]{64}$" value
+) in
+let SupportProjection = {
+  schema_version | std.contract.from_predicate (fun value => value == "octet-spacewasm-support-projection/v1"),
+  runtime_id | std.contract.from_predicate (fun value => value == "nasa-spacewasm"),
+  source_repository | std.contract.from_predicate (fun value => value == "https://github.com/nasa/spacewasm"),
+  source_revision | GitRevision,
+  source_lock_identity | Blake3Identity,
+  reviewed_paths | NonEmptyArray | Array NonEmptyString,
+  supported_proposals | NonEmptyArray | Array NonEmptyString,
+  denied_or_unimplemented_proposals | NonEmptyArray | Array NonEmptyString,
+  module_kind | std.contract.from_predicate (fun value => value == "module"),
+  default_allow_memory_grow | Bool,
+  maximum_linear_memory_pages | Positive,
+  maximum_function_parameter_words | Positive,
+  maximum_local_words_per_function | Positive,
+  maximum_function_index | Positive,
+  external_runtime_configuration | NonEmptyArray | Array NonEmptyString,
+  observed_discrepancies | Array NonEmptyString,
+  non_claims | NonEmptyArray | Array NonEmptyString,
+} in
+{
+  schema_version = "octet-spacewasm-support-projection/v1",
+  runtime_id = "nasa-spacewasm",
+  source_repository = "https://github.com/nasa/spacewasm",
+  source_revision = "e24cf09355a90497148eb5029fdb8e3400bd63e3",
+  source_lock_identity = "b3:4e6a07910125d4c921a62cec03d8bc9acb3bf341ebd1a11999df08d6c6c5c5f1",
+  reviewed_paths = [
+    "Cargo.lock",
+    "README.md",
+    "REQUIREMENTS.md",
+    "src/SPEC.md",
+    "src/code.rs",
+    "src/compiler.rs",
+    "src/opcode.rs",
+    "src/types.rs",
+  ],
+  supported_proposals = ["wasm1", "mutable-globals"],
+  denied_or_unimplemented_proposals = [
+    "bulk-memory",
+    "component-model",
+    "custom-page-sizes",
+    "memory64",
+    "multi-memory",
+    "multi-value",
+    "non-trapping-float-to-int",
+    "sign-extension-ops",
+    "threads",
+    "wit",
+    "wasi",
+  ],
+  module_kind = "module",
+  default_allow_memory_grow = false,
+  maximum_linear_memory_pages = 65536,
+  maximum_function_parameter_words = 255,
+  maximum_local_words_per_function = 65535,
+  maximum_function_index = 65535,
+  external_runtime_configuration = [
+    "allocator pages",
+    "code pages",
+    "control frames",
+    "fuel or instruction budget",
+    "host import implementations",
+    "stack depth",
+  ],
+  observed_discrepancies = [
+    "REQUIREMENTS.md allows selected post-MVP proposals in principle while README.md and the reviewed opcode decoder expose only Wasm 1.0 plus mutable globals",
+    "README.md describes spacewasm-check as not yet developed",
+  ],
+  non_claims = [
+    "The projection records a bounded source review and does not prove SpaceWasm runtime behavior",
+    "Static artifact limits do not prove configured allocator, code-page, control-frame, fuel, host-import, or stack capacity",
+    "The upstream Git revision uses Git SHA-1 for interoperability; Octet uses BLAKE3 for the derived cohort identity",
+  ],
+} | SupportProjection

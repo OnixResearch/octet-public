@@ -1,0 +1,22 @@
+{
+  "schema_version": "octet-cargo-fuzz-receipt/v1",
+  "profile_id": "cargo-fuzz-libfuzzer",
+  "profile_identity": "b3:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "target": "octet-profile-intake",
+  "engine": "libfuzzer",
+  "toolchain": "nightly-2026-03-21",
+  "compiler_identity": "not-a-blake3-identity",
+  "sanitizer": "address",
+  "command_argv": ["cargo", "fuzz", "run", "other-target"],
+  "budget": {"max_total_time_seconds": 61, "max_runs": 100001, "seed": 2},
+  "initial_corpus": [{"path": "../escape", "length": 16777217, "blake3": "stale"}],
+  "initial_corpus_root": "b3:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "final_corpus": [],
+  "final_corpus_root": "b3:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "outcome": "crash",
+  "replay_argv": [],
+  "bounded_log_identity": "stale",
+  "evidence_tier": "formal_proof",
+  "claimed_properties": ["exhaustive coverage"],
+  "non_claims": []
+}

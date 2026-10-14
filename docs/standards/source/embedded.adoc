@@ -1,0 +1,99 @@
+= Embedded
+:page-range: 37-43
+
+Rust on real hardware, in production.
+
+Protobuf over TCP to motor controllers. RS485 Modbus for industrial vibration plates. Serial protocols to Arduino peripherals. Embedded entries here cover what most Rust content does not: the messy, beautiful intersection of systems programming and physical machines -- where a missed byte causes a motor stall, not a 404.
+
+== The Edge Is Not a Small Cloud
+
+Your cloud service has 64 GB of RAM and a load balancer. Your edge device has 8 GB and a flaky cellular modem. The same architecture will not survive both.
+
+A team builds a Rust service that controls motor hardware, reads sensor arrays, and reports telemetry to the cloud. They architect it the way they would architect any cloud service: tokio with a multi-threaded runtime, async everywhere, generous buffering, and connection pools to the message broker. It works beautifully in the lab on a dev machine with 32 GB of RAM.
+
+They deploy to the production hardware -- a single-board computer with 8 GB -- and it runs out of memory after 72 hours.
+
+The leak is not a bug. It is architecture. Unbounded message queues grow during connectivity drops and never get drained fast enough when the connection returns. Every event that could not be published sits in a queue that nobody capped.
+
+In the cloud, the load balancer routes around a sick instance and the autoscaler spins up a replacement. On the edge, there is one device. There is no replacement. There is no autoscaler. The motor controller stops receiving commands, the work order stalls, and an operator walks over to find a frozen screen.
+
+This is a story about the patterns that prevent that. Not frameworks. Not libraries. Patterns -- the kind you decide on before you write the first line of async code.
+
+== Opt-in subsystems
+
+Not every device has every peripheral. One site has a motor controller over serial and a vibration plate over RS485. Another has only the motor controller. A third adds a vision system for verification.
+
+If a peripheral is absent from configuration, no task spawns for it. No wasted memory, no error logs about missing hardware, no retry loops burning CPU trying to reach a device that was never plugged in.
+
+The config is the hardware manifest. Optionality is not ambiguity here -- it is precision. A deployment technician sets up the file once, listing exactly what is connected. The binary reads it, spawns only the subsystems that have hardware behind them, and ignores the rest.
+
+== Actor threads for synchronous hardware
+
+SQLite, serial ports, and Modbus buses are synchronous. The common instinct is to wrap them in `spawn_blocking` and let tokio manage the thread pool. This works until the blocking thread pool is saturated by a slow sensor read, and suddenly your MQTT publish task cannot get a thread either.
+
+Give synchronous hardware its own thread. Communicate via typed channels.
+
+The async runtime never blocks on I/O. The hardware thread never touches tokio. Each side speaks its native dialect -- async or blocking -- and the channel is the translator. Clean separation.
+
+== Store-and-forward
+
+MQTT will drop. Cellular modems lose signal. Wi-Fi access points reboot. Ethernet cables get unplugged by operators who need the outlet. The device cannot stop working because the cloud is unreachable.
+
+The pattern is simple:
+
+* Every outbound event inserts into a local SQLite table before attempting network delivery.
+* A background task polls the MQTT connection. On reconnect, it drains the table in FIFO order.
+* If the table exceeds a configured row limit, the oldest entries are dropped and the loss is logged.
+* The device always makes forward progress on its local tasks. Telemetry reaches the cloud eventually -- or it does not, and the system survives either way.
+
+The pattern is old. Store-and-forward predates the internet. But it requires a decision that cloud engineers rarely face: what to lose.
+
+In the cloud, the answer is usually "nothing -- scale the queue." On the edge, the answer may be "the oldest data," because the operator standing at the device cares about what is happening now, not what happened six hours ago during the outage.
+
+== Bounded everything
+
+Memory on the edge is a closed system. Every unbounded queue is a latent OOM.
+
+The discipline is straightforward:
+
+* Use bounded channels for database requests so backpressure is immediate.
+* Use abort-on-panic or fast-fail process supervision where appropriate instead of letting partially unwound tasks accumulate damage.
+* Let the service manager restart the process cleanly.
+* Fix the task count at startup. One thread per hardware peripheral, one async runtime for networking. No dynamic spawning, no thread pools that grow under load.
+
+The goal is not efficiency. The goal is predictability. A device that uses 1.2 GB of RAM on Monday should use 1.2 GB of RAM on Friday.
+
+== Safe serial communication
+
+For RS485 Modbus and USB serial, use a safe Rust serial crate.
+
+No FFI. No raw C wrappers. The crate wraps the OS serial API safely. You still parse the response bytes yourself -- build the Modbus frame, check the CRC, extract the register values -- but that is plain Rust, and the compiler helps you.
+
+The timeout matters. A serial read without a timeout will block the thread forever if the device does not respond. A 100-millisecond timeout lets you detect a disconnected peripheral, log it, and move on. The device keeps running.
+
+This is the kind of reliability that does not show up in architecture diagrams. It shows up in the field, when a cable comes loose and the system keeps running instead of hanging.
+
+== The deeper point
+
+Embedded Rust on Linux is not cloud Rust on smaller hardware. You have an OS, a filesystem, networking, and threads. But you do not have the luxury of the cloud's assumptions: unlimited memory, reliable networking, horizontal scaling, and graceful restarts behind a load balancer.
+
+The edge is won with discipline. Bounded memory. Fail-fast recovery. Graceful degradation when connectivity drops. The assumption that every resource is finite and every connection is temporary.
+
+The same language. Different constraints. Different architecture.
+
+== Grounding
+
+[quote, Rust in Action (McNamara), Chapter 1]
+____
+The emphasis on ownership and borrowing makes Rust particularly well-suited for programs that need to operate within strict resource constraints.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 19]
+____
+A sync_channel differs from a channel in that it blocks if the channel is full, providing backpressure to the producer.
+____
+
+[quote, Zero to Production in Rust (Palmieri), Chapter 3]
+____
+A production application is more than the sum of its endpoints. It needs telemetry, logging, error handling, and a strategy for dealing with the outside world's unreliability.
+____

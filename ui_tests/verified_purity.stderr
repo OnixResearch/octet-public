@@ -1,0 +1,14 @@
+error: async function in verified module
+  --> $DIR/verified/verified_purity.rs:3:1
+   |
+LL | / pub async fn impure_async() {
+LL | |     // Should error: async fn in verified module
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+   = note: `#[deny(tigerstyle::verified_purity)]` on by default
+
+error: aborting due to 1 previous error
+

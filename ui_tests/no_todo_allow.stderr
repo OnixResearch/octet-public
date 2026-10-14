@@ -1,0 +1,43 @@
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` needs an adjacent `//` justification comment and may only wrap temporary `todo!()` stubs
+  --> $DIR/no_todo_allow.rs:43:1
+   |
+LL | #[allow(tigerstyle::no_todo)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::unjustified_no_todo_allow)]` on by default
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` needs an adjacent `//` justification comment and may only wrap temporary `todo!()` stubs
+  --> $DIR/no_todo_allow.rs:49:1
+   |
+LL | #[allow(no_todo)]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` needs an adjacent `//` justification comment and may only wrap temporary `todo!()` stubs
+  --> $DIR/no_todo_allow.rs:56:1
+   |
+LL | #[allow(tigerstyle::no_todo)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` needs an adjacent `//` justification comment and may only wrap temporary `todo!()` stubs
+  --> $DIR/no_todo_allow.rs:61:1
+   |
+LL | #[allow(no_todo)]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: 4 warnings emitted
+

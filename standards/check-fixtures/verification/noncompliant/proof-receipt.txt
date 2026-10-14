@@ -1,0 +1,3 @@
+proof-command: nix develop -c bash -c 'cargo test -p octet-standards proof_rail -- --nocapture'
+proof-result: fail deterministic-effect-handlers
+trust-boundary: failing receipt is a negative proof-rail fixture

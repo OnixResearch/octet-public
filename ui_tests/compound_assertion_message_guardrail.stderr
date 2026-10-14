@@ -1,0 +1,12 @@
+warning: compound assertion should be split into separate assertions
+  --> $DIR/compound_assertion_message_guardrail.rs:2:5
+   |
+LL |     assert!(a > 0 && b > 0, "bounds broke");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Assertion Quality): split compound assertions so the failing clause is obvious Example: assert!(a > 0); assert!(b > 0);
+   = note: see Tiger Style guide: Assertion Density
+   = note: `#[warn(tigerstyle::compound_assertion)]` on by default
+
+warning: 1 warning emitted
+

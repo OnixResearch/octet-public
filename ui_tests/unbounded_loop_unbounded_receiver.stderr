@@ -1,0 +1,14 @@
+warning: loop without visible iteration bound
+  --> $DIR/tokio_async/unbounded_loop_unbounded_receiver.rs:4:5
+   |
+LL | /     while let Some(msg) = rx.recv().await {
+LL | |         let _ = msg;
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Bounded Control Flow): bound long-running loops with an exit condition, timeout, or bounded input Example: while let Some(msg) = rx.recv().await { ... }
+   = note: see Tiger Style guide: Bounded Control Flow
+   = note: `#[warn(tigerstyle::unbounded_loop)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,121 @@
+{
+  "canaries": [
+    {
+      "canary_id": "live-positive-provider",
+      "category": "positive",
+      "execution": "live",
+      "expected": "pass",
+      "rationale": "the pinned Charon, Aeneas, local Lake closure, generated model, and named theorem execute successfully with network denied",
+      "test_function": "live_provider_executes_real_positive_fixture"
+    },
+    {
+      "canary_id": "live-false-theorem",
+      "category": "false-vacuous",
+      "execution": "live",
+      "expected": "reject",
+      "rationale": "the pinned live provider rejects the false theorem without timeout or network access",
+      "test_function": "live_provider_rejects_real_false_fixture"
+    },
+    {
+      "canary_id": "live-vacuous-theorem",
+      "category": "false-vacuous",
+      "execution": "live",
+      "expected": "reject",
+      "rationale": "the pinned live provider rejects a vacuous theorem during adequacy preflight rather than promoting Lean acceptance",
+      "test_function": "live_provider_rejects_real_vacuous_fixture"
+    },
+    {
+      "canary_id": "positive-provider-envelope",
+      "category": "positive",
+      "execution": "pure",
+      "expected": "pass",
+      "rationale": "the reviewed provider contract and complete stage chain remain admissible",
+      "test_function": "aeneas_payload_and_envelope_accept_complete_typed_contract"
+    },
+    {
+      "canary_id": "false-and-vacuous-theorem",
+      "category": "false-vacuous",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "false and True-style theorem selections must not promote property evidence",
+      "test_function": "aeneas_formal_proof_rejects_false_and_vacuous_theorems"
+    },
+    {
+      "canary_id": "approved-theorem-statement",
+      "category": "theorem-approval",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "the measured theorem bytes must match an independently configured BLAKE3 rather than self-approving at receipt construction",
+      "test_function": "aeneas_theorem_statement_approval_accepts_match_and_rejects_missing_or_mismatched"
+    },
+    {
+      "canary_id": "partial-output-stage-link",
+      "category": "partial-output",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "partial or stale stage output must stop before theorem admission",
+      "test_function": "aeneas_payload_rejects_broken_stage_link_before_provider_admission"
+    },
+    {
+      "canary_id": "borrow-check-bypass-and-option-drift",
+      "category": "borrow-check-bypass",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "borrow-check bypass and weakened extraction options must fail closed",
+      "test_function": "charon_extraction_contract_rejects_drift_and_weakened_options"
+    },
+    {
+      "canary_id": "opacity-model-trust-closure",
+      "category": "opacity-model",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "undeclared models, axioms, opaque definitions, and admitted declarations are not proof authority",
+      "test_function": "aeneas_formal_proof_rejects_missing_theorem_trust_gaps_and_role_promotion"
+    },
+    {
+      "canary_id": "target-and-endianness-drift",
+      "category": "target",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "target triple, pointer width, and endianness are proof-relevant inputs",
+      "test_function": "charon_extraction_contract_rejects_drift_and_weakened_options"
+    },
+    {
+      "canary_id": "source-translation-freshness",
+      "category": "freshness",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "stale translation links, generated files, or durable def_id reuse must fail",
+      "test_function": "translation_manifest_rejects_stale_links_bad_inventory_and_durable_def_id"
+    },
+    {
+      "canary_id": "unsupported-surface",
+      "category": "unsupported-feature",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "unsupported source must be blocked or failed rather than promoted",
+      "test_function": "aeneas_preflight_rejects_unsupported_inputs_and_promotion"
+    },
+    {
+      "canary_id": "exported-evidence-tamper",
+      "category": "freshness",
+      "execution": "pure",
+      "expected": "reject",
+      "rationale": "exported stage, role, status, theorem, and receipt links remain tamper-evident",
+      "test_function": "aeneas_export_tamper_matrix_rejects_digest_role_status_theorem_and_receipt_links"
+    }
+  ],
+  "matrix_id": "octet-aeneas-lean-compatibility-0.1.0-bc2eb6f-cb50ff16",
+  "provider_id": "aeneas-lean",
+  "reviewed_profile": "standards/proof-rails/aeneas-lean/generated/profile.json",
+  "schema_version": "octet-aeneas-lean-compatibility-matrix/v1",
+  "upgrade_dimensions": [
+    "aeneas",
+    "charon",
+    "rustc",
+    "lean",
+    "aeneas_library",
+    "schema",
+    "provider_profile"
+  ]
+}

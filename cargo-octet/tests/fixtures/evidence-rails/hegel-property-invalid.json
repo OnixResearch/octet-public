@@ -1,0 +1,28 @@
+{
+  "schema_version": "hegel-property-summary/v0",
+  "property_id": "valence.evidence-ir.bad-overclaim",
+  "linked_ids": [
+    "r[valence.evidence-ir.identity.stable]"
+  ],
+  "source_scope": "crates/valence-core/src/evidence_ir.rs::canonical_identity",
+  "runner": {
+    "crate_version": "0.14.12",
+    "backend": "native"
+  },
+  "settings": {
+    "case_budget": 1,
+    "phases": []
+  },
+  "generator": {
+    "family": "evidence-ir-arbitrary",
+    "content_hash": "not-a-b3-identity"
+  },
+  "source_hashes": [
+    "not-a-b3-identity"
+  ],
+  "status": "failed",
+  "evidence_tier": "formal_proof",
+  "non_claims": [
+    "This generated run proves correctness and release eligibility."
+  ]
+}

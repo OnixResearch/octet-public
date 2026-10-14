@@ -1,0 +1,1 @@
+{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"CodeQL","rules":[{"id":"unsafe-path"}]}},"results":[{"ruleId":"unsafe-path","level":"warning","message":{"text":"unsafe location"},"locations":[{"physicalLocation":{"artifactLocation":{"uri":"../escape.rs"},"region":{"startLine":1,"startColumn":1}}}]}]}]}

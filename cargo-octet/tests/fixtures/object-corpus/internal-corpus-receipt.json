@@ -1,0 +1,63 @@
+{
+  "schema": "octet.function-object-corpus-receipt.v1",
+  "schema_version": 1,
+  "mode": "corpus-receipt",
+  "object_count": 654,
+  "source_paths": [
+    "cargo-octet/src/baseline.rs",
+    "cargo-octet/src/bin/cargo-slotcar.rs",
+    "cargo-octet/src/bin/cargo-tigerstyle.rs",
+    "cargo-octet/src/cli.rs",
+    "cargo-octet/src/config.rs",
+    "cargo-octet/src/determinism.rs",
+    "cargo-octet/src/engine.rs",
+    "cargo-octet/src/evidence.rs",
+    "cargo-octet/src/evidence_rails.rs",
+    "cargo-octet/src/fingerprint.rs",
+    "cargo-octet/src/lib.rs",
+    "cargo-octet/src/main.rs",
+    "cargo-octet/src/migrate.rs",
+    "cargo-octet/src/object.rs",
+    "cargo-octet/src/output.rs",
+    "cargo-octet/src/provider_manifest.rs",
+    "cargo-octet/src/roadmap.rs",
+    "cargo-octet/src/transcript.rs"
+  ],
+  "object_set_hash": "b3:1fa88d99ea4e085f8789660f73540dd635ae3aa0833ae1878827e706d2fed2df",
+  "caveat_counts": {
+    "dependency_status": {
+      "source-scanner-token-set": 236,
+      "unsupported-macro-context": 418
+    },
+    "effect_kind": {
+      "effect_summary": 510,
+      "filesystem": 62,
+      "panic": 113,
+      "process": 10,
+      "time": 2,
+      "unsafe": 4
+    },
+    "macro_status": {
+      "none-detected": 236,
+      "review-required": 418
+    },
+    "pure_cache_blocker": {
+      "dependency-identity-unresolved": 654,
+      "effect-summary-unresolved": 654,
+      "macro-expansion-unmodeled": 418
+    }
+  },
+  "pure_cache_blocked_count": 654,
+  "replay": {
+    "command": "cargo octet object corpus receipt --output RECEIPT.json cargo-octet/src/baseline.rs cargo-octet/src/bin/cargo-slotcar.rs cargo-octet/src/bin/cargo-tigerstyle.rs cargo-octet/src/cli.rs cargo-octet/src/config.rs cargo-octet/src/determinism.rs cargo-octet/src/engine.rs cargo-octet/src/evidence.rs cargo-octet/src/evidence_rails.rs cargo-octet/src/fingerprint.rs cargo-octet/src/lib.rs cargo-octet/src/main.rs cargo-octet/src/migrate.rs cargo-octet/src/object.rs cargo-octet/src/output.rs cargo-octet/src/provider_manifest.rs cargo-octet/src/roadmap.rs cargo-octet/src/transcript.rs",
+    "tool_name": "cargo-octet",
+    "tool_version": "0.1.0",
+    "determinism_note": "Receipt bytes are deterministic for the same selected source inputs and cargo-octet version; this is not a correctness proof."
+  },
+  "boundary": {
+    "identity_scope": "review-and-provenance-evidence",
+    "claims_correctness": false,
+    "claims_semantic_equivalence": false,
+    "detail": "Function object corpus receipts summarize source-token object identity and caveats; they do not prove behavioral correctness, semantic equivalence, dependency resolution, macro expansion identity, or pure-cache eligibility."
+  }
+}

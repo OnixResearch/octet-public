@@ -1,0 +1,21 @@
+warning: explicitly dropping a must-use value hides the required handling
+  --> $DIR/drop_must_use.rs:21:5
+   |
+LL |     drop(result);
+   |     ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle must-use values explicitly instead of hiding them behind `drop(...)` Example: match result { Ok(value) => value, Err(error) => return Err(error) }
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::drop_must_use)]` on by default
+
+warning: explicitly dropping a must-use value hides the required handling
+  --> $DIR/drop_must_use.rs:25:5
+   |
+LL |     drop(build_token());
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle must-use values explicitly instead of hiding them behind `drop(...)` Example: match result { Ok(value) => value, Err(error) => return Err(error) }
+   = note: see Tiger Style guide: Error Handling
+
+warning: 2 warnings emitted
+

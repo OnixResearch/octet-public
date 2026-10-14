@@ -1,0 +1,21 @@
+{
+  "schema_version": "octet-prove-status/v1",
+  "bundle_kind": "prove",
+  "status": "passed",
+  "output_format": "json",
+  "metadata": {
+    "profile_name": "prove-verification"
+  },
+  "proofs": [
+    {
+      "policy_id": "octet.aeneas_lean_proof_rails.fixture",
+      "rail_index": 0,
+      "backend": "aeneas-lean",
+      "verifier_mode": "fixture",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "status": "passed",
+      "diagnostics": []
+    }
+  ]
+}

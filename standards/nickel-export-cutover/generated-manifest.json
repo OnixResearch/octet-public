@@ -1,0 +1,40 @@
+{
+  "compatibility_facade": {
+    "canonical_owner": "nickel-export-core",
+    "disposition": "delegating legacy projection only",
+    "legacy_manifest_schema": "octet-nickel-export-manifest/v1",
+    "legacy_spec_schema": "octet-nickel-export-spec/v1",
+    "path": "crates/octet-standards/src/nickel_export.rs"
+  },
+  "non_claims": [
+    "Nickel export cutover proves exact source selection and checked legacy projection compatibility only; it does not prove evaluator correctness, arbitrary historical equivalence, policy correctness, secret absence, deployability, build success, or release eligibility"
+  ],
+  "packages": [
+    {
+      "name": "nickel-export-core",
+      "role": "canonical evaluator-neutral functional core",
+      "selected_by_octet": true,
+      "source_b3": "b3:77b76fcb72b741c9489c0fe57728e7f563e7baa2345f6b1bf6ee71da32b2a554",
+      "source_path": "crates/nickel-export-core/src/lib.rs"
+    },
+    {
+      "name": "nickel-export",
+      "role": "external evaluator and filesystem shell retained outside ordinary Octet runtime checks",
+      "selected_by_octet": false,
+      "source_b3": "b3:da764a6ef5384c1bdfe9fc263f503d142d39b208bbf0d3813b3be491e42313a8",
+      "source_path": "crates/nickel-export/src/lib.rs"
+    }
+  ],
+  "schema_version": "octet-nickel-export-cutover-manifest/v1",
+  "standalone_source": {
+    "cargo_git_url": "https://github.com/OnixResearch/nickel-export",
+    "cargo_source": "git+https://github.com/OnixResearch/nickel-export?rev=257fafc1c746f1faf156207043a4c826bfb16d49#257fafc1c746f1faf156207043a4c826bfb16d49",
+    "coordinate": "github:OnixResearch/nickel-export",
+    "crate_target": "nickel-export-core",
+    "flake_source": "github:OnixResearch/nickel-export/257fafc1c746f1faf156207043a4c826bfb16d49",
+    "local_override_policy": "local path overrides are diagnostic-only and MUST NOT replace the exact release dependency, flake input, or lock identity",
+    "release_profile": "cairn/specs/deterministic-nickel-export/spec.md",
+    "revision": "257fafc1c746f1faf156207043a4c826bfb16d49"
+  },
+  "supported_claim": "Octet delegates evaluator-neutral export identity and admission to one pinned standalone core while retaining product policy and a checked legacy projection"
+}

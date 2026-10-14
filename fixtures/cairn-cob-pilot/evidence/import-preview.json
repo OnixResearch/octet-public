@@ -1,0 +1,56 @@
+{
+  "actor": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
+  "artifact_count": 2,
+  "artifacts": [
+    {
+      "blake3": "0a194fa6fb5ab14c80480632e2445f950077363214a44eebaf64ee8e8608bc33",
+      "bytes": 81,
+      "id": "proposal",
+      "path": "proposal.md"
+    },
+    {
+      "blake3": "5327bafa8c2c2cd802afd47017e762079f45c70850537a017ba93557bf519e15",
+      "bytes": 51,
+      "id": "tasks",
+      "path": "tasks.md"
+    }
+  ],
+  "authority_source": "signed_root_embedded_authority",
+  "backend": "radicle-cob.v1",
+  "blocked": false,
+  "blockers": [],
+  "change": "adopt-cairn-cob-collaboration",
+  "collaboration_command": "collaboration import",
+  "command": "cob import",
+  "content_root": "4781530183f91a9709b4944aa4095d8e71ebbf94c28291fd404897c2263b584f",
+  "delegates": [],
+  "dry_run": true,
+  "format_libraries": {
+    "git-ref-format-core": "0.6.0",
+    "git2": "0.20.4",
+    "radicle-cob": "0.20.0",
+    "radicle-crypto": "0.17.0",
+    "radicle-oid": "0.2.0"
+  },
+  "input_hash": "680aef975b83ef2b32b5d8e06a18c2a9be6a151af745f3b3b6550478b9b1251c",
+  "mutated": false,
+  "non_claims": [
+    "signed COB creation proves bounded local Git object and reference observations only",
+    "signed import does not prove gate validity, evidence truth, dependency readiness, archive execution, or release eligibility",
+    "embedded creator and delegate keys are immutable object authority, not Radicle identity-document or future authorization proof",
+    "local Git COB creation does not prove node participation, publication, synchronization, peer availability, convergence, or remote trust"
+  ],
+  "object_id": null,
+  "operation_id": null,
+  "plan_hash": "e57b50992dd632feb50681471c68a00f131e885e61e95e842ece2feaa12fda12",
+  "policy": "cairn-default",
+  "policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+  "receipt_hash": "2f4e4e9805b952cabf8feab9858a21eef8620c23fee9c079f839d189ddd7f776",
+  "repository_head_oid": "51bd1ec2dd218f068d1d55d01781e38c877dd063",
+  "root": "primary",
+  "state_hash": null,
+  "type_name": "xyz.onixresearch.cairn-change",
+  "valid": true,
+  "verdict": "PASS",
+  "workspace_id": "workspace:octet"
+}

@@ -1,0 +1,15 @@
+warning: loop without visible iteration bound
+  --> $DIR/unbounded_loop.rs:13:5
+   |
+LL | /     loop {
+LL | |         attempt += 1;
+LL | |         std::hint::black_box(attempt);
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Bounded Control Flow): bound long-running loops with an exit condition, timeout, or bounded input Example: while let Some(msg) = rx.recv().await { ... }
+   = note: see Tiger Style guide: Bounded Control Flow
+   = note: `#[warn(tigerstyle::unbounded_loop)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,82 @@
+{
+  "schema": "octet.function-object-corpus-receipt.v1",
+  "schema_version": 1,
+  "mode": "corpus-receipt",
+  "object_count": 1086,
+  "source_paths": [
+    "cargo-octet/src/baseline.rs",
+    "cargo-octet/src/bin/cargo-slotcar.rs",
+    "cargo-octet/src/bin/cargo-tigerstyle.rs",
+    "cargo-octet/src/cli.rs",
+    "cargo-octet/src/config.rs",
+    "cargo-octet/src/determinism.rs",
+    "cargo-octet/src/engine.rs",
+    "cargo-octet/src/evidence.rs",
+    "cargo-octet/src/evidence_rails.rs",
+    "cargo-octet/src/fingerprint.rs",
+    "cargo-octet/src/lib.rs",
+    "cargo-octet/src/main.rs",
+    "cargo-octet/src/migrate.rs",
+    "cargo-octet/src/object.rs",
+    "cargo-octet/src/output.rs",
+    "cargo-octet/src/proof_ref.rs",
+    "cargo-octet/src/provider_manifest.rs",
+    "cargo-octet/src/roadmap.rs",
+    "cargo-octet/src/transcript.rs",
+    "crates/octet-standards/src/architecture.rs",
+    "crates/octet-standards/src/artifacts.rs",
+    "crates/octet-standards/src/bin/slotcar-standards.rs",
+    "crates/octet-standards/src/bin/tigerstyle-standards.rs",
+    "crates/octet-standards/src/cli_shell.rs",
+    "crates/octet-standards/src/diagnostic.rs",
+    "crates/octet-standards/src/fixture.rs",
+    "crates/octet-standards/src/lib.rs",
+    "crates/octet-standards/src/main.rs",
+    "crates/octet-standards/src/model.rs",
+    "crates/octet-standards/src/proof.rs",
+    "crates/octet-standards/src/receipt.rs",
+    "crates/octet-standards/src/report.rs",
+    "crates/octet-standards/src/resource.rs",
+    "crates/octet-standards/src/runner.rs",
+    "crates/octet-standards/src/source.rs",
+    "crates/octet-standards/src/suppression.rs"
+  ],
+  "object_set_hash": "b3:48088fd892c6526bc10f5cb817bc513d53cae41257f701c4896430489f4b9374",
+  "caveat_counts": {
+    "dependency_status": {
+      "source-scanner-token-set": 448,
+      "unsupported-macro-context": 638
+    },
+    "effect_kind": {
+      "effect_summary": 897,
+      "filesystem": 81,
+      "network": 2,
+      "panic": 141,
+      "process": 11,
+      "time": 7,
+      "unsafe": 4
+    },
+    "macro_status": {
+      "none-detected": 448,
+      "review-required": 638
+    },
+    "pure_cache_blocker": {
+      "dependency-identity-unresolved": 1086,
+      "effect-summary-unresolved": 1086,
+      "macro-expansion-unmodeled": 638
+    }
+  },
+  "pure_cache_blocked_count": 1086,
+  "replay": {
+    "command": "cargo octet object corpus receipt --output RECEIPT.json cargo-octet/src/baseline.rs cargo-octet/src/bin/cargo-slotcar.rs cargo-octet/src/bin/cargo-tigerstyle.rs cargo-octet/src/cli.rs cargo-octet/src/config.rs cargo-octet/src/determinism.rs cargo-octet/src/engine.rs cargo-octet/src/evidence.rs cargo-octet/src/evidence_rails.rs cargo-octet/src/fingerprint.rs cargo-octet/src/lib.rs cargo-octet/src/main.rs cargo-octet/src/migrate.rs cargo-octet/src/object.rs cargo-octet/src/output.rs cargo-octet/src/proof_ref.rs cargo-octet/src/provider_manifest.rs cargo-octet/src/roadmap.rs cargo-octet/src/transcript.rs crates/octet-standards/src/architecture.rs crates/octet-standards/src/artifacts.rs crates/octet-standards/src/bin/slotcar-standards.rs crates/octet-standards/src/bin/tigerstyle-standards.rs crates/octet-standards/src/cli_shell.rs crates/octet-standards/src/diagnostic.rs crates/octet-standards/src/fixture.rs crates/octet-standards/src/lib.rs crates/octet-standards/src/main.rs crates/octet-standards/src/model.rs crates/octet-standards/src/proof.rs crates/octet-standards/src/receipt.rs crates/octet-standards/src/report.rs crates/octet-standards/src/resource.rs crates/octet-standards/src/runner.rs crates/octet-standards/src/source.rs crates/octet-standards/src/suppression.rs",
+    "tool_name": "cargo-octet",
+    "tool_version": "0.1.0",
+    "determinism_note": "Receipt bytes are deterministic for the same selected source inputs and cargo-octet version; this is not a correctness proof."
+  },
+  "boundary": {
+    "identity_scope": "review-and-provenance-evidence",
+    "claims_correctness": false,
+    "claims_semantic_equivalence": false,
+    "detail": "Function object corpus receipts summarize source-token object identity and caveats; they do not prove behavioral correctness, semantic equivalence, dependency resolution, macro expansion identity, or pure-cache eligibility."
+  }
+}

@@ -1,0 +1,21 @@
+warning: direct `std::env::var` access reads or mutates ambient process state
+  --> $DIR/ambient_env.rs:2:5
+   |
+LL |     std::env::var("OCTET_HOME").ok()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): capture process environment in the shell and pass explicit config, paths, or arguments into core logic Example: fn load(config: Config) -> Output { compute(config.home_dir) }
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::ambient_env)]` on by default
+
+warning: direct `std::env::set_var` access reads or mutates ambient process state
+  --> $DIR/ambient_env.rs:7:9
+   |
+LL |         std::env::set_var("OCTET_MODE", "checked");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): capture process environment in the shell and pass explicit config, paths, or arguments into core logic Example: fn load(config: Config) -> Output { compute(config.home_dir) }
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 2 warnings emitted
+

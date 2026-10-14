@@ -1,0 +1,21 @@
+let contracts = import "../../contracts/generated.ncl" in
+{
+  schema_version = "octet-cargo-fuzz-receipt/v1",
+  profile_id = "cargo-fuzz-libfuzzer",
+  profile_identity = "b3:7ad698ddebaaac2640a51e5f58871ac026b4b32653fb95bf971ec491560b48d6",
+  target = "octet-profile-intake",
+  engine = "libfuzzer",
+  toolchain = "nightly-2026-03-21",
+  compiler_identity = "b3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  sanitizer = "address",
+  command_argv = ["cargo", "fuzz", "run", "octet-profile-intake"],
+  budget = { max_total_time_seconds = 60, max_runs = 100000, seed = 1 },
+  initial_corpus = [],
+  initial_corpus_root = "b3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  final_corpus = [],
+  final_corpus_root = "b3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  outcome = "clean",
+  bounded_log_identity = "b3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  evidence_tier = "transcript_assertion",
+  non_claims = ["bounded run only"],
+} | contracts.CargoFuzzReceiptDetailsV1

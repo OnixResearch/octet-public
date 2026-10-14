@@ -1,0 +1,16 @@
+[package]
+name = "octet-architecture-ir"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+publish = false
+description = "Pure compiler architecture evidence model and normalizer for Octet"
+
+[lib]
+name = "octet_architecture_ir"
+path = "src/lib.rs"
+
+[dependencies]
+blake3 = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

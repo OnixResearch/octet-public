@@ -1,0 +1,8 @@
+{
+  "breakages": [
+    {
+      "kind": "removed-public-item",
+      "item": "pub fn old_api"
+    }
+  ]
+}

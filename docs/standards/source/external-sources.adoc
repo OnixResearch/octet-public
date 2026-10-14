@@ -1,0 +1,22 @@
+= External Source Incorporation
+
+Octet can learn from external references, but it does not import generic guidance by default. Every external concept must be translated into a Tiger Style outcome and classified before it becomes standards text, policy metadata, a checklist, or a lint.
+
+== Classification before incorporation
+
+For each source concept, record:
+
+* source URL or repository path;
+* selected concept, not the full source catalog;
+* Tiger Style outcome protected: safety, explicitness, boundedness, recoverability, performance evidence, or developer comprehension;
+* enforcement tier: hard, advisory, human-process-only, or deferred;
+* first implementation surface: documentation, policy metadata, checker, fixture, or human checklist;
+* reason a weaker tier is chosen when static signal is not precise enough.
+
+The default answer for broad style ideas is advisory or human-process-only. A hard gate needs deterministic fixtures and a low false-positive boundary.
+
+== Selected sources
+
+Valgrind (`https://valgrind.org/info/`) contributes a tool-suite and run-timing model: specialized tools for memory, profiling, and threading bugs; clear acceptance signals; and explicit slowdown trade-offs. Octet uses this as opt-in dynamic evidence profile guidance, not as a default consumer dependency.
+
+Rust Design Patterns (`https://github.com/rust-unofficial/patterns`) contributes Rust-native idioms when they encode Tiger Style contracts: newtypes, RAII guards, contained unsafe modules, borrowed argument types, recoverable consumed-argument errors, FFI wrappers, and functional type-level API boundaries. Octet does not import the whole pattern catalog.

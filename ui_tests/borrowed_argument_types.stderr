@@ -1,0 +1,71 @@
+warning: parameter uses `&String`; accept `&str` unless ownership, capacity, or exact owned type identity is required
+  --> $DIR/borrowed_argument_types.rs:6:1
+   |
+LL | / fn parse_name(name: &String) -> usize {
+LL | |     name.len()
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Borrowed Interfaces): accept general borrowed argument types such as `&str`, `&[T]`, and `&Path` instead of references to owned containers Example: fn parse_name(name: &str) -> Result<Name, Error>
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Interfaces
+   = note: `#[warn(tigerstyle::borrowed_argument_types)]` on by default
+help: replace `&String` with `&str`
+   |
+LL - fn parse_name(name: &String) -> usize {
+LL + fn parse_name(name: &str) -> usize {
+   |
+
+warning: parameter uses `&Vec<u8>`; accept `&[u8]` unless ownership, capacity, or exact owned type identity is required
+  --> $DIR/borrowed_argument_types.rs:10:1
+   |
+LL | / fn checksum(bytes: &Vec<u8>) -> u32 {
+LL | |     bytes.iter().map(|byte| u32::from(*byte)).sum()
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Borrowed Interfaces): accept general borrowed argument types such as `&str`, `&[T]`, and `&Path` instead of references to owned containers Example: fn parse_name(name: &str) -> Result<Name, Error>
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Interfaces
+help: replace `&Vec<u8>` with `&[u8]`
+   |
+LL - fn checksum(bytes: &Vec<u8>) -> u32 {
+LL + fn checksum(bytes: &[u8]) -> u32 {
+   |
+
+warning: parameter uses `&PathBuf`; accept `&Path` unless ownership, capacity, or exact owned type identity is required
+  --> $DIR/borrowed_argument_types.rs:14:1
+   |
+LL | / fn load_config(path: &PathBuf) -> bool {
+LL | |     path.as_path().is_absolute()
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Borrowed Interfaces): accept general borrowed argument types such as `&str`, `&[T]`, and `&Path` instead of references to owned containers Example: fn parse_name(name: &str) -> Result<Name, Error>
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Interfaces
+help: replace `&PathBuf` with `&Path`
+   |
+LL - fn load_config(path: &PathBuf) -> bool {
+LL + fn load_config(path: &Path) -> bool {
+   |
+
+warning: parameter uses `&std::vec::Vec<u16>`; accept `&[u16]` unless ownership, capacity, or exact owned type identity is required
+  --> $DIR/borrowed_argument_types.rs:18:1
+   |
+LL | / fn checksum_qualified(bytes: &std::vec::Vec<u16>) -> u16 {
+LL | |     bytes.iter().copied().sum()
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Borrowed Interfaces): accept general borrowed argument types such as `&str`, `&[T]`, and `&Path` instead of references to owned containers Example: fn parse_name(name: &str) -> Result<Name, Error>
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Interfaces
+help: replace `&std::vec::Vec<u16>` with `&[u16]`
+   |
+LL - fn checksum_qualified(bytes: &std::vec::Vec<u16>) -> u16 {
+LL + fn checksum_qualified(bytes: &[u16]) -> u16 {
+   |
+
+warning: 4 warnings emitted
+

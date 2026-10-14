@@ -1,0 +1,21 @@
+warning: `panic!` will abort the process on execution
+  --> $DIR/no_panic.rs:3:5
+   |
+LL |     panic!("something went wrong");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::no_panic)]` on by default
+
+warning: `unimplemented!` will abort the process on execution
+  --> $DIR/no_panic.rs:8:5
+   |
+LL |     unimplemented!("not done");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: 2 warnings emitted
+

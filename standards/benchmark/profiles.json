@@ -1,0 +1,183 @@
+{
+  "profiles": [
+    {
+      "comparison": {
+        "minimum_samples": 5,
+        "practical_threshold_basis_points": 500,
+        "summary": "median",
+        "uncertainty_threshold_basis_points": 2000
+      },
+      "evidence_tier": "transcript_assertion",
+      "limits": {
+        "max_artifact_bytes": 16777216,
+        "max_log_bytes": 1048576,
+        "max_samples": 16,
+        "poll_interval_ms": 25,
+        "teardown_timeout_ms": 5000,
+        "timeout_ms": 60000
+      },
+      "non_claims": [
+        "Benchmark evidence covers only the selected workload, command, mode, environment, and retained samples.",
+        "Timing, allocation, copy-site, and signal observations do not prove correctness, universal performance, or release eligibility."
+      ],
+      "profile_id": "octet-metadata-benchmark",
+      "provider": {
+        "closure_identity": "nixpkgs:b3d51a0365f6695e7dd5cdf3e180604530ed33b4#cargo-octet-0.1.0",
+        "nixpkgs_revision": "b3d51a0365f6695e7dd5cdf3e180604530ed33b4",
+        "package": "cargo-octet",
+        "version": "0.1.0"
+      },
+      "resource_observation": {
+        "allocation_input_path": ".octet/benchmark-allocation-observations.json",
+        "compiler_identity": "b3:91747dc041e4e5768b1008ae54c6fe045cecf4bceef63551e31f051312184809",
+        "llvm_input_path": ".octet/benchmark-copy-sites.ll",
+        "optimization_profile": "release",
+        "target": "x86_64-unknown-linux-gnu"
+      },
+      "rust_toolchain": "nightly-2026-03-21",
+      "signal_corpus": [
+        {
+          "corpus_id": "synthetic-octet-benchmark-cases",
+          "representativeness_boundary": "Selected synthetic cases exercise classifications and do not represent all Rust defects.",
+          "source_kind": "synthetic",
+          "source_repository": "github:OnixResearch/octet",
+          "source_revision": "b3:8559f610646662c45ec8acc2fd0493a8fa25a1b97b7515609540606d982ab4a1"
+        },
+        {
+          "corpus_id": "bounded-exec-cross-project-cases",
+          "representativeness_boundary": "The immutable Bounded Exec selection covers one command-shell corpus and does not represent all consumers.",
+          "source_kind": "cross_project",
+          "source_repository": "github:OnixResearch/bounded-exec",
+          "source_revision": "44eb74eb639194665ee820562d5b2ce2c3ff6a94"
+        }
+      ],
+      "workloads": [
+        {
+          "command_argv": [
+            "cargo",
+            "metadata",
+            "--no-deps",
+            "--format-version",
+            "1"
+          ],
+          "command_id": "cargo-metadata-no-deps",
+          "environment_identity": "b3:b16af370254215b0678196220770ac24285fe2e88db012057aa9ab1d5eaf900f",
+          "mode": "cold",
+          "required_environment_facts": [
+            "host_os",
+            "host_arch",
+            "kernel_identity",
+            "cpu_identity",
+            "governor",
+            "load_class",
+            "rust_toolchain",
+            "nix_closure_identity",
+            "isolation"
+          ],
+          "required_metrics": [
+            "wall_duration_ns",
+            "output_bytes"
+          ],
+          "sample_count": 5,
+          "source_state_identity": "b3:d2e28ced2bfa8d6c87523d6465fdf711f3385fac77435760f2d28c2efc96b93b",
+          "workload_id": "octet-metadata-cold",
+          "workload_identity": "b3:9f5b11ac410e6d1d48a0c25e8a90bc8b08796fe38c09ab95cc2d60773f44924b"
+        },
+        {
+          "command_argv": [
+            "cargo",
+            "metadata",
+            "--no-deps",
+            "--format-version",
+            "1"
+          ],
+          "command_id": "cargo-metadata-no-deps",
+          "environment_identity": "b3:b16af370254215b0678196220770ac24285fe2e88db012057aa9ab1d5eaf900f",
+          "mode": "warm",
+          "required_environment_facts": [
+            "host_os",
+            "host_arch",
+            "kernel_identity",
+            "cpu_identity",
+            "governor",
+            "load_class",
+            "rust_toolchain",
+            "nix_closure_identity",
+            "isolation"
+          ],
+          "required_metrics": [
+            "wall_duration_ns",
+            "output_bytes"
+          ],
+          "sample_count": 5,
+          "source_state_identity": "b3:d2e28ced2bfa8d6c87523d6465fdf711f3385fac77435760f2d28c2efc96b93b",
+          "workload_id": "octet-metadata-warm",
+          "workload_identity": "b3:9f5b11ac410e6d1d48a0c25e8a90bc8b08796fe38c09ab95cc2d60773f44924b"
+        },
+        {
+          "command_argv": [
+            "cargo",
+            "metadata",
+            "--no-deps",
+            "--format-version",
+            "1"
+          ],
+          "command_id": "cargo-metadata-no-deps",
+          "environment_identity": "b3:b16af370254215b0678196220770ac24285fe2e88db012057aa9ab1d5eaf900f",
+          "mode": "no_change",
+          "required_environment_facts": [
+            "host_os",
+            "host_arch",
+            "kernel_identity",
+            "cpu_identity",
+            "governor",
+            "load_class",
+            "rust_toolchain",
+            "nix_closure_identity",
+            "isolation"
+          ],
+          "required_metrics": [
+            "wall_duration_ns",
+            "output_bytes"
+          ],
+          "sample_count": 5,
+          "source_state_identity": "b3:d2e28ced2bfa8d6c87523d6465fdf711f3385fac77435760f2d28c2efc96b93b",
+          "workload_id": "octet-metadata-no_change",
+          "workload_identity": "b3:9f5b11ac410e6d1d48a0c25e8a90bc8b08796fe38c09ab95cc2d60773f44924b"
+        },
+        {
+          "command_argv": [
+            "cargo",
+            "metadata",
+            "--no-deps",
+            "--format-version",
+            "1"
+          ],
+          "command_id": "cargo-metadata-no-deps",
+          "environment_identity": "b3:b16af370254215b0678196220770ac24285fe2e88db012057aa9ab1d5eaf900f",
+          "mode": "incremental",
+          "required_environment_facts": [
+            "host_os",
+            "host_arch",
+            "kernel_identity",
+            "cpu_identity",
+            "governor",
+            "load_class",
+            "rust_toolchain",
+            "nix_closure_identity",
+            "isolation"
+          ],
+          "required_metrics": [
+            "wall_duration_ns",
+            "output_bytes"
+          ],
+          "sample_count": 5,
+          "source_state_identity": "b3:d2e28ced2bfa8d6c87523d6465fdf711f3385fac77435760f2d28c2efc96b93b",
+          "workload_id": "octet-metadata-incremental",
+          "workload_identity": "b3:9f5b11ac410e6d1d48a0c25e8a90bc8b08796fe38c09ab95cc2d60773f44924b"
+        }
+      ]
+    }
+  ],
+  "schema_version": "octet-benchmark-profiles/v1"
+}

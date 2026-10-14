@@ -1,0 +1,47 @@
+warning: core scope owns interior mutability; prefer explicit state transitions or shell-owned synchronization
+  --> $DIR/interior_mutability_in_core/interior_mutability_in_core.rs:1:1
+   |
+LL | / struct CoreState {
+LL | |     value: std::cell::RefCell<u64>,
+LL | |     permits: std::sync::atomic::AtomicUsize,
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::interior_mutability_in_core)]` on by default
+
+warning: core scope owns interior mutability; prefer explicit state transitions or shell-owned synchronization
+  --> $DIR/interior_mutability_in_core/interior_mutability_in_core.rs:6:1
+   |
+LL | / fn build_state() -> CoreState {
+LL | |     CoreState {
+LL | |         value: std::cell::RefCell::new(0),
+LL | |         permits: std::sync::atomic::AtomicUsize::new(0),
+LL | |     }
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope constructs an interior-mutability primitive; keep synchronization in the shell
+  --> $DIR/interior_mutability_in_core/interior_mutability_in_core.rs:8:16
+   |
+LL |         value: std::cell::RefCell::new(0),
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope constructs an interior-mutability primitive; keep synchronization in the shell
+  --> $DIR/interior_mutability_in_core/interior_mutability_in_core.rs:9:18
+   |
+LL |         permits: std::sync::atomic::AtomicUsize::new(0),
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 4 warnings emitted
+

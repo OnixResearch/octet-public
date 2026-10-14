@@ -1,0 +1,18 @@
+--- octet evidence rail summary ---
+Rail: charon-semantic
+Checker: cargo-octet
+Status: manual_review_required
+Mode: run
+Workspace scope: .
+Input identity: b3:ab12c6065ff7474133c6264cd5b63eb2628b24056f8cf849a52e56bfb8a58de9
+Finding counts:
+  effect-candidate: 1
+Non-claims:
+  - Charon semantic analysis is optional and not part of starter cargo octet check
+  - Charon semantic evidence does not prove Charon or rustc correctness
+  - Charon semantic evidence does not prove effect absence, complete Rust support, complete runtime reachability, semantic equivalence, or whole-program correctness
+  - Charon semantic evidence does not produce formal-proof, property, complete-closure, or release-ready authority
+  - mechanized-llbc and charon-rudra remain recorded-only references and transfer no proof, implementation, or analysis authority
+  - Valence and Kamacite remain evidence and interchange boundaries rather than compiler IR or semantic-analysis authorities
+Octet command: cargo octet evidence collect --rail charon-semantic --run --workspace-root . --config standards/charon-semantic/generated/profile.json --profile octet-charon-semantic-safe-add-v1 --external-report standards/charon-semantic/generated/comparison-parent.json --artifact-dir standards/charon-semantic/fixtures/valid/artifacts --format json
+---

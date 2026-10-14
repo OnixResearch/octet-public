@@ -1,0 +1,79 @@
+= Orchestration
+:page-range: 51-56
+
+Coordinating state machines, priority queues, and multi-step hardware workflows.
+
+When a button press triggers a motor routine, a sensor session, and a return-to-home sequence -- in order, with error handling at every step -- the orchestration layer is what makes it feel inevitable rather than fragile. Entries here cover event-driven FSMs, priority-aware scheduling, and declarative sequence execution in Rust.
+
+== State Machines That the Compiler Checks
+
+An enum and a `match` arm give you a state machine. A transition table gives you one the compiler can help you reason about.
+
+An industrial control system manages a fleet of sensor devices. Each device has a lifecycle: Provisioning, Connecting, Probation, Online, Offline, Maintenance, Faulted, and SafeState. Only one of those states accepts work orders. The rest exist to protect the hardware and the operators standing next to it.
+
+The original state machine is a `match` on an enum. Eight arms, each handling transitions for its state. It works. The team understands it. It ships.
+
+Then an engineer adds a shortcut. A device goes from Connecting directly to Online, skipping Probation -- the stability check that confirms heartbeat consistency before the device receives motor commands. In a hand-rolled FSM, this compiles without complaint. The new transition is just another arm. No test fails because no test enumerates every invalid transition. The shortcut ships on a Friday.
+
+Under load the following Monday, a device that has not stabilized receives a positioning command and faults immediately.
+
+The `match` arm was valid Rust. It was invalid engineering.
+
+== Transitions as declarations
+
+A declarative FSM crate inverts the pattern. Instead of writing `match` arms that handle events and return new states, you declare the transitions.
+
+The table is the spec. There is no path from Connecting to Online. Not because a test catches it, and not because a code reviewer remembers the rule. There is no path because no declaration creates one.
+
+An engineer who tries to add the invalid shortcut will see it in the diff. The transition table is small enough to review as a specification, not just as implementation detail.
+
+Invalid transitions do not crash. They return `None`. The device stays in its current state. In safety-critical systems, silent rejection of invalid input is safer than any amount of error handling bolted on afterward.
+
+== The fail-closed invariant
+
+Only one state accepts work.
+
+Not Online or Connecting, because Connecting has not stabilized. Not Online or Maintenance, because Maintenance means hands-on hardware and a human in the physical space. The default is deny.
+
+When a new state is added to the enum, the question of whether it should accept work is answered by its absence from the allow-list. The default is already correct.
+
+== Priority-aware scheduling
+
+Work orders arrive with priority tiers. The queue respects three levels -- URGENT, EXPEDITE, and STANDARD -- with FIFO ordering within each tier.
+
+This can be implemented with a straightforward scan: compare priority first, then sequence number or enqueue time within the same tier. The oldest urgent task runs before the newest. The newest standard task waits for every expedite task to clear.
+
+This is deliberate. The task set is small enough -- tens, not thousands -- that a linear scan on every tick is cheaper than maintaining a complicated priority data structure and easier to reason about when something goes wrong at 2 AM.
+
+== Multiplexing with `tokio::select!`
+
+The orchestration loop listens to commands, task arrivals, and a periodic ticker.
+
+Commands are operator actions: start a device, take it offline, trigger maintenance. Tasks are work orders arriving from upstream systems. The ticker fires on an interval and pulls the next queued task off the priority queue.
+
+`tokio::select!` cancels the losing branches on every iteration. If a command arrives while the ticker is waiting, the command wins. If two channels are ready simultaneously, the runtime picks fairly. The loop becomes the orchestration layer in miniature: receive, decide, act, repeat.
+
+== The deeper point
+
+A state machine built with `match` arms is a state machine you maintain by reading every branch. Add a state, and you must audit every match site. Add a transition, and nothing stops you from adding an invalid one. The machine is correct because you are careful. Careful does not scale.
+
+A state machine built from a transition table is different. The table is small. Every valid path is visible at a glance. Every absent path is an absent declaration -- not a missing test, not an uncovered branch, but a line that was never written.
+
+Rust gives you enums that make states explicit and `match` arms that make handling exhaustive. That is already more than most languages offer. But exhaustive matching tells you that every state is handled. It does not tell you that every transition is valid. For that, you need the spec in the code.
+
+== Grounding
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 10]
+____
+Enums are useful any time a value might be one of several things. Rust's enums are particularly useful because you can associate data and methods with each variant.
+____
+
+[quote, Rust in Action (McNamara), Chapter 5]
+____
+Rust is a systems programming language. When you need to model state transitions explicitly and the compiler needs to enforce them, the enum-and-match pattern is your starting point.
+____
+
+[quote, edfsm crate documentation]
+____
+Event-driven finite state machines. Transitions are declared, not implemented. Invalid transitions return None.
+____

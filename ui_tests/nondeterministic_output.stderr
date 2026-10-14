@@ -1,0 +1,18 @@
+warning: hash-collection iteration flows into ordered output without a stable sort
+  --> $DIR/nondeterministic_output.rs:9:1
+   |
+LL | / fn names_by_hash_iteration(scores: &HashMap<String, u32>) -> Vec<String> {
+LL | |     scores.keys().cloned().collect::<Vec<_>>()
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Deterministic Output): sort hash-derived output with a stable key or use ordered collections when output order matters Example: let mut out = map.keys().cloned().collect::<Vec<_>>(); out.sort();
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+note: the lint level is defined here
+  --> $DIR/nondeterministic_output.rs:3:9
+   |
+LL | #![warn(tigerstyle::nondeterministic_output)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: 1 warning emitted
+

@@ -1,0 +1,15 @@
+{
+  "packages": [
+    { "id": "core", "name": "domain-core", "manifest_path": "/workspace/crates/domain-core/Cargo.toml" },
+    { "id": "shell", "name": "app-shell", "manifest_path": "/workspace/crates/app-shell/Cargo.toml" },
+    { "id": "adapter", "name": "http-adapter", "manifest_path": "/workspace/crates/http-adapter/Cargo.toml" }
+  ],
+  "resolve": {
+    "nodes": [
+      { "id": "core", "deps": [] },
+      { "id": "shell", "deps": [{ "pkg": "core", "dep_kinds": [{ "kind": null }] }] },
+      { "id": "adapter", "deps": [{ "pkg": "core", "dep_kinds": [{ "kind": null }] }] }
+    ]
+  },
+  "workspace_members": ["core", "shell", "adapter"]
+}

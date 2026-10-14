@@ -1,0 +1,3 @@
+[tigerstyle]
+assertion_density_min_lines = 30
+assertion_density_min_assertions = 3

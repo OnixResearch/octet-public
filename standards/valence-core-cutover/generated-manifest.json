@@ -1,0 +1,95 @@
+{
+  "fixtures": [
+    {
+      "compatibility_command": "cargo test -p cargo-octet object -- --nocapture",
+      "expected_behavior": "Function Object v1 DTO and object hash behavior remains byte-compatible for checked fixtures",
+      "fixture_id": "function-object-v1-compatible",
+      "module_or_schema": "function_object",
+      "non_claims": [
+        "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+      ]
+    },
+    {
+      "compatibility_command": "cargo test -p cargo-octet evidence_index -- --nocapture",
+      "expected_behavior": "current-head evidence index render/check behavior remains byte-compatible for checked fixtures",
+      "fixture_id": "evidence-index-compatible",
+      "module_or_schema": "evidence_index",
+      "non_claims": [
+        "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+      ]
+    },
+    {
+      "compatibility_command": "cargo test -p cargo-octet evidence_codebase_index -- --nocapture",
+      "expected_behavior": "evidence-codebase-index build/query/html behavior remains byte-compatible for checked fixtures",
+      "fixture_id": "evidence-codebase-index-compatible",
+      "module_or_schema": "evidence_codebase_index",
+      "non_claims": [
+        "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+      ]
+    }
+  ],
+  "migration_targets": [
+    {
+      "consumer": "Aspen",
+      "current_dependency": "git package valence-core from github:OnixResearch/octet",
+      "non_claim": "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility",
+      "target_dependency": "git+https://github.com/OnixResearch/valence.git?rev=5f1c2ba5072c6f9622fa59b1af20502985f569fd",
+      "validation_command": "cargo test -p cargo-octet valence_cutover -- --nocapture; cargo test -p cargo-octet evidence_index -- --nocapture; cargo test -p cargo-octet object -- --nocapture"
+    }
+  ],
+  "modules": [
+    {
+      "compatibility_disposition": "legacy-fixture",
+      "fixture_refs": [
+        "function-object-v1-compatible"
+      ],
+      "legacy_fixture_path": "crates/valence-core/src/function_object.rs",
+      "module_or_schema": "function_object",
+      "non_claims": [
+        "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+      ],
+      "standalone_path": "crates/valence-core/src/function_object.rs",
+      "standalone_source_b3": "b3:90165fa493397aa7fbd620d191ebb5990b355b42a71f5310b306f8b0d32c435c"
+    },
+    {
+      "compatibility_disposition": "legacy-fixture",
+      "fixture_refs": [
+        "evidence-index-compatible"
+      ],
+      "legacy_fixture_path": "crates/valence-core/src/evidence_index.rs",
+      "module_or_schema": "evidence_index",
+      "non_claims": [
+        "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+      ],
+      "standalone_path": "crates/valence-core/src/evidence_index.rs",
+      "standalone_source_b3": "b3:75320ed218e1a726745ad166b394c2a640159ec08863fa7e231e2f221d780c4e"
+    },
+    {
+      "compatibility_disposition": "legacy-fixture",
+      "fixture_refs": [
+        "evidence-codebase-index-compatible"
+      ],
+      "legacy_fixture_path": "crates/valence-core/src/evidence_codebase_index.rs",
+      "module_or_schema": "evidence_codebase_index",
+      "non_claims": [
+        "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+      ],
+      "standalone_path": "crates/valence-core/src/evidence_codebase_index.rs",
+      "standalone_source_b3": "b3:20c34a80ed5cfd276617e76315dd58becad2a134d2d312d0a80a300436f200d2"
+    }
+  ],
+  "non_claims": [
+    "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+  ],
+  "schema_version": "octet-valence-core-cutover-manifest/v2",
+  "standalone_source": {
+    "cargo_git_url": "https://github.com/OnixResearch/valence.git",
+    "cargo_source": "git+https://github.com/OnixResearch/valence.git?rev=5f1c2ba5072c6f9622fa59b1af20502985f569fd#5f1c2ba5072c6f9622fa59b1af20502985f569fd",
+    "coordinate": "github:OnixResearch/valence?dir=crates/valence-core",
+    "crate_target": "valence-core",
+    "hardened_profile_archive": "cairn/archive/2026-07-12-harden-preserves-integrity-boundaries",
+    "local_override_policy": "local path overrides are development-only diagnostics and MUST NOT replace the exact release dependency or lock identity",
+    "revision": "5f1c2ba5072c6f9622fa59b1af20502985f569fd"
+  },
+  "supported_claim": "cutover validation proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility"
+}

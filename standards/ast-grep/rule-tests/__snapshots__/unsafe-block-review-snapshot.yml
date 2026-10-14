@@ -1,0 +1,25 @@
+id: unsafe-block-review
+snapshots:
+  ? |
+    fn call_boundary() {
+        unsafe {
+            external_call();
+        }
+    }
+  : labels:
+    - source: |-
+        unsafe {
+                external_call();
+            }
+      style: primary
+      start: 25
+      end: 64
+  ? |
+    unsafe fn read_pointer(pointer: *const u8) -> u8 {
+        unsafe { *pointer }
+    }
+  : labels:
+    - source: unsafe { *pointer }
+      style: primary
+      start: 55
+      end: 74

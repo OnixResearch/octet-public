@@ -1,0 +1,58 @@
+warning: refined newtype `CheckedToken` exposes its raw inner field; keep the field private
+  --> $DIR/newtype_invariant_bypass.rs:6:25
+   |
+LL | pub struct CheckedToken(pub String);
+   |                         ^^^^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): keep refined fields private and expose checked constructors plus explicit borrowed accessors Example: pub struct Token(String); impl TryFrom<String> for Token { ... }
+   = note: see Tiger Style guide: Explicit Interfaces
+note: the lint level is defined here
+  --> $DIR/newtype_invariant_bypass.rs:1:9
+   |
+LL | #![warn(newtype_invariant_bypass)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::newtype_invariant_bypass)]` implied by `#[warn(newtype_invariant_bypass)]`
+
+warning: refined newtype `CheckedToken` implements unchecked conversion from raw storage; use `TryFrom` or a fallible constructor
+  --> $DIR/newtype_invariant_bypass.rs:9:1
+   |
+LL | / impl From<String> for CheckedToken {
+LL | |     fn from(value: String) -> Self {
+LL | |         Self(value)
+LL | |     }
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Nominal Domain Types): keep refined fields private and expose checked constructors plus explicit borrowed accessors Example: pub struct Token(String); impl TryFrom<String> for Token { ... }
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: public `Deref<Target = String>` expands the wrapper's API surface implicitly; prefer explicit accessors for domain polymorphism
+  --> $DIR/newtype_invariant_bypass.rs:16:1
+   |
+LL | / impl Deref for CheckedToken {
+LL | |     type Target = String;
+LL | |
+LL | |     fn deref(&self) -> &Self::Target {
+...  |
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Explicit Interfaces): prefer explicit accessors over public `Deref` to another nominal domain type Example: pub fn as_inner(&self) -> &Inner
+   = note: see Tiger Style guide: Rust Idioms / Deref Polymorphism
+   = note: `#[warn(tigerstyle::deref_polymorphism)]` on by default
+
+warning: refined newtype `CheckedToken` dereferences to raw storage; use an explicit borrowed accessor
+  --> $DIR/newtype_invariant_bypass.rs:16:1
+   |
+LL | / impl Deref for CheckedToken {
+LL | |     type Target = String;
+LL | |
+LL | |     fn deref(&self) -> &Self::Target {
+...  |
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Nominal Domain Types): keep refined fields private and expose checked constructors plus explicit borrowed accessors Example: pub struct Token(String); impl TryFrom<String> for Token { ... }
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: 4 warnings emitted

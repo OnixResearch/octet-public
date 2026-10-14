@@ -1,0 +1,28 @@
+warning: fallible integer conversion hides an out-of-range error behind a sentinel fallback
+  --> $DIR/unchecked_narrowing_try_from.rs:5:5
+   |
+LL |     u32::try_from(x).unwrap_or(0)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::fallible_int_fallback)]` on by default
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing_try_from.rs:10:5
+   |
+LL |     x as u32
+   |     ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+   = note: `#[warn(tigerstyle::unchecked_narrowing)]` on by default
+help: replace with `u32::try_from(...)`
+   |
+LL -     x as u32
+LL +     u32::try_from(x)?
+   |
+
+warning: 2 warnings emitted
+

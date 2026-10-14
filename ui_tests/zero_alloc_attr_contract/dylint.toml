@@ -1,0 +1,27 @@
+[octet]
+# Disable ALL other lints so only zero_alloc_attr_contract can fire
+disabled_lints = [
+  "acronym_style", "ambient_clock", "ambient_env", "ambient_random",
+  "assertion_density", "bool_naming", "borrowed_argument_types",
+  "catch_all_on_enum", "clone_then_borrow", "compound_assertion",
+  "compound_condition", "concrete_construction_in_core",
+  "contradictory_time", "defaulting_trait_method", "deref_polymorphism",
+  "drop_must_use", "excessive_file_length", "explicit_defaults",
+  "fallible_int_fallback", "fat_trait", "float_for_currency",
+  "foreign_enum_catch_all", "fragile_exhaustive_enum_match",
+  "function_length", "global_state_in_core", "ignored_join_handle",
+  "ignored_result", "impure_call_in_core", "interior_mutability_in_core",
+  "logging_in_core", "magic_number", "missing_const_fn",
+  "module_file_count", "multi_lock_ordering", "mutating_input_in_pure",
+  "negated_predicate", "nested_conditionals", "no_panic", "no_recursion",
+  "no_todo", "no_unwrap", "nondeterministic_output", "numeric_units",
+  "path_segment_repetition", "platform_dependent_cast",
+  "public_unsafe_api", "pure_attr_contract", "raw_arithmetic_overflow",
+  "renamed_imports", "resource_return_from_core", "sentinel_fallback",
+  "spawn_in_core", "too_many_parameters", "type_accumulation",
+  "unbounded_channel", "unbounded_collection_growth", "unbounded_loop",
+  "unchecked_division", "unchecked_narrowing",
+  "underscore_in_module_filename", "unjustified_allow",
+  "unjustified_no_todo_allow", "usize_in_public_api",
+  "verified_purity",
+]

@@ -1,0 +1,19 @@
+warning: function `long_function` is 74 lines (limit: 70)
+  --> $DIR/function_length.rs:1:27
+   |
+LL |   fn long_function() -> u32 {
+   |  ___________________________^
+LL | |     let a = 1;
+LL | |     let b = 2;
+LL | |     let c = 3;
+...  |
+LL | |     71
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Function Length): split long functions into named helpers at invariant or phase boundaries
+   = note: see Tiger Style guide: Function Length
+   = note: `#[warn(tigerstyle::function_length)]` on by default
+
+warning: 1 warning emitted
+

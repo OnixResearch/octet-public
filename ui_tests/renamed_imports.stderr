@@ -1,0 +1,12 @@
+warning: renamed import `Config as TransportConfig` hides the original searchable name
+  --> $DIR/renamed_imports.rs:14:1
+   |
+LL | use crate::transport::Config as TransportConfig;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Import Names): avoid `use ... as ...` aliases that hide the original searchable item name Example: use crate::transport::Config;
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::renamed_imports)]` on by default
+
+warning: 1 warning emitted
+

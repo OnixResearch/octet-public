@@ -1,0 +1,18 @@
+# Copyable CI step for the Octet default-deny checked path.
+# Add this to your CI pipeline before the build/test steps.
+#
+# Requirements:
+#   - cargo-octet installed (cargo install --path /path/to/octet/cargo-octet)
+#   - dylint.toml copied from templates/dylint.toml
+#   - [workspace.metadata.octet] configured in workspace Cargo.toml
+#
+# CI must not pass --allow-style-violations.
+
+steps:
+  - name: Octet checked path
+    run: |
+      cargo octet check \
+        --output-format sarif \
+        --artifact-dir artifacts/octet
+      cargo octet artifact verify \
+        --artifact-dir artifacts/octet

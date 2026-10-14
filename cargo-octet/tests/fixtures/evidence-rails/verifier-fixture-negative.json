@@ -1,0 +1,66 @@
+{
+  "schema_version": "verifier-fixture-intake/v0",
+  "fixtures": [
+    {
+      "fixture_id": "contradictory-postcondition-negative",
+      "source_artifact_ref": "fixtures/verifier/contradictory_postcondition.rs",
+      "syntax_family": "contract",
+      "expected_verdict": "expected_failure",
+      "expected_diagnostics": ["contradictory postcondition"],
+      "assumptions": [],
+      "unsupported_features": [],
+      "verifier_family": "creusot-style",
+      "fixture_role": "expected negative regression input"
+    },
+    {
+      "fixture_id": "unsupported-feature-negative",
+      "source_artifact_ref": "fixtures/verifier/unsupported_feature.rs",
+      "syntax_family": "proof-assertion",
+      "expected_verdict": "expected_failure",
+      "expected_diagnostics": ["unsupported feature"],
+      "assumptions": [],
+      "unsupported_features": ["higher-ranked ghost lifetime"],
+      "verifier_family": "verus-style",
+      "fixture_role": "expected unsupported feature regression input"
+    },
+    {
+      "fixture_id": "malformed-contract-negative",
+      "source_artifact_ref": "fixtures/verifier/malformed_contract.rs",
+      "syntax_family": "contract",
+      "expected_verdict": "expected_failure",
+      "expected_diagnostics": ["malformed contract"],
+      "assumptions": [],
+      "unsupported_features": [],
+      "verifier_family": "sunder-style",
+      "fixture_role": "expected malformed fixture regression input"
+    },
+    {
+      "fixture_id": "stale-expectation-negative",
+      "source_artifact_ref": "fixtures/verifier/stale_expectation.rs",
+      "syntax_family": "kani-harness",
+      "expected_verdict": "stale-pass",
+      "expected_diagnostics": [],
+      "assumptions": [],
+      "unsupported_features": [],
+      "verifier_family": "kani-style",
+      "fixture_role": "expected negative regression input"
+    },
+    {
+      "fixture_id": "soundness-overclaim-negative",
+      "source_artifact_ref": "fixtures/verifier/soundness_overclaim.rs",
+      "syntax_family": "proof-assertion",
+      "expected_verdict": "accepted",
+      "expected_diagnostics": [],
+      "assumptions": [],
+      "unsupported_features": [],
+      "verifier_family": "certus-style",
+      "fixture_role": "proof soundness and verifier parity replacement claim",
+      "claims": {
+        "verifier_parity": true,
+        "proof_soundness": true,
+        "release_eligible": true
+      }
+    }
+  ],
+  "non_claims": []
+}

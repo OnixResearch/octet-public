@@ -1,0 +1,12 @@
+[package]
+name = "octet-cob-fixture-keys"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[dependencies]
+radicle-crypto = { version = "=0.17.0", features = ["ssh"] }
+serde_json = "1.0"
+
+[workspace]

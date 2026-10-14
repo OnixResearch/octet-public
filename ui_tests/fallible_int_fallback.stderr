@@ -1,0 +1,70 @@
+warning: fallible integer conversion hides an out-of-range error behind a sentinel fallback
+  --> $DIR/fallible_int_fallback.rs:4:5
+   |
+LL |     u32::try_from(count).unwrap_or(0)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::fallible_int_fallback)]` on by default
+
+warning: extreme sentinel fallback masks absence or failure
+  --> $DIR/fallible_int_fallback.rs:8:5
+   |
+LL |     u8::try_from(count).unwrap_or(u8::MAX)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (safety): branch explicitly, propagate the missing/error state, or emit tagged fallback text instead of <int>::MAX/<int>::MIN. Example: match u64::try_from(command_index) { Ok(i) => format!("recent_{i}"), Err(_) => "recent_missing_index".to_string() }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: make invalid state explicit
+   = note: `#[warn(tigerstyle::sentinel_fallback)]` on by default
+help: propagate the error instead of masking with sentinel
+   |
+LL -     u8::try_from(count).unwrap_or(u8::MAX)
+LL +     u8::try_from(count)?
+   |
+
+warning: fallible integer conversion hides an out-of-range error behind a sentinel fallback
+  --> $DIR/fallible_int_fallback.rs:8:5
+   |
+LL |     u8::try_from(count).unwrap_or(u8::MAX)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+
+warning: extreme sentinel fallback masks absence or failure
+  --> $DIR/fallible_int_fallback.rs:12:5
+   |
+LL |     i32::try_from(count).unwrap_or(i32::MIN)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (safety): branch explicitly, propagate the missing/error state, or emit tagged fallback text instead of <int>::MAX/<int>::MIN. Example: match u64::try_from(command_index) { Ok(i) => format!("recent_{i}"), Err(_) => "recent_missing_index".to_string() }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: make invalid state explicit
+help: propagate the error instead of masking with sentinel
+   |
+LL -     i32::try_from(count).unwrap_or(i32::MIN)
+LL +     i32::try_from(count)?
+   |
+
+warning: fallible integer conversion hides an out-of-range error behind a sentinel fallback
+  --> $DIR/fallible_int_fallback.rs:12:5
+   |
+LL |     i32::try_from(count).unwrap_or(i32::MIN)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+
+warning: fallible integer conversion hides an out-of-range error behind a default fallback
+  --> $DIR/fallible_int_fallback.rs:16:5
+   |
+LL |     u16::try_from(count).unwrap_or_default()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+
+warning: 6 warnings emitted
+

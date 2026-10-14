@@ -1,0 +1,86 @@
+= One Idiom, One Verifier
+:page-range: 88-94
+
+Every idiom a team adopts produces a recognizable shape in code. A verifier that does not know that shape will punish the idiom's successful application. Teach it the shape.
+
+A team ships a lint. The rule is straightforward: flag exported functions with identical names in different modules. The motivation behind it is sound. When the same invariant lives in two places, fixing a bug in one leaves the other broken; two modules quietly diverging on a shared rule is how production incidents begin.
+
+The lint earns its place immediately. It catches a function duplicated between the order module and the inventory module, and a heuristic copy-pasted between the job queue and the scheduler. Both cases are real. Both get fixed.
+
+The fix, in both cases, is the idiom the team already knows: extract the shared concept as a named type, let it own the rule, let the sites that used to duplicate the logic hold the new type and forward to it. The extraction is clean. The ordering decisions live in one place. The public signatures at each site stay exactly where they were -- callers never need to know the rule moved.
+
+They run the lint.
+
+Five violations now. Up from two.
+
+== What the lint saw
+
+The lint counts names, not bodies. The extracted idiom produced several thin forwarders with the same public method names.
+
+The two real duplications were replaced by one shared primitive and a handful of delegating methods -- and the lint is angrier than it was before the fix.
+
+Every previous signal the lint emitted was correct. Its documented remediation is extract the shared rule into a single type that both sites import. The team did precisely that. The tool responded by emitting more violations.
+
+== Two wrong responses
+
+Add an allowlist: tell the tool to ignore that method name. The false positives disappear, and so does every future true positive on a function that happens to share that name -- including the kind of silent divergence the lint was built to catch.
+
+Inline the forwarders. Let each site own its own body again. The tool goes quiet. The bug class it was designed to catch comes back by construction on the next production incident.
+
+Both responses preserve one signal by destroying another. Neither is the right move.
+
+== The right response: teach the tool
+
+Automated verifiers read code the way they were told to read it. A verifier that flags the output of an idiom was not told what the idiom looks like when it arrives. That is a teachable gap, not a fundamental limitation.
+
+The shape of the idiom in the example above is stable. A thin delegate has one silhouette: a single tail-expression call, the receiver is `self` or a field of `self`, the method name matches the enclosing function's name, and nothing else happens.
+
+That silhouette is what the idiom produces, and almost nothing else produces it by accident. A verifier that recognizes the silhouette can exempt precisely the shape the idiom makes, without widening the exemption to anything the idiom does not actually produce.
+
+A full AST is not always required. Sometimes the question is narrow enough that a normalized-body matcher is sufficient: does this body consist of exactly one forwarding call of the allowed form? If the body transforms, branches, combines, reshapes errors, or evaluates more than one expression, the exemption does not apply and the original flag stands.
+
+== The loop between idioms and verifiers
+
+The idiom-naming move has two audiences. Naming makes a pattern visible to humans: engineers can say "that is a shared-primitive extraction" in review, and everyone knows the move. But the tooling that enforces the codebase's standards is the other audience, and that audience does not read postmortems or design docs. It reads code through whatever matcher it was compiled with.
+
+When a tool contradicts an idiom the team has named and adopted, one of three things happens. The team silences the tool. The team retreats from the idiom. Or the team updates the tool to match the idiom. Only the third option preserves both signals.
+
+This is the loop: name the idiom, teach the tool. The two must stay in sync. An idiom without a matching verifier is a guideline. A verifier without a matching idiom enforces a shape the team has no shared vocabulary for.
+
+== When to apply this
+
+Use this move when two things are true:
+
+* A verifier flags a shape that, on inspection, is the expected output of a named idiom the team endorses.
+* The idiom's output has a recognizable structural signature distinct from the problem the verifier was built to detect.
+
+If both are true, refine the verifier. The cost is a narrow shape predicate added to an existing check; the cost of not doing it compounds every time the idiom is applied.
+
+When not to apply it: when the idiom is still folklore with no explicit name, or when its output is structurally indistinguishable from the real problem case.
+
+== The deeper point
+
+Tooling speaks louder than any guideline in a team wiki. It runs on every commit. Its verdicts carry the authority of the compiler. An engineer faced with a choice between "my change builds clean" and "my change follows the idiom the team wrote down somewhere" will usually pick the build.
+
+A team can name an idiom beautifully and still watch it erode if the tooling around the idiom does not move with it. Naming makes the idiom visible. Tooling makes it durable.
+
+When you name a pattern, you commit to recognizing its shape in every verifier that speaks to developers. A verifier that flags the output of its own prescribed fix does not have a false-positive problem. It has a calibration problem.
+
+Fix the calibration.
+
+== Grounding
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 13]
+____
+You should not implement Deref and DerefMut for a type just to make the type's methods appear on it automatically, the way a C++ base class's methods are visible on a subclass. This will not always work as you expect and can be confusing when it goes awry.
+____
+
+[quote, Zero to Production in Rust (Palmieri), Chapter 5]
+____
+We just forward to the implementation of the wrapped type.
+____
+
+[quote, Rust in Action (McNamara), Chapter 3]
+____
+The newtype pattern consists of wrapping a core type within a single field struct. Using the newtype pattern can strengthen a program by preventing data from being silently used in inappropriate contexts.
+____

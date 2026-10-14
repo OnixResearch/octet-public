@@ -1,0 +1,47 @@
+{
+  "artifact_conflicts": [],
+  "authority": {
+    "creator": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
+    "delegates": [],
+    "source": "signed_root_embedded_authority"
+  },
+  "backend": "radicle-cob.v1",
+  "base_revision": {
+    "kind": "git_oid",
+    "value": "51bd1ec2dd218f068d1d55d01781e38c877dd063"
+  },
+  "blocked": false,
+  "blockers": [],
+  "change": "adopt-cairn-cob-collaboration",
+  "command": "collaboration conflicts",
+  "compatibility_command": "cob conflicts",
+  "conflicted": false,
+  "format_libraries": {
+    "git-ref-format-core": "0.6.0",
+    "git2": "0.20.4",
+    "radicle-cob": "0.20.0",
+    "radicle-crypto": "0.17.0",
+    "radicle-oid": "0.2.0"
+  },
+  "lifecycle_heads": [],
+  "mutated": false,
+  "non_claims": [
+    "embedded creator and delegate keys are immutable COB authority, not Radicle identity-document or future authorization proof",
+    "signed conflict resolution proves bounded local Git COB observations only",
+    "selecting a conflict head does not prove semantic merge correctness or that losing heads are invalid",
+    "an explicit lifecycle reset to open does not prove review, approval, evidence truth, source correctness, archive execution, or release eligibility",
+    "local signed COB resolution does not prove node participation, publication, synchronization, peer convergence, availability, or remote trust"
+  ],
+  "object_id": "5be37f1c60fcebd2db91101c38203b18eb32f877",
+  "observed_policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+  "policy": "cairn-default",
+  "policy_current": true,
+  "policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+  "receipt_hash": "7bbe62fecaf8b799e053274bed524496e6ac506ce54cdf53043c525c5f081ea0",
+  "root": "secondary",
+  "shown_head": null,
+  "state_hash": "07e6254b3e33f730ae29a68214226fe00721fdf03b84fdd2098eecbad7731007",
+  "valid": true,
+  "verdict": "PASS",
+  "workspace_id": "workspace:octet"
+}

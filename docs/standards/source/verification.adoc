@@ -1,0 +1,93 @@
+= Verification
+:page-range: 75-80
+
+Proving correctness, not just testing for it.
+
+Property-based tests that generate compliance evidence. Hash-chained audit logs that detect tampering. Chaos engineering under constraint. Verification entries here cover the practices required when "all tests pass" is necessary but not sufficient -- when you need to prove that your system holds its invariants under adversarial conditions.
+
+== Tests That Earn Trust
+
+In safety-critical systems, a passing test suite is a claim about the real world. These properties determine whether that claim holds.
+
+A team ships a motor controller for surgical robotics. The test suite covers every public function. Unit tests, integration tests, property-based tests. CI runs on x86 Linux. Every change goes green. Coverage sits at 94%.
+
+The device reaches production hardware: an ARM Cortex-R running under real-time constraints. Under contention, two tasks fighting over a shared resource occasionally cause the motor to receive stale position data. Intermittent. Never reproduced on CI. The kind of failure that ends a product line.
+
+The investigation takes three weeks. The root cause: an incorrect atomic ordering on a safety-critical read. On x86, the strong memory model papers over weak orderings. On ARM, it does not. The test suite never ran on ARM. The test suite never tested memory ordering under contention. The test suite never tested the thing that mattered.
+
+Every test was fast, isolated, and green. None of them were honest.
+
+== What makes a test trustworthy
+
+The Pragmatic Programmer names five properties of good tests. The authors use the acronym FIRST. Adapted to Rust, they look like this:
+
+* *Fast* -- unit tests should complete in single-digit seconds. The moment the suite becomes sluggish, engineers start reaching for skip flags and excuses.
+* *Isolated* -- no shared mutable state between tests. Each function builds its own world and tears it down when it returns.
+* *Repeatable* -- same input, same result, every time. No dependence on wall-clock accidents or random seeds that drift.
+* *Self-validating* -- the test produces a boolean judgment: pass or fail. Not a log file that a human squints at.
+* *Timely* -- written during development, while the engineer still remembers the edge cases.
+
+These properties are necessary. They are not sufficient.
+
+=== Five lies tests tell
+
+A test suite can satisfy every FIRST property and still deceive you. These patterns -- catalogued by Meszaros as test smells -- are the mechanisms of that deception.
+
+.Multiple assertions with no diagnostics
+When the test fails, you get a line number and nothing else. Fix: name every claim so a failure reads like a sentence, not a riddle.
+
+.Hidden fixtures
+The test depends on data that is not visible in the test body -- a fixture file on disk, environment configuration, or a seeded database. Fix: construct data inline or use a builder that makes every relevant field explicit.
+
+.External resources in unit tests
+The test assumes a serial port, socket, or other external resource exists. Fix: inject the dependency and pass a stub in tests.
+
+.General Fixture
+A setup function constructs a full object with fifteen fields when the test only examines two. Engineers stop modifying the fixture because the blast radius is unclear. Fix: a builder that defaults every field and lets each test override only what it cares about.
+
+.Parallel interference
+Tests pass individually, then fail when run together. The default Rust harness runs tests in parallel within the same process. Fix: give each test its own instance. Shared state is the exception, not the default.
+
+== The deeper point
+
+In safety-critical systems, a test suite is not a convenience. It is a safety argument. Every assertion is a claim: this property holds in the real world. When you submit that test suite to a certification body, or when you rely on it to decide whether a surgical robot is safe to operate, you are staking human welfare on the honesty of those claims.
+
+The FIRST properties keep tests maintainable. The smell catalogue keeps them readable. But neither addresses the hardest question: does this test suite actually test the failure mode that will kill the product?
+
+The Rust compiler prevents data races, null dereference, use-after-free, and iterator invalidation. It does not prevent you from writing a test suite that validates everything except the one thing that matters. It does not prevent the false confidence of a green CI badge on hardware you never tested.
+
+That is our job. A test earns trust the same way an engineer does -- not by being right often, but by being honest about what it does not know.
+
+== Grounding
+
+[quote, The Pragmatic Programmer, 20th Anniversary Edition (Hunt, Thomas), Topic 41]
+____
+Good tests should be FIRST: Fast, Isolated, Repeatable, Self-validating, and Timely.
+____
+
+[quote, xUnit Test Patterns: Refactoring Test Code (Meszaros), Chapter 2]
+____
+A test smell is a symptom of a problem in the way we have written our tests. It may not be a problem in itself but it is an indicator that there is likely a deeper problem lurking below the surface.
+____
+
+[quote, Zero to Production in Rust (Palmieri), Chapter 3]
+____
+We want each test to be independent -- we do not want the result of a test to depend on the outcome of the tests that ran before it.
+____
+
+== Deterministic effect handler tests
+
+Effect handlers earn trust only when tests can replay them without ambient state. A deterministic handler records requested effects, returns scripted responses, fixes time and randomness, and proves cleanup after invalid paths. Network, filesystem, clock, and environment interactions in unit tests should pass through such handlers instead of using process globals.
+
+== Verus proof rails
+
+Verus-backed evidence is opt-in and scoped. A proof rail names the verifier identity, command, source paths, proof paths, pass signal, trust boundary, receipt binding, and property label before it can support `formal_proof` provenance. Passing a rail does not claim whole-program correctness, certification, business-domain validation, semantic equivalence, or full safety beyond the declared source scope and property.
+
+Ordinary `cargo octet check` adoption does not require Verus. Operators select formal proof rails with `cargo octet prove` or a verification profile, persist receipts under an artifact directory, and then verify those artifacts before promotion. A `verified/` module or `octet-formal-proof-claim:` marker without a matching declared Verus rail must fail the selected verification gate or produce `manual_review_required` provenance instead of being treated as proved by purity lints alone. Multiple production Verus pilots may share the pinned verifier identity only when each rail keeps an independent policy ID, checked scope, source/proof binding, receipt path, pass signal, and scoped property claim. Production Verus failures must fail closed with deterministic verifier-failure diagnostics and no `formal_proof` provenance; invalid proof fixtures must be selected only through explicit failure-fixture source paths.
+
+[[charon-semantic-analysis-rail]]
+== Charon semantic analysis rail
+
+Charon semantic analysis is an opt-in recorded-evidence rail, not a proof rail. It runs the already pinned Charon provider in the same network-denied execution shell used by the Aeneas rail, selects an exact reviewed item, and projects stable source, span, call, trait, control-flow, effect-candidate, and unknown-fact records. The pure projection core rejects partial or errorful extraction, skipped borrow checking, source drift, target drift, broad selection, unresolved local-call endpoints, malformed identities, and unknown evidence vocabularies.
+
+The artifact bundle keeps raw Charon output, normalized projection, bounded analysis, optional source-token comparison, receipt, summary, and provenance as separate BLAKE3-bound roles. Agreement with independent source/token evidence records agreement only; it does not merge authority or establish semantic equivalence. Findings remain `manual_review_required`, while malformed execution or evidence fails closed. The rail does not prove Charon or rustc correctness, complete Rust support, runtime reachability, effect absence, whole-program correctness, release readiness, or any formal property.

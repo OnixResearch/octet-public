@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "artifact_dir": "standards/proof-rails/aeneas-lean/fixtures/valid/artifacts",
+  "output_format": "json",
+  "status": "valid",
+  "artifacts": [
+    {
+      "artifact": "command.txt",
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da",
+      "checked_scope": "profile:prove-verification",
+      "manual_action": "review cargo octet prove command, status, and scoped proof receipt before release"
+    },
+    {
+      "artifact": "proof-cards.json",
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "blake3": "fff32b3950ae540eccec22cfd7122866b73b0fb904b479f94b471ba2561222a2",
+      "checked_scope": "profile:prove-verification",
+      "manual_action": "review proof cards with matching receipt, provenance, and cargo octet artifact verify output before release"
+    },
+    {
+      "artifact": "proofs/aeneas/Llbc.lean",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/aeneas-command.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/aeneas-lean-library.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "c16344b6008749131ab6b5ba03881740fb8a75f4f3dde2adb1679aa8e073252d",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/charon-command.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/charon-options.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/checker-result.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "64e64cc32fc5966221fd60c6efd5ea84669478ad975fc483a169488985de5455",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/external-models.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/lean-command.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "130be6eabfed0fe39289c1ac21e2ec592be79a94f9e693bc5634817a0e524325",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/lean-toolchain",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/llbc.llbc",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/package-lock.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/provider-profile.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/source/src/lib.rs",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/theorem-adequacy.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/theorem-statement.lean",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/theorem.lean",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/translation.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/aeneas/trust-closure.json",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "blake3": "b0ce7c7d5673e67b0dc5fff7f54d351f4f58f2b70c986023a3933dee15bcf489",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0"
+    },
+    {
+      "artifact": "status.json",
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6",
+      "checked_scope": "profile:prove-verification",
+      "manual_action": "review cargo octet prove command, status, and scoped proof receipt before release"
+    },
+    {
+      "artifact": "summary.txt",
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "blake3": "ec392c9adb723d3f00f4d6540318702c8b7fea20f569e017c7ecfcdac803dc59",
+      "checked_scope": "profile:prove-verification",
+      "manual_action": "review cargo octet prove command, status, and scoped proof receipt before release"
+    }
+  ],
+  "diagnostics": []
+}

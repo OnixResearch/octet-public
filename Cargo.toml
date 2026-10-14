@@ -1,0 +1,38 @@
+[package]
+name = "octet"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+description = "Custom lints enforcing Tiger Style coding principles under Octet's closed-interface model"
+
+[lib]
+name = "octet"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Pin to fix-nightly commit until dylint publishes a release with the
+# env_depinfo/file_depinfo removal fix (PR #1942).
+dylint_linting = { git = "https://github.com/trailofbits/dylint", rev = "0e0a71eefe6f01563d11acc6e1d7af1d505934a9" }
+octet-architecture-ir = { path = "crates/octet-architecture-ir" }
+octet-lint-metadata = { path = "crates/octet-lint-metadata" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+blake3 = "1"
+crossbeam = "0.8"
+tokio = { version = "1", features = ["macros", "rt", "sync"] }
+toml = "1"
+
+[package.metadata.rust-analyzer]
+rustc_private = true
+
+[workspace]
+resolver = "2"
+members = ["cargo-octet", "crates/octet-architecture-ir", "crates/octet-lint-metadata", "crates/octet-standards"]
+exclude = ["crates/valence-core"]
+
+[workspace.metadata.octet]
+default_scope = ["--workspace"]
+cargo_check_args = ["--lib"]
+architecture_policy = "standards/project-architecture/octet-self-architecture.ncl"

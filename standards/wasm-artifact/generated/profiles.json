@@ -1,0 +1,230 @@
+{
+  "cohort": {
+    "cohort_id": "wasm-tools-0.253.0",
+    "identity": "b3:c50e2d7f0e8c49de4a1d44afae196bdf96bb14e67e7de0a153de146a6207449a",
+    "members": [
+      {
+        "crate_name": "wasm-encoder",
+        "role": "fixture-encoding",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wasm-metadata",
+        "role": "metadata-inspection",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wasm-mutate",
+        "role": "bounded-mutation",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wasm-shrink",
+        "role": "bounded-shrinking",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wasm-smith",
+        "role": "bounded-generation",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wasmparser",
+        "role": "validation-and-facts",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wit-component",
+        "role": "component-metadata",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wit-parser",
+        "role": "wit-interface-facts",
+        "version": "0.253.0"
+      },
+      {
+        "crate_name": "wit-smith",
+        "role": "bounded-wit-generation",
+        "version": "0.253.0"
+      }
+    ]
+  },
+  "profiles": [
+    {
+      "allow_any_exports": true,
+      "allow_memory_grow": false,
+      "allow_start": false,
+      "allowed_artifact_kinds": [
+        "module",
+        "component"
+      ],
+      "allowed_exports": [],
+      "allowed_imports": [],
+      "allowed_proposals": [
+        "wasm1",
+        "component-model"
+      ],
+      "allowed_worlds": [],
+      "duplicate_custom_sections": "reject",
+      "non_claims": [
+        "Wasm artifact evidence records bounded static facts and does not prove execution correctness",
+        "Matching normalized interfaces do not prove semantic equivalence or identify one implementation",
+        "Static validation does not prove sandbox effectiveness, capability authority, provenance truth, release eligibility, or whole-system safety",
+        "Producer metadata is recorded input and is not provenance truth"
+      ],
+      "producer_metadata": "recorded-only",
+      "profile_id": "portable-component-baseline",
+      "required_exports": [],
+      "resource_limits": {
+        "max_artifact_bytes": 1048576,
+        "max_exports": 64,
+        "max_function_parameter_words": 255,
+        "max_functions": 128,
+        "max_imports": 32,
+        "max_local_words_per_function": 65535,
+        "max_memories": 1,
+        "max_memory_initial_pages": 65536,
+        "max_memory_maximum_pages": 65536,
+        "max_table_initial_elements": 65535,
+        "max_table_maximum_elements": 65535,
+        "max_tables": 1
+      },
+      "severity": {
+        "abi_mismatch": "error",
+        "cohort_drift": "error",
+        "disallowed_import": "error",
+        "disallowed_kind": "error",
+        "disallowed_world": "error",
+        "duplicate_metadata": "error",
+        "external_evidence": "error",
+        "growth": "error",
+        "malformed": "error",
+        "resource_limit": "error",
+        "start": "error"
+      },
+      "summary": "Execution-free static facts for portable core modules and components with no ambient host imports.",
+      "target_runtime": null,
+      "verification_role": "recorded_only"
+    },
+    {
+      "allow_any_exports": false,
+      "allow_memory_grow": false,
+      "allow_start": false,
+      "allowed_artifact_kinds": [
+        "module"
+      ],
+      "allowed_exports": [
+        "module::run::Func"
+      ],
+      "allowed_imports": [],
+      "allowed_proposals": [
+        "wasm1"
+      ],
+      "allowed_worlds": [],
+      "duplicate_custom_sections": "reject",
+      "non_claims": [
+        "Wasm artifact evidence records bounded static facts and does not prove execution correctness",
+        "SpaceWasm profile conformance does not prove SpaceWasm decode, instantiation, or execution success",
+        "Static declarations do not prove configured allocator, code-page, control-frame, fuel, host-import, or stack capacity",
+        "The hostless run export is an Octet review profile and not a universal SpaceWasm ABI",
+        "Profile conformance does not prove memory safety, semantic equivalence, sandbox effectiveness, flight qualification, production readiness, or release eligibility"
+      ],
+      "producer_metadata": "recorded-only",
+      "profile_id": "spacewasm-mvp",
+      "required_exports": [
+        "module::run::Func"
+      ],
+      "resource_limits": {
+        "max_artifact_bytes": 1048576,
+        "max_exports": 16,
+        "max_function_parameter_words": 32,
+        "max_functions": 4096,
+        "max_imports": 0,
+        "max_local_words_per_function": 1024,
+        "max_memories": 1,
+        "max_memory_initial_pages": 256,
+        "max_memory_maximum_pages": 256,
+        "max_table_initial_elements": 1024,
+        "max_table_maximum_elements": 1024,
+        "max_tables": 1
+      },
+      "severity": {
+        "abi_mismatch": "error",
+        "cohort_drift": "error",
+        "disallowed_import": "error",
+        "disallowed_kind": "error",
+        "disallowed_world": "error",
+        "duplicate_metadata": "error",
+        "external_evidence": "error",
+        "growth": "error",
+        "malformed": "error",
+        "resource_limit": "error",
+        "start": "error"
+      },
+      "summary": "Hostless core-module ABI and static resource subset reviewed against NASA SpaceWasm revision e24cf09355a90497148eb5029fdb8e3400bd63e3.",
+      "target_runtime": {
+        "cohort_identity": "b3:7c537eef7bff66d0a90508715de08de79c9aaac23352e1007a6d47e7fb4674a2",
+        "support_projection": {
+          "default_allow_memory_grow": false,
+          "denied_or_unimplemented_proposals": [
+            "bulk-memory",
+            "component-model",
+            "custom-page-sizes",
+            "memory64",
+            "multi-memory",
+            "multi-value",
+            "non-trapping-float-to-int",
+            "sign-extension-ops",
+            "threads",
+            "wit",
+            "wasi"
+          ],
+          "external_runtime_configuration": [
+            "allocator pages",
+            "code pages",
+            "control frames",
+            "fuel or instruction budget",
+            "host import implementations",
+            "stack depth"
+          ],
+          "maximum_function_index": 65535,
+          "maximum_function_parameter_words": 255,
+          "maximum_linear_memory_pages": 65536,
+          "maximum_local_words_per_function": 65535,
+          "module_kind": "module",
+          "non_claims": [
+            "The projection records a bounded source review and does not prove SpaceWasm runtime behavior",
+            "Static artifact limits do not prove configured allocator, code-page, control-frame, fuel, host-import, or stack capacity",
+            "The upstream Git revision uses Git SHA-1 for interoperability; Octet uses BLAKE3 for the derived cohort identity"
+          ],
+          "observed_discrepancies": [
+            "REQUIREMENTS.md allows selected post-MVP proposals in principle while README.md and the reviewed opcode decoder expose only Wasm 1.0 plus mutable globals",
+            "README.md describes spacewasm-check as not yet developed"
+          ],
+          "reviewed_paths": [
+            "Cargo.lock",
+            "README.md",
+            "REQUIREMENTS.md",
+            "src/SPEC.md",
+            "src/code.rs",
+            "src/compiler.rs",
+            "src/opcode.rs",
+            "src/types.rs"
+          ],
+          "runtime_id": "nasa-spacewasm",
+          "schema_version": "octet-spacewasm-support-projection/v1",
+          "source_lock_identity": "b3:4e6a07910125d4c921a62cec03d8bc9acb3bf341ebd1a11999df08d6c6c5c5f1",
+          "source_repository": "https://github.com/nasa/spacewasm",
+          "source_revision": "e24cf09355a90497148eb5029fdb8e3400bd63e3",
+          "supported_proposals": [
+            "wasm1",
+            "mutable-globals"
+          ]
+        }
+      },
+      "verification_role": "boundary"
+    }
+  ],
+  "schema_version": "octet-wasm-artifact-profiles/v1"
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": "octet-charon-semantic-comparison/v1",
+  "parent_identities": [
+    "b3:23e41fc9fa5d85379bac551522134416b0478cbaf19d67d35e69a6f0b53b906e"
+  ],
+  "rows": [
+    {
+      "parent_authority": "source-token",
+      "item": "real_fixture::safe_add",
+      "fact": "control-flow",
+      "charon_value": "structured",
+      "parent_value": "structured",
+      "status": "agree"
+    },
+    {
+      "parent_authority": "source-token",
+      "item": "real_fixture::safe_add",
+      "fact": "effect-candidate",
+      "charon_value": "panic",
+      "parent_value": "panic",
+      "status": "agree"
+    },
+    {
+      "parent_authority": "source-token",
+      "item": "real_fixture::safe_add",
+      "fact": "item-presence",
+      "charon_value": "present",
+      "parent_value": "present",
+      "status": "agree"
+    }
+  ],
+  "summary": {
+    "agree": 3,
+    "disagree": 0,
+    "charon_only": 0,
+    "source_token_only": 0,
+    "unknown": 0
+  },
+  "authority_merged": false
+}

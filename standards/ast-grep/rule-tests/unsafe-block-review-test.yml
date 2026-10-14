@@ -1,0 +1,22 @@
+id: unsafe-block-review
+valid:
+  - |
+    fn safe_add(left: u64, right: u64) -> u64 {
+        left.saturating_add(right)
+    }
+  - |
+    fn named_unsafe_value() -> bool {
+        let unsafe_value = false;
+        unsafe_value
+    }
+invalid:
+  - |
+    unsafe fn read_pointer(pointer: *const u8) -> u8 {
+        unsafe { *pointer }
+    }
+  - |
+    fn call_boundary() {
+        unsafe {
+            external_call();
+        }
+    }

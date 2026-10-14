@@ -1,0 +1,48 @@
+warning: clone result is immediately borrowed; borrow the original value or use an explicit borrowed adapter instead
+  --> $DIR/clone_then_borrow.rs:22:10
+   |
+LL |     emit(&name.clone())
+   |          ^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Clone Avoidance): borrow the original value or use an explicit borrowed adapter instead of cloning only to take a shared borrow Example: emit(&name);
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Performance / Ownership Clarity
+   = note: `#[warn(tigerstyle::clone_then_borrow)]` on by default
+help: borrow the original value instead of cloning then borrowing
+   |
+LL -     emit(&name.clone())
+LL +     emit(name)
+   |
+
+warning: clone result is immediately borrowed; borrow the original value or use an explicit borrowed adapter instead
+  --> $DIR/clone_then_borrow.rs:26:10
+   |
+LL |     emit(&(name.clone()))
+   |          ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Clone Avoidance): borrow the original value or use an explicit borrowed adapter instead of cloning only to take a shared borrow Example: emit(&name);
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Performance / Ownership Clarity
+help: borrow the original value instead of cloning then borrowing
+   |
+LL -     emit(&(name.clone()))
+LL +     emit(name)
+   |
+
+warning: clone result is immediately borrowed; borrow the original value or use an explicit borrowed adapter instead
+  --> $DIR/clone_then_borrow.rs:30:9
+   |
+LL |     sum(&bytes.clone())
+   |         ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Clone Avoidance): borrow the original value or use an explicit borrowed adapter instead of cloning only to take a shared borrow Example: emit(&name);
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Performance / Ownership Clarity
+help: borrow the original value instead of cloning then borrowing
+   |
+LL -     sum(&bytes.clone())
+LL +     sum(bytes)
+   |
+
+warning: 3 warnings emitted
+

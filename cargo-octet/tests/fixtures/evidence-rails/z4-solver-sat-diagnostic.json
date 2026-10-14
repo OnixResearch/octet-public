@@ -1,0 +1,26 @@
+{
+  "schema_version": "z4-solver-summary/v1",
+  "solver": {
+    "name": "z4-solver",
+    "version": "0.1.0",
+    "provenance": "nix-store-fixture"
+  },
+  "query": {
+    "identity": "b3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "logic": "QF_UF",
+    "profile": "satisfiability-diagnostic"
+  },
+  "result_status": "sat",
+  "model_ref": "models/query.sat.model.json",
+  "verification_role": "diagnostic_model_output",
+  "diagnostics": [
+    {
+      "severity": "info",
+      "message": "model is recorded for review and is not proof evidence"
+    }
+  ],
+  "evidence_tier": "transcript_assertion",
+  "non_claims": [
+    "Z4 solver evidence records bounded solver output identity and diagnostics only; it does not prove source correctness, solver soundness, proof validity, requirement satisfaction, release eligibility, or whole-program safety"
+  ]
+}

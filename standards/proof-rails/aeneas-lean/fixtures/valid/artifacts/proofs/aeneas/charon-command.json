@@ -1,0 +1,8 @@
+[
+  "charon",
+  "cargo",
+  "--preset",
+  "aeneas",
+  "--dest-file",
+  "llbc.llbc"
+]

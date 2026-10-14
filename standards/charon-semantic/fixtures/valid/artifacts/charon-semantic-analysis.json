@@ -1,0 +1,16 @@
+{
+  "schema_version": "octet-charon-semantic-analysis/v1",
+  "status": "recorded",
+  "item_count": 1,
+  "edge_count": 0,
+  "cycle_count": 0,
+  "cycles": [],
+  "effect_candidates": [
+    {
+      "item": "real_fixture::safe_add",
+      "candidate": "panic",
+      "evidence": "explicit Charon panic/assert construct"
+    }
+  ],
+  "unknowns": []
+}

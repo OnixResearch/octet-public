@@ -1,0 +1,111 @@
+= Idioms
+:page-range: 57-61
+
+Small Rust patterns with outsized impact.
+
+Newtypes that prevent category errors. Deny lints that make panics impossible. Typed errors that force every failure path to be explicit. Idiom entries here are the building blocks -- each one small enough to apply in a single commit, significant enough to prevent a class of bugs permanently.
+
+== One Behavior, One Type
+
+When the same primitive access pattern appears in two or more modules, extract a newtype.
+
+Two modules in a robotics codebase both track whether their hardware is connected. Both use the same six lines of Rust.
+
+The code compiles. The tests pass. It ships.
+
+This is a story about what happens next.
+
+== The divergence
+
+Six months later, an engineer optimizes the arm controller. They profile it, find that a strong atomic ordering on the connection check is unnecessary overhead in their hot path, and change it to a weaker one. They benchmark it. The improvement is measurable. They ship it.
+
+They do not touch the camera module. Why would they? Different file. Different subsystem. Different engineer.
+
+On x86, nothing breaks. The x86 memory model is strong enough that the two orderings behave identically in many practical scenarios. The CI runs on x86. Green across the board.
+
+On the ARM processor inside the actual robot -- the one that matters -- a race condition surfaces under load. The camera module reads stale connection state. Intermittent. Hard to reproduce. The kind of bug that eats weeks of debugging time and erodes trust in the codebase.
+
+The root cause is not a bad decision by either engineer. It is the absence of a shared concept.
+
+== Two wrong fixes
+
+Change the camera module to match the arm module. Now both use the weaker ordering. Except the camera subsystem really does need the stronger ordering, because its connection state gates a safety-critical vision pipeline. You have traded one bug for a worse one.
+
+Define a trait that both types implement.
+
+This eliminates the duplication, but it makes a false claim: that the two concepts are substitutable through a common interface. They are not. No caller ever needs to work with "some connectable thing." A trait here introduces an abstraction for a relationship that does not exist.
+
+== The right fix: name the building block
+
+Both modules now hold a dedicated wrapper type instead of a raw atomic flag. They keep their own public APIs. The only change is internal: they delegate instead of duplicating.
+
+The ordering decision lives in one place. The inner field is private, so no one can accidentally use the wrong atomic operation on a connection flag. The newtype compiles away entirely -- at the machine level, it is identical to the raw atomic. Zero cost.
+
+But the real value is not in the generated machine code. It is in the conversation.
+
+== Naming changes culture
+
+The team stopped saying "the bool that tracks whether we're connected." They started saying "the connection-state type." A concept that had been implicit -- scattered across modules, understood differently by different engineers -- became explicit and shared.
+
+Jim Coplien, studying organizational patterns at Bell Labs and ParcPlace in the 1990s, observed something remarkable about what happens when you name patterns: once people have a name for them, they start seeing them everywhere.
+
+He was writing about organizational patterns, not code. But the mechanism is the same. A pattern without a name is invisible. The moment you name it, people see it everywhere. They catch instances of it before they ship. They say "that's a One Behavior, One Type situation" in code review, and everyone knows what to do.
+
+A name is a handle for a concept.
+
+== When to apply this idiom
+
+The test is three-part:
+
+* The same field shape appears in two or more structs across different modules.
+* The same behavior operates on that field.
+* The behavior carries the same invariants -- same ordering, same error handling, same semantic meaning.
+
+If all three are true, you are looking at a concept that deserves a name.
+
+When not to apply it: when the pattern appears only once, or when two modules use the same primitive with genuinely different semantics. Different orderings for different reasons are different behaviors.
+
+== The deeper point
+
+The Rust compiler is remarkable. It prevents data races, use-after-free, null dereference, and iterator invalidation. It does not prevent two modules from quietly disagreeing about memory ordering on a shared primitive. It does not prevent the slow divergence of duplicated patterns across module boundaries. It does not prevent the bug that surfaces only on ARM, only under load, only in production.
+
+That is our job. And one of the simplest tools we have is a name.
+
+When the same primitive access pattern appears in two or more modules, extract a newtype. Not because duplication is ugly. Because unnamed patterns diverge silently -- and in safety-critical systems, silent divergence is how people get hurt.
+
+== Imported Rust idiom guidance
+
+External Rust idioms are accepted only when they encode a Tiger Style contract. Newtypes name units, capabilities, and secrets. RAII guards mediate resources. Contained unsafe modules keep invariants auditable. Borrowed argument types avoid needless ownership. Temporary mutability narrows mutation windows. Recoverable consumed-argument errors preserve retry paths. FFI wrappers and explicit error mapping keep foreign callers from owning Rust lifetimes. Restrained `Deref` avoids inheritance-shaped APIs.
+
+Each imported idiom starts as documentation, checklist, or advisory policy unless fixture evidence proves a hard gate can distinguish compliant code from legitimate exceptions.
+
+== Functional API boundaries
+
+The functional programming lesson Octet imports is type-level separation, not opaque point-free style. Use generics, sealed traits, associated types, and marker states when they make invalid protocol, state, capability, or format operations unrepresentable.
+
+Visitor, prism, or optics-like adapter splits are advanced boundary tools for serialization, traversal, plugins, and format adapters. They require human design review because macro-heavy or lifetime-erased bridge code can hide too much. Long iterator chains and `fold` pipelines are acceptable only when bounds, branches, assertions, and hot-path costs remain obvious.
+
+== Grounding
+
+[quote, Jim Coplien]
+____
+They had started using organizational pattern names in their day-to-day vocabulary. Seeing what was possible, and knowing that the patterns came from real-life successful organizations, they aspired to renewed success.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 22]
+____
+At the machine level, a newtype and its element have identical representations in memory.
+____
+
+[quote, Zero to Production in Rust (Palmieri), Chapter 6]
+____
+We made an incorrect usage pattern unrepresentable, by construction -- it will not compile.
+____
+
+== Nominal and structural type boundaries
+
+Unison distinguishes structural convenience from unique nominal identity. Rust should use nominal wrappers for identities, units, secrets, capability tokens, protocol states, idempotency keys, and authority-bearing values. Structural records remain appropriate for plain data transfer and configuration snapshots when field names carry the meaning and no unique authority is implied.
+
+== Named capability vocabulary
+
+Capability traits and tokens should be named by the authority they carry: `ReadConfigDir`, `Clock`, `ArtifactStore`, `CredentialVault`, or `RemoteEndpoint` are reviewable; `Context`, `Client`, and `Manager` hide authority. Core admissibility rules should state which capabilities are allowed in core, shell, tests, and remote adapters.

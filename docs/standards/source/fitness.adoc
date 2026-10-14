@@ -1,0 +1,120 @@
+= Fitness
+:page-range: 24-30
+
+Readability, changeability, operational resilience, dependency health, test quality, and change risk - weighted to reflect what matters in production. Fitness entries here explore how to quantify architectural decay, predict technical debt velocity, and make quality visible before it becomes a crisis.
+
+== Six Dimensions of a Healthy Codebase
+A codebase that compiles is not necessarily healthy. These six measures tell you whether it's improving, holding, or quietly decaying.
+
+A Rust codebase for an industrial control system. Three crates, clean module boundaries, a well- configured CI pipeline. Full test coverage. No open bugs. runs clean. The tech lead calls it healthy in the quarterly review and means it.
+
+Then the senior engineer who built the sensor subsystem leaves. Their replacement -- a competent Rustacean with five years of experience -- takes three weeks to ship their first pull request. Not because the code is buggy. Because it's unreadable. Functions named in a module with six other functions. Nested generics three levels deep with no type aliases. Match arms spanning forty lines with no extracted helpers.
+
+The coverage number said "healthy." The code itself said something else.
+
+Coverage is one number. Health is at least six.
+
+=== The six dimensions
+Each dimension measures something the compiler cannot see. Together they describe whether a codebase is habitable -- whether the humans who maintain it can understand it, change it, and trust it under pressure.
+
+== 1. Readability
+
+Can a new engineer understand a module in one sitting?
+
+Measure: average function length, cognitive complexity (clippy provides ), naming clarity. A function named fails this dimension. A function named passes it.
+
+The second version is not just shorter. It is navigable. A new engineer reads , sees three steps, and knows where to look when something breaks.
+
+== 2. Changeability
+
+Can you modify one behavior without triggering cascading changes?
+
+Measure: coupling between modules (how many crates does a single change touch?), number of items (wider API surface means more coupling), depth of the dependency graph between internal modules.
+
+The newtype pattern from One Behavior, One Type improves changeability by localizing behavior behind a single type. When owns the memory ordering decision, changing that decision touches one file instead of six.
+
+A practical test: pick any struct and change one of its private fields. How many files need to recompile? If the answer is "most of them," the API surface is too wide.
+
+== 3. Operational resilience
+
+Does the system degrade gracefully, or does it fall over at the first unexpected input?
+
+Measure: count outside of tests, panic surface area, whether error paths default fail-closed or fail-open.
+
+In a safety-critical system controlling physical hardware, that is not a shortcut. It is a crash waiting for a noisy sensor bus to trigger it. Count them. Track the trend. Every outside a test is a bet that the happy path always holds.
+
+== 4. Dependency health
+
+Are your dependencies maintained, audited, and minimal?
+
+Measure: advisory count, dependency age (when was the last release?), duplicate crate count (how many versions of are in your tree?), total transitive dependency count. For embedded and safety-critical work: how many dependencies pull in ?
+
+A codebase with 300 transitive dependencies for an embedded controller is not healthy, regardless of what the test suite says. Each dependency is an attack surface, a maintenance burden, and a compilation cost.
+
+== 5. Test quality
+
+Not coverage percentage. Quality.
+
+Measure: how many tests satisfy the FIRST properties described in Tests That Earn Trust. How many tests would survive a refactor without changes -- tests that assert on behavior rather than structure. How many integration tests actually test integration between components rather than exercising unit behavior with extra setup.
+
+Coverage tells you how many lines executed. It says nothing about whether those executions tested anything meaningful. A test that calls a function and asserts touches every line and proves
+
+nothing.
+
+== 6. Change risk
+
+What is the probability that the next commit introduces a regression?
+
+Measure: file churn (files changed frequently are high-risk), git history coupling (files that always change together are implicitly coupled even if they share no imports), block count, number of lint suppressions.
+
+Git history coupling is the dimension most teams miss. If and appear together in 80% of commits, they are coupled -- regardless of what the module graph says. That coupling is invisible to the compiler and invisible to . It is visible only in the version history.
+
+== Weighting for production
+Not all dimensions are equal. The weighting reflects what the system does, not what looks good on a dashboard.
+
+For a safety-critical Rust system controlling hardware: operational resilience and change risk are weighted highest. A motor controller that panics on a malformed CAN frame is a liability, no matter how readable the code is.
+
+For an internal developer tool: readability and changeability matter more. The tool will be maintained by whoever is on rotation. If they can't read it, they won't fix it. If they can't change it safely, they'll rewrite it.
+
+For a high-throughput network service: dependency health and operational resilience dominate. Every transitive dependency is a potential supply-chain vector. Every unhandled error is a crash under load.
+
+The weighting is a decision about values. Make it explicit. Write it down.
+
+== The decay signal
+Measure monthly. The individual numbers matter less than the trends.
+
+Readability holding steady while change risk climbs means the architecture is calcifying. Individual functions are clear, but the system-level coupling is growing. Engineers can read any single file but cannot
+
+change one without breaking three others.
+
+Test quality dropping while coverage holds steady means the tests are getting worse -- more brittle, more tightly coupled to implementation details -- even though there are more of them. The dashboard looks green. The safety argument is eroding.
+
+Operational resilience improving while changeability drops means the team is hardening the system by adding defensive code everywhere instead of fixing the structural problems that cause failures. The symptoms are treated. The disease progresses.
+
+Single-dimension metrics lie. Multi-dimension trends tell the truth.
+
+== The deeper point
+The Rust compiler guarantees memory safety, type safety, and thread safety. These are extraordinary guarantees. No other systems language offers them at zero runtime cost.
+
+The compiler says nothing about readability. It says nothing about changeability. It says nothing about whether your test suite will survive a refactor, whether your dependencies are maintained, or whether the next commit will break production. These are the properties that determine whether a codebase remains habitable for the humans who maintain it -- and they are invisible to .
+
+Fitness is the gap between what the compiler proves and what your codebase actually needs. These six dimensions measure that gap. Tracked over time, they tell you whether the gap is closing or widening, whether the codebase is improving or quietly decaying under a surface of green builds and rising coverage numbers.
+
+The compiler does its job. These dimensions help us do ours.
+
+== Grounding
+
+[quote, Building Evolutionary Architectures (Ford, Parsons, Kua), Chapter 2]
+____
+An architectural fitness function provides an objective integrity assessment of some architectural characteristic(s).
+____
+
+[quote, Software Design X-Rays (Tornhill), Chapter 1]
+____
+We can mine the version-control history of our codebase to identify patterns of change, detect implicit coupling between modules, and predict where defects are likely to occur.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 8]
+____
+Items in a module are private by default. You can use the keyword to make an item public, but think carefully about what you expose.
+____

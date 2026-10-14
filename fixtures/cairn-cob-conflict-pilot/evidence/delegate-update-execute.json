@@ -1,0 +1,71 @@
+{
+  "actor": {
+    "authority_class": "embedded_delegate",
+    "cryptographically_verified": true,
+    "currently_authorized": true,
+    "id": "z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU",
+    "source": "explicit_cob_keystore_and_embedded_authority"
+  },
+  "backend": "radicle-cob.v1",
+  "base_revision": {
+    "kind": "git_oid",
+    "value": "b91fdcff9139492e55a7e64a142de6d0684ddb03"
+  },
+  "blocked": false,
+  "blockers": [],
+  "change": "exercise-cairn-cob-conflict-recovery",
+  "changed_artifacts": [
+    "tasks"
+  ],
+  "command": "collaboration update",
+  "compatibility_command": "cob update",
+  "delegates": [
+    "z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU"
+  ],
+  "dry_run": false,
+  "expected_content_root": "a4f2155332f70d6d1bbdef07714e553f2fc9bf0d423ce0f23201e0bf80e8d584",
+  "format_libraries": {
+    "git-ref-format-core": "0.6.0",
+    "git2": "0.20.4",
+    "radicle-cob": "0.20.0",
+    "radicle-crypto": "0.17.0",
+    "radicle-oid": "0.2.0"
+  },
+  "input_content_root": "7c4dedd4299257992f0ac8dad67237b86f3b0cfd262568626ca866540b3291ef",
+  "input_hash": "0ab228f39e86943aedfd940c001a24b76462e69f30832aaa031340e84cb06d3c",
+  "input_state_hash": "0ab228f39e86943aedfd940c001a24b76462e69f30832aaa031340e84cb06d3c",
+  "mutated": true,
+  "non_claims": [
+    "embedded creator and delegate keys are immutable COB authority, not Radicle identity-document or future authorization proof",
+    "a signed update proves bounded local Git COB observations, not node participation, publication, peer availability, synchronization, convergence, or remote trust",
+    "collaboration update does not prove gate validity, evidence truth, dependency readiness, source correctness, archive execution, or release eligibility",
+    "ordinary collaboration update refuses conflicts and does not prove or perform conflict resolution"
+  ],
+  "noop": false,
+  "object_id": "030a0e27d379e6e5ff67f6eac940e2369a8169b1",
+  "observed_policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+  "operation_plan_id": "cd5133af3ea2648cbf38abbebb5796d7c8903cd91ae0e6b60fe4b736a50f83d4",
+  "plan_hash": "f3aa6e8e49255776344aa05a7d747c908c2eb91ede31d25fbf90c56e60eda130",
+  "policy": "cairn-default",
+  "policy_current": true,
+  "policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+  "receipt_hash": "6d62936fe487ec81fa16fc2d085665900f883684439b610adf5760ce36926f16",
+  "result_content_root": "a4f2155332f70d6d1bbdef07714e553f2fc9bf0d423ce0f23201e0bf80e8d584",
+  "result_operation_id": "91ad968acd64ce5d4d26439e9ba72261c96e2653",
+  "result_state_hash": "d0090be3c37380633c0089e641572926c580253f728d3a7d8ce9b3f722008ba6",
+  "root": "delegate-workspace",
+  "updates": [
+    {
+      "artifact": "tasks",
+      "basis": [
+        "030a0e27d379e6e5ff67f6eac940e2369a8169b1"
+      ],
+      "content_blake3": "bf05be03e78208d0e3a9d8a2b97788934291b6083dd6021f993b338acd49b1fc",
+      "content_bytes": 61,
+      "removed": false
+    }
+  ],
+  "valid": true,
+  "verdict": "PASS",
+  "workspace_id": "workspace:synthetic-cob-conflict"
+}

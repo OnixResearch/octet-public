@@ -1,0 +1,42 @@
+{
+  "schema": "octet.function-object-corpus-receipt.v1",
+  "schema_version": 1,
+  "mode": "corpus-receipt",
+  "object_count": 2,
+  "source_paths": [
+    "src/lib.rs",
+    "src/lib.rs"
+  ],
+  "object_set_hash": "b3:7f97a686c4c6697a58dd6d2754c7aa9cb4c2a2d81653814028fedf39a5b33883",
+  "caveat_counts": {
+    "dependency_status": {
+      "source-scanner-token-set": 1,
+      "unsupported-macro-context": 1
+    },
+    "effect_kind": {
+      "effect_summary": 2
+    },
+    "macro_status": {
+      "none-detected": 1,
+      "review-required": 1
+    },
+    "pure_cache_blocker": {
+      "dependency-identity-unresolved": 2,
+      "effect-summary-unresolved": 2,
+      "macro-expansion-unmodeled": 1
+    }
+  },
+  "pure_cache_blocked_count": 2,
+  "replay": {
+    "command": "cargo octet object corpus receipt --output RECEIPT.json src/lib.rs",
+    "tool_name": "cargo-octet",
+    "tool_version": "0.1.0",
+    "determinism_note": "Receipt bytes are deterministic for the same selected source inputs and cargo-octet version; this is not a correctness proof."
+  },
+  "boundary": {
+    "identity_scope": "review-and-provenance-evidence",
+    "claims_correctness": false,
+    "claims_semantic_equivalence": false,
+    "detail": "Function object corpus receipts summarize source-token object identity and caveats; they do not prove behavioral correctness, semantic equivalence, dependency resolution, macro expansion identity, or pure-cache eligibility."
+  }
+}

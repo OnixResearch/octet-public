@@ -1,0 +1,39 @@
+warning: core scope starts work with `std::thread::spawn(`; return a command or use an injected executor port
+  --> $DIR/spawn_in_core/spawn_in_core.rs:28:18
+   |
+LL |     let handle = std::thread::spawn(|| {});
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): return work descriptions or use injected executor ports instead of spawning threads or tasks in core scopes Example: fn schedule(input: Input) -> WorkCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::spawn_in_core)]` on by default
+
+warning: core scope starts work with `tokio::spawn(`; return a command or use an injected executor port
+  --> $DIR/spawn_in_core/spawn_in_core.rs:30:25
+   |
+LL |     let _tokio_handle = tokio::spawn(async {});
+   |                         ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): return work descriptions or use injected executor ports instead of spawning threads or tasks in core scopes Example: fn schedule(input: Input) -> WorkCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope starts work with `tokio::task::spawn(`; return a command or use an injected executor port
+  --> $DIR/spawn_in_core/spawn_in_core.rs:31:30
+   |
+LL |     let _tokio_task_handle = tokio::task::spawn(async {});
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): return work descriptions or use injected executor ports instead of spawning threads or tasks in core scopes Example: fn schedule(input: Input) -> WorkCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope starts work with `async_std::task::spawn(`; return a command or use an injected executor port
+  --> $DIR/spawn_in_core/spawn_in_core.rs:32:29
+   |
+LL |     let _async_std_handle = async_std::task::spawn(async {});
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): return work descriptions or use injected executor ports instead of spawning threads or tasks in core scopes Example: fn schedule(input: Input) -> WorkCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 4 warnings emitted
+

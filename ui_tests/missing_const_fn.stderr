@@ -1,0 +1,18 @@
+warning: private helper appears const-compatible; consider declaring it `const fn` if that does not freeze public API
+  --> $DIR/missing_const_fn.rs:7:1
+   |
+LL | / fn scale_value(value: u64) -> u64 {
+LL | |     value * SCALE_FACTOR
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): consider `const fn` for conservative private helpers when doing so does not freeze public API flexibility Example: const fn clamp_to_limit(value: u32, limit: u32) -> u32
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+note: the lint level is defined here
+  --> $DIR/missing_const_fn.rs:3:9
+   |
+LL | #![warn(tigerstyle::missing_const_fn)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: 1 warning emitted
+

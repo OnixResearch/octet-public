@@ -1,0 +1,147 @@
+# Copy into the consumer workspace root as `dylint.toml`.
+#
+# Keep this file consumer-owned. Octet defaults stay in the lint crate;
+# workspace-specific thresholds, allowlists, and rollout controls live here.
+#
+# For every non-default value, record three things in rollout notes:
+#   1. why the workspace differs from the default
+#   2. which crates or packages currently need the override
+#   3. what cleanup would let you remove it later
+
+[octet]
+
+# Threshold overrides
+# Keep only the fields you actively tune. Delete the rest.
+
+# Larger handlers are still being decomposed. Tighten after the rollout proves
+# the check path and hotspot owners are clear.
+# function_length_max = 90
+
+# Some coordinator or RPC paths still nest one level deeper than the default.
+# Use this only with a concrete cleanup plan.
+# nesting_max_depth = 4
+
+# Focus assertion-density checks on functions large enough to matter. Thin shell
+# wrappers should not need placeholder assertions just to pass the lint.
+# assertion_density_min_lines = 30
+# assertion_density_min_assertions = 2
+
+# Tune SOLID structure signals only with a cleanup plan.
+# trait_method_max = 7
+# impl_blocks_max = 4
+# module_pub_items_max = 12
+# core_source_scopes = ["crates/domain-core/src/"]
+# sealed_enum_marker = "octet::sealed_enum"
+# state_machine_core_marker = "octet::state_machine_core"
+# state_machine_enum_marker = "octet::state_machine_enum" # required on closed state/event enums for FSM profile evidence
+# state_machine_core_scopes = ["crates/domain-core/src/fsm/"]
+# state_machine_generated_adapter_scopes = ["crates/domain-core/src/generated/"]
+
+# Nominal-domain rollout mode
+# Omit this key until the workspace owns a reviewed policy inventory.
+# `inventory` warns for exact findings and suffix candidates.
+# `warn` warns only for exact policy rows. `deny` denies only exact rows.
+# nominal_domain_mode = "inventory"
+
+# Narrow allowlists
+# Keep these explicit and domain-specific. Avoid catch-all naming exceptions.
+
+# Transport or storage code may use a small set of established acronyms.
+# acronym_allowlist = ["IO"]
+
+# Scoped indexable-lint exceptions
+# Keep these as named classes, not broad disables. If you narrow or extend them,
+# record which finding class is excepted, why it preserves searchability, and
+# what cleanup would remove the exception.
+# indexable_lint_exceptions = [
+#   "rustc_private_aliases",
+#   "lint_identity_names",
+#   "generated_searchable_names",
+# ]
+
+# Per-lint rollout controls
+# Omitted `disabled_lints` / `lint_levels` default to empty collections.
+# Unknown lint names and invalid level values warn and are ignored.
+# If the same lint appears in both places, `disabled_lints` wins and the level
+# override is ignored.
+# Keep keys here bare (`no_unwrap`), even though source attrs and group attrs in
+# Rust code currently uses source-attribute tool names like `tigerstyle::no_unwrap`
+# and `tigerstyle::safety`; keep config keys bare here.
+#
+# See `docs/downstream-rollout.md` for full smoke / boundary-first /
+# inventory-only profile examples. Do not remove an allow-by-default lint from
+# this disabled starter list unless a saved promotion row marks it `ready` with
+# raw, accepted, fixed, and residual counts plus rollback guidance.
+
+# Example starter profile: enable `ambient_clock`, `compound_assertion`,
+# `contradictory_time`, `explicit_defaults`, `unbounded_channel`,
+# `usize_in_public_api`, and `negated_predicate`, while keeping the deferred,
+# inventory-only purity-effect, and high-noise families disabled.
+#
+# breaking-change: justified `todo!()` stubs must migrate from `allow(no_panic)`
+# / `allow(tigerstyle::no_panic)` to `allow(no_todo)` /
+# `allow(tigerstyle::no_todo)`. `no_panic` now covers only `panic!()`,
+# `unimplemented!()`, and `unreachable!()`.
+# disabled_lints = [
+#   "function_length",
+#   "acronym_style",
+#   "numeric_units",
+#   "unbounded_loop",
+#   "compound_condition",
+#   "verified_purity",
+#   "ambient_env",
+#   "ambient_random",
+#   "global_state_in_core",
+#   "impure_call_in_core",
+#   "interior_mutability_in_core",
+#   "logging_in_core",
+#   "missing_const_fn",
+#   "mutating_input_in_pure",
+#   "nondeterministic_output",
+#   "pure_attr_contract",
+#   "resource_return_from_core",
+#   "spawn_in_core",
+#   "zero_alloc_attr_contract",
+#   "unjustified_allow",
+#   "nested_conditionals",
+#   "assertion_density",
+#   "multi_lock_ordering",
+#   "ignored_join_handle",
+#   "unbounded_collection_growth",
+#   "sentinel_fallback",
+#   "too_many_parameters",
+#   "fat_trait",
+#   "concrete_construction_in_core",
+#   "type_accumulation",
+#   "bool_naming",
+#   "ignored_result",
+#   "unchecked_narrowing",
+#   "unchecked_division",
+#   "catch_all_on_enum",
+#   "foreign_enum_catch_all",
+#   "fragile_exhaustive_enum_match",
+#   "platform_dependent_cast",
+#   "borrowed_argument_types",
+#   "deref_polymorphism",
+#   "clone_then_borrow",
+#   "allocation_in_loop",
+#   "float_for_currency",
+#   "ambiguous_params",
+#   "primitive_domain_alias",
+#   "raw_domain_value",
+#   "newtype_invariant_bypass",
+#   "raw_arithmetic_overflow",
+#   "no_unwrap",
+#   "no_panic",
+#   "public_unsafe_api",
+#   "defaulting_trait_method",
+#   "no_todo",
+#   "unjustified_no_todo_allow",
+#   "no_recursion",
+# ]
+
+[octet.lint_levels]
+# Example: keep the default warn path explicit during rollout.
+# no_unwrap = "warn"
+# Example: promote one lint after owners fix the low-noise backlog.
+# ignored_result = "deny"

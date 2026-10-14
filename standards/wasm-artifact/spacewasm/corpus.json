@@ -1,0 +1,293 @@
+{
+  "cases": [
+    {
+      "artifact_blake3": "9855274d998a322359c211238092371419331e92685e4a7858c39508afdd2144",
+      "artifact_kind": "wasm",
+      "case_id": "positive-mvp-module",
+      "expected_issue_class": "none",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "not-applicable",
+      "source": "fixtures/generated/mvp-module.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "48d3a2e8a9b0cde6293ba7f68824a97d069d096f44335a9e86aee55238dcdcb8",
+      "artifact_kind": "wasm",
+      "case_id": "negative-component",
+      "expected_issue_class": "disallowed-artifact-kind",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/component.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "57a9e00325ec098e2ca8f7b7deb5b9659ccdcbce84d862ef60ea5f16e05e1624",
+      "artifact_kind": "wasm",
+      "case_id": "negative-bulk-memory",
+      "expected_issue_class": "disallowed-proposal",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/bulk-memory.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "bd567479f158aa04d550fb4dbcef978f264402a059fa0128cffcf7b0af9baec3",
+      "artifact_kind": "wasm",
+      "case_id": "negative-sign-extension",
+      "expected_issue_class": "disallowed-proposal",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/sign-extension.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "4b5134e8b092279e226c28a79f675c1586d6a044ae7aefd10cace29e3afebb6b",
+      "artifact_kind": "wasm",
+      "case_id": "negative-nontrapping-conversion",
+      "expected_issue_class": "disallowed-proposal",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/nontrapping-conversion.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "0bc7a928c4349245d0f7d6b21c326203446d642ecf52c4d95ce486c0a558edd7",
+      "artifact_kind": "wasm",
+      "case_id": "negative-wrong-import",
+      "expected_issue_class": "disallowed-import",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/wrong-import.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "3e91917b57a81f718565f4ce97e5566d64a1e788c5ddbbf7a8014218dfc2cb13",
+      "artifact_kind": "wasm",
+      "case_id": "negative-wrong-abi",
+      "expected_issue_class": "abi-mismatch",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/wrong-abi.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "767b9b6f8451c27570f5f528eb0cf7411d1155e9e1265b9bed2d54add8c1851b",
+      "artifact_kind": "wasm",
+      "case_id": "negative-memory-limit",
+      "expected_issue_class": "memory-limit",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/memory-limit.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "d3ab96cfb77acab121c8a5f20821e875915ca973d9a42c437da394c0dc05af75",
+      "artifact_kind": "wasm",
+      "case_id": "negative-table-limit",
+      "expected_issue_class": "table-limit",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/table-limit.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "9a9ff231b09e89e145853b7e6a11e0752e9a6bfab19d18a8edc4d090a7e4b59c",
+      "artifact_kind": "wasm",
+      "case_id": "negative-parameter-limit",
+      "expected_issue_class": "structural-limit",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/parameter-limit.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "151e3873d0d47044ec99c3de67beb1825d63c5e0e8f085da9192ea024918ec7e",
+      "artifact_kind": "wasm",
+      "case_id": "negative-memory-grow",
+      "expected_issue_class": "memory-growth",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/memory-grow.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "3ebf05ed7f53e6ef8ca13f3b3d09512f2edefdf137003011d5249c1e870cefa7",
+      "artifact_kind": "wasm",
+      "case_id": "negative-start-function",
+      "expected_issue_class": "start-function",
+      "generator": {
+        "input_identity": "checked WAT source",
+        "seed": "not-applicable",
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve expected issue class",
+      "source": "fixtures/generated/start-function.wasm",
+      "transforms": [
+        "wat-to-exact-wasm"
+      ]
+    },
+    {
+      "artifact_blake3": "f456df26295a041513d62ccfb0b52ac694ddadcff902101e9c36169a0724728d",
+      "artifact_kind": "wasm",
+      "case_id": "generated-smith-negative",
+      "expected_issue_class": "disallowed-proposal",
+      "generator": {
+        "input_identity": "b3:c494fbef068b46d1a1b91f7ee28fe9cac974a8938aad73724d7aee86e1c1995e",
+        "seed": "fixtures/seeds/smith-fast.seed",
+        "tool": "wasm-smith",
+        "version": "0.253.0"
+      },
+      "lane": "deep",
+      "shrink_predicate": "preserve at least one spacewasm-mvp rejection",
+      "source": "fixtures/generated/smith-fast.wasm",
+      "transforms": [
+        "deterministic decision-tree generation"
+      ]
+    },
+    {
+      "artifact_blake3": "ca384ee74699328779c1057f16223ccef8173b3f31160b237172dba2e6adfa70",
+      "artifact_kind": "wasm",
+      "case_id": "mutated-mvp-module",
+      "expected_issue_class": "none",
+      "generator": {
+        "input_identity": "b3:9855274d998a322359c211238092371419331e92685e4a7858c39508afdd2144",
+        "seed": "1701",
+        "tool": "wasm-mutate",
+        "version": "0.253.0"
+      },
+      "lane": "deep",
+      "shrink_predicate": "preserve spacewasm-mvp conformance",
+      "source": "fixtures/generated/mutated-mvp.wasm",
+      "transforms": [
+        "pseudo-random deterministic mutation"
+      ]
+    },
+    {
+      "artifact_blake3": "b596ea24bd0d025eae0e4440cdb9c244d5be1153a5d219009e1aee2c55a0122a",
+      "artifact_kind": "external-report",
+      "case_id": "external-recorded-only",
+      "expected_issue_class": "none",
+      "generator": {
+        "input_identity": "b3:75bb5e89bbf581910256a09de594fe701c948ed4d599184db2cd543ee8387351",
+        "seed": "not-applicable",
+        "tool": "fixture",
+        "version": "octet-spacewasm-external-runtime-report/v1"
+      },
+      "lane": "fast",
+      "shrink_predicate": "not-applicable",
+      "source": "fixtures/external/chaoscontrol-recorded.json",
+      "transforms": []
+    },
+    {
+      "artifact_blake3": "4dc03298c3ecccf782a18c1d34b8f0a1cec48d35b0e390cd46c40c579c7fa60a",
+      "artifact_kind": "external-report",
+      "case_id": "external-overclaim",
+      "expected_issue_class": "external-evidence-mismatch",
+      "generator": {
+        "input_identity": "b3:0058a9a3f2e036eb885c232821a178817baa3becf1ee06803ef393088a02b46d",
+        "seed": "not-applicable",
+        "tool": "fixture",
+        "version": "octet-spacewasm-external-runtime-report/v1"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve overclaim rejection",
+      "source": "fixtures/external/overclaim.json",
+      "transforms": [
+        "promote verification role beyond recorded-only"
+      ]
+    }
+  ],
+  "profile_id": "spacewasm-mvp",
+  "schema_version": "octet-spacewasm-corpus/v1",
+  "source_revision": "e24cf09355a90497148eb5029fdb8e3400bd63e3"
+}

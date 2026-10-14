@@ -1,0 +1,18 @@
+[package]
+name = "octet-valence-legacy-fixture"
+version = "0.0.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+publish = false
+description = "Frozen Octet-hosted Valence compatibility fixture; not a canonical provider"
+readme = "README.md"
+repository = "https://github.com/OnixResearch/octet"
+homepage = "https://github.com/OnixResearch/octet"
+documentation = "https://github.com/OnixResearch/octet/tree/main/crates/valence-core"
+keywords = ["valence", "evidence", "octet", "compatibility"]
+categories = ["development-tools"]
+
+[dependencies]
+blake3 = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

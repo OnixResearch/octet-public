@@ -1,0 +1,63 @@
+{
+  "schema_version": "verifier-fixture-intake/v1",
+  "fixtures": [
+    {
+      "fixture_id": "bounds-harness-positive",
+      "source_artifact_ref": "fixtures/verifier/bounds_harness.rs",
+      "syntax_family": "kani-harness",
+      "expected_verdict": "accepted",
+      "expected_diagnostics": [],
+      "assumptions": ["bounded input length"],
+      "unsupported_features": [],
+      "verifier_family": "kani-style",
+      "fixture_role": "bounds harness regression input"
+    },
+    {
+      "fixture_id": "contract-positive",
+      "source_artifact_ref": "fixtures/verifier/contract.rs",
+      "syntax_family": "contract",
+      "expected_verdict": "accepted",
+      "expected_diagnostics": [],
+      "assumptions": [],
+      "unsupported_features": [],
+      "verifier_family": "creusot-style",
+      "fixture_role": "contract syntax regression input"
+    },
+    {
+      "fixture_id": "loop-invariant-positive",
+      "source_artifact_ref": "fixtures/verifier/loop_invariant.rs",
+      "syntax_family": "loop-invariant",
+      "expected_verdict": "accepted",
+      "expected_diagnostics": [],
+      "assumptions": [],
+      "unsupported_features": [],
+      "verifier_family": "verus-style",
+      "fixture_role": "loop invariant regression input"
+    },
+    {
+      "fixture_id": "mutable-borrow-summary-positive",
+      "source_artifact_ref": "fixtures/verifier/mutable_borrow.rs",
+      "syntax_family": "borrow-summary",
+      "expected_verdict": "accepted",
+      "expected_diagnostics": [],
+      "assumptions": ["single mutable owner"],
+      "unsupported_features": [],
+      "verifier_family": "sunder-style",
+      "fixture_role": "mutable borrow summary regression input"
+    },
+    {
+      "fixture_id": "proof-style-assertion-positive",
+      "source_artifact_ref": "fixtures/verifier/proof_assert.rs",
+      "syntax_family": "proof-assertion",
+      "expected_verdict": "accepted",
+      "expected_diagnostics": [],
+      "assumptions": [],
+      "unsupported_features": [],
+      "verifier_family": "certus-style",
+      "fixture_role": "proof-style assertion regression input"
+    }
+  ],
+  "non_claims": [
+    "Verifier fixtures are Octet-owned regression and UX inputs only; they do not prove source-verifier execution, verifier parity, proof soundness, solver soundness, source-code correctness, whole-program safety, or release eligibility"
+  ]
+}

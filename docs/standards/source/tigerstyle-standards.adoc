@@ -1,0 +1,45 @@
+= Tiger Style Standards
+Adam Murray
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:sectanchors:
+:reproducible:
+:source-highlighter: rouge
+:icons: font
+:description: Tiger Style standards source material.
+:keywords: rust, systems programming, safety-critical software, engineering standards
+:revdate: 2026-04-23
+
+Sectioned source material for Tiger Style standards and policy traceability.
+
+include::front-matter.adoc[leveloffset=+1]
+
+include::architecture.adoc[leveloffset=+1]
+
+include::culture.adoc[leveloffset=+1]
+
+include::fitness.adoc[leveloffset=+1]
+
+include::devtools.adoc[leveloffset=+1]
+
+include::embedded.adoc[leveloffset=+1]
+
+include::resilience.adoc[leveloffset=+1]
+
+include::orchestration.adoc[leveloffset=+1]
+
+include::idioms.adoc[leveloffset=+1]
+
+include::grounding-idioms.adoc[leveloffset=+1]
+
+include::build-what-you-test.adoc[leveloffset=+1]
+
+include::metrics.adoc[leveloffset=+1]
+
+include::verification.adoc[leveloffset=+1]
+
+include::what-safety-critical-means.adoc[leveloffset=+1]
+
+include::one-idiom-one-verifier.adoc[leveloffset=+1]

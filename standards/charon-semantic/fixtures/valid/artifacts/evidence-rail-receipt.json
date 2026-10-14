@@ -1,0 +1,217 @@
+{
+  "schema_version": "octet-evidence-rail-receipt/v1",
+  "rail_id": "charon-semantic",
+  "checker_id": "cargo-octet",
+  "mode": "run",
+  "command_argv": [
+    "charon",
+    "cargo",
+    "--preset",
+    "aeneas",
+    "--dest-file",
+    "snapshot.llbc",
+    "--start-from",
+    "real_fixture::safe_add"
+  ],
+  "workspace_scope": ".",
+  "config_path": "standards/charon-semantic/generated/profile.json",
+  "config_identity": "b3:9c37280796d04408389e7efc4fd8413b6c3bb3594fc66bed79ea01492b9cdf67",
+  "lockfile_identity": "b3:bd4649131c6492b8599137114136168dca06f49f92263921b1ccee94cb3e0a3c",
+  "checked_rule_families": [
+    "provider-and-extraction-identity",
+    "exact-item-and-source-span",
+    "resolved-local-calls-and-dependencies",
+    "trait-resolution-and-control-flow",
+    "closed-effect-candidates-and-unknowns",
+    "source-token-comparison-without-authority-merge",
+    "role-separated-blake3-artifacts",
+    "recorded-only-stack-boundary"
+  ],
+  "status": "manual_review_required",
+  "finding_counts": {
+    "effect-candidate": 1
+  },
+  "bounded_log_identity": "b3:ab12c6065ff7474133c6264cd5b63eb2628b24056f8cf849a52e56bfb8a58de9",
+  "imported_input_identity": "b3:ab12c6065ff7474133c6264cd5b63eb2628b24056f8cf849a52e56bfb8a58de9",
+  "profile": "octet-charon-semantic-safe-add-v1",
+  "tool_exit_code": 0,
+  "non_claims": [
+    "Charon semantic analysis is optional and not part of starter cargo octet check",
+    "Charon semantic evidence does not prove Charon or rustc correctness",
+    "Charon semantic evidence does not prove effect absence, complete Rust support, complete runtime reachability, semantic equivalence, or whole-program correctness",
+    "Charon semantic evidence does not produce formal-proof, property, complete-closure, or release-ready authority",
+    "mechanized-llbc and charon-rudra remain recorded-only references and transfer no proof, implementation, or analysis authority",
+    "Valence and Kamacite remain evidence and interchange boundaries rather than compiler IR or semantic-analysis authorities"
+  ],
+  "diagnostics": [],
+  "findings": [
+    {
+      "family": "effect-candidate",
+      "severity": "manual_review",
+      "message": "panic: explicit Charon panic/assert construct",
+      "source_severity": "manual_review"
+    }
+  ],
+  "parent_artifacts": [],
+  "charon_semantic": {
+    "schema_version": "octet-charon-semantic-receipt-details/v1",
+    "profile_id": "octet-charon-semantic-safe-add-v1",
+    "profile_identity": "b3:9c37280796d04408389e7efc4fd8413b6c3bb3594fc66bed79ea01492b9cdf67",
+    "provider_profile_identity": "b3:cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625",
+    "compatibility_matrix_identity": "b3:403656d75de41b955cd2493ef289ba17308da65a3d214babc1ea606aeae248f5",
+    "charon_revision": "cb50ff16b9f1066b8a97dc06da704de2da2fa41c",
+    "artifacts": [
+      {
+        "role": "analysis",
+        "name": "charon-semantic-analysis.json",
+        "identity": "b3:42d37877986f3480e75e793c5e182f928eaf5ec256467ab074938afd3742dbac",
+        "authority": "recorded-conservative-effects-and-unknowns"
+      },
+      {
+        "role": "comparison",
+        "name": "charon-semantic-comparison.json",
+        "identity": "b3:2cbc5a38f2fd55a240cf1fe540ce3fa480073843bc23d04229ce6a1001006756",
+        "authority": "recorded-independent-source-token-comparison"
+      },
+      {
+        "role": "projection",
+        "name": "charon-semantic-projection.json",
+        "identity": "b3:8e31a3a08cbe8b20c70906c47b2ddea301ca980bfcbd4feab0f547b63047fe90",
+        "authority": "recorded-static-semantic-projection"
+      },
+      {
+        "role": "snapshot",
+        "name": "charon-snapshot.llbc",
+        "identity": "b3:3c77b53a8fe5f108043711cb02e452efdf58ba7842a5708c8d242de02948c0b9",
+        "authority": "recorded-pinned-provider-output"
+      }
+    ],
+    "snapshot_identity": "b3:3c77b53a8fe5f108043711cb02e452efdf58ba7842a5708c8d242de02948c0b9",
+    "projection_identity": "b3:8e31a3a08cbe8b20c70906c47b2ddea301ca980bfcbd4feab0f547b63047fe90",
+    "analysis_identity": "b3:42d37877986f3480e75e793c5e182f928eaf5ec256467ab074938afd3742dbac",
+    "comparison_identity": "b3:2cbc5a38f2fd55a240cf1fe540ce3fa480073843bc23d04229ce6a1001006756",
+    "verification_role": "recorded_only",
+    "artifact_roles": [
+      "raw-charon-snapshot",
+      "normalized-semantic-projection",
+      "bounded-semantic-analysis",
+      "source-token-comparison",
+      "recorded-only-receipt"
+    ],
+    "limits": {
+      "timeout_ms": 30000,
+      "stdout_max_bytes": 4096,
+      "stderr_max_bytes": 4096,
+      "snapshot_max_bytes": 8388608,
+      "item_max_count": 32,
+      "edge_max_count": 128
+    },
+    "references": [
+      {
+        "repository": "https://github.com/AeneasVerif/mechanized-llbc",
+        "revision": "8a9b8bb3823ceceb47026837d23baea0934dfb27",
+        "license": "Apache-2.0",
+        "source_sentinel": "README.md:Mechanized LLBC",
+        "use": "semantic-foundation review corpus only",
+        "recorded_only": true
+      },
+      {
+        "repository": "https://github.com/AeneasVerif/charon-rudra",
+        "revision": "0923bf7f21d4eb234d14bce86afc9690d0a4d00e",
+        "license": "Apache-2.0",
+        "source_sentinel": "src/main.rs:crate::rudra::lib::analyze",
+        "use": "historical analysis-over-Charon fixture design only",
+        "recorded_only": true
+      }
+    ],
+    "projection": {
+      "schema_version": "octet-charon-semantic-projection/v1",
+      "crate_name": "real_fixture",
+      "charon_version": "0.1.223",
+      "target": {
+        "triple": "x86_64-unknown-linux-gnu",
+        "pointer_width_bytes": 8,
+        "endianness": "little"
+      },
+      "sources": [
+        {
+          "path": "src/lib.rs",
+          "identity": "b3:fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+        }
+      ],
+      "items": [
+        {
+          "stable_id": "b3:bcf02b5278e65a1c6210942a64cd704efc014d307bbb2ae781d2417546188534",
+          "run_local_id": 0,
+          "qualified_name": "real_fixture::safe_add",
+          "kind": "function",
+          "source_file": "src/lib.rs",
+          "begin_line": 1,
+          "end_line": 3,
+          "opacity": "Transparent",
+          "control_flow": "structured",
+          "statement_count": 14,
+          "unsupported": false
+        }
+      ],
+      "edges": [],
+      "trait_rows": []
+    },
+    "analysis": {
+      "schema_version": "octet-charon-semantic-analysis/v1",
+      "status": "recorded",
+      "item_count": 1,
+      "edge_count": 0,
+      "cycle_count": 0,
+      "cycles": [],
+      "effect_candidates": [
+        {
+          "item": "real_fixture::safe_add",
+          "candidate": "panic",
+          "evidence": "explicit Charon panic/assert construct"
+        }
+      ],
+      "unknowns": []
+    },
+    "comparison": {
+      "schema_version": "octet-charon-semantic-comparison/v1",
+      "parent_identities": [
+        "b3:23e41fc9fa5d85379bac551522134416b0478cbaf19d67d35e69a6f0b53b906e"
+      ],
+      "rows": [
+        {
+          "parent_authority": "source-token",
+          "item": "real_fixture::safe_add",
+          "fact": "control-flow",
+          "charon_value": "structured",
+          "parent_value": "structured",
+          "status": "agree"
+        },
+        {
+          "parent_authority": "source-token",
+          "item": "real_fixture::safe_add",
+          "fact": "effect-candidate",
+          "charon_value": "panic",
+          "parent_value": "panic",
+          "status": "agree"
+        },
+        {
+          "parent_authority": "source-token",
+          "item": "real_fixture::safe_add",
+          "fact": "item-presence",
+          "charon_value": "present",
+          "parent_value": "present",
+          "status": "agree"
+        }
+      ],
+      "summary": {
+        "agree": 3,
+        "disagree": 0,
+        "charon_only": 0,
+        "source_token_only": 0,
+        "unknown": 0
+      },
+      "authority_merged": false
+    }
+  }
+}

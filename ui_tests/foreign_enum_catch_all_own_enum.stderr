@@ -1,0 +1,18 @@
+warning: catch-all `_` on enum match returns deny value — new variants will be silently handled
+  --> $DIR/foreign_enum_catch_all_own_enum.rs:11:9
+   |
+LL |         _ => false,
+   |         ^^^^^^^^^^
+   |
+   = help: Tiger Style (Exhaustive Matching): match enum variants explicitly so new variants cannot slip through `_` Example: match state { State::Open => ..., State::Closed => ... }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Exhaustive Matching
+   = note: `#[warn(tigerstyle::catch_all_on_enum)]` on by default
+help: expand wildcard into explicit variant arms
+   |
+LL ~         LocalState::Ready => todo!("handle Ready"),
+LL ~         LocalState::Closed => todo!("handle Closed"),
+   |
+
+warning: 1 warning emitted
+

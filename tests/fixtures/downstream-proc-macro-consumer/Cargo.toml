@@ -1,0 +1,14 @@
+[package]
+name = "octet-downstream-proc-macro-smoke"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[workspace]
+
+[workspace.metadata.octet]
+default_scope = ["-p", "octet-downstream-proc-macro-smoke"]
+cargo_check_args = ["--lib"]

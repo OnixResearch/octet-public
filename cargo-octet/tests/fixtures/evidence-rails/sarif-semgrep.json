@@ -1,0 +1,1 @@
+{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"Semgrep","rules":[{"id":"rust.lang.security.audit"}]}},"artifacts":[{"location":{"uri":"src/lib.rs"}}],"results":[{"ruleId":"rust.lang.security.audit","level":"error","message":{"text":"unsafe operation"},"locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":7,"startColumn":3}}}]}]}]}

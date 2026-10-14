@@ -1,0 +1,34 @@
+warning: catch-all `_` on enum match returns deny value — new variants will be silently handled
+  --> $DIR/foreign_enum_catch_all.rs:6:9
+   |
+LL |         _ => false,
+   |         ^^^^^^^^^^
+   |
+   = help: Tiger Style (Exhaustive Matching): match enum variants explicitly so new variants cannot slip through `_` Example: match state { State::Open => ..., State::Closed => ... }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Exhaustive Matching
+   = note: `#[warn(tigerstyle::catch_all_on_enum)]` on by default
+help: expand wildcard into explicit variant arms
+   |
+LL ~         std::cmp::Ordering::Less => todo!("handle Less"),
+LL +         std::cmp::Ordering::Equal => todo!("handle Equal"),
+LL ~         std::cmp::Ordering::Greater => todo!("handle Greater"),
+   |
+
+warning: foreign enum `std::cmp::Ordering` uses a `_` catch-all arm; handle new variants explicitly or document the fallback
+  --> $DIR/foreign_enum_catch_all.rs:6:9
+   |
+LL |         _ => false,
+   |         ^^^^^^^^^^
+   |
+   = help: Tiger Style (Open/Closed Boundaries): handle foreign enum variants explicitly or document catch-all fallback behavior Example: ExternalState::Ready => run()
+   = note: see Tiger Style guide: Enum Matches / Foreign Extension
+note: the lint level is defined here
+  --> $DIR/foreign_enum_catch_all.rs:1:9
+   |
+LL | #![warn(foreign_enum_catch_all)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::foreign_enum_catch_all)]` implied by `#[warn(foreign_enum_catch_all)]`
+
+warning: 2 warnings emitted
+

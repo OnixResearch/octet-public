@@ -1,0 +1,74 @@
+{
+  "profiles": [
+    {
+      "command_argv": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "cargo-octet",
+        "--lib",
+        "hegel::tests::hegel_profile_adapter",
+        "--",
+        "--exact",
+        "--nocapture",
+        "--test-threads",
+        "1"
+      ],
+      "counterexample_path": ".octet/hegel-run/counterexample.json",
+      "evidence_tier": "transcript_assertion",
+      "generator_inputs": [
+        "standards/hegel/laws.ncl"
+      ],
+      "limits": {
+        "max_counterexample_bytes": 65536,
+        "max_generator_files": 4,
+        "max_issue_codes": 32,
+        "max_log_bytes": 1048576,
+        "max_source_files": 8,
+        "max_summary_bytes": 262144,
+        "poll_interval_ms": 25,
+        "teardown_timeout_ms": 5000,
+        "timeout_ms": 120000
+      },
+      "non_claims": [
+        "Hegel checks bounded generated inputs only and does not prove correctness, semantic equivalence, verifier soundness, requirement satisfaction, release eligibility, or whole-program safety",
+        "The selected law catalog covers only named pure Octet cores and declared generators",
+        "A passing bounded run does not establish exhaustive input coverage"
+      ],
+      "output_root": ".octet/hegel-run",
+      "producer": {
+        "backend": "native",
+        "binary_target": "lib-test",
+        "hegel_version": "0.14.27",
+        "package": "cargo-octet",
+        "package_version": "0.1.0"
+      },
+      "profile_id": "octet-pure-core-laws-v1",
+      "property_catalog": "octet-hegel-law-catalog/v1",
+      "retention": {
+        "redaction": "issue-codes-and-bounded-values",
+        "retain_counterexample": true,
+        "retain_logs": true,
+        "retain_summary": true
+      },
+      "settings": {
+        "case_budget": 64,
+        "derandomized": true,
+        "phases": [
+          "generate",
+          "shrink"
+        ],
+        "seed_posture": "derandomized"
+      },
+      "source_scope": [
+        "cargo-octet/src/hegel/mod.rs",
+        "cargo-octet/src/hegel/tests.rs",
+        "cargo-octet/src/hegel/validation.rs"
+      ],
+      "summary_path": ".octet/hegel-run/summary.json",
+      "verification_role": "recorded_only"
+    }
+  ],
+  "schema_version": "octet-hegel-producer-profiles/v1"
+}

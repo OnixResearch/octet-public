@@ -1,0 +1,9 @@
+[package]
+name = "global-state-in-core-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "global_state_in_core.rs"
+
+[workspace]

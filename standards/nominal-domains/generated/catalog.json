@@ -1,0 +1,154 @@
+{
+  "default_mode": "inventory",
+  "domains": [
+    {
+      "compatibility_required": false,
+      "compatibility_scopes": [],
+      "constructor_policy": "private-fallible",
+      "core_scopes": [
+        "crates/crunch-build/src/dynamic_plan.rs"
+      ],
+      "domain_id": "mantle.dynamic-plan.unit-id",
+      "raw_representation": "string",
+      "symbols": [
+        "UnitId",
+        "DynamicPlaceholder::UnitOutput::unit",
+        "DynamicPlanV1::roots",
+        "DynamicUnit::id",
+        "DynamicInput::UnitOutput::unit"
+      ],
+      "wrapper_kind": "refined-newtype"
+    },
+    {
+      "compatibility_required": false,
+      "compatibility_scopes": [],
+      "constructor_policy": "private-fallible",
+      "core_scopes": [
+        "crates/crunch-build/src/dynamic_plan.rs"
+      ],
+      "domain_id": "mantle.dynamic-plan.source-id",
+      "raw_representation": "string",
+      "symbols": [
+        "SourceId",
+        "DynamicPlaceholder::Source::source",
+        "DeclaredSourceInput::id",
+        "DynamicInput::Source::source"
+      ],
+      "wrapper_kind": "refined-newtype"
+    },
+    {
+      "compatibility_required": false,
+      "compatibility_scopes": [],
+      "constructor_policy": "private-fallible",
+      "core_scopes": [
+        "crates/crunch-build/src/dynamic_plan.rs"
+      ],
+      "domain_id": "mantle.dynamic-plan.store-path",
+      "raw_representation": "string",
+      "symbols": [
+        "StorePathString",
+        "DynamicDerivation::builder",
+        "DeclaredSourceInput::path",
+        "DynamicInput::StorePath::path"
+      ],
+      "wrapper_kind": "refined-newtype"
+    },
+    {
+      "compatibility_required": false,
+      "compatibility_scopes": [],
+      "constructor_policy": "private-fallible",
+      "core_scopes": [
+        "crates/crunch-build/src/dynamic_plan.rs"
+      ],
+      "domain_id": "mantle.dynamic-plan.blake3-hex",
+      "raw_representation": "string",
+      "symbols": [
+        "Blake3Hex",
+        "CanonicalDynamicPlanV1::digest",
+        "DeclaredSourceInput::nar_blake3"
+      ],
+      "wrapper_kind": "refined-newtype"
+    },
+    {
+      "compatibility_required": true,
+      "compatibility_scopes": [
+        "ui_tests/primitive_domain_alias_compat.rs"
+      ],
+      "constructor_policy": "private-fallible",
+      "core_scopes": [
+        "ui_tests/primitive_domain_alias_exact.rs"
+      ],
+      "domain_id": "octet.fixture.primitive-alias",
+      "raw_representation": "string",
+      "symbols": [
+        "FixtureUnitId"
+      ],
+      "wrapper_kind": "refined-newtype"
+    },
+    {
+      "compatibility_required": true,
+      "compatibility_scopes": [
+        "ui_tests/raw_domain_value_compat.rs",
+        "ui_tests/raw_domain_value_generated.rs"
+      ],
+      "constructor_policy": "private-infallible",
+      "core_scopes": [
+        "ui_tests/raw_domain_value.rs"
+      ],
+      "domain_id": "octet.fixture.raw-domain-value",
+      "raw_representation": "string",
+      "symbols": [
+        "RawDomainFixture::session",
+        "RawMapFixture::sessions",
+        "RawEvent::Open::session",
+        "open_session::session",
+        "current_session::return"
+      ],
+      "wrapper_kind": "opaque-newtype"
+    },
+    {
+      "compatibility_required": true,
+      "compatibility_scopes": [
+        "ui_tests/raw_domain_value_ffi.rs"
+      ],
+      "constructor_policy": "private-infallible",
+      "core_scopes": [
+        "ui_tests/raw_domain_value_ffi_core.rs"
+      ],
+      "domain_id": "octet.fixture.ffi-token",
+      "raw_representation": "u64",
+      "symbols": [
+        "FfiRecord::token"
+      ],
+      "wrapper_kind": "opaque-newtype"
+    },
+    {
+      "compatibility_required": false,
+      "compatibility_scopes": [],
+      "constructor_policy": "private-fallible",
+      "core_scopes": [
+        "ui_tests/newtype_invariant_bypass.rs",
+        "ui_tests/newtype_invariant_safe.rs"
+      ],
+      "domain_id": "octet.fixture.refined-wrapper",
+      "raw_representation": "string",
+      "symbols": [
+        "CheckedToken"
+      ],
+      "wrapper_kind": "refined-newtype"
+    }
+  ],
+  "heuristic_suffixes": [
+    "Id",
+    "Digest",
+    "Hash",
+    "Token",
+    "Epoch",
+    "Revision"
+  ],
+  "non_claims": [
+    "The catalog defines reviewed source-shape policy. It does not prove runtime correctness or semantic validity.",
+    "A nominal type does not grant authority, secrecy, trust, or release eligibility."
+  ],
+  "schema_version": "octet-nominal-domain-policy/v1"
+}

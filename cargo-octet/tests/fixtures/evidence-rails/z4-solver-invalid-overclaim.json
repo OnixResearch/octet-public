@@ -1,0 +1,21 @@
+{
+  "schema_version": "z4-solver-summary/v0",
+  "solver": {
+    "name": "z4-solver",
+    "version": "0.1.0"
+  },
+  "query": {
+    "identity": "not-a-b3-identity",
+    "logic": "QF_BV",
+    "profile": "bounded-diagnostic"
+  },
+  "result_status": "proved",
+  "verification_role": "formal proof of whole-program correctness",
+  "claims": {
+    "proves_correctness": true,
+    "proves_solver_soundness": true,
+    "release_eligible": true
+  },
+  "evidence_tier": "formal_proof",
+  "non_claims": []
+}

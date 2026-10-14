@@ -1,0 +1,124 @@
+= What Safety-Critical Means
+:page-range: 81-87
+
+The phrase "safety-critical" is not a marketing claim. It is a regulatory classification with specific standards, assurance levels, and consequences for getting it wrong.
+
+A team builds an industrial motor controller. The system manages torque, position, and thermal limits for a robotic arm used in heavy manufacturing. The firmware is solid. The engineers are careful. They run property-based tests against the control loop. They fuzz the communication protocol. The README says "safety-critical software for industrial control systems."
+
+They mean it informally -- the system controls physical hardware, a bug could hurt an operator, so they call it safety-critical.
+
+A prospective customer in aviation evaluates the team's sensor-array firmware for use in a flight-management subsystem. The customer's compliance engineer asks a single question: which Design Assurance Level does the software target?
+
+The team does not know what that means.
+
+The customer walks away. Not because the software is bad -- it may be excellent -- but because "safety-critical" is not just an adjective. It is a regulatory regime.
+
+In those industries, "we test everything pretty thoroughly" is not an answer. The answer is a level, a standard, and a body of evidence.
+
+== What makes a system safety-critical
+
+A system is safety-critical when its failure may result in death, serious injury, significant equipment damage, or environmental harm. But the definition alone is not what matters. What matters is the regulatory consequence: a safety-critical system must be developed, verified, and maintained according to a recognized standard, and that compliance must be demonstrated to an authority before the system is allowed to operate.
+
+This is not about whether your code is important. It is about whether its failure has physical consequences that cannot be undone with a rollback.
+
+=== Three domains, three standards
+
+.DO-178C
+Software Considerations in Airborne Systems and Equipment Certification. Used in aviation. Recognized by major certification authorities. The most mature safety-critical software standard in common use.
+
+.IEC 62304
+Medical Device Software -- Software Life Cycle Processes. Used in medical devices. Defines software safety classification and the lifecycle activities required for each class.
+
+.IEC 61508
+Functional Safety of Electrical/Electronic/Programmable Electronic Safety-Related Systems. The parent standard behind much industrial functional-safety work.
+
+These standards are not interchangeable. Each was written for the failure modes, operating environments, and regulatory structures of its domain.
+
+== Design Assurance Levels
+
+DO-178C does not require the same rigor for all software. It classifies by the consequence of failure.
+
+.Level A
+Failure prevents continued safe operation. Example: flight-control software. Full MC/DC is required.
+
+.Level B
+Failure reduces capability or the operator's ability to cope with adverse conditions. Decision coverage and independent verification are required.
+
+.Level C
+Failure causes a significant increase in operator workload or distress. Statement coverage is required.
+
+.Level D
+Failure causes inconvenience but not a hazardous condition. The assurance burden is much lighter.
+
+.Level E
+Failure has no impact on safety. No software assurance is required.
+
+The assurance level determines everything: how much testing, what kind of testing, how much documentation, how much traceability, and whether you need independent verification.
+
+== What this means for Rust
+
+Rust's compiler provides guarantees that other languages used in safety-critical systems often do not: memory safety without garbage collection, data-race prevention at compile time, and null safety through types.
+
+These are real advantages. They are also insufficient.
+
+A language that prevents memory corruption does not prevent logic errors. It does not prevent wrong requirements. It does not prevent a system architecture with a single point of failure. The defects that safety standards are designed to catch are not limited to the defects that compilers can prevent.
+
+DO-178C does not care which language you use. It cares about traceability, coverage, independence of verification, and qualification of tools that receive verification credit.
+
+Rust's borrow checker is not independent verification. `cargo test` is not a substitute for requirements traceability. These tools are valuable -- they eliminate entire classes of bugs before certification even begins -- but they do not replace the regulatory process.
+
+== The MCAS lesson
+
+The Boeing 737 MAX MCAS system relied on a single angle-of-attack sensor. The sensor failed. The software trusted it. The aircraft repeatedly pitched nose-down. Two aircraft crashed. 346 people died.
+
+The technical failure was not that the software did something random. It did exactly what it was written to do. The failure was in the system design: a single point of failure in a flight-critical system, insufficient redundancy, and an assurance story that did not match the system's real authority.
+
+This is the lesson for every safety-critical team: the most dangerous failure is not just a bug in your code. It is a misclassification of your system's criticality.
+
+If you classify a Level A system as Level C, you will test it to Level C standards, document it to Level C standards, and staff it like a Level C program. The gap between what you tested and what could fail is where people get hurt.
+
+== Practical implications for Rust teams
+
+Know which standard applies to your domain before you write a line of code. Determine your assurance level early. It shapes test strategy, team structure, documentation requirements, tool selection, budget, schedule, and hiring.
+
+Rust's type system is a force multiplier, not a replacement for verification rigor. The borrow checker prevents memory corruption. The type system prevents data races. These eliminate entire defect classes that have caused safety incidents for decades. That is significant. It does not exempt you from the standard.
+
+If your system is genuinely high-assurance, you will need independent testing, formal reviews, and documentation that most Rust teams have never produced: requirements documents, procedures traceable to requirements, problem reports with formal dispositions, and configuration management that can reconstruct any prior build exactly.
+
+A note on `unsafe`: in safety-critical Rust, every `unsafe` block is a point of interest for the certification authority. It is code where the compiler's guarantees are suspended and the developer assumes responsibility.
+
+That is not a prohibition -- some `unsafe` is necessary for hardware register access, FFI boundaries, and certain performance-critical control paths. But every block must be justified, reviewed, and tested as if it were C.
+
+== The deeper point
+
+When this site says "safety-critical," it means a world in which a regulator or certification authority may review your software process and your evidence before your system is allowed to operate.
+
+It means that "all tests pass" is necessary but not sufficient.
+
+It means that your verification strategy must be proportional to the consequence of failure, not to your confidence in the code.
+
+Rust gives you a head start. What you do with that head start determines whether your system is safe -- not just correct.
+
+When someone on your team writes "safety-critical" in a document, stop and ask: which standard? Which level? What evidence? If the answer is silence, that is not a knowledge gap. It is a risk.
+
+== Grounding
+
+[quote, RTCA DO-178C (2011)]
+____
+Software Considerations in Airborne Systems and Equipment Certification.
+____
+
+[quote, IEC 62304:2006+AMD1:2015]
+____
+Medical Device Software -- Software Life Cycle Processes.
+____
+
+[quote, IEC 61508]
+____
+Functional Safety of Electrical/Electronic/Programmable Electronic Safety-Related Systems.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 1]
+____
+Rust's rules ensure that, as your program grows in size and complexity, you will not suddenly discover that the compiler is letting data races or dangling pointers sneak in.
+____

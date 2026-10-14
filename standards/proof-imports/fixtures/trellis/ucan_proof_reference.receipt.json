@@ -1,0 +1,7 @@
+{
+  "schema_version": "trellis-imported-proof-reference/v1",
+  "repository": "../trellis",
+  "source_path": "src/ucan_proof_reference.rs",
+  "proof_path": "src/ucan_proof_reference.rs",
+  "status": "external-review-only"
+}

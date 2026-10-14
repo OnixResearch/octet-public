@@ -1,0 +1,20 @@
+warning: negated predicate name `is_not_ready` — prefer a positive form like `is_ready`
+  --> $DIR/negated_predicate_local_rename.rs:2:9
+   |
+LL |     let is_not_ready = false;
+   |         ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): prefer positive predicate names over negated forms like `is_not_ready` or `no_capacity` Example: fn is_ready(state: &State) -> bool
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Positive Predicates
+   = note: `#[warn(tigerstyle::negated_predicate)]` on by default
+help: rename to `is_ready`
+   |
+LL ~     let is_ready = false;
+LL ~     let _a = is_ready;
+LL ~     let _b = is_ready;
+LL ~     let _c = !is_ready;
+   |
+
+warning: 1 warning emitted
+

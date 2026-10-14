@@ -1,0 +1,17 @@
+{
+  "laws": [
+    {
+      "case_budget": 64,
+      "effect_free": true,
+      "fixture_complement": "standards/evidence/fixtures/valid/hegel_hardened_details_v1.ncl",
+      "generated_input_benefit": "generated duplicates, whitespace, ordering, and Unicode combinations exceed the concrete fixture matrix",
+      "generator": "bounded vectors of bounded Unicode strings",
+      "law_id": "octet.hegel.issue-code-normalization-idempotent",
+      "negative_property": "raw generated input is not assumed to equal its normalized projection",
+      "positive_property": "normalizing twice equals normalizing once and produces sorted unique non-empty values",
+      "pure_core": "cargo_octet::hegel::normalize_issue_codes",
+      "replay_method": "Hegel derandomized replay plus retained counterexample issue codes"
+    }
+  ],
+  "schema_version": "octet-hegel-law-catalog/v1"
+}

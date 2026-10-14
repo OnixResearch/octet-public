@@ -1,0 +1,12 @@
+warning: module directory `$ROOT/policy_inputs/module_file_count_over` contains 9 Rust source files (limit: 7)
+  --> $ROOT/ui_tests/../policy_inputs/module_file_count_over/file_01.rs:1:1
+   |
+LL | pub fn module_file_count_module_file_count_over_01() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Module Size): split crowded module directories into smaller responsibility-based submodules Example: mod parser; mod planner; mod executor;
+   = note: see Tiger Style guide: File Length
+   = note: `#[warn(tigerstyle::module_file_count)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,22 @@
+let contracts = import "../../contracts/generated.ncl" in
+{
+  version = 2,
+  index = "F1",
+  stable_id = "b3:stable",
+  semantic_id = "b3:semantic",
+  identity_status = "computed",
+  normalized_snippet_hash = "b3:snippet",
+  config_hash = "b3:config",
+  cache_status = "disabled",
+  lint = "no_unwrap",
+  group = "tigerstyle::safety",
+  severity = "warning",
+  file = "src/lib.rs",
+  line = "ten",
+  column = 5,
+  message = "use of `.unwrap()`",
+  principle = "Error Handling",
+  effect_family = "failure",
+  evidence_tier = "static_lint",
+  crate_name = "consumer",
+} | contracts.FindingV2

@@ -1,0 +1,36 @@
+[package]
+name = "octet-standards"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+publish = false
+description = "Policy registry and standards checks for Octet"
+
+[lib]
+name = "octet_standards"
+path = "src/lib.rs"
+
+[[bin]]
+name = "octet-standards"
+path = "src/main.rs"
+
+[[bin]]
+name = "slotcar-standards"
+path = "src/bin/slotcar-standards.rs"
+
+[[bin]]
+name = "tigerstyle-standards"
+path = "src/bin/tigerstyle-standards.rs"
+
+[dependencies]
+blake3 = "1"
+octet-architecture-ir = { path = "../octet-architecture-ir" }
+clap = { version = "4", features = ["derive"] }
+nickel-export-core = { git = "https://github.com/OnixResearch/nickel-export", rev = "257fafc1c746f1faf156207043a4c826bfb16d49" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2.0"
+
+[dev-dependencies]
+pretty_assertions = "1.0"
+tempfile = "3"

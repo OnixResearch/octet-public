@@ -1,0 +1,40 @@
+= Tiger Style
+:page-range: 1-3
+
+Rust engineering standards for systems where correctness is not optional.
+
+This site collects patterns, idioms, and standards from building safety-critical software in Rust. The systems that inform this work control physical hardware, operate under regulatory constraint, and run on processors where a missed memory ordering causes a real-world failure -- not a 500 error, but a machine that does the wrong thing.
+
+The standards here are grounded in production. Each one emerged from a specific problem, was validated on real code, and is written so that an engineer encountering the problem for the first time can recognize it, name it, and fix it. The code examples are Rust. The principles are universal.
+
+Ten pillars organize the work: Architecture, Culture, Fitness, DevTools, Embedded, Resilience, Orchestration, Idioms, Metrics, and Verification. New entries appear as they are proven. Nothing here is speculative.
+
+Written by Adam Murray.
+
+== About
+
+I build software that controls physical hardware, operates under regulatory constraint, and runs on processors where a wrong answer is not a bug report -- it is a machine that does the wrong thing.
+
+This site collects patterns from that work. Each one emerged from a specific failure, was validated on production code, and is written so that an engineer encountering the problem for the first time can recognize it, name it, and fix it. The ten pillars that organize this site are not arbitrary categories. Each one represents a dimension of engineering practice where I have watched teams succeed or fail in ways that had physical consequences.
+
+=== The path here
+
+I started in embedded systems at Newbridge Networks and Mitel Corp. -- two telecom companies coincidentally both founded by Terry Matthews -- writing the low-level software that runs on real hardware with real timing constraints. That is where I learned that the gap between working code and correct code is measured in bytes, clock cycles, and memory orderings that behave differently on different processors. The Embedded pillar exists because most Rust content treats hardware as an afterthought. For the systems I build, hardware is the point.
+
+At IBM Rational, I worked on the tools that engineering organizations use to measure, govern, and improve how they ship software. Not the software itself -- the instruments around it. That work shaped two convictions. First: quality that depends on discipline alone eventually fails; quality that is structural -- embedded in the tools, the types, the architecture -- compounds. That conviction became the DevTools pillar. Second: you cannot improve what you cannot measure, but most teams measure the wrong things. That became Fitness and Metrics -- two pillars that look similar from outside but address different questions. Fitness asks whether a codebase is healthy. Metrics asks whether you would know if it were not.
+
+At Akka (then Typesafe/Lightbend), I worked on typed concurrent systems in Scala and the actor model -- making unsafe states unrepresentable in the type system for systems handling financial data, healthcare workloads, and infrastructure that could not go down. The problems were familiar from embedded work -- shared mutable state, ordering guarantees, failure propagation -- but the approach was revelatory: encode the constraints in the architecture, not in the comments. State machines, message passing, supervision hierarchies -- these patterns became the Orchestration pillar. The principle of making boundaries explicit and coupling visible became Architecture.
+
+Consulting on safety-critical systems -- medical device software, document preservation for a national archive, industrial control systems -- taught me what happens when systems meet the real world's talent for breaking things. Motors stall. Sensors drift. Connections drop. Networks partition. The question is never whether your system will face a failure it was not designed for. The question is what it does next. Resilience is the pillar for that question.
+
+My PhD research at the University of Ottawa studied how software engineers actually understand complex systems. I recorded whiteboard sessions with professional developers at two companies and coded the cognitive patterns that emerged. The core finding -- Snapshot Theory -- describes how engineers build understanding through a predictable progression: structure first, then function, then depth. That research convinced me that the human side of engineering -- how teams learn, how knowledge transfers, how culture compounds -- is not secondary to the technical side. It is inseparable from it. Culture is the pillar for everything the compiler cannot enforce about your team.
+
+Teaching embedded systems and software quality engineering at the University of Victoria closed the loop. In the classroom, I found that the clearest way to teach a standard is to ground it in a specific failure that the standard prevents. A pattern without a name is invisible. The moment you name it, people see it everywhere. That principle -- name it, ground it, make it visible -- runs through the Idioms pillar. And the discipline of proving that a system is correct, not merely tested -- of understanding what "safety-critical" means in the regulatory sense, with specific standards, assurance levels, and legal force -- became Verification.
+
+=== Why these ten
+
+These pillars are not comprehensive. They do not cover performance tuning, security hardening, API design, or a dozen other topics that matter in software engineering. They cover the ten dimensions where, across twenty-five years of building, consulting, and teaching, I have seen the gap between correct and safe.
+
+Correct means the code does what it is supposed to do. Safe means the system behaves acceptably when the code, the hardware, the network, the operator, or the assumptions are wrong. Every pillar on this site addresses some aspect of that gap -- the space between a program that compiles and a system that can be trusted with physical consequence.
+
+Rust is the first production language I have used where the compiler enforces, at build time, constraints I spent my career teaching teams to enforce through review, convention, and vigilance. It does not replace discipline. It makes discipline structural. It closes part of the gap between correct and safe. These ten pillars address the rest.

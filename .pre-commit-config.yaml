@@ -1,0 +1,78 @@
+# Local contributor hooks for the Octet repository.
+# Consumer-facing hook metadata remains in `.pre-commit-hooks.yaml` and
+# `templates/pre-commit-config.yaml`.
+minimum_pre_commit_version: "3.5.0"
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+        # Preserve exact bytes for BLAKE3-bound generated and recorded artifacts.
+        exclude: |
+          (?x)^(
+            \.cairn/|
+            openspec/|
+            ui_tests/|
+            standards/policies/fixtures/|
+            standards/charon-semantic/generated/valence-handoff\.json$|
+            standards/charon-semantic/fixtures/valid/artifacts/charon-snapshot\.llbc$|
+            standards/proof-rails/aeneas-lean/fixtures/valid/verification\.json$|
+            standards/proof-rails/aeneas-lean/fixtures/valid/artifacts/proofs/aeneas/llbc\.llbc$|
+            tests/support/dylint/driver/Cargo\.toml
+          )
+      - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+            \.cairn/|
+            openspec/|
+            ui_tests/|
+            standards/policies/fixtures/|
+            tests/support/dylint/driver/Cargo\.toml
+          )
+      - id: check-yaml
+        files: >-
+          (^\.pre-commit-hooks\.yaml$|^\.pre-commit-config\.yaml$|^templates/pre-commit-config\.yaml$|^openspec/config\.yaml$|\.openspec\.yaml$)
+      - id: check-toml
+        files: >-
+          (^Cargo\.toml$|^cargo-octet/Cargo\.toml$|^crates/.*/Cargo\.toml$|^rust-toolchain\.toml$|^rustfmt\.toml$|^templates/dylint\.toml$|^ui_tests/.*/(Cargo|dylint)\.toml$)
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt --all -- --check (nix devshell)
+        entry: >-
+          bash -c 'mkdir -p target/pre-commit-nix-tmp && TMPDIR="$PWD/target/pre-commit-nix-tmp" nix develop -c cargo fmt --all -- --check'
+        language: system
+        pass_filenames: false
+        files: >-
+          (^Cargo\.toml$|^cargo-octet/.*\.rs$|^crates/.*\.rs$|^src/.*\.rs$|^tests/.*\.rs$|^ui_tests/.*\.rs$|^rustfmt\.toml$)
+
+      - id: cargo-metadata-locked
+        name: cargo metadata --locked (nix devshell)
+        entry: >-
+          bash -c 'mkdir -p target/pre-commit-nix-tmp && TMPDIR="$PWD/target/pre-commit-nix-tmp" nix develop -c cargo metadata --locked --format-version 1 --no-deps'
+        language: system
+        pass_filenames: false
+        files: >-
+          (^Cargo\.lock$|^Cargo\.toml$|^cargo-octet/Cargo\.toml$|^crates/.*/Cargo\.toml$|^rust-toolchain\.toml$)
+
+      - id: octet-policy-validate
+        name: octet-policy-validate
+        entry: >-
+          bash -c 'mkdir -p target/pre-commit-nix-tmp && TMPDIR="$PWD/target/pre-commit-nix-tmp" nix run --offline .#octet-policy-validate'
+        language: system
+        pass_filenames: false
+        files: >-
+          (^standards/(policies|receipts)/|^docs/standards/|^crates/octet-standards/|^flake\.nix$)
+
+      - id: pre-commit-hook-surface
+        name: pre-commit hook surface regression test
+        entry: >-
+          bash -c 'mkdir -p target/pre-commit-nix-tmp && TMPDIR="$PWD/target/pre-commit-nix-tmp" nix develop -c cargo test --test consumer_integration pre_commit -- --nocapture'
+        language: system
+        pass_filenames: false
+        files: >-
+          (^\.pre-commit-hooks\.yaml$|^\.pre-commit-config\.yaml$|^hooks/octet-deny-all\.sh$|^templates/pre-commit-config\.yaml$|^tests/consumer_integration\.rs$|^tests/fixtures/lint_inventory_names\.txt$|^src/lib\.rs$)

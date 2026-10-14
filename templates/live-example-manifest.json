@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "source_document": "docs/standards/source/devtools.adoc#live-example-verification",
+  "fixture": "tests/fixtures/fingerprints/reviewed.rs",
+  "command": "cargo octet fingerprint --check tests/fixtures/fingerprints/reviewed.rs --output-format=json",
+  "expected_status": "success",
+  "content_hash_algorithm": "BLAKE3"
+}

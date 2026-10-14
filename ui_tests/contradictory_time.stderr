@@ -1,0 +1,18 @@
+warning: function takes time parameter `now_ms` but also reads system time
+  --> $DIR/contradictory_time.rs:8:14
+   |
+LL |     let _t = Instant::now();
+   |              ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): choose one source of time for a code path and thread it through consistently Example: fn expires_at(now: Instant, ttl: Duration) -> Instant { now + ttl }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::contradictory_time)]` on by default
+help: use the `now_ms` parameter instead of reading system time
+   |
+LL -     let _t = Instant::now();
+LL +     let _t = now_ms;
+   |
+
+warning: 1 warning emitted
+

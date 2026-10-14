@@ -1,0 +1,405 @@
+{
+  "admission": null,
+  "capability_classifications": [
+    {
+      "core_handling": "explicit-fact",
+      "executor_role": "composition-root",
+      "family": "time",
+      "rationale": "runner and adapter shells own time observation"
+    },
+    {
+      "core_handling": "explicit-fact",
+      "executor_role": "composition-root",
+      "family": "randomness",
+      "rationale": "runner shells own random value generation"
+    },
+    {
+      "core_handling": "effect-plan",
+      "executor_role": "composition-root",
+      "family": "filesystem",
+      "rationale": "runner and standards shells own filesystem access"
+    },
+    {
+      "core_handling": "effect-plan",
+      "executor_role": "composition-root",
+      "family": "network",
+      "rationale": "runner shells own network access"
+    },
+    {
+      "core_handling": "effect-plan",
+      "executor_role": "composition-root",
+      "family": "process",
+      "rationale": "cargo-octet owns child process execution"
+    },
+    {
+      "core_handling": "explicit-fact",
+      "executor_role": "composition-root",
+      "family": "environment",
+      "rationale": "runner shells read and validate environment inputs"
+    },
+    {
+      "core_handling": "forbidden",
+      "executor_role": "composition-root",
+      "family": "secrets",
+      "rationale": "architecture policy does not carry raw secret material"
+    },
+    {
+      "core_handling": "forbidden",
+      "executor_role": "composition-root",
+      "family": "unsafe-code",
+      "rationale": "unsafe operations remain outside deterministic policy data"
+    },
+    {
+      "core_handling": "forbidden",
+      "executor_role": "composition-root",
+      "family": "global-state",
+      "rationale": "policy cores do not depend on ambient mutable state"
+    },
+    {
+      "core_handling": "effect-plan",
+      "executor_role": "composition-root",
+      "family": "concurrency",
+      "rationale": "runner shells own task and process lifecycle"
+    },
+    {
+      "core_handling": "effect-plan",
+      "executor_role": "composition-root",
+      "family": "observability",
+      "rationale": "shells render diagnostics and evidence"
+    },
+    {
+      "core_handling": "forbidden",
+      "executor_role": "composition-root",
+      "family": "ffi",
+      "rationale": "project policy does not authorize foreign calls"
+    },
+    {
+      "core_handling": "effect-plan",
+      "executor_role": "application-shell",
+      "family": "allocation",
+      "rationale": "bounded policy evaluation uses application-owned allocation limits"
+    }
+  ],
+  "collection_limits": {
+    "max_artifact_bytes": 268435456,
+    "max_calls": 262144,
+    "max_configurations": 8192,
+    "max_constructors": 65536,
+    "max_effects": 65536,
+    "max_expansions": 65536,
+    "max_function_safety_facts": 65536,
+    "max_implementations": 16384,
+    "max_items": 65536,
+    "max_modules": 4096,
+    "max_shard_bytes": 67108864,
+    "max_shards": 32,
+    "max_signatures": 65536,
+    "max_span_bytes": 1048576,
+    "max_spans": 262144,
+    "max_traits": 8192,
+    "max_type_shapes": 65536,
+    "max_types": 65536,
+    "max_units": 32,
+    "max_unknowns": 65536,
+    "max_value_flow_bodies": 65536,
+    "max_value_flow_rounds": 64,
+    "max_value_flow_steps": 1048576,
+    "max_value_provenance_facts": 262144
+  },
+  "core_no_std": [],
+  "dependency_rules": [
+    {
+      "allowed_callee_roles": [
+        "domain-core"
+      ],
+      "caller_role": "domain-core",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    },
+    {
+      "allowed_callee_roles": [
+        "application-shell",
+        "domain-core"
+      ],
+      "caller_role": "application-shell",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    },
+    {
+      "allowed_callee_roles": [
+        "inbound-adapter",
+        "application-shell",
+        "domain-core"
+      ],
+      "caller_role": "inbound-adapter",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    },
+    {
+      "allowed_callee_roles": [
+        "composition-root",
+        "application-shell",
+        "inbound-adapter",
+        "outbound-adapter",
+        "domain-core"
+      ],
+      "caller_role": "composition-root",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    }
+  ],
+  "mode": "inventory",
+  "non_claims": [
+    "complete-fcis-proof",
+    "complete-hexagonal-proof",
+    "runtime-determinism",
+    "whole-program-correctness",
+    "release-eligibility"
+  ],
+  "outbound_effects": [],
+  "ports": [],
+  "production": {
+    "packages": [
+      "octet-architecture-ir",
+      "octet-lint-metadata",
+      "octet-standards",
+      "octet",
+      "cargo-octet"
+    ],
+    "source_scopes": [
+      "crates/octet-architecture-ir/src",
+      "crates/octet-lint-metadata/src",
+      "crates/octet-standards/src",
+      "src",
+      "cargo-octet/src"
+    ],
+    "targets": [
+      {
+        "default_features": true,
+        "features": [],
+        "triple": "x86_64-unknown-linux-gnu"
+      }
+    ]
+  },
+  "project_id": "octet",
+  "provider_classifications": [
+    {
+      "edge_kinds": [
+        "normal",
+        "build"
+      ],
+      "kind": "pure-value",
+      "package": "blake3",
+      "permitted_caller_roles": [
+        "domain-core",
+        "application-shell",
+        "composition-root"
+      ],
+      "rationale": "BLAKE3 supplies deterministic content identity"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "pure-value",
+      "package": "serde",
+      "permitted_caller_roles": [
+        "domain-core",
+        "application-shell",
+        "inbound-adapter",
+        "composition-root"
+      ],
+      "rationale": "Serde supplies typed value encoding contracts"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "pure-value",
+      "package": "serde_json",
+      "permitted_caller_roles": [
+        "domain-core",
+        "application-shell",
+        "inbound-adapter",
+        "composition-root"
+      ],
+      "rationale": "JSON encoding remains a bounded value transformation at these call sites"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "infrastructure",
+      "package": "dylint_linting",
+      "permitted_caller_roles": [
+        "inbound-adapter"
+      ],
+      "rationale": "the rustc lint adapter owns Dylint integration"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "infrastructure",
+      "package": "clap",
+      "permitted_caller_roles": [
+        "application-shell"
+      ],
+      "rationale": "the standards application shell owns command parsing"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "application-contract",
+      "package": "nickel-export-core",
+      "permitted_caller_roles": [
+        "application-shell"
+      ],
+      "rationale": "the standards shell owns deterministic Nickel export integration"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "pure-value",
+      "package": "thiserror",
+      "permitted_caller_roles": [
+        "application-shell"
+      ],
+      "rationale": "the standards shell derives bounded error values"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "application-contract",
+      "package": "valence-core",
+      "permitted_caller_roles": [
+        "composition-root"
+      ],
+      "rationale": "the cargo runner composes Valence evidence contracts"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "infrastructure",
+      "package": "cap-std",
+      "permitted_caller_roles": [
+        "composition-root"
+      ],
+      "rationale": "the cargo runner owns capability-relative filesystem access"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "pure-value",
+      "package": "syn",
+      "permitted_caller_roles": [
+        "composition-root"
+      ],
+      "rationale": "the cargo runner parses bounded Rust syntax inputs"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "pure-value",
+      "package": "toml",
+      "permitted_caller_roles": [
+        "composition-root"
+      ],
+      "rationale": "the cargo runner parses bounded Cargo configuration values"
+    },
+    {
+      "edge_kinds": [
+        "normal"
+      ],
+      "kind": "pure-value",
+      "package": "wasmparser",
+      "permitted_caller_roles": [
+        "composition-root"
+      ],
+      "rationale": "the cargo runner parses bounded Wasm artifact values"
+    }
+  ],
+  "roles": [
+    {
+      "role": "domain-core",
+      "scope": "octet-architecture-ir",
+      "scope_kind": "package"
+    },
+    {
+      "role": "domain-core",
+      "scope": "octet-lint-metadata",
+      "scope_kind": "package"
+    },
+    {
+      "role": "application-shell",
+      "scope": "octet-standards",
+      "scope_kind": "package"
+    },
+    {
+      "role": "inbound-adapter",
+      "scope": "octet",
+      "scope_kind": "package"
+    },
+    {
+      "role": "composition-root",
+      "scope": "cargo-octet",
+      "scope_kind": "package"
+    },
+    {
+      "role": "domain-core",
+      "scope": "crates/octet-architecture-ir/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "domain-core",
+      "scope": "crates/octet-lint-metadata/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "application-shell",
+      "scope": "crates/octet-standards/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "inbound-adapter",
+      "scope": "src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "composition-root",
+      "scope": "cargo-octet/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "test",
+      "scope": "tests",
+      "scope_kind": "source"
+    },
+    {
+      "role": "test",
+      "scope": "ui_tests",
+      "scope_kind": "source"
+    },
+    {
+      "role": "generated",
+      "scope": "standards/project-architecture/generated",
+      "scope_kind": "source"
+    }
+  ],
+  "schema_version": "octet-project-architecture-policy/v1",
+  "waivers": []
+}

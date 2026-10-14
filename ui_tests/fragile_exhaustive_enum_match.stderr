@@ -1,0 +1,20 @@
+warning: same-crate enum `LocalState` is matched exhaustively without a fallback; adding a variant will force this site to change
+  --> $DIR/fragile_exhaustive_enum_match.rs:9:5
+   |
+LL | /     match state {
+LL | |         LocalState::Ready => true,
+LL | |         LocalState::Closed => false,
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Open/Closed Boundaries): avoid fragile same-crate exhaustive enum matches unless the enum is deliberately sealed Example: #[octet::sealed_enum] enum State { Ready, Closed }
+   = note: see Tiger Style guide: Enum Matches / Local Evolution
+note: the lint level is defined here
+  --> $DIR/fragile_exhaustive_enum_match.rs:1:9
+   |
+LL | #![warn(fragile_exhaustive_enum_match)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::fragile_exhaustive_enum_match)]` implied by `#[warn(fragile_exhaustive_enum_match)]`
+
+warning: 1 warning emitted
+

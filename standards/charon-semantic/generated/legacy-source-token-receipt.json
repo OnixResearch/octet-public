@@ -1,0 +1,31 @@
+{
+  "analysis_kind": "selected-source-token-effect-closure",
+  "checker_id": "octet-standards",
+  "claims_property_authority": false,
+  "facts": [
+    {
+      "key": "function.real_fixture::safe_add.present",
+      "value": "true"
+    },
+    {
+      "key": "function.real_fixture::safe_add.unsafe",
+      "value": "false"
+    },
+    {
+      "key": "effect.panic",
+      "value": "true"
+    },
+    {
+      "key": "source.identity",
+      "value": "b3:fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+    }
+  ],
+  "non_claims": [
+    "Source-token analysis does not perform complete Rust name resolution, macro expansion, trait dispatch, MIR call-graph analysis, or runtime reachability analysis.",
+    "Recorded agreement with a Charon projection does not prove semantic equivalence or effect absence."
+  ],
+  "schema_version": "octet-legacy-source-token-analysis/v1",
+  "selected_item": "real_fixture::safe_add",
+  "source_identity": "b3:fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502",
+  "status": "recorded"
+}

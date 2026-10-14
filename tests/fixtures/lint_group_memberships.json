@@ -1,0 +1,104 @@
+[
+  {
+    "group_name": "tigerstyle::safety",
+    "lint_names": [
+      "compound_assertion",
+      "unbounded_loop",
+      "assertion_density",
+      "explicit_defaults",
+      "unbounded_channel",
+      "unbounded_collection_growth",
+      "sentinel_fallback",
+      "ignored_result",
+      "drop_must_use",
+      "fallible_int_fallback",
+      "unchecked_narrowing",
+      "unchecked_division",
+      "catch_all_on_enum",
+      "foreign_enum_catch_all",
+      "fragile_exhaustive_enum_match",
+      "state_machine_exhaustiveness",
+      "raw_arithmetic_overflow",
+      "no_unwrap",
+      "no_panic",
+      "public_unsafe_api",
+      "defaulting_trait_method",
+      "no_todo",
+      "unjustified_no_todo_allow",
+      "no_recursion"
+    ]
+  },
+  {
+    "group_name": "tigerstyle::naming",
+    "lint_names": [
+      "acronym_style",
+      "numeric_units",
+      "underscore_in_module_filename",
+      "non_trait_imports",
+      "renamed_imports",
+      "path_segment_repetition",
+      "negated_predicate",
+      "bool_naming",
+      "float_for_currency"
+    ]
+  },
+  {
+    "group_name": "tigerstyle::performance",
+    "lint_names": [
+      "clone_then_borrow",
+      "allocation_in_loop"
+    ]
+  },
+  {
+    "group_name": "tigerstyle::structure",
+    "lint_names": [
+      "function_length",
+      "magic_number",
+      "excessive_file_length",
+      "module_file_count",
+      "compound_condition",
+      "unjustified_allow",
+      "nested_conditionals",
+      "usize_in_public_api",
+      "borrowed_argument_types",
+      "deref_polymorphism",
+      "too_many_parameters",
+      "fat_trait",
+      "concrete_construction_in_core",
+      "type_accumulation",
+      "platform_dependent_cast",
+      "ambiguous_params",
+      "primitive_domain_alias",
+      "raw_domain_value",
+      "newtype_invariant_bypass"
+    ]
+  },
+  {
+    "group_name": "tigerstyle::purity",
+    "lint_names": [
+      "verified_purity",
+      "contradictory_time",
+      "ambient_clock",
+      "ambient_env",
+      "ambient_random",
+      "global_state_in_core",
+      "impure_call_in_core",
+      "interior_mutability_in_core",
+      "logging_in_core",
+      "missing_const_fn",
+      "mutating_input_in_pure",
+      "nondeterministic_output",
+      "pure_attr_contract",
+      "resource_return_from_core",
+      "spawn_in_core",
+      "zero_alloc_attr_contract"
+    ]
+  },
+  {
+    "group_name": "tigerstyle::concurrency",
+    "lint_names": [
+      "multi_lock_ordering",
+      "ignored_join_handle"
+    ]
+  }
+]

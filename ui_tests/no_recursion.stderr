@@ -1,0 +1,21 @@
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:6:13
+   |
+LL |         n * factorial(n - 1)
+   |             ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+   = note: `#[warn(tigerstyle::no_recursion)]` on by default
+
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:24:32
+   |
+LL |         if n == 0 { 0 } else { self.method_recursion(n - 1) }
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: 2 warnings emitted
+

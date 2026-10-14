@@ -1,0 +1,10 @@
+{
+  "known_profiles": ["loom"],
+  "profile": "miri",
+  "allowed_commands": ["cargo loom test"],
+  "command": "cargo miri test",
+  "tool_available": false,
+  "expected_signal": "passed",
+  "acceptance_signal": "failed",
+  "finding_count": 1
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "octet-nickel-export-manifest/v1",
+  "generator": "octet-standards.nickel-export-helper/v1",
+  "nickel_identity": "nickel-lang-cli nickel 1.17.0 (rev 1320a98)",
+  "exports": [
+    {
+      "family_id": "octet.assurance-profile.onixos-lifecycle-proof",
+      "output_format": "json",
+      "source": {
+        "path": "standards/policies/assurance-profiles/onixos-lifecycle-proof.ncl",
+        "blake3": "c7f49352f6f35476502dbd69839123bb1499e73f9c73abba3222600f2d612403",
+        "bytes": 12810
+      },
+      "dependencies": [
+        {
+          "path": "standards/policies/assurance-profiles/contracts.ncl",
+          "blake3": "59941ad61aeb41e56d01e2086e8271dc3f86bcd10b123c6d6193e42593d3db29",
+          "bytes": 4908
+        }
+      ],
+      "output": {
+        "path": "standards/policies/assurance-profiles/generated/onixos-lifecycle-proof.json",
+        "blake3": "1c7a5bf42d998da49e2ae732f03198cdb318d793199de0b7c0a3247f96dad9fa",
+        "bytes": 13333
+      },
+      "selector": "",
+      "contract": "AssuranceProfile and AssuranceProfileRules",
+      "generation_command": "nickel export --format json standards/policies/assurance-profiles/onixos-lifecycle-proof.ncl",
+      "command_argv": [
+        "nickel",
+        "export",
+        "--format",
+        "json",
+        "standards/policies/assurance-profiles/onixos-lifecycle-proof.ncl"
+      ]
+    }
+  ]
+}

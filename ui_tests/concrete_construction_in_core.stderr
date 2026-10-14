@@ -1,0 +1,12 @@
+warning: core scope constructs concrete type `serde_json::Map::<String, serde_json::Value>`; inject the dependency through a port or capability
+  --> $DIR/concrete_construction_in_core/concrete_construction_in_core.rs:18:23
+   |
+LL |     let _value = Some(serde_json::Map::<String, serde_json::Value>::new());
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Dependency Inversion): inject infrastructure dependencies through ports or capabilities instead of constructing concrete types in core Example: fn run(clock: impl Clock) -> Output
+   = note: see Tiger Style guide: Architecture / Ports and Capabilities
+   = note: `#[warn(tigerstyle::concrete_construction_in_core)]` on by default
+
+warning: 1 warning emitted
+

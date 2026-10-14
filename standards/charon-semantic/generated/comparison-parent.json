@@ -1,0 +1,23 @@
+{
+  "authority": "source-token",
+  "facts": [
+    {
+      "fact": "item-presence",
+      "item": "real_fixture::safe_add",
+      "value": "present"
+    },
+    {
+      "fact": "control-flow",
+      "item": "real_fixture::safe_add",
+      "value": "structured"
+    },
+    {
+      "fact": "effect-candidate",
+      "item": "real_fixture::safe_add",
+      "value": "panic"
+    }
+  ],
+  "identity": "b3:23e41fc9fa5d85379bac551522134416b0478cbaf19d67d35e69a6f0b53b906e",
+  "schema_version": "octet-charon-semantic-comparison-parent/v1",
+  "source_identity": "b3:fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+}

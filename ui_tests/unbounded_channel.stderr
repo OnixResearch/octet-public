@@ -1,0 +1,48 @@
+warning: unbounded channel — use a bounded channel with explicit capacity
+  --> $DIR/unbounded_channel/unbounded_channel.rs:7:13
+   |
+LL |     let _ = std_channel::<u8>();
+   |             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Bounded Queues): use bounded channels with explicit capacity instead of unbounded queues Example: let (tx, rx) = tokio::sync::mpsc::channel(128);
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Bounded Queues
+   = note: `#[warn(tigerstyle::unbounded_channel)]` on by default
+help: use bounded channel with explicit capacity
+   |
+LL -     let _ = std_channel::<u8>();
+LL +     let _ = std_sync_channel::<u8>(/* CAPACITY */);
+   |
+
+warning: unbounded channel — use a bounded channel with explicit capacity
+  --> $DIR/unbounded_channel/unbounded_channel.rs:11:13
+   |
+LL |     let _ = crossbeam_unbounded::<u8>();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Bounded Queues): use bounded channels with explicit capacity instead of unbounded queues Example: let (tx, rx) = tokio::sync::mpsc::channel(128);
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Bounded Queues
+help: use bounded channel with explicit capacity
+   |
+LL -     let _ = crossbeam_unbounded::<u8>();
+LL +     let _ = crossbeam_bounded::<u8>(/* CAPACITY */);
+   |
+
+warning: unbounded channel — use a bounded channel with explicit capacity
+  --> $DIR/unbounded_channel/unbounded_channel.rs:15:13
+   |
+LL |     let _ = tokio_unbounded_channel::<u8>();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Bounded Queues): use bounded channels with explicit capacity instead of unbounded queues Example: let (tx, rx) = tokio::sync::mpsc::channel(128);
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Bounded Queues
+help: use bounded channel with explicit capacity
+   |
+LL -     let _ = tokio_unbounded_channel::<u8>();
+LL +     let _ = tokio_channel::<u8>(/* CAPACITY */);
+   |
+
+warning: 3 warnings emitted
+

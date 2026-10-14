@@ -1,0 +1,70 @@
+{
+  "actor": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
+  "artifact_count": 4,
+  "artifacts": [
+    {
+      "blake3": "e6d533180fec7a298c497210f53d79cb9a89f75f500427ab804fab58fe8227cf",
+      "bytes": 88,
+      "id": "design",
+      "path": "design.md"
+    },
+    {
+      "blake3": "a7c4d54776fcb179f048728766a52d75dc450cc2a5072b7e2c238aa9b2cff3b6",
+      "bytes": 3,
+      "id": "metadata",
+      "path": "metadata.json"
+    },
+    {
+      "blake3": "0f316ae17b663329300af28aac6e7b1604ff83ff357039399a1667ef88e1b6cc",
+      "bytes": 88,
+      "id": "proposal",
+      "path": "proposal.md"
+    },
+    {
+      "blake3": "0565924a67e02328b09a091bc0d42a1caad76066df7cbda253df444eb36bafc4",
+      "bytes": 52,
+      "id": "tasks",
+      "path": "tasks.md"
+    }
+  ],
+  "authority_source": "signed_root_embedded_authority",
+  "backend": "radicle-cob.v1",
+  "blocked": false,
+  "blockers": [],
+  "change": "exercise-cairn-cob-conflict-recovery",
+  "collaboration_command": "collaboration import",
+  "command": "cob import",
+  "content_root": "7c4dedd4299257992f0ac8dad67237b86f3b0cfd262568626ca866540b3291ef",
+  "delegates": [
+    "z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU"
+  ],
+  "dry_run": true,
+  "format_libraries": {
+    "git-ref-format-core": "0.6.0",
+    "git2": "0.20.4",
+    "radicle-cob": "0.20.0",
+    "radicle-crypto": "0.17.0",
+    "radicle-oid": "0.2.0"
+  },
+  "input_hash": "428cab7e1422c8959b33522b393d8c8c88074d9274c5182aa0b5ecf584357f93",
+  "mutated": false,
+  "non_claims": [
+    "signed COB creation proves bounded local Git object and reference observations only",
+    "signed import does not prove gate validity, evidence truth, dependency readiness, archive execution, or release eligibility",
+    "embedded creator and delegate keys are immutable object authority, not Radicle identity-document or future authorization proof",
+    "local Git COB creation does not prove node participation, publication, synchronization, peer availability, convergence, or remote trust"
+  ],
+  "object_id": null,
+  "operation_id": null,
+  "plan_hash": "dd272e4b70fe98a8de807f359e1f9cf6c577dc16cbe4e7f17f6145ca8e60f568",
+  "policy": "cairn-default",
+  "policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+  "receipt_hash": "c1d6b2338f8dcfaff60defbdaa4230b8cc189336c25f9d35aff437b78fdf7037",
+  "repository_head_oid": "b91fdcff9139492e55a7e64a142de6d0684ddb03",
+  "root": "creator-workspace",
+  "state_hash": null,
+  "type_name": "xyz.onixresearch.cairn-change",
+  "valid": true,
+  "verdict": "PASS",
+  "workspace_id": "workspace:synthetic-cob-conflict"
+}

@@ -1,0 +1,48 @@
+warning: marked zero-alloc function constructs `Vec` which allocates on the heap; this lint checks direct allocation sites only, not transitive proof
+  --> $DIR/zero_alloc_attr_contract/zero_alloc_attr_contract.rs:9:23
+   |
+LL |     let _v: Vec<u8> = Vec::new();
+   |                       ^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked zero-alloc free of heap allocation; use stack-local construction, pre-allocated buffers, or shell-owned allocation Example: #[tigerstyle::zero_alloc] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::zero_alloc_attr_contract)]` on by default
+
+warning: marked zero-alloc function constructs `Box` which allocates on the heap; this lint checks direct allocation sites only, not transitive proof
+  --> $DIR/zero_alloc_attr_contract/zero_alloc_attr_contract.rs:14:24
+   |
+LL |     let _b: Box<u64> = Box::new(42u64);
+   |                        ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked zero-alloc free of heap allocation; use stack-local construction, pre-allocated buffers, or shell-owned allocation Example: #[tigerstyle::zero_alloc] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked zero-alloc function constructs `String` which allocates on the heap; this lint checks direct allocation sites only, not transitive proof
+  --> $DIR/zero_alloc_attr_contract/zero_alloc_attr_contract.rs:19:14
+   |
+LL |     let _s = String::new();
+   |              ^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked zero-alloc free of heap allocation; use stack-local construction, pre-allocated buffers, or shell-owned allocation Example: #[tigerstyle::zero_alloc] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked zero-alloc function constructs `String` which allocates on the heap; this lint checks direct allocation sites only, not transitive proof
+  --> $DIR/zero_alloc_attr_contract/zero_alloc_attr_contract.rs:24:14
+   |
+LL |     let _s = String::from("hello");
+   |              ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked zero-alloc free of heap allocation; use stack-local construction, pre-allocated buffers, or shell-owned allocation Example: #[tigerstyle::zero_alloc] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked zero-alloc function constructs `String` which allocates on the heap; this lint checks direct allocation sites only, not transitive proof
+  --> $DIR/zero_alloc_attr_contract/zero_alloc_attr_contract.rs:29:14
+   |
+LL |     let _s = "hello".to_string();
+   |              ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked zero-alloc free of heap allocation; use stack-local construction, pre-allocated buffers, or shell-owned allocation Example: #[tigerstyle::zero_alloc] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 5 warnings emitted
+

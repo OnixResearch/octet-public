@@ -1,0 +1,1 @@
+/home/brittonr/.cargo-target/debug/cargo-octet prove --policy-artifacts-dir /tmp/octet-aeneas-policy-artifacts --source standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs --rail 'octet.aeneas_lean_proof_rails.fixture#rail-0' --artifact-dir /tmp/octet-aeneas-prove/artifacts --output-format json

@@ -1,0 +1,67 @@
+{
+  "profiles": [
+    {
+      "command_argv": [
+        "cargo",
+        "mutants",
+        "--no-times",
+        "--colors",
+        "never",
+        "--timeout",
+        "60",
+        "--build-timeout",
+        "120",
+        "--jobs",
+        "1",
+        "--output",
+        ".octet/mutants-output",
+        "--package",
+        "octet-lint-metadata",
+        "--all-features"
+      ],
+      "evidence_tier": "transcript_assertion",
+      "max_artifact_bytes": 67108864,
+      "max_artifact_count": 4096,
+      "max_log_bytes": 1048576,
+      "max_mutants": 2048,
+      "max_report_bytes": 16777216,
+      "native_inventory_path": ".octet/mutants-output/mutants.out/mutants.json",
+      "native_outcomes_path": ".octet/mutants-output/mutants.out/outcomes.json",
+      "non_claims": [
+        "Mutation outcomes sample test-suite sensitivity and do not prove test completeness or source correctness.",
+        "Survived, timed-out, unviable, not-run, and tool-failure outcomes remain visible and are not formal proof."
+      ],
+      "normalization_version": "octet-cargo-mutants-normalization/v1",
+      "outcome_policy": {
+        "caught": "pass",
+        "missed": "fail",
+        "not_run": "fail",
+        "timeout": "manual_review",
+        "tool_failure": "fail",
+        "unviable": "manual_review"
+      },
+      "output_root": ".octet/mutants-output",
+      "poll_interval_ms": 25,
+      "profile_id": "cargo-mutants-octet-metadata",
+      "provider": {
+        "closure_identity": "nixpkgs:b3d51a0365f6695e7dd5cdf3e180604530ed33b4#cargo-mutants-27.0.0",
+        "nixpkgs_revision": "b3d51a0365f6695e7dd5cdf3e180604530ed33b4",
+        "package": "cargo-mutants",
+        "version": "27.0.0"
+      },
+      "retain_diffs": true,
+      "retain_logs": true,
+      "rust_toolchain": "nightly-2026-03-21",
+      "scope": {
+        "all_features": true,
+        "package": "octet-lint-metadata",
+        "target": "lib",
+        "test_selection": "library-tests"
+      },
+      "source_manifest_schema": "octet-source-manifest/v1",
+      "teardown_timeout_ms": 5000,
+      "timeout_ms": 900000
+    }
+  ],
+  "schema_version": "octet-mutation-profiles/v1"
+}

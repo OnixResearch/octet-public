@@ -1,0 +1,22 @@
+{
+  "actor": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
+  "artifact_diff_empty": true,
+  "artifact_tree_blake3": "blake3-QR+83p3e6U5jBNjE2R2cHA2Uepfdzpy3ugeEK9lFH3M=",
+  "base_git_oid": "51bd1ec2dd218f068d1d55d01781e38c877dd063",
+  "cairn_commit": "6b7e19531554714b6760e8cacc2a980e576d36af",
+  "destination_branch_target": "51bd1ec2dd218f068d1d55d01781e38c877dd063",
+  "destination_ref_target": "649fa8cd227ad657a0a802c2826477bf28aef984",
+  "destination_remotes": [],
+  "destination_tags": [],
+  "mutated_by_cairn": false,
+  "namespace_ref": "refs/namespaces/z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5/refs/cobs/xyz.onixresearch.cairn-change/5be37f1c60fcebd2db91101c38203b18eb32f877",
+  "non_claims": [
+    "Local bundle transfer is Git transport, not Cairn synchronization, node participation, convergence, durability, or release eligibility."
+  ],
+  "object_id": "5be37f1c60fcebd2db91101c38203b18eb32f877",
+  "schema": "octet.cairn-cob-pilot-transport.v1",
+  "source_branch_target": "51bd1ec2dd218f068d1d55d01781e38c877dd063",
+  "source_ref_target": "649fa8cd227ad657a0a802c2826477bf28aef984",
+  "source_remotes": [],
+  "valid": true
+}

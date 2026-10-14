@@ -1,0 +1,24 @@
+= Grounding: One Behavior, One Type
+:page-range: 62-62
+
+== Grounding
+
+[quote, Rust in Action (McNamara), Chapter 3]
+____
+The newtype pattern consists of wrapping a core type within a single field struct. Using the newtype pattern can strengthen a program by preventing data from being silently used in inappropriate contexts.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 22]
+____
+At the machine level, a newtype and its element have identical representations in memory, so constructing a newtype doesn't require any machine instructions at all.
+____
+
+[quote, Zero to Production in Rust (Palmieri), Chapter 6]
+____
+We leveraged Rust's type system to eliminate the pitfall, entirely. We made an incorrect usage pattern unrepresentable, by construction -- it will not compile.
+____
+
+[quote, Programming Rust, 2nd Edition, Chapter 19]
+____
+Atomics have minimal overhead. Atomic operations never use system calls. A load or store often compiles to a single CPU instruction.
+____

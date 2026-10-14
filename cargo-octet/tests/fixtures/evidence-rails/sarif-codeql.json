@@ -1,0 +1,1 @@
+{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"CodeQL","rules":[{"id":"rust/sql-injection"}]}},"results":[{"ruleId":"rust/sql-injection","level":"warning","message":{"text":"query includes untrusted input"},"locations":[{"physicalLocation":{"artifactLocation":{"uri":"src/query.rs"},"region":{"startLine":12,"startColumn":5}}}]}]}]}

@@ -1,0 +1,93 @@
+{
+  "cases": [
+    {
+      "case_id": "positive-core-module",
+      "expected_issue_class": "none",
+      "generator": {
+        "seed": 1701,
+        "tool": "wat",
+        "version": "1.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "not-applicable",
+      "source": "positive/module.wat",
+      "transforms": []
+    },
+    {
+      "case_id": "positive-empty-component",
+      "expected_issue_class": "none",
+      "generator": {
+        "seed": 1701,
+        "tool": "wit-smith",
+        "version": "0.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "not-applicable",
+      "source": "positive/component.wat",
+      "transforms": [
+        "materialize-equivalent-empty-component-wat"
+      ]
+    },
+    {
+      "case_id": "negative-undeclared-wasi",
+      "expected_issue_class": "disallowed-import",
+      "generator": {
+        "seed": 1701,
+        "tool": "wasm-smith",
+        "version": "0.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve disallowed-import",
+      "source": "negative/undeclared-wasi.wat",
+      "transforms": [
+        "inject-undeclared-wasi-import"
+      ]
+    },
+    {
+      "case_id": "negative-sign-extension-proposal",
+      "expected_issue_class": "disallowed-proposal",
+      "generator": {
+        "seed": 1701,
+        "tool": "wasm-smith",
+        "version": "0.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve disallowed-proposal",
+      "source": "negative/sign-extension.wat",
+      "transforms": [
+        "enable-sign-extension-op"
+      ]
+    },
+    {
+      "case_id": "negative-memory-growth",
+      "expected_issue_class": "memory-growth",
+      "generator": {
+        "seed": 1701,
+        "tool": "wasm-mutate",
+        "version": "0.253.0"
+      },
+      "lane": "fast",
+      "shrink_predicate": "preserve memory-growth",
+      "source": "negative/memory-grow.wat",
+      "transforms": [
+        "insert-memory-grow"
+      ]
+    },
+    {
+      "case_id": "negative-start-function",
+      "expected_issue_class": "start-function",
+      "generator": {
+        "seed": 9001,
+        "tool": "wasm-shrink",
+        "version": "0.253.0"
+      },
+      "lane": "deep",
+      "shrink_predicate": "preserve start-function",
+      "source": "negative/start-function.wat",
+      "transforms": [
+        "retain-start-section"
+      ]
+    }
+  ],
+  "schema_version": "octet-wasm-artifact-corpus/v1"
+}

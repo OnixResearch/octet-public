@@ -1,0 +1,14 @@
+{
+  "summary": {
+    "line_percent": 88.0,
+    "branch_percent": 72.5,
+    "function_percent": 91.0
+  },
+  "regressions": [
+    {
+      "metric": "line_percent",
+      "message": "line coverage fell below accepted baseline"
+    }
+  ],
+  "threshold_failures": []
+}

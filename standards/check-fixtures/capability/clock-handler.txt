@@ -1,0 +1,2 @@
+success path: fake clock returns deterministic millis
+failure path: fake clock returns configured error

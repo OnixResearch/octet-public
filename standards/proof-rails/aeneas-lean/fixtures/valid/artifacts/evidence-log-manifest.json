@@ -1,0 +1,23 @@
+{
+  "schema_version": "octet-evidence-log-manifest/v1",
+  "logs": [
+    {
+      "artifact_locator": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.stdout",
+      "blake3": "758246d5a2ecba3069159cf4bf84e05774aaa1729fe3af9e883ff158a5e7aaac",
+      "bytes": 94466,
+      "replay_command": "/home/brittonr/.cargo-target/debug/cargo-octet prove --policy-artifacts-dir /tmp/octet-aeneas-policy-artifacts --source standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs --rail 'octet.aeneas_lean_proof_rails.fixture#rail-0' --artifact-dir /tmp/octet-aeneas-prove/artifacts --output-format json",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "capture_source": "octet.prove.stdout",
+      "retention": "content_addressed_raw"
+    },
+    {
+      "artifact_locator": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.stderr",
+      "blake3": "65dd9d3364110aa130cec842c2ed0eb7f7a58d960771954678d62a5819a2cd08",
+      "bytes": 234,
+      "replay_command": "/home/brittonr/.cargo-target/debug/cargo-octet prove --policy-artifacts-dir /tmp/octet-aeneas-policy-artifacts --source standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs --rail 'octet.aeneas_lean_proof_rails.fixture#rail-0' --artifact-dir /tmp/octet-aeneas-prove/artifacts --output-format json",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "capture_source": "octet.prove.stderr",
+      "retention": "content_addressed_raw"
+    }
+  ]
+}

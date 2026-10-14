@@ -1,0 +1,21 @@
+{
+  "schema_version": "z4-solver-summary/v1",
+  "solver": {
+    "name": "z4-solver",
+    "version": "0.1.0",
+    "provenance": "nix-store-fixture"
+  },
+  "query": {
+    "identity": "b3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "logic": "QF_BV",
+    "profile": "bounded-diagnostic"
+  },
+  "result_status": "unsat",
+  "proof_ref": "proofs/query.unsat.z4proof",
+  "verification_role": "recorded_solver_output",
+  "diagnostics": [],
+  "evidence_tier": "transcript_assertion",
+  "non_claims": [
+    "Z4 solver evidence records bounded solver output identity and diagnostics only; it does not prove source correctness, solver soundness, proof validity, requirement satisfaction, release eligibility, or whole-program safety"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": "octet-charon-semantic-projection/v1",
+  "crate_name": "real_fixture",
+  "charon_version": "0.1.223",
+  "target": {
+    "triple": "x86_64-unknown-linux-gnu",
+    "pointer_width_bytes": 8,
+    "endianness": "little"
+  },
+  "sources": [
+    {
+      "path": "src/lib.rs",
+      "identity": "b3:fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+    }
+  ],
+  "items": [
+    {
+      "stable_id": "b3:bcf02b5278e65a1c6210942a64cd704efc014d307bbb2ae781d2417546188534",
+      "run_local_id": 0,
+      "qualified_name": "real_fixture::safe_add",
+      "kind": "function",
+      "source_file": "src/lib.rs",
+      "begin_line": 1,
+      "end_line": 3,
+      "opacity": "Transparent",
+      "control_flow": "structured",
+      "statement_count": 14,
+      "unsupported": false
+    }
+  ],
+  "edges": [],
+  "trait_rows": []
+}

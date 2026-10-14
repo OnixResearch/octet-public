@@ -1,0 +1,276 @@
+{
+  "schema_version": "octet-benchmark-input/v1",
+  "baseline": {
+    "workload_id": "octet-metadata-no_change",
+    "workload_identity": "b3:9f5b11ac410e6d1d48a0c25e8a90bc8b08796fe38c09ab95cc2d60773f44924b",
+    "command_id": "cargo-metadata-no-deps",
+    "command_argv": [
+      "cargo",
+      "metadata",
+      "--no-deps",
+      "--format-version",
+      "1"
+    ],
+    "mode": "no_change",
+    "source_state_identity": "b3:d2e28ced2bfa8d6c87523d6465fdf711f3385fac77435760f2d28c2efc96b93b",
+    "environment": {
+      "environment_identity": "b3:b16af370254215b0678196220770ac24285fe2e88db012057aa9ab1d5eaf900f",
+      "target": "x86_64-unknown-linux-gnu",
+      "host_os": "linux",
+      "host_arch": "x86_64",
+      "kernel_identity": "kernel-fixture",
+      "cpu_identity": "cpu-fixture",
+      "governor": "performance",
+      "load_class": "isolated",
+      "rust_toolchain": "nightly-2026-03-21",
+      "nix_closure_identity": "nixpkgs:b3d51a0365f6695e7dd5cdf3e180604530ed33b4#cargo-octet-0.1.0",
+      "isolation": "controlled-local-fixture",
+      "cpu_time_supported": false,
+      "peak_memory_supported": false
+    },
+    "samples": [
+      {
+        "sample_index": 0,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1000,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:9de87cda43ddc6e593bf625e3f88e92fc36906d803972efeb082f6c586dd9dd9"
+      },
+      {
+        "sample_index": 1,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1000,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:148dfb52fed262b422f846699ca1f987e9f6212f3f8e9f055fbfa728d9f2fcbe"
+      },
+      {
+        "sample_index": 2,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1000,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:5ab5c9867ea4a0ce6205355d895d80beb9f0306e67d92cf9d33b2b58f970c693"
+      },
+      {
+        "sample_index": 3,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1000,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:5c9623cc8bbf42953c8a17d949f8fe87c6e474c8759424a51e13a4acf691ab98"
+      },
+      {
+        "sample_index": 4,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1000,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:516c9fc42c4ad5e2ba2eb9918046ad3376d66d013e13e840ebf4182f0b5f05be"
+      }
+    ]
+  },
+  "candidate": {
+    "workload_id": "octet-metadata-no_change",
+    "workload_identity": "b3:9f5b11ac410e6d1d48a0c25e8a90bc8b08796fe38c09ab95cc2d60773f44924b",
+    "command_id": "cargo-metadata-no-deps",
+    "command_argv": [
+      "cargo",
+      "metadata",
+      "--no-deps",
+      "--format-version",
+      "1"
+    ],
+    "mode": "no_change",
+    "source_state_identity": "b3:d2e28ced2bfa8d6c87523d6465fdf711f3385fac77435760f2d28c2efc96b93b",
+    "environment": {
+      "environment_identity": "b3:b16af370254215b0678196220770ac24285fe2e88db012057aa9ab1d5eaf900f",
+      "target": "x86_64-unknown-linux-gnu",
+      "host_os": "linux",
+      "host_arch": "x86_64",
+      "kernel_identity": "kernel-fixture",
+      "cpu_identity": "cpu-fixture",
+      "governor": "performance",
+      "load_class": "isolated",
+      "rust_toolchain": "nightly-2026-03-21",
+      "nix_closure_identity": "nixpkgs:b3d51a0365f6695e7dd5cdf3e180604530ed33b4#cargo-octet-0.1.0",
+      "isolation": "controlled-local-fixture",
+      "cpu_time_supported": false,
+      "peak_memory_supported": false
+    },
+    "samples": [
+      {
+        "sample_index": 0,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1010,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:9de87cda43ddc6e593bf625e3f88e92fc36906d803972efeb082f6c586dd9dd9"
+      },
+      {
+        "sample_index": 1,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1010,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:148dfb52fed262b422f846699ca1f987e9f6212f3f8e9f055fbfa728d9f2fcbe"
+      },
+      {
+        "sample_index": 2,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1010,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:5ab5c9867ea4a0ce6205355d895d80beb9f0306e67d92cf9d33b2b58f970c693"
+      },
+      {
+        "sample_index": 3,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1010,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:5c9623cc8bbf42953c8a17d949f8fe87c6e474c8759424a51e13a4acf691ab98"
+      },
+      {
+        "sample_index": 4,
+        "outcome": "succeeded",
+        "wall_duration_ns": 1010,
+        "cpu_duration_ns": null,
+        "peak_memory_bytes": null,
+        "output_bytes": 128,
+        "log_identity": "b3:516c9fc42c4ad5e2ba2eb9918046ad3376d66d013e13e840ebf4182f0b5f05be"
+      }
+    ]
+  },
+  "allocations": [
+    {
+      "workload_id": "octet-metadata-no_change",
+      "instrumentation_identity": "b3:0f9894e6769610435e1fbc01a2461ba79ef53750b87ea506c7402320c9ad423e",
+      "interval_id": "selected-hot-path",
+      "scope": "between explicit benchmark interval markers",
+      "allocation_events": 2,
+      "allocated_bytes": 64,
+      "zero_allocation_claim": false
+    }
+  ],
+  "copies": [
+    {
+      "workload_id": "octet-metadata-no_change",
+      "llvm_artifact_identity": "b3:eb11e9860ac528dc17c79e59cd3d4f573460f5c1003d68559c79306db296c96f",
+      "compiler_identity": "b3:d1c2da04f74e1b9322141fd35c76e1887f27d63aee89fffd9c6de3e728882188",
+      "target": "x86_64-unknown-linux-gnu",
+      "optimization_profile": "release",
+      "site_id": "b3:36b4773677fff885d149d21d5a2cfe60dc255f95b72eb52b23713a41956f5933",
+      "context": "call void @llvm.memcpy.p0.p0.i64(ptr %a, ptr %b, i64 32, i1 false)",
+      "constant_length_bytes": 32
+    },
+    {
+      "workload_id": "octet-metadata-no_change",
+      "llvm_artifact_identity": "b3:eb11e9860ac528dc17c79e59cd3d4f573460f5c1003d68559c79306db296c96f",
+      "compiler_identity": "b3:d1c2da04f74e1b9322141fd35c76e1887f27d63aee89fffd9c6de3e728882188",
+      "target": "x86_64-unknown-linux-gnu",
+      "optimization_profile": "release",
+      "site_id": "b3:57ad123a568ff5f325993877ab06d68d2f81ee6a90c23bff6952bfd9baa25d41",
+      "context": "call void @llvm.memcpy.p0.p0.i64(ptr %a, ptr %b, i64 %length, i1 false)",
+      "constant_length_bytes": null
+    }
+  ],
+  "oracle": [
+    {
+      "case_id": "tp",
+      "source_identity": "b3:0d202df417956734af860d6ac94c157b3bfecd86e8c551b8e2dba919a5c476a4",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "expected": "finding",
+      "rationale": "independent fixture adjudication",
+      "reviewer_role": "benchmark-oracle-reviewer"
+    },
+    {
+      "case_id": "fp",
+      "source_identity": "b3:6a76872507ea828f3c635f2c0ced4155148efd756379560a78b2335fdc80a8ba",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "expected": "clean",
+      "rationale": "independent fixture adjudication",
+      "reviewer_role": "benchmark-oracle-reviewer"
+    },
+    {
+      "case_id": "fn",
+      "source_identity": "b3:5f75749e884a257ec2230eeb6d723782df0abbe6dbfd8567364433be8a26bd4a",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "expected": "finding",
+      "rationale": "independent fixture adjudication",
+      "reviewer_role": "benchmark-oracle-reviewer"
+    },
+    {
+      "case_id": "expected-suppression",
+      "source_identity": "b3:c80d76f6f8b052cfd891f1b5631125a8b628ca6c59b24e8160923baa1bb0dd84",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "expected": "suppressed",
+      "rationale": "independent fixture adjudication",
+      "reviewer_role": "benchmark-oracle-reviewer"
+    },
+    {
+      "case_id": "unexpected-suppression",
+      "source_identity": "b3:e96400c22ff2e47b4d658739c9fc74f037182dbc888aedd74867511483e1133a",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "expected": "clean",
+      "rationale": "independent fixture adjudication",
+      "reviewer_role": "benchmark-oracle-reviewer"
+    },
+    {
+      "case_id": "inconclusive",
+      "source_identity": "b3:61777f74d00454b5148cdfe0b6d109c73fc3012a27762b3f386300f977fc8e67",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "expected": "inconclusive",
+      "rationale": "independent fixture adjudication",
+      "reviewer_role": "benchmark-oracle-reviewer"
+    }
+  ],
+  "findings": [
+    {
+      "case_id": "tp",
+      "source_identity": "b3:0d202df417956734af860d6ac94c157b3bfecd86e8c551b8e2dba919a5c476a4",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "suppressed": false
+    },
+    {
+      "case_id": "fp",
+      "source_identity": "b3:6a76872507ea828f3c635f2c0ced4155148efd756379560a78b2335fdc80a8ba",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "suppressed": false
+    },
+    {
+      "case_id": "expected-suppression",
+      "source_identity": "b3:c80d76f6f8b052cfd891f1b5631125a8b628ca6c59b24e8160923baa1bb0dd84",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "suppressed": true
+    },
+    {
+      "case_id": "unexpected-suppression",
+      "source_identity": "b3:e96400c22ff2e47b4d658739c9fc74f037182dbc888aedd74867511483e1133a",
+      "lint_id": "octet.test-lint",
+      "location_class": "expression",
+      "suppressed": true
+    }
+  ],
+  "public_claims": [],
+  "bounded_log_identity": "b3:41c338dbfd64055a5fb95ef202cc03c258bb5957aa5575e4d99a21f992666c15"
+}

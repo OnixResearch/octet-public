@@ -1,0 +1,33 @@
+{
+  "schema_version": "hegel-property-summary/v1",
+  "property_id": "valence.evidence-ir.canonical-identity-order",
+  "linked_ids": [
+    "r[valence.evidence-ir.identity.stable]"
+  ],
+  "source_scope": "crates/valence-core/src/evidence_ir.rs::canonical_identity",
+  "runner": {
+    "crate_version": "0.14.12",
+    "backend": "native"
+  },
+  "settings": {
+    "case_budget": 128,
+    "phases": [
+      "generate",
+      "shrink"
+    ],
+    "seed": 1729,
+    "derandomized": true
+  },
+  "generator": {
+    "family": "evidence-ir-arbitrary",
+    "content_hash": "b3:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "source_hashes": [
+    "b3:1111111111111111111111111111111111111111111111111111111111111111"
+  ],
+  "status": "passed",
+  "evidence_tier": "transcript_assertion",
+  "non_claims": [
+    "Hegel checks bounded generated inputs only and does not prove correctness, semantic equivalence, verifier soundness, requirement satisfaction, release eligibility, or whole-program safety"
+  ]
+}

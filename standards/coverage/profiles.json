@@ -1,0 +1,69 @@
+{
+  "profiles": [
+    {
+      "command_argv": [
+        "cargo",
+        "llvm-cov",
+        "--json",
+        "--summary-only",
+        "--remap-path-prefix",
+        "--output-path",
+        ".octet/coverage/current-native.json",
+        "--package",
+        "cargo-octet",
+        "--lib",
+        "--all-features",
+        "--locked",
+        "--offline"
+      ],
+      "current_report_path": ".octet/coverage/current-native.json",
+      "denominator_policy": "require_equal",
+      "evidence_tier": "transcript_assertion",
+      "llvm_tools_component": "llvm-tools-preview",
+      "max_files": 10000,
+      "max_log_bytes": 1048576,
+      "max_path_bytes": 240,
+      "max_report_bytes": 16777216,
+      "metrics": [
+        "lines",
+        "branches",
+        "functions",
+        "regions"
+      ],
+      "non_claims": [
+        "Coverage counts show instrumented execution only and do not prove behavioral correctness or path correctness.",
+        "Coverage evidence does not prove test completeness, formal proof, whole-program correctness, or release eligibility."
+      ],
+      "normalization_version": "octet-coverage-normalization/v1",
+      "path_policy_identity": "workspace-relative-remapped-v1",
+      "poll_interval_ms": 25,
+      "precision_digits": 2,
+      "profile_id": "cargo-llvm-cov-octet-lib",
+      "provider": {
+        "closure_identity": "nixpkgs:b3d51a0365f6695e7dd5cdf3e180604530ed33b4#cargo-llvm-cov-0.8.3",
+        "nixpkgs_revision": "b3d51a0365f6695e7dd5cdf3e180604530ed33b4",
+        "package": "cargo-llvm-cov",
+        "version": "0.8.3"
+      },
+      "regression_policy": "deny_decrease",
+      "rounding_policy": "floor",
+      "rust_toolchain": "nightly-2026-03-21",
+      "scope": {
+        "all_features": true,
+        "package": "cargo-octet",
+        "target": "lib",
+        "test_selection": "library-tests"
+      },
+      "source_scope_identity": "octet:cargo-octet:lib:all-features:library-tests",
+      "teardown_timeout_ms": 5000,
+      "threshold_basis_points": {
+        "branches": 7000,
+        "functions": 8000,
+        "lines": 8000,
+        "regions": 8000
+      },
+      "timeout_ms": 300000
+    }
+  ],
+  "schema_version": "octet-coverage-profiles/v1"
+}

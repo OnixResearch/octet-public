@@ -1,0 +1,13 @@
+{
+  "schema_version": "octet-spacewasm-external-runtime-report/v1",
+  "producer": "chaoscontrol",
+  "artifact_identity": "b3:9855274d998a322359c211238092371419331e92685e4a7858c39508afdd2144",
+  "runtime_cohort_identity": "b3:7c537eef7bff66d0a90508715de08de79c9aaac23352e1007a6d47e7fb4674a2",
+  "profile_identity": "b3:5d6d9f57001dbc698e017c6b2fa59412131596712722d42c718f7493ff497d9e",
+  "result": "executed-successfully",
+  "verification_role": "recorded_only",
+  "non_claims": [
+    "Runtime observations do not change Octet static profile conformance"
+  ],
+  "report_identity": "b3:75bb5e89bbf581910256a09de594fe701c948ed4d599184db2cd543ee8387351"
+}

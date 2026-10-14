@@ -1,0 +1,29 @@
+{
+  "backend": "radicle-cob.v1",
+  "blocked": true,
+  "blockers": [
+    "change content has conflicting artifacts: [\"tasks\"]"
+  ],
+  "change": "exercise-cairn-cob-conflict-recovery",
+  "command": "collaboration update",
+  "compatibility_command": "cob update",
+  "dry_run": true,
+  "format_libraries": {
+    "git-ref-format-core": "0.6.0",
+    "git2": "0.20.4",
+    "radicle-cob": "0.20.0",
+    "radicle-crypto": "0.17.0",
+    "radicle-oid": "0.2.0"
+  },
+  "mutated": false,
+  "non_claims": [
+    "embedded creator and delegate keys are immutable COB authority, not Radicle identity-document or future authorization proof",
+    "a signed update proves bounded local Git COB observations, not node participation, publication, peer availability, synchronization, convergence, or remote trust",
+    "collaboration update does not prove gate validity, evidence truth, dependency readiness, source correctness, archive execution, or release eligibility",
+    "ordinary collaboration update refuses conflicts and does not prove or perform conflict resolution"
+  ],
+  "receipt_hash": "0cdf2280cc20ff3369cd2cc87d22fec8b61f988ef727ba8bba6eb0cd67a403c0",
+  "root": "inspection-workspace",
+  "valid": false,
+  "verdict": "FAIL"
+}

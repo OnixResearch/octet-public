@@ -1,0 +1,28 @@
+# Build
+target/
+/target
+coverage/
+!/cargo-octet/src/coverage/
+!/cargo-octet/src/coverage/**
+!/standards/coverage/
+!/standards/coverage/**
+doc/
+
+# Nix
+result*
+.direnv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Runtime
+*.redb
+*.sock
+data/
+/.octet/
+/.agent
+/.pi
+.pi/

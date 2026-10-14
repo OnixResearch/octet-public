@@ -1,0 +1,9 @@
+{
+  "diagnostics": [
+    {
+      "category": "licenses",
+      "severity": "error",
+      "message": "license denied by policy"
+    }
+  ]
+}

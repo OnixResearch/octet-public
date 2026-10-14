@@ -1,0 +1,33 @@
+{
+  "schema_version": "cargo-kani-summary/v1",
+  "harness": {
+    "package": "octet-core",
+    "target": "lib",
+    "path": "src/bounds.rs",
+    "name": "check_index_admission_bad_assumption"
+  },
+  "source_identity": "b3:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "toolchain": {
+    "kani": "kani 0.65.0",
+    "rustc": "rustc 1.91.0-nightly",
+    "cbmc": "cbmc 6.0.0",
+    "solver": "minisat"
+  },
+  "verdict": "failed",
+  "assumptions_reviewed": false,
+  "assumption_status": "vacuous",
+  "unwind": {
+    "status": "bounded_only"
+  },
+  "properties": [
+    {
+      "name": "bad assumption is rejected",
+      "property_class": "boundary-panic",
+      "status": "failed"
+    }
+  ],
+  "claims": {
+    "coverage": "bounded",
+    "property_evidence": true
+  }
+}

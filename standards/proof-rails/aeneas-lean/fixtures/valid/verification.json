@@ -1,0 +1,2868 @@
+{
+  "schema_version": "octet-valence-provenance-export/v1",
+  "artifact_dir": "standards/proof-rails/aeneas-lean/fixtures/valid/artifacts",
+  "verification_status": "valid",
+  "artifacts": [
+    {
+      "artifact": "command.txt",
+      "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+    },
+    {
+      "artifact": "proof-cards.json",
+      "blake3": "fff32b3950ae540eccec22cfd7122866b73b0fb904b479f94b471ba2561222a2"
+    },
+    {
+      "artifact": "proofs/aeneas/Llbc.lean",
+      "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f"
+    },
+    {
+      "artifact": "proofs/aeneas/aeneas-command.json",
+      "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b"
+    },
+    {
+      "artifact": "proofs/aeneas/aeneas-lean-library.json",
+      "blake3": "c16344b6008749131ab6b5ba03881740fb8a75f4f3dde2adb1679aa8e073252d"
+    },
+    {
+      "artifact": "proofs/aeneas/charon-command.json",
+      "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef"
+    },
+    {
+      "artifact": "proofs/aeneas/charon-options.json",
+      "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95"
+    },
+    {
+      "artifact": "proofs/aeneas/checker-result.json",
+      "blake3": "64e64cc32fc5966221fd60c6efd5ea84669478ad975fc483a169488985de5455"
+    },
+    {
+      "artifact": "proofs/aeneas/external-models.json",
+      "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d"
+    },
+    {
+      "artifact": "proofs/aeneas/lean-command.json",
+      "blake3": "130be6eabfed0fe39289c1ac21e2ec592be79a94f9e693bc5634817a0e524325"
+    },
+    {
+      "artifact": "proofs/aeneas/lean-toolchain",
+      "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa"
+    },
+    {
+      "artifact": "proofs/aeneas/llbc.llbc",
+      "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5"
+    },
+    {
+      "artifact": "proofs/aeneas/package-lock.json",
+      "blake3": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d"
+    },
+    {
+      "artifact": "proofs/aeneas/provider-profile.json",
+      "blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625"
+    },
+    {
+      "artifact": "proofs/aeneas/source/src/lib.rs",
+      "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+    },
+    {
+      "artifact": "proofs/aeneas/theorem-adequacy.json",
+      "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4"
+    },
+    {
+      "artifact": "proofs/aeneas/theorem-statement.lean",
+      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+    },
+    {
+      "artifact": "proofs/aeneas/theorem.lean",
+      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+    },
+    {
+      "artifact": "proofs/aeneas/translation.json",
+      "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8"
+    },
+    {
+      "artifact": "proofs/aeneas/trust-closure.json",
+      "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379"
+    },
+    {
+      "artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "blake3": "b0ce7c7d5673e67b0dc5fff7f54d351f4f58f2b70c986023a3933dee15bcf489"
+    },
+    {
+      "artifact": "status.json",
+      "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+    },
+    {
+      "artifact": "summary.txt",
+      "blake3": "ec392c9adb723d3f00f4d6540318702c8b7fea20f569e017c7ecfcdac803dc59"
+    }
+  ],
+  "provenance_records": [
+    {
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "artifact": "command.txt",
+      "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da",
+      "checked_scope": "profile:prove-verification",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.runner.artifact-bundle",
+        "checker_id": "cargo-octet",
+        "tool_identity": "cargo-octet@0.1.0",
+        "policy_or_checker_version": "cargo-octet@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [],
+        "output_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          }
+        ],
+        "parent_artifacts": [],
+        "status": "manual_review_required",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "command.txt",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "human_action": "review cargo octet prove command, status, and scoped proof receipt before release"
+    },
+    {
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "artifact": "status.json",
+      "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6",
+      "checked_scope": "profile:prove-verification",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.runner.artifact-bundle",
+        "checker_id": "cargo-octet",
+        "tool_identity": "cargo-octet@0.1.0",
+        "policy_or_checker_version": "cargo-octet@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [],
+        "output_artifacts": [
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "parent_artifacts": [],
+        "status": "manual_review_required",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "status.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "human_action": "review cargo octet prove command, status, and scoped proof receipt before release"
+    },
+    {
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "artifact": "summary.txt",
+      "blake3": "ec392c9adb723d3f00f4d6540318702c8b7fea20f569e017c7ecfcdac803dc59",
+      "checked_scope": "profile:prove-verification",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.runner.artifact-bundle",
+        "checker_id": "cargo-octet",
+        "tool_identity": "cargo-octet@0.1.0",
+        "policy_or_checker_version": "cargo-octet@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [],
+        "output_artifacts": [
+          {
+            "artifact": "summary.txt",
+            "blake3": "ec392c9adb723d3f00f4d6540318702c8b7fea20f569e017c7ecfcdac803dc59"
+          }
+        ],
+        "parent_artifacts": [],
+        "status": "manual_review_required",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "summary.txt",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "human_action": "review cargo octet prove command, status, and scoped proof receipt before release"
+    },
+    {
+      "source_id": "octet.runner.artifact-bundle",
+      "checker_id": "cargo-octet",
+      "evidence_tier": "manual_review_required",
+      "artifact": "proof-cards.json",
+      "blake3": "fff32b3950ae540eccec22cfd7122866b73b0fb904b479f94b471ba2561222a2",
+      "checked_scope": "profile:prove-verification",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.runner.artifact-bundle",
+        "checker_id": "cargo-octet",
+        "tool_identity": "cargo-octet@0.1.0",
+        "policy_or_checker_version": "cargo-octet@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [],
+        "output_artifacts": [
+          {
+            "artifact": "proof-cards.json",
+            "blake3": "fff32b3950ae540eccec22cfd7122866b73b0fb904b479f94b471ba2561222a2"
+          }
+        ],
+        "parent_artifacts": [],
+        "status": "manual_review_required",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proof-cards.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "human_action": "review proof cards with matching receipt, provenance, and cargo octet artifact verify output before release"
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "blake3": "b0ce7c7d5673e67b0dc5fff7f54d351f4f58f2b70c986023a3933dee15bcf489",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+            "blake3": "b0ce7c7d5673e67b0dc5fff7f54d351f4f58f2b70c986023a3933dee15bcf489"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-lean@bc2eb6f",
+      "proof_artifact_identity": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/provider-profile.json",
+      "blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/provider-profile.json",
+            "blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/provider-profile.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/provider-profile.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/provider-profile.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/provider-profile.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/provider-profile.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/package-lock.json",
+      "blake3": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/package-lock.json",
+            "blake3": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/package-lock.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/package-lock.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/package-lock.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/package-lock.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/package-lock.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/source/src/lib.rs",
+      "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/source/src/lib.rs",
+            "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/source/src/lib.rs",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/source/src/lib.rs",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/source/src/lib.rs",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/source/src/lib.rs",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/source/src/lib.rs",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/charon-options.json",
+      "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/charon-options.json",
+            "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/charon-options.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/charon-options.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/charon-options.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/charon-options.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/charon-options.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/charon-command.json",
+      "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/charon-command.json",
+            "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/charon-command.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/charon-command.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/charon-command.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/charon-command.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/charon-command.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/llbc.llbc",
+      "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/llbc.llbc",
+            "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/llbc.llbc",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/llbc.llbc",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/llbc.llbc",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/llbc.llbc",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/llbc.llbc",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/aeneas-command.json",
+      "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/aeneas-command.json",
+            "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/aeneas-command.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/aeneas-command.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/aeneas-command.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/aeneas-command.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/aeneas-command.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/translation.json",
+      "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/translation.json",
+            "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/translation.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/translation.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/translation.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/translation.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/translation.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/Llbc.lean",
+      "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/Llbc.lean",
+            "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/Llbc.lean",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/Llbc.lean",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/Llbc.lean",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/Llbc.lean",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/Llbc.lean",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/external-models.json",
+      "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/external-models.json",
+            "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/external-models.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/external-models.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/external-models.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/external-models.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/external-models.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/theorem.lean",
+      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/theorem.lean",
+            "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/theorem.lean",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/theorem.lean",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/theorem.lean",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/theorem.lean",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/theorem.lean",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/theorem-statement.lean",
+      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/theorem-statement.lean",
+            "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/theorem-statement.lean",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/theorem-statement.lean",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/theorem-statement.lean",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/theorem-statement.lean",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/theorem-statement.lean",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/theorem-adequacy.json",
+      "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/theorem-adequacy.json",
+            "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/theorem-adequacy.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/trust-closure.json",
+      "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/trust-closure.json",
+            "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/trust-closure.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/trust-closure.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/trust-closure.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/trust-closure.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/trust-closure.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/lean-toolchain",
+      "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/lean-toolchain",
+            "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/lean-toolchain",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/lean-toolchain",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/lean-toolchain",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/lean-toolchain",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/lean-toolchain",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/aeneas-lean-library.json",
+      "blake3": "c16344b6008749131ab6b5ba03881740fb8a75f4f3dde2adb1679aa8e073252d",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/aeneas-lean-library.json",
+            "blake3": "c16344b6008749131ab6b5ba03881740fb8a75f4f3dde2adb1679aa8e073252d"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/aeneas-lean-library.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/lean-command.json",
+      "blake3": "130be6eabfed0fe39289c1ac21e2ec592be79a94f9e693bc5634817a0e524325",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/lean-command.json",
+            "blake3": "130be6eabfed0fe39289c1ac21e2ec592be79a94f9e693bc5634817a0e524325"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/lean-command.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/lean-command.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/lean-command.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/lean-command.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/lean-command.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    },
+    {
+      "source_id": "octet.standards.formal-proof",
+      "checker_id": "octet-standards",
+      "evidence_tier": "formal_proof",
+      "artifact": "proofs/aeneas/checker-result.json",
+      "blake3": "64e64cc32fc5966221fd60c6efd5ea84669478ad975fc483a169488985de5455",
+      "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+      "receipt": {
+        "schema_version": "octet-valence-replayable-receipt/v1",
+        "producer_id": "octet.standards.formal-proof",
+        "checker_id": "octet-standards",
+        "tool_identity": "octet-standards",
+        "policy_or_checker_version": "octet-standards@0.1.0",
+        "normalized_invocation": [
+          "/home/brittonr/.cargo-target/debug/cargo-octet",
+          "prove",
+          "--policy-artifacts-dir",
+          "/tmp/octet-aeneas-policy-artifacts",
+          "--source",
+          "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+          "--rail",
+          "'octet.aeneas_lean_proof_rails.fixture#rail-0'",
+          "--artifact-dir",
+          "/tmp/octet-aeneas-prove/artifacts",
+          "--output-format",
+          "json"
+        ],
+        "input_artifacts": [
+          {
+            "artifact": "command.txt",
+            "blake3": "df55fc43596c7f84ec2d00d60e79f813453152fc980214bb359855aa5ed179da"
+          },
+          {
+            "artifact": "status.json",
+            "blake3": "ccfa35d087571fe1a7e6a291de72bb8eee161efd432d4c0f261e1c635b5c2ff6"
+          }
+        ],
+        "output_artifacts": [
+          {
+            "artifact": "proofs/aeneas/checker-result.json",
+            "blake3": "64e64cc32fc5966221fd60c6efd5ea84669478ad975fc483a169488985de5455"
+          }
+        ],
+        "parent_artifacts": [
+          "command.txt",
+          "status.json"
+        ],
+        "status": "valid",
+        "non_claims": [
+          "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+          "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+          "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+        ]
+      },
+      "typed_edges": [
+        {
+          "edge_kind": "records_formal_proof_receipt",
+          "source_artifact": "proofs/aeneas/checker-result.json",
+          "target_artifact": "octet.standards.formal-proof"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/checker-result.json",
+          "target_artifact": "command.txt"
+        },
+        {
+          "edge_kind": "derives_from_parent_artifact",
+          "source_artifact": "proofs/aeneas/checker-result.json",
+          "target_artifact": "status.json"
+        },
+        {
+          "edge_kind": "feeds_valence_adapter",
+          "source_artifact": "proofs/aeneas/checker-result.json",
+          "target_artifact": "valence.stack-provenance.adapter-input"
+        }
+      ],
+      "verifier_identity": "aeneas-stage-artifact",
+      "proof_artifact_identity": "proofs/aeneas/checker-result.json",
+      "parent_artifacts": [
+        "command.txt",
+        "status.json"
+      ]
+    }
+  ],
+  "typed_edges": [
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/Llbc.lean",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/Llbc.lean",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/aeneas-command.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/aeneas-command.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/charon-command.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/charon-command.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/charon-options.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/charon-options.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/checker-result.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/checker-result.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/external-models.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/external-models.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/lean-command.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/lean-command.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/lean-toolchain",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/lean-toolchain",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/llbc.llbc",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/llbc.llbc",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/package-lock.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/package-lock.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/provider-profile.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/provider-profile.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/source/src/lib.rs",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/source/src/lib.rs",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/theorem-statement.lean",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/theorem-statement.lean",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/theorem.lean",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/theorem.lean",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/translation.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/translation.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/trust-closure.json",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/aeneas/trust-closure.json",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "target_artifact": "command.txt"
+    },
+    {
+      "edge_kind": "derives_from_parent_artifact",
+      "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "target_artifact": "status.json"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "command.txt",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proof-cards.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/Llbc.lean",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/aeneas-command.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/charon-command.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/charon-options.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/checker-result.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/external-models.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/lean-command.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/lean-toolchain",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/llbc.llbc",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/package-lock.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/provider-profile.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/source/src/lib.rs",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/theorem-statement.lean",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/theorem.lean",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/translation.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/aeneas/trust-closure.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "status.json",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "feeds_valence_adapter",
+      "source_artifact": "summary.txt",
+      "target_artifact": "valence.stack-provenance.adapter-input"
+    },
+    {
+      "edge_kind": "imports_trellis_reference",
+      "source_artifact": "standards/proof-imports/fixtures/trellis/ucan_proof_reference.receipt.json",
+      "target_artifact": "trellis.external-reference"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/Llbc.lean",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/aeneas-command.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/aeneas-lean-library.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/charon-command.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/charon-options.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/checker-result.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/external-models.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/lean-command.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/lean-toolchain",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/llbc.llbc",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/package-lock.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/provider-profile.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/source/src/lib.rs",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/theorem-adequacy.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/theorem-statement.lean",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/theorem.lean",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/translation.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/aeneas/trust-closure.json",
+      "target_artifact": "octet.standards.formal-proof"
+    },
+    {
+      "edge_kind": "records_formal_proof_receipt",
+      "source_artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "target_artifact": "octet.standards.formal-proof"
+    }
+  ],
+  "proof_cards": [
+    {
+      "proof_or_property_id": "aeneas.fixture.safe_add",
+      "source_requirement_or_policy_id": "octet.aeneas_lean_proof_rail.theorem_adequacy",
+      "policy_id": "octet.aeneas_lean_proof_rails.fixture",
+      "rail_index": 0,
+      "receipt_path": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+      "artifact_blake3_identities": [
+        {
+          "artifact": "proofs/aeneas/source/src/lib.rs",
+          "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+        },
+        {
+          "artifact": "proofs/aeneas/theorem.lean",
+          "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+        },
+        {
+          "artifact": "proofs/aeneas/provider-profile.json",
+          "blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625"
+        },
+        {
+          "artifact": "proofs/aeneas/package-lock.json",
+          "blake3": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d"
+        },
+        {
+          "artifact": "proofs/aeneas/source/src/lib.rs",
+          "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+        },
+        {
+          "artifact": "proofs/aeneas/charon-options.json",
+          "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95"
+        },
+        {
+          "artifact": "proofs/aeneas/charon-command.json",
+          "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef"
+        },
+        {
+          "artifact": "proofs/aeneas/llbc.llbc",
+          "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5"
+        },
+        {
+          "artifact": "proofs/aeneas/aeneas-command.json",
+          "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b"
+        },
+        {
+          "artifact": "proofs/aeneas/translation.json",
+          "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8"
+        },
+        {
+          "artifact": "proofs/aeneas/Llbc.lean",
+          "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f"
+        },
+        {
+          "artifact": "proofs/aeneas/external-models.json",
+          "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d"
+        },
+        {
+          "artifact": "proofs/aeneas/theorem.lean",
+          "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+        },
+        {
+          "artifact": "proofs/aeneas/theorem-statement.lean",
+          "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+        },
+        {
+          "artifact": "proofs/aeneas/theorem-adequacy.json",
+          "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4"
+        },
+        {
+          "artifact": "proofs/aeneas/trust-closure.json",
+          "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379"
+        },
+        {
+          "artifact": "proofs/aeneas/lean-toolchain",
+          "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa"
+        },
+        {
+          "artifact": "proofs/aeneas/aeneas-lean-library.json",
+          "blake3": "c16344b6008749131ab6b5ba03881740fb8a75f4f3dde2adb1679aa8e073252d"
+        },
+        {
+          "artifact": "proofs/aeneas/lean-command.json",
+          "blake3": "130be6eabfed0fe39289c1ac21e2ec592be79a94f9e693bc5634817a0e524325"
+        },
+        {
+          "artifact": "proofs/aeneas/checker-result.json",
+          "blake3": "64e64cc32fc5966221fd60c6efd5ea84669478ad975fc483a169488985de5455"
+        },
+        {
+          "artifact": "proofs/octet.aeneas_lean_proof_rails.fixture-rail-0.receipt",
+          "blake3": "b0ce7c7d5673e67b0dc5fff7f54d351f4f58f2b70c986023a3933dee15bcf489"
+        }
+      ],
+      "evidence_tier": "formal_proof",
+      "evidence_origin": "octet_rerun",
+      "status": "passed",
+      "non_claims": [
+        "does not establish semantic equivalence or release eligibility",
+        "does not prove Aeneas or Charon translation soundness",
+        "does not prove Lean or verifier soundness",
+        "does not prove whole-program correctness",
+        "not business-domain validation",
+        "not certification",
+        "not full safety",
+        "not semantic equivalence",
+        "not whole-program correctness"
+      ],
+      "formal_proof_envelope": {
+        "schema_version": "octet-formal-proof-envelope/v1",
+        "provider_id": "aeneas-lean",
+        "policy_id": "octet.aeneas_lean_proof_rails.fixture",
+        "rail_id": "octet.aeneas_lean_proof_rails.fixture#rail-0",
+        "checked_scope": "formal-proof:fixture-only:octet.aeneas_lean_proof_rails.fixture#rail-0",
+        "status": "passed",
+        "evidence_tier": "formal_proof",
+        "claim": {
+          "theorem_or_property_id": "aeneas.fixture.safe_add",
+          "requirement_id": "octet.aeneas_lean_proof_rail.theorem_adequacy",
+          "claim_class": "named-theorem-over-generated-model"
+        },
+        "package_lock_identity": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d",
+        "source_bindings": [
+          {
+            "locator": "proofs/aeneas/source/src/lib.rs",
+            "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+          },
+          {
+            "locator": "proofs/aeneas/theorem.lean",
+            "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+          }
+        ],
+        "artifact_identities": [
+          {
+            "locator": "proofs/aeneas/provider-profile.json",
+            "blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625"
+          },
+          {
+            "locator": "proofs/aeneas/package-lock.json",
+            "blake3": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d"
+          },
+          {
+            "locator": "proofs/aeneas/source/src/lib.rs",
+            "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+          },
+          {
+            "locator": "proofs/aeneas/charon-options.json",
+            "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95"
+          },
+          {
+            "locator": "proofs/aeneas/charon-command.json",
+            "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef"
+          },
+          {
+            "locator": "proofs/aeneas/llbc.llbc",
+            "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5"
+          },
+          {
+            "locator": "proofs/aeneas/aeneas-command.json",
+            "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b"
+          },
+          {
+            "locator": "proofs/aeneas/translation.json",
+            "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8"
+          },
+          {
+            "locator": "proofs/aeneas/Llbc.lean",
+            "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f"
+          },
+          {
+            "locator": "proofs/aeneas/external-models.json",
+            "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d"
+          },
+          {
+            "locator": "proofs/aeneas/theorem.lean",
+            "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+          },
+          {
+            "locator": "proofs/aeneas/theorem-statement.lean",
+            "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+          },
+          {
+            "locator": "proofs/aeneas/theorem-adequacy.json",
+            "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4"
+          },
+          {
+            "locator": "proofs/aeneas/trust-closure.json",
+            "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379"
+          },
+          {
+            "locator": "proofs/aeneas/lean-toolchain",
+            "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa"
+          },
+          {
+            "locator": "proofs/aeneas/aeneas-lean-library.json",
+            "blake3": "c16344b6008749131ab6b5ba03881740fb8a75f4f3dde2adb1679aa8e073252d"
+          },
+          {
+            "locator": "proofs/aeneas/lean-command.json",
+            "blake3": "130be6eabfed0fe39289c1ac21e2ec592be79a94f9e693bc5634817a0e524325"
+          },
+          {
+            "locator": "proofs/aeneas/checker-result.json",
+            "blake3": "64e64cc32fc5966221fd60c6efd5ea84669478ad975fc483a169488985de5455"
+          }
+        ],
+        "trust_boundaries": [
+          "Octet owns this pinned Aeneas/Charon/Lean theorem receipt; it does not prove translation soundness, verifier soundness, semantic equivalence, whole-program correctness, or release eligibility"
+        ],
+        "non_claims": [
+          "does not establish semantic equivalence or release eligibility",
+          "does not prove Aeneas or Charon translation soundness",
+          "does not prove Lean or verifier soundness",
+          "does not prove whole-program correctness"
+        ],
+        "provider": {
+          "kind": "aeneas-lean",
+          "payload": {
+            "aeneas_release": "0.1.0",
+            "charon_revision": "cb50ff16b9f1066b8a97dc06da704de2da2fa41c",
+            "ocaml_toolchain": "ocaml@5.2.0",
+            "lean_toolchain": "leanprover/lean4:v4.31.0",
+            "aeneas_lean_library": "AeneasVerif/aeneas/backends/lean@bc2eb6f941369fa3c695e30598b5758b11e4f0de",
+            "checked_source_surface": [
+              "safe sequential Rust",
+              "no unsafe Rust",
+              "no concurrency",
+              "reviewed Charon-supported subset only"
+            ],
+            "preflight": {
+              "unsupported_inputs": [],
+              "disposition": "ready"
+            },
+            "command_argv": [
+              "charon",
+              "cargo",
+              "--preset",
+              "aeneas",
+              "--dest-file",
+              "llbc.llbc",
+              "aeneas",
+              "-backend",
+              "lean",
+              "-emit-json",
+              "-dest",
+              ".",
+              "-no-progress-bar",
+              "lake",
+              "build"
+            ],
+            "limits": {
+              "timeout_ms": 900000,
+              "stdout_max_bytes": 1048576,
+              "stderr_max_bytes": 1048576
+            },
+            "environment_allowlist": [
+              "PATH",
+              "CHARON_TOOLCHAIN_IS_IN_PATH",
+              "LD_LIBRARY_PATH",
+              "HOME",
+              "MATHLIB_NO_CACHE_ON_UPDATE"
+            ],
+            "extraction_policy": {
+              "has_errors": false,
+              "skip_borrowck": false,
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "pointer_width_bits": 64,
+              "endianness": "little",
+              "mir_start_stage": "borrowck",
+              "drop_policy": "include-drops",
+              "start_from": "crate",
+              "include_rules": [
+                "src/verified"
+              ],
+              "exclude_rules": [],
+              "opaque_rules": [],
+              "transformation_settings": [
+                "preserve-spans"
+              ],
+              "serialization_format": "llbc-json-v1"
+            },
+            "assumption_policy": {
+              "external_models": [],
+              "axioms": [],
+              "requires_complete_declaration": true
+            },
+            "theorem_admission": {
+              "theorem_id": "aeneas.fixture.safe_add",
+              "requirement_id": "octet.aeneas_lean_proof_rail.theorem_adequacy",
+              "claim_class": "named-theorem-over-generated-model",
+              "source_disposition": "maintained",
+              "approved_statement_blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125",
+              "named_theorem_present": true,
+              "statement_approved": true,
+              "adequacy": {
+                "decision": "non_vacuous",
+                "forbidden_declarations": []
+              },
+              "trust_closure": {
+                "complete": true,
+                "declared_external_models": [],
+                "declared_axioms": [],
+                "declared_opaque_definitions": [],
+                "declared_admitted_declarations": [],
+                "undeclared_inputs": []
+              },
+              "lean_check": {
+                "theorem_id": "aeneas.fixture.safe_add",
+                "status": "passed"
+              }
+            },
+            "stage_chain": {
+              "schema_version": "octet-aeneas-lean-stage-chain/v1",
+              "provider_profile": {
+                "role": "provider_profile",
+                "locator": "proofs/aeneas/provider-profile.json",
+                "blake3": "cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625"
+              },
+              "package_lock": {
+                "role": "package_lock",
+                "locator": "proofs/aeneas/package-lock.json",
+                "blake3": "a90f0bc8c3ab6544519d582a901324b218242e006e4f53236a4f486b3ed07a7d"
+              },
+              "stages": [
+                {
+                  "kind": "rust_source",
+                  "input_artifacts": [],
+                  "output_artifacts": [
+                    {
+                      "role": "rust_source",
+                      "locator": "proofs/aeneas/source/src/lib.rs",
+                      "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+                    }
+                  ]
+                },
+                {
+                  "kind": "charon_extraction",
+                  "input_artifacts": [
+                    {
+                      "role": "rust_source",
+                      "locator": "proofs/aeneas/source/src/lib.rs",
+                      "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+                    }
+                  ],
+                  "output_artifacts": [
+                    {
+                      "role": "charon_options",
+                      "locator": "proofs/aeneas/charon-options.json",
+                      "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95"
+                    },
+                    {
+                      "role": "charon_command",
+                      "locator": "proofs/aeneas/charon-command.json",
+                      "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef"
+                    },
+                    {
+                      "role": "llbc",
+                      "locator": "proofs/aeneas/llbc.llbc",
+                      "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5"
+                    }
+                  ]
+                },
+                {
+                  "kind": "aeneas_translation",
+                  "input_artifacts": [
+                    {
+                      "role": "charon_options",
+                      "locator": "proofs/aeneas/charon-options.json",
+                      "blake3": "628826f12a1951a45e105272e54328586bbc1591b25d74bf8a5afc9453b5ff95"
+                    },
+                    {
+                      "role": "charon_command",
+                      "locator": "proofs/aeneas/charon-command.json",
+                      "blake3": "3d546d9090d3331d821aa2f328c7323f9b2aca9bf1836f14d4804fa94b992aef"
+                    },
+                    {
+                      "role": "llbc",
+                      "locator": "proofs/aeneas/llbc.llbc",
+                      "blake3": "2af893a633e19e0d8d5b96bbe2bdfec84b658f28e5eb583b1ef522ff17c029e5"
+                    }
+                  ],
+                  "output_artifacts": [
+                    {
+                      "role": "aeneas_command",
+                      "locator": "proofs/aeneas/aeneas-command.json",
+                      "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b"
+                    },
+                    {
+                      "role": "translation_manifest",
+                      "locator": "proofs/aeneas/translation.json",
+                      "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8"
+                    }
+                  ]
+                },
+                {
+                  "kind": "generated_lean",
+                  "input_artifacts": [
+                    {
+                      "role": "aeneas_command",
+                      "locator": "proofs/aeneas/aeneas-command.json",
+                      "blake3": "7255d9366ad9340a5abcb82a970c8b8f461739e90274b2698db2f3b4ffb3880b"
+                    },
+                    {
+                      "role": "translation_manifest",
+                      "locator": "proofs/aeneas/translation.json",
+                      "blake3": "0e8c4e0040003a4488fc572c04e2a66509834857a4b2786ad443cfc90fb100c8"
+                    }
+                  ],
+                  "output_artifacts": [
+                    {
+                      "role": "generated_lean",
+                      "locator": "proofs/aeneas/Llbc.lean",
+                      "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f"
+                    },
+                    {
+                      "role": "external_model_inventory",
+                      "locator": "proofs/aeneas/external-models.json",
+                      "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d"
+                    }
+                  ]
+                },
+                {
+                  "kind": "theorem",
+                  "input_artifacts": [
+                    {
+                      "role": "generated_lean",
+                      "locator": "proofs/aeneas/Llbc.lean",
+                      "blake3": "7b6726a5a5a9271ffed325f25aae9c11871f3dc681a3a9d90f5f70ba4d2ad48f"
+                    },
+                    {
+                      "role": "external_model_inventory",
+                      "locator": "proofs/aeneas/external-models.json",
+                      "blake3": "9fa8dc9570625be2be53d308f958332981ec8fb8137d3dd7ba0ae5da317eaa7d"
+                    }
+                  ],
+                  "output_artifacts": [
+                    {
+                      "role": "theorem_source",
+                      "locator": "proofs/aeneas/theorem.lean",
+                      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+                    },
+                    {
+                      "role": "theorem_statement",
+                      "locator": "proofs/aeneas/theorem-statement.lean",
+                      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+                    },
+                    {
+                      "role": "theorem_adequacy",
+                      "locator": "proofs/aeneas/theorem-adequacy.json",
+                      "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4"
+                    },
+                    {
+                      "role": "trust_closure",
+                      "locator": "proofs/aeneas/trust-closure.json",
+                      "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379"
+                    }
+                  ]
+                },
+                {
+                  "kind": "lean_check",
+                  "input_artifacts": [
+                    {
+                      "role": "theorem_source",
+                      "locator": "proofs/aeneas/theorem.lean",
+                      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+                    },
+                    {
+                      "role": "theorem_statement",
+                      "locator": "proofs/aeneas/theorem-statement.lean",
+                      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+                    },
+                    {
+                      "role": "theorem_adequacy",
+                      "locator": "proofs/aeneas/theorem-adequacy.json",
+                      "blake3": "dbda19205e0a5202032ed61b4dae184a68f00af38161324416ae2a4f1ecc5eb4"
+                    },
+                    {
+                      "role": "trust_closure",
+                      "locator": "proofs/aeneas/trust-closure.json",
+                      "blake3": "021c033fb39bbf2ba3ef4d1e14a473e5988c1b464978881ec720c3b4e01d8379"
+                    }
+                  ],
+                  "output_artifacts": [
+                    {
+                      "role": "lean_toolchain",
+                      "locator": "proofs/aeneas/lean-toolchain",
+                      "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa"
+                    },
+                    {
+                      "role": "aeneas_lean_library",
+                      "locator": "proofs/aeneas/aeneas-lean-library.json",
+                      "blake3": "c16344b6008749131ab6b5ba03881740fb8a75f4f3dde2adb1679aa8e073252d"
+                    },
+                    {
+                      "role": "lean_command",
+                      "locator": "proofs/aeneas/lean-command.json",
+                      "blake3": "130be6eabfed0fe39289c1ac21e2ec592be79a94f9e693bc5634817a0e524325"
+                    },
+                    {
+                      "role": "checker_result",
+                      "locator": "proofs/aeneas/checker-result.json",
+                      "blake3": "64e64cc32fc5966221fd60c6efd5ea84669478ad975fc483a169488985de5455"
+                    }
+                  ]
+                }
+              ]
+            },
+            "semantic_reference": {
+              "revision": "8a9b8bb3823ceceb47026837d23baea0934dfb27",
+              "license": "Apache-2.0",
+              "source_sentinel": "README.md:Mechanized LLBC",
+              "recorded_only": true
+            }
+          }
+        }
+      },
+      "diagnostics": []
+    },
+    {
+      "proof_or_property_id": "trellis.ucan-proof-reference.digest-admission",
+      "source_requirement_or_policy_id": "octet.verus_proof_rails.trellis_blake3_import",
+      "policy_id": "octet.verus_proof_rails.trellis_blake3_import",
+      "rail_index": 0,
+      "receipt_path": "standards/proof-imports/fixtures/trellis/ucan_proof_reference.receipt.json",
+      "artifact_blake3_identities": [
+        {
+          "artifact": "standards/proof-imports/fixtures/trellis/ucan_proof_reference_source.rs",
+          "blake3": "c39b9d0e85f778b5b52ddf00ee7c422ea2de782551ff4874314c009be687f85a"
+        },
+        {
+          "artifact": "standards/proof-imports/fixtures/trellis/ucan_proof_reference_proof.rs",
+          "blake3": "434529911312c2f98def943df2479b2fc7b7a23f6cf8c911d283151352399f19"
+        },
+        {
+          "artifact": "standards/proof-imports/fixtures/trellis/ucan_proof_reference.stdout",
+          "blake3": "ac6c76d70c441cc470eae63849d6587274b6d4122abb9fc55049d6941f9720c5"
+        },
+        {
+          "artifact": "standards/proof-imports/fixtures/trellis/ucan_proof_reference.stderr",
+          "blake3": "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262"
+        },
+        {
+          "artifact": "standards/proof-imports/fixtures/trellis/ucan_proof_reference.receipt.json",
+          "blake3": "1d9c5738c4f151cd0b72e2a5a86a1ba8f7f65bca227249fd67d4a4b78bac9d3b"
+        }
+      ],
+      "evidence_tier": "manual_review_required",
+      "evidence_origin": "external_trellis_import",
+      "status": "manual_review_required",
+      "non_claims": [
+        "not whole-program correctness",
+        "not certification",
+        "not business-domain validation",
+        "not semantic equivalence",
+        "not full safety",
+        "BLAKE3 identifies exact artifact bytes and does not by itself prove proof correctness"
+      ],
+      "external_reference": {
+        "hash_algorithm": "blake3",
+        "promotion_command_argv": [
+          "cargo",
+          "octet",
+          "prove",
+          "--source",
+          "src/verified",
+          "--artifact-dir",
+          "artifacts/octet"
+        ],
+        "repository_label": "../trellis",
+        "repository_revision": "fb232e0e213d3e96878bbf86a10b26e53245a72c"
+      },
+      "diagnostics": []
+    }
+  ],
+  "diagnostics": [],
+  "non_claims": [
+    "Octet export preserves artifact identity, provenance linkage, and evidence tiers; it does not prove whole-program correctness",
+    "Valence consumes this export for stack traceability; Mantle bundles only the final sidecar opaquely",
+    "Octet Valence exports are adapter inputs, not release eligibility, Mantle bundle inclusion, or verifier soundness claims"
+  ]
+}

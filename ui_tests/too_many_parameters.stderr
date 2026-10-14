@@ -1,0 +1,34 @@
+warning: function has 6 parameters (limit: 5) — consider an options struct
+  --> $DIR/too_many_parameters.rs:1:1
+   |
+LL | / fn connect(host: &str, port: u16, timeout_ms: u64, retries: u32, tls: bool, proxy: &str) {
+LL | |     let _ = (host, port, timeout_ms, retries, tls, proxy);
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Simple Interfaces): group many parameters into a named options struct instead of a long positional signature Example: fn connect(opts: ConnectOptions) -> ...
+   = note: see Tiger Style guide: Explicit Interfaces
+   = note: `#[warn(tigerstyle::too_many_parameters)]` on by default
+
+warning: function has 6 parameters (limit: 5) — consider an options struct
+  --> $DIR/too_many_parameters.rs:12:5
+   |
+LL | /     fn method(&self, host: &str, port: u16, timeout_ms: u64, retries: u32, tls: bool, proxy: &str) {
+LL | |         let _ = (host, port, timeout_ms, retries, tls, proxy);
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Simple Interfaces): group many parameters into a named options struct instead of a long positional signature Example: fn connect(opts: ConnectOptions) -> ...
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: function has 6 parameters (limit: 5) — consider an options struct
+  --> $DIR/too_many_parameters.rs:18:5
+   |
+LL |     fn connect(&self, host: &str, port: u16, timeout_ms: u64, retries: u32, tls: bool, proxy: &str);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Interfaces): group many parameters into a named options struct instead of a long positional signature Example: fn connect(opts: ConnectOptions) -> ...
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: 3 warnings emitted
+
