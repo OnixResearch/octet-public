@@ -50,17 +50,17 @@
         "octet": "octet"
       },
       "locked": {
-        "lastModified": 1792015605,
-        "narHash": "sha256-CKrexq3bKxDZdYbVxcG0So9O9FQmukbdnope7GWWSHE=",
+        "lastModified": 1792016514,
+        "narHash": "sha256-cyDUDImFcasgnVbfXG0XAQxg7/PGPYoFvnhzc7MM0yQ=",
         "owner": "OnixResearch",
         "repo": "cairn-public",
-        "rev": "e25e782f8dafac98b906b48b9d15c965996e18f9",
+        "rev": "acb4c3d2cb90b231e07a6b71115c79adde46349c",
         "type": "github"
       },
       "original": {
         "owner": "OnixResearch",
         "repo": "cairn-public",
-        "rev": "e25e782f8dafac98b906b48b9d15c965996e18f9",
+        "rev": "acb4c3d2cb90b231e07a6b71115c79adde46349c",
         "type": "github"
       }
     },
