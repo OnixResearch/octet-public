@@ -1,0 +1,25 @@
+warning: core function returns concrete resource `File`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:1:1
+   |
+LL | / fn open_resource_in_core() -> std::fs::File {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::resource_return_from_core)]` on by default
+
+warning: core function returns concrete resource `JoinHandle`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:5:1
+   |
+LL | / fn spawn_handle_in_core() -> std::thread::JoinHandle<()> {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 2 warnings emitted
+

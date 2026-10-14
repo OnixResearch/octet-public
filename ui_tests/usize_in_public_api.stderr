@@ -1,0 +1,54 @@
+warning: `usize` in public API — use `u32` or `u64` for cross-platform consistency
+  --> $DIR/usize_in_public_api.rs:3:1
+   |
+LL | / pub fn get_item(index: usize) -> Option<u8> {
+LL | |     Some(index as u8)
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Cross-Platform APIs): use fixed-width integers at API boundaries instead of `usize` or `isize` Example: pub fn get(index: u32) -> Option<&Item>
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Types
+   = note: `#[warn(tigerstyle::usize_in_public_api)]` on by default
+help: replace with `u64` for cross-platform consistency
+   |
+LL - pub fn get_item(index: usize) -> Option<u8> {
+LL + pub fn get_item(index: u64) -> Option<u8> {
+   |
+
+warning: `usize` in public API — use `u32` or `u64` for cross-platform consistency
+  --> $DIR/usize_in_public_api.rs:7:1
+   |
+LL | / pub fn platform_len() -> usize {
+LL | |     4
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Cross-Platform APIs): use fixed-width integers at API boundaries instead of `usize` or `isize` Example: pub fn get(index: u32) -> Option<&Item>
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Types
+help: replace with `u64` for cross-platform consistency
+   |
+LL - pub fn platform_len() -> usize {
+LL + pub fn platform_len() -> u64 {
+   |
+
+warning: `usize` in public API — use `u32` or `u64` for cross-platform consistency
+  --> $DIR/usize_in_public_api.rs:16:5
+   |
+LL | /     pub fn slot(&self, idx: usize) -> usize {
+LL | |         idx
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Cross-Platform APIs): use fixed-width integers at API boundaries instead of `usize` or `isize` Example: pub fn get(index: u32) -> Option<&Item>
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Types
+help: replace platform-sized integers with fixed-width types
+   |
+LL -     pub fn slot(&self, idx: usize) -> usize {
+LL +     pub fn slot(&self, idx: u64) -> u64 {
+   |
+
+warning: 3 warnings emitted
+

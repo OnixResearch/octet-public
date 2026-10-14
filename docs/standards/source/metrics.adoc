@@ -1,0 +1,84 @@
+= Metrics
+:page-range: 69-74
+
+Measuring what the compiler cannot.
+
+Connascence, behavioral richness, bus factor, and the gap between what Rust's type system enforces and what your architecture actually needs. Metrics entries here explore quantitative approaches to code quality -- the numbers that tell you whether your codebase is improving, holding, or quietly decaying.
+
+== Measuring What Moves
+
+The compiler proves your types are correct. Prometheus tells you your system is alive. The audit chain proves no one tampered with the evidence.
+
+A fleet of industrial controllers deployed across twelve sites. The dashboard shows all devices green. Every health check returns 200. The on-call rotation is quiet.
+
+Then a site operator calls in. A motor controller is dropping sensor readings. Not crashing. Not faulting. Just slower. Readings that should arrive every 100ms are arriving every 400ms. The operator noticed because the conveyor belt downstream started stuttering.
+
+Investigation reveals the controller's CPU has been at 91% for three days. No alert fired. No one set a threshold. The dashboard showed green because green meant "responding to health checks." It did not mean "performing well."
+
+The health check was a liveness probe. It answered one question -- is this process running? It said nothing about whether the process was doing its job. The operator saw green and assumed healthy. That assumption cost three days of degraded throughput before a human noticed what a number could have caught.
+
+== Prometheus text format
+
+You do not need a heavy crate to expose Prometheus metrics. The text exposition format is plain text with a rigid grammar. A `/metrics` endpoint can write it directly.
+
+`# HELP` lines describe the metric. `# TYPE` lines declare whether it is a gauge or a counter. The value follows the metric name, separated by a space. Prometheus scrapes this endpoint on an interval and stores the time series. No client library required.
+
+== Atomic counters across async boundaries
+
+The motor handler and the metrics endpoint run in different async tasks. They need to share a counter without a lock.
+
+`Ordering::Relaxed` is correct here. This is not a happens-before relationship guarding shared state. It is a gauge that is eventually consistent. If the scrape reads 47 while the true count is 48, the next scrape will catch it. The alternative -- wrapping a counter in a `Mutex` so that a metrics scrape contends with a hardware interrupt path -- is worse in every dimension.
+
+== Structured telemetry
+
+When a controller reports its health to the cloud, the payload should be flat.
+
+No nested objects. Every field at the top level. The cloud consumer should not need to parse a tree to find the temperature. Flat structures map directly to columnar storage, dashboard queries, and alert rules. Nesting is for humans reading JSON in a browser. Machines prefer columns.
+
+== Hash-chained audit trail
+
+Some events need more than metrics. When an operator overrides a safety limit, when a work order completes, when a device reboots unexpectedly -- these events must be recorded in a way that proves they were not altered after the fact.
+
+A hash chain accomplishes this by linking each event to its predecessor.
+
+Tamper-evident, not tamper-proof. If someone modifies an entry, the chain breaks. Verification walks forward from the genesis entry and recomputes each hash. A mismatch pinpoints exactly where the chain was broken. This satisfies regulatory audit requirements without specialized infrastructure -- just SQLite and BLAKE3.
+
+== Thresholds beat cleverness
+
+The simplest alerting that works is a threshold.
+
+Not machine learning. Not anomaly detection. A number and a boundary. The operator who saw green for three days would have seen red on day one if this rule had existed. Sophisticated alerting has its place, but a threshold check that runs on every telemetry report catches drift before operators notice -- and before customers call.
+
+=== Three layers of measurement
+
+Each layer covers what the others cannot.
+
+.Compile-time guarantees
+The compiler proves your types are correct at build time. It prevents data races, null dereference, and use-after-free. It does not know whether your controller is running at 91% CPU. It finishes its work before the binary ever reaches a device.
+
+.Operational metrics
+Prometheus tells you whether your system is alive and performing in production. It catches the slow degradation that no type system can express -- the memory leak that grows over weeks, the disk that fills at 2% per day, the task queue that never quite drains. It does not know whether someone altered the audit log at 3am.
+
+.Audit integrity
+The hash chain proves that the events you recorded have not been changed after the fact. It provides a verifiable history that regulators and investigators can trust. It does not know whether your system is healthy right now -- only that the record of what happened is intact.
+
+No single layer is sufficient. Type safety without operational metrics means you do not know your system is slow until a human complains. Operational metrics without audit integrity means you cannot prove what happened when it matters. All three together give you a system you can reason about, monitor, and defend.
+
+The controller that sat at 91% for three days was type-safe. Its Rust was correct. What it lacked was someone -- or something -- watching the numbers that the compiler never sees.
+
+== Grounding
+
+[quote, Prometheus documentation, text exposition format]
+____
+Prometheus is an open-source systems monitoring and alerting toolkit. A multi-dimensional data model with time series data identified by metric name and key/value pairs.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 19]
+____
+Relaxed ordering has no synchronization or ordering constraints imposed on other reads or writes -- only this operation's atomicity is guaranteed.
+____
+
+[quote, Rust in Action (McNamara), Chapter 1]
+____
+Systems programming means working close to the machine. It means building tools that act as foundations for other software.
+____

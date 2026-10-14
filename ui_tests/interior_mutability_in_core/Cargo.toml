@@ -1,0 +1,9 @@
+[package]
+name = "interior-mutability-in-core-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "interior_mutability_in_core.rs"
+
+[workspace]

@@ -1,0 +1,2 @@
+[octet.lint_levels]
+no_unwrap = "warn"

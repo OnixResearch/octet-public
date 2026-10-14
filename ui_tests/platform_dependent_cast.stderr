@@ -1,0 +1,18 @@
+warning: `as usize` from `u32` is platform-dependent
+  --> $DIR/platform_dependent_cast.rs:3:5
+   |
+LL |     x as usize
+   |     ^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Types
+   = note: `#[warn(tigerstyle::platform_dependent_cast)]` on by default
+help: replace with `usize::try_from(...)`
+   |
+LL -     x as usize
+LL +     usize::try_from(x)?
+   |
+
+warning: 1 warning emitted
+

@@ -1,0 +1,12 @@
+# Copy to a consumer repository as `.pre-commit-config.yaml`.
+# Replace the sample `rev` with an Octet release tag or commit SHA that the
+# consumer has reviewed before installing the hook.
+repos:
+  - repo: https://github.com/OnixResearch/octet
+    rev: 0123456789abcdef0123456789abcdef01234567
+    hooks:
+      - id: octet-deny-all
+        # The hook ignores pre-commit's per-file list and runs once from the
+        # workspace root using `[workspace.metadata.octet]` defaults.
+        # Optional scope override example:
+        # args: ["--workspace", "--", "--all-targets"]

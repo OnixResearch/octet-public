@@ -1,0 +1,21 @@
+warning: spawned task or thread join handle is discarded
+  --> $DIR/ignored_join_handle.rs:7:5
+   |
+LL |     std::thread::spawn(|| STATEMENT_RESULT);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Task Lifecycle): store, await, join, or explicitly abort spawned work instead of discarding its handle Example: let handle = tokio::spawn(work); handle.await?;
+   = note: see Tiger Style guide: Concurrency / Task Lifecycle
+   = note: `#[warn(tigerstyle::ignored_join_handle)]` on by default
+
+warning: spawned task or thread join handle is discarded
+  --> $DIR/ignored_join_handle.rs:12:13
+   |
+LL |     let _ = std::thread::spawn(|| WILDCARD_RESULT);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Task Lifecycle): store, await, join, or explicitly abort spawned work instead of discarding its handle Example: let handle = tokio::spawn(work); handle.await?;
+   = note: see Tiger Style guide: Concurrency / Task Lifecycle
+
+warning: 2 warnings emitted
+

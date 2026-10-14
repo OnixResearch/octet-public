@@ -1,0 +1,137 @@
+{
+  "profiles": [
+    {
+      "claim_scope": "direct-source-shape-policy",
+      "effect_families": [
+        "failure",
+        "resource"
+      ],
+      "function_address_scope": "workspace",
+      "minimum_function_address_mode": "observe",
+      "non_claims": [
+        "The robust profile checks configured direct Rust source and HIR shapes; it does not prove panic freedom or memory safety beyond Rust's ordinary checked-code boundary.",
+        "The robust profile does not prove transitive dependency behavior, compiler correctness, whole-program correctness, or release eligibility."
+      ],
+      "profile_id": "robust",
+      "required_lints": [
+        "unjustified_allow",
+        "ignored_result",
+        "drop_must_use",
+        "fallible_int_fallback",
+        "unchecked_narrowing",
+        "unchecked_division",
+        "sentinel_fallback",
+        "platform_dependent_cast",
+        "raw_arithmetic_overflow",
+        "no_unwrap",
+        "no_panic",
+        "public_unsafe_api",
+        "no_todo",
+        "unjustified_no_todo_allow"
+      ],
+      "requires_core_scopes": false,
+      "summary": "Explicit failure, checked conversion and arithmetic, reviewable unsafe APIs, and governed suppressions for Rust-compatible code."
+    },
+    {
+      "claim_scope": "direct-source-shape-policy",
+      "effect_families": [
+        "concurrency",
+        "failure",
+        "resource"
+      ],
+      "function_address_scope": "workspace",
+      "minimum_function_address_mode": "warn",
+      "non_claims": [
+        "The bounded-systems profile checks covered direct source shapes; it does not statically prove every runtime resource bound, scheduler behavior, or termination property.",
+        "The bounded-systems profile does not prove transitive dependency behavior, compiler correctness, whole-program correctness, or release eligibility."
+      ],
+      "profile_id": "bounded-systems",
+      "required_lints": [
+        "unjustified_allow",
+        "magic_number",
+        "unbounded_loop",
+        "multi_lock_ordering",
+        "ignored_join_handle",
+        "explicit_defaults",
+        "unbounded_channel",
+        "unbounded_collection_growth",
+        "usize_in_public_api",
+        "allocation_in_loop",
+        "ignored_result",
+        "drop_must_use",
+        "fallible_int_fallback",
+        "unchecked_narrowing",
+        "unchecked_division",
+        "sentinel_fallback",
+        "platform_dependent_cast",
+        "raw_arithmetic_overflow",
+        "no_unwrap",
+        "no_panic",
+        "public_unsafe_api",
+        "defaulting_trait_method",
+        "no_todo",
+        "unjustified_no_todo_allow",
+        "no_recursion"
+      ],
+      "requires_core_scopes": false,
+      "summary": "Robust checks plus bounded control flow, allocation, collections, channels, task lifecycle, lock ordering, and platform-width boundaries."
+    },
+    {
+      "claim_scope": "direct-source-shape-policy",
+      "effect_families": [
+        "concurrency",
+        "failure",
+        "resource",
+        "time",
+        "unknown"
+      ],
+      "function_address_scope": "core",
+      "minimum_function_address_mode": "deny",
+      "non_claims": [
+        "The deterministic-core profile validates configured direct source and HIR shapes; it is not a Rust effect type system and does not prove transitive purity or runtime determinism.",
+        "Function-address evidence is source-shape identity, not resolved call-graph closure, semantic equivalence, whole-program correctness, verifier soundness, or release eligibility."
+      ],
+      "profile_id": "deterministic-core",
+      "required_lints": [
+        "unjustified_allow",
+        "magic_number",
+        "unbounded_loop",
+        "verified_purity",
+        "unbounded_channel",
+        "unbounded_collection_growth",
+        "allocation_in_loop",
+        "concrete_construction_in_core",
+        "ignored_result",
+        "drop_must_use",
+        "fallible_int_fallback",
+        "unchecked_narrowing",
+        "unchecked_division",
+        "sentinel_fallback",
+        "platform_dependent_cast",
+        "raw_arithmetic_overflow",
+        "ambient_clock",
+        "ambient_env",
+        "ambient_random",
+        "global_state_in_core",
+        "impure_call_in_core",
+        "interior_mutability_in_core",
+        "logging_in_core",
+        "mutating_input_in_pure",
+        "nondeterministic_output",
+        "pure_attr_contract",
+        "resource_return_from_core",
+        "spawn_in_core",
+        "zero_alloc_attr_contract",
+        "no_unwrap",
+        "no_panic",
+        "public_unsafe_api",
+        "no_todo",
+        "unjustified_no_todo_allow",
+        "no_recursion"
+      ],
+      "requires_core_scopes": true,
+      "summary": "Robust checks plus configured core boundaries for ambient inputs, platform effects, state, observability, spawning, allocation, and deterministic output."
+    }
+  ],
+  "schema_version": "octet-strict-rust-profiles/v1"
+}

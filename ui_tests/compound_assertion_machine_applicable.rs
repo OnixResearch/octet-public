@@ -1,0 +1,12 @@
+fn split_pair(a: u32, b: u32) {
+    assert!(a > 0 && b > 0);
+}
+
+fn split_three(a: u32, b: u32, c: u32) {
+    assert!(a > 0 && b > 0 && c > 0);
+}
+
+fn main() {
+    split_pair(1, 2);
+    split_three(1, 2, 3);
+}

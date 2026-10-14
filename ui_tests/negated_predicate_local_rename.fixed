@@ -1,0 +1,10 @@
+fn multiple_uses() {
+    let is_ready = false;
+    let _a = is_ready;
+    let _b = is_ready;
+    let _c = !is_ready;
+}
+
+fn main() {
+    multiple_uses();
+}

@@ -1,0 +1,14 @@
+warning: source file is 350 lines (limit: 300)
+  --> $ROOT/ui_tests/../policy_inputs/excessive_file_length_oversized.rs:1:1
+   |
+LL | / // generated oversized production-like policy input for excessive_file_length
+...  |
+LL | | pub fn oversized_policy_module() -> u64 { 1 }
+   | |______________________________________________^
+   |
+   = help: Tiger Style (File Length): split oversized source files along module or responsibility boundaries Example: mod parser; mod planner; mod executor;
+   = note: see Tiger Style guide: File Length
+   = note: `#[warn(tigerstyle::excessive_file_length)]` on by default
+
+warning: 1 warning emitted
+

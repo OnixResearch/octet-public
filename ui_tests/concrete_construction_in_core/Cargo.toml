@@ -1,0 +1,12 @@
+[package]
+name = "concrete-construction-in-core-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "concrete_construction_in_core.rs"
+
+[dependencies]
+serde_json = "1"
+
+[workspace]

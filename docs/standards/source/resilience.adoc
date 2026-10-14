@@ -1,0 +1,99 @@
+= Resilience
+:page-range: 44-50
+
+Systems that survive their own failures.
+
+Store-and-forward queues, transactional outbox patterns, idempotency at the database layer, and the fail-closed discipline that refuses to guess when it cannot be sure. Resilience entries here address the engineering required when "retry later" is not good enough and "drop the message" is not acceptable.
+
+== Five Whys to the Architecture
+
+When a motor controller stalls in production, "retry" is not root cause analysis. The fifth why is usually a design decision.
+
+A vibration plate controller stalls during a patient therapy session. The on-call engineer restarts the service. It works. They log the incident as "transient motor fault, resolved by restart." Two weeks later it happens again. Then three times in one week. Each time: restart, log, move on.
+
+The fifth occurrence triggers a proper investigation. An engineer sits down with the logs, the code, and the discipline to ask "why" until the answer stops being a runtime event and starts being a design decision.
+
+* The command buffer was full. The motor received no new position commands for 200ms and triggered its watchdog timeout.
+* The sensor-fusion task was holding a lock on shared state, blocking the motor-command task from writing.
+* It was running calibration computation while holding the mutex, instead of copying the data out and releasing the lock first.
+* The original author needed mutable access to update calibration state and took the simplest approach -- acquire the mutex, do everything, release.
+* Both calibration and command-path data lived in the same struct, and no one had separated the concerns.
+
+The fix was not a retry. It was not a bigger buffer. It was splitting the state into separate concerns with separate locks. The motor never stalled again.
+
+== The method
+
+Toyota's Five Whys, developed by Taiichi Ohno, is simple: when a machine stops, ask why five times. Each answer peels back a layer of symptoms to reach the structural cause.
+
+In safety-critical Rust, the pattern is consistent. The first why is a runtime event -- motor stalled, sensor returned invalid data, connection dropped. The second and third whys trace the event through the call chain. The fourth why reaches the abstraction layer. The fifth why reaches the architecture -- shared state that should not be shared, a missing error type, or an abstraction that conflated two concerns.
+
+The fix almost always lives at the fifth level.
+
+=== Three patterns the Five Whys reveal
+
+== Lock contention from conflated state
+
+Two concerns behind one mutex. This is the pattern from the opening narrative.
+
+The motor task needs fast access to command state. The calibration task needs access to calibration data. They share a mutex because they share a struct.
+
+Split the struct. Split the lock. The motor task stops contending with calibration work. The long lock hold disappears.
+
+== Silent error swallowing
+
+A motor driver returns a fault code. Somewhere deep in the call chain, a function converts it to a default value.
+
+The zero propagates through the control loop as a valid position. The controller drives the motor to what it believes is the zero position. On a vibration plate, this means full deflection.
+
+The fifth why: the function returned a default instead of a `Result`, because the original author did not want to propagate errors through three layers of callers.
+
+The fix is to make the error explicit. Now the caller must decide what to do with a fault: hold last known position, enter safe mode, or alert the operator. Any of these is better than silently driving to zero.
+
+== Missing failure mode
+
+The system handles two states: success and error. But the hardware has four failure modes -- timeout, disconnect, invalid response, and calibration drift. The error enum has one variant.
+
+A timeout gets treated the same as a disconnect. The recovery logic retries on timeout, which is correct, and retries on disconnect, which is not -- the device is gone.
+
+The fix is to model the actual failure modes explicitly. Once each failure has a distinct variant, the compiler forces the caller to handle them separately.
+
+== When to stop
+
+Stop at the architectural level, not the personal level. "Because the engineer did not know better" is the sixth why, and it points to culture -- training, review, documentation -- not to code. The Five Whys method produces architectural fixes. It does not produce blame.
+
+If the fifth why is "because we had no code review process for lock discipline," that is a legitimate finding. Act on it. But the fix is a process change, not a code change. Keep the two separate.
+
+== The deeper point
+
+Resilience is not retry logic. It is not a bigger timeout. It is not "restart the service." These are symptom treatments that leave the structural cause intact. Every restart is a confession that you have not yet understood the failure.
+
+The Five Whys transforms a runtime event into an architectural insight. In safety-critical Rust, that insight is almost always one of three things: separation of concerns, typed error handling, or explicit failure modes.
+
+Rust gives you the tools to enforce the fix once you find it. `Result` instead of silent defaults. Exhaustive enums instead of vague error buckets. Ownership and borrowing for enforcing state separation at compile time. The compiler holds the line after you draw it.
+
+Drawing it is the human discipline. Ask why until you reach the design. Then change the design.
+
+== Grounding
+
+[quote, Taiichi Ohno, Toyota Production System: Beyond Large-Scale Production]
+____
+Having to repeat why five times helps uncover the root cause of the problem and correct it. If this process were not carried through, one might simply replace the fuse or the pump shaft, only to have the failure recur within a few months.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 7]
+____
+The key question in error handling is usually: who should the caller of this function be? Because that determines what kind of error information is appropriate.
+____
+
+[quote, Rust in Action (McNamara), Chapter 1]
+____
+Systems programming is about dealing with the constraints imposed by real hardware. The real world is messy, unreliable, and does not conform to abstract models.
+____
+
+== Remote effect contracts
+
+Remote work is an effect family, not just a function call. A remote boundary should name the endpoint authority, timeout, retry policy, idempotency key, request hash, response or receipt identity, and replay fixture. Retries without idempotency are not resilience; they are duplicated side effects waiting to happen.
+
+== Semantic refactor evidence
+
+A rename or move that claims behavior preservation should leave machine-readable evidence: old symbol, new symbol, reason, previous fingerprint or finding identity, new fingerprint or finding identity, and the verification command that proves the mapping.

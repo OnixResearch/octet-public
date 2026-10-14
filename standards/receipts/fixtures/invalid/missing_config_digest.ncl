@@ -1,0 +1,20 @@
+let contracts = import "../../contracts.ncl" in
+{
+  schema_version = "octet-acceptance-receipt/v1",
+  run_id = "run-0001",
+  started_at = "2026-05-06T14:00:00Z",
+  finished_at = "2026-05-06T14:01:00Z",
+  tool = "octet-standards",
+  tool_version = "0.1.0",
+  git_revision = "d35db7a5",
+  config_digest_detail = { algorithm = "blake3", value = "0123456789abcdef" },
+  inputs = [{ path = "standards/profiles/local.ncl", blake3 = "0123456789abcdef" }],
+  stages = [{ name = "policy-validate", status = "passed" }],
+  artifacts = [{ path = "octet-artifact-manifest.json", blake3 = "fedcba9876543210", bytes = 512 }],
+  status = "passed",
+  warnings = [],
+  errors = [],
+  verification_commands = [{ command = "nix run .#octet-policy-validate", status = "passed" }],
+  verification_evidence = [{ path = "openspec/evidence/focused-checks.txt", blake3 = "0123456789abcdef" }],
+  raw_log_path = "",
+} | contracts.AcceptanceReceipt

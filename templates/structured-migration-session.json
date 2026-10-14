@@ -1,0 +1,91 @@
+{
+  "schema_version": "octet-structured-migration-session/v1",
+  "session_id": "rename-cargo-slotcar",
+  "migration_kind": "command",
+  "old_pointer": {
+    "pointer_kind": "command",
+    "name": "cargo-slotcar",
+    "locator": "cargo-octet/src/bin/cargo-slotcar.rs"
+  },
+  "new_pointer": {
+    "pointer_kind": "command",
+    "name": "cargo-octet",
+    "locator": "cargo-octet/src/main.rs"
+  },
+  "strict_identity": true,
+  "identity_evidence": [
+    {
+      "identity_kind": "binary-wrapper",
+      "value": "cargo-octet-wrapper",
+      "expected_blake3": "same-hash",
+      "actual_blake3": "same-hash"
+    }
+  ],
+  "compatibility": [
+    {
+      "pointer": {
+        "pointer_kind": "command",
+        "name": "cargo-octet",
+        "locator": "cargo-octet/src/main.rs"
+      },
+      "classification": "canonical",
+      "coverage": ["release smoke"]
+    },
+    {
+      "pointer": {
+        "pointer_kind": "command",
+        "name": "cargo-slotcar",
+        "locator": "cargo-octet/src/bin/cargo-slotcar.rs"
+      },
+      "classification": "compatibility-alias",
+      "coverage": ["consumer integration alias test"],
+      "removal_boundary": "keep until downstream release notes remove cargo-slotcar"
+    }
+  ],
+  "affected_surfaces": [
+    {
+      "surface_kind": "doc",
+      "locator": "docs/release-candidate.md",
+      "mutability": "live",
+      "identity": "doc-hash"
+    },
+    {
+      "surface_kind": "archive",
+      "locator": "cairn/archive/2026-01-01-legacy/tasks.md",
+      "mutability": "archive-read-only",
+      "identity": "archive-hash"
+    },
+    {
+      "surface_kind": "generated-artifact",
+      "locator": "artifacts/migration/session.json",
+      "mutability": "generated"
+    }
+  ],
+  "planned_operations": [
+    {
+      "operation_id": "record-command-alias",
+      "operation_kind": "record-only",
+      "target_locator": "artifacts/migration/session.json",
+      "safety": "safe",
+      "dry_run_preview": "record alias coverage only"
+    }
+  ],
+  "verification_commands": [
+    {
+      "command": "cargo test -p cargo-octet migration_sessions -- --nocapture",
+      "expected": "session verification passes"
+    }
+  ],
+  "status": "planned",
+  "todos": [
+    {
+      "item": "review downstream release note",
+      "status": "open",
+      "blocker": "downstream schedule"
+    }
+  ],
+  "non_claims": [
+    "migration pointer linkage is not semantic equivalence",
+    "migration pointer linkage is not behavioral correctness"
+  ]
+}

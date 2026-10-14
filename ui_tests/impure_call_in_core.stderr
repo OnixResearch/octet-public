@@ -1,0 +1,12 @@
+warning: core scope performs direct filesystem effect; inject a port or move the call to the shell
+  --> $DIR/impure_call_in_core/impure_call_in_core.rs:4:5
+   |
+LL |     std::fs::read_to_string(path).unwrap_or_else(|_error| String::new())
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): replace direct platform-effect calls in core scopes with injected ports or shell-boundary helpers Example: fn load(port: &impl ReadConfig) -> Config
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::impure_call_in_core)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,51 @@
+let contracts = import "../../contracts.ncl" in
+let PolicyRegistry = contracts.PolicyRegistry in
+let PolicyRegistryRules = contracts.PolicyRegistryRules in
+{
+  schema_version = "fixture",
+  checker_ids = ["registry", "octet-standards"],
+  policies = [{
+    policy_id = "tigerstyle.fixture.hexagonal-port-mechanism",
+    pillar = "fixture",
+    source_path = "docs/standards/source/architecture.adoc",
+    source_heading = "Boundaries as architecture",
+    source_anchor = "docs/standards/source/architecture.adoc#boundaries-as-architecture",
+    summary = "Fixture with a declared hexagonal port mechanism.",
+    classification = "hard",
+    enforcement_level = "hard",
+    current_enforcement_mode = "gate",
+    target_enforcement_mode = "structural",
+    escalation_criteria = "fixture escalation criteria",
+    mechanisms = [{
+      kind = "port",
+      description = "clock port owned by core and implemented by adapters",
+      exported_obligations = [
+        "clock port trait is declared in core",
+        "clock port is implemented by adapters",
+        "core does not implement the clock port for concrete infrastructure",
+      ],
+      port_traits = ["Clock"],
+      core_owner_scope = "domain/src/",
+      permitted_adapter_scopes = ["adapters/std/src/"],
+      forbidden_concrete_types = ["SystemClock"],
+      reserved = false,
+    }],
+    checker_owner = "fixture",
+    checker_id = "octet-standards",
+    default_severity = "error",
+    suppression_requirements = {
+      requires_policy_id = true,
+      requires_source_section = true,
+      requires_owner = true,
+      requires_rationale = true,
+      requires_review_trigger = true,
+      requires_safer_default = true,
+    },
+    fixture_coverage = { status = "planned", compliant = [], noncompliant = [] },
+    verification_evidence_requirements = ["validates port mechanism contract"],
+    classification_rationale = "Fixture proves port mechanism contract export.",
+    false_positive_risk = "none",
+    existing_enforcement = ["registry"],
+    custom_checker_justification = "fixture",
+  }],
+} | PolicyRegistry | PolicyRegistryRules

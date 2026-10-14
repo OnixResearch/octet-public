@@ -1,0 +1,104 @@
+{
+  "canonicalizer": "octet-effect-closure-canonicalizer-v1",
+  "claim_scope": "selected-source-token-effect-closure",
+  "effects": [
+    "alloc",
+    "panic",
+    "unsafe",
+    "clock",
+    "random",
+    "fs",
+    "net",
+    "spawn",
+    "lock",
+    "ffi",
+    "unknown"
+  ],
+  "non_claims": [
+    "The receipt covers conservative selected Rust source-token inference and reviewed call summaries, not complete Rust name resolution, macro expansion, trait dispatch, MIR call-graph semantics, runtime reachability, or runtime ordering.",
+    "Reviewed dependency summaries bind exact provider identity but do not verify dependency implementations, panic freedom, semantic determinism, compiler correctness, whole-program correctness, verifier soundness, or release eligibility."
+  ],
+  "profiles": [
+    {
+      "allowed_effects": [
+        "alloc"
+      ],
+      "denied_effects": [
+        "panic",
+        "unsafe",
+        "clock",
+        "random",
+        "fs",
+        "net",
+        "spawn",
+        "lock",
+        "ffi",
+        "unknown"
+      ],
+      "profile_id": "deterministic-core"
+    }
+  ],
+  "resolver": "octet-selected-source-token-call-resolver-v1",
+  "role_edges": [
+    {
+      "callee": "core",
+      "caller": "core"
+    },
+    {
+      "callee": "core",
+      "caller": "shell"
+    },
+    {
+      "callee": "shell",
+      "caller": "shell"
+    },
+    {
+      "callee": "adapter",
+      "caller": "shell"
+    },
+    {
+      "callee": "ffi",
+      "caller": "shell"
+    },
+    {
+      "callee": "proof",
+      "caller": "shell"
+    },
+    {
+      "callee": "core",
+      "caller": "adapter"
+    },
+    {
+      "callee": "adapter",
+      "caller": "adapter"
+    },
+    {
+      "callee": "ffi",
+      "caller": "adapter"
+    },
+    {
+      "callee": "core",
+      "caller": "ffi"
+    },
+    {
+      "callee": "ffi",
+      "caller": "ffi"
+    },
+    {
+      "callee": "core",
+      "caller": "proof"
+    },
+    {
+      "callee": "proof",
+      "caller": "proof"
+    }
+  ],
+  "roles": [
+    "core",
+    "shell",
+    "adapter",
+    "ffi",
+    "proof"
+  ],
+  "schema_version": "octet-effect-closure-catalog/v1"
+}

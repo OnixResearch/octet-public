@@ -1,0 +1,12 @@
+warning: `panic!` will abort the process on execution
+  --> $DIR/no_panic_cfg_not.rs:4:9
+   |
+LL |         panic!("cfg-not-test panic");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::no_panic)]` on by default
+
+warning: 1 warning emitted
+

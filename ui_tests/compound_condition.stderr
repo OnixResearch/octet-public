@@ -1,0 +1,26 @@
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:5:8
+   |
+LL |     if a && b && c && d {
+   |        ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Condition Decomposition
+note: the lint level is defined here
+  --> $DIR/compound_condition.rs:1:9
+   |
+LL | #![warn(compound_condition)]
+   |         ^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::compound_condition)]` implied by `#[warn(compound_condition)]`
+help: extract conditions into named predicates
+   |
+LL ~     let predicate_1 = a;
+LL +     let predicate_2 = b;
+LL +     let predicate_3 = c;
+LL +     let predicate_4 = d;
+LL ~     if predicate_1 && predicate_2 && predicate_3 && predicate_4 {
+   |
+
+warning: 1 warning emitted
+

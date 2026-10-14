@@ -1,0 +1,33 @@
+{
+  "schema_version": "cargo-kani-summary/v1",
+  "harness": {
+    "package": "octet-core",
+    "target": "lib",
+    "path": "src/bounds.rs",
+    "name": "check_index_admission_no_panic"
+  },
+  "source_identity": "b3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "toolchain": {
+    "kani": "kani 0.65.0",
+    "rustc": "rustc 1.91.0-nightly",
+    "cbmc": "cbmc 6.0.0",
+    "solver": "minisat"
+  },
+  "verdict": "passed",
+  "assumptions_reviewed": true,
+  "assumption_status": "reviewed",
+  "unwind": {
+    "status": "passed"
+  },
+  "properties": [
+    {
+      "name": "panic-freedom over admitted indexes",
+      "property_class": "boundary-panic",
+      "status": "passed"
+    }
+  ],
+  "claims": {
+    "coverage": "bounded",
+    "property_evidence": true
+  }
+}

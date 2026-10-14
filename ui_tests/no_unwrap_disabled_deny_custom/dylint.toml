@@ -1,0 +1,5 @@
+[octet]
+disabled_lints = ["no_unwrap"]
+
+[octet.lint_levels]
+no_unwrap = "deny"

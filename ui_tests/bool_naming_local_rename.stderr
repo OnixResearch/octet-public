@@ -1,0 +1,20 @@
+warning: boolean binding `active` should have a predicate prefix
+  --> $DIR/bool_naming_local_rename.rs:2:9
+   |
+LL |     let active = true;
+   |         ^^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Positive Predicates
+   = note: `#[warn(tigerstyle::bool_naming)]` on by default
+help: rename binding to `is_active`
+   |
+LL ~     let is_active = true;
+LL ~     let _a = is_active;
+LL ~     let _b = is_active;
+LL ~     let _c = is_active;
+   |
+
+warning: 1 warning emitted
+

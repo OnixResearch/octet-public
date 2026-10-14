@@ -1,0 +1,18 @@
+warning: trait has 8 methods (limit: 7) — split it into cohesive role interfaces
+  --> $DIR/fat_trait.rs:1:1
+   |
+LL | / trait WidePort {
+LL | |     fn a(&self);
+LL | |     fn b(&self);
+LL | |     fn c(&self);
+...  |
+LL | |     fn h(&self);
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Interface Segregation): split broad traits into cohesive role interfaces instead of forcing implementors to satisfy unrelated methods Example: trait Clock { fn now_ms(&self) -> u64; }
+   = note: see Tiger Style guide: Explicit Interfaces / Role Interfaces
+   = note: `#[warn(tigerstyle::fat_trait)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,33 @@
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/no_unwrap.rs:4:13
+   |
+LL |     let _ = val.unwrap();
+   |             ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::no_unwrap)]` on by default
+help: propagate the error with `?` instead of panicking
+   |
+LL -     let _ = val.unwrap();
+LL +     let _ = val?;
+   |
+
+warning: `.expect()` in production code will panic on failure
+  --> $DIR/no_unwrap.rs:10:13
+   |
+LL |     let _ = val.expect("missing");
+   |             ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of panicking
+   |
+LL -     let _ = val.expect("missing");
+LL +     let _ = val?;
+   |
+
+warning: 2 warnings emitted
+

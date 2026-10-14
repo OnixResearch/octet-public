@@ -1,0 +1,16 @@
+warning: core scope emits `dbg!(` directly; return events or diagnostics for the shell to log
+  --> $DIR/logging_in_core/logging_in_core.rs:3:51
+   |
+LL |   fn compute_with_console_output(value: u64) -> u64 {
+   |  ___________________________________________________^
+LL | |     println!("processing {value}");
+LL | |     dbg!(value)
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return events or diagnostics from core logic and let the shell own logging, stdout, and stderr Example: fn validate(input: Input) -> (Output, Vec<Event>)
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::logging_in_core)]` on by default
+
+warning: 1 warning emitted
+

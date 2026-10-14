@@ -1,0 +1,9 @@
+[package]
+name = "resource-return-from-core-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "resource_return_from_core.rs"
+
+[workspace]

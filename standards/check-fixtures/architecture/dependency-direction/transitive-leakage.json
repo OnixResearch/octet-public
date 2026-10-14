@@ -1,0 +1,15 @@
+{
+  "packages": [
+    { "id": "core", "name": "domain-core", "manifest_path": "/workspace/crates/domain-core/Cargo.toml" },
+    { "id": "middle", "name": "domain-helper", "manifest_path": "/workspace/crates/domain-helper/Cargo.toml" },
+    { "id": "adapter", "name": "http-adapter", "manifest_path": "/workspace/crates/http-adapter/Cargo.toml" }
+  ],
+  "resolve": {
+    "nodes": [
+      { "id": "core", "deps": [{ "pkg": "middle", "dep_kinds": [{ "kind": null }] }] },
+      { "id": "middle", "deps": [{ "pkg": "adapter", "dep_kinds": [{ "kind": null }] }] },
+      { "id": "adapter", "deps": [{ "pkg": "core", "dep_kinds": [{ "kind": null }] }] }
+    ]
+  },
+  "workspace_members": ["core", "middle", "adapter"]
+}

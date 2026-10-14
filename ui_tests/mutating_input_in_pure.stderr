@@ -1,0 +1,25 @@
+warning: pure context accepts mutating input capability `&mut `; return an explicit state transition instead
+  --> $DIR/mutating_input_in_pure.rs:8:28
+   |
+LL | fn update_counter(counter: &mut u64) -> u64 {
+   |                            ^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): avoid caller-owned mutation capabilities in pure contexts; return explicit state transitions instead Example: fn update(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::mutating_input_in_pure)]` on by default
+
+warning: marked pure function contains direct mutating input impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/mutating_input_in_pure.rs:8:1
+   |
+LL | / fn update_counter(counter: &mut u64) -> u64 {
+LL | |     *counter += COUNTER_INCREMENT;
+LL | |     *counter
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::pure_attr_contract)]` on by default
+
+warning: 2 warnings emitted
+

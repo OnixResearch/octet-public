@@ -1,0 +1,18 @@
+warning: `RPCHandler` has acronym-style capitalization
+  --> $DIR/acronym_allowlist_custom/acronym_allowlist_custom.rs:7:8
+   |
+LL | struct RPCHandler {
+   |        ^^^^^^^^^^
+   |
+   = help: Tiger Style (Acronym Capitalization): capitalize acronyms like ordinary words in type and variant names Example: RpcHandler
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Acronym Capitalization
+   = note: `#[warn(tigerstyle::acronym_style)]` on by default
+help: rename `RPCHandler` to `RpcHandler`
+   |
+LL - struct RPCHandler {
+LL + struct RpcHandler {
+   |
+
+warning: 1 warning emitted
+

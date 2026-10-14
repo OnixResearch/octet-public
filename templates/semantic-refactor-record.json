@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "old_symbol": "crate::module::old_name",
+  "new_symbol": "crate::module::new_name",
+  "rationale": "rename clarifies capability authority without behavior change",
+  "old_identity": "b3:<old-fingerprint-or-finding>",
+  "new_identity": "b3:<new-fingerprint-or-finding>",
+  "verification_command": "cargo test --workspace",
+  "verification_result": "passed"
+}

@@ -1,0 +1,18 @@
+warning: `todo!()` marks unfinished production code
+  --> $DIR/no_todo.rs:3:5
+   |
+LL |     todo!("implement later");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): replace temporary stubs with implemented code or an explicit error path before release Example: return Err(Error::not_ready());
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::no_todo)]` on by default
+help: replace `todo!()` with an explicit error path
+   |
+LL -     todo!("implement later");
+LL +     return Err(/* TODO: implement error */);
+   |
+
+warning: 1 warning emitted
+

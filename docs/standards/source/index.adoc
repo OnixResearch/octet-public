@@ -1,0 +1,20 @@
+= Tiger Style standards sections
+
+== Sections
+
+* xref:front-matter.adoc[Tiger Style (1-3)]
+* xref:architecture.adoc[Architecture (4-10)]
+* xref:culture.adoc[Culture (11-23)]
+* xref:fitness.adoc[Fitness (24-30)]
+* xref:devtools.adoc[DevTools (31-36)]
+* xref:embedded.adoc[Embedded (37-43)]
+* xref:resilience.adoc[Resilience (44-50)]
+* xref:orchestration.adoc[Orchestration (51-56)]
+* xref:idioms.adoc[Idioms (57-61)]
+* xref:grounding-idioms.adoc[Grounding: One Behavior, One Type (62-62)]
+* xref:build-what-you-test.adoc[Build What You Test (63-68)]
+* xref:metrics.adoc[Metrics (69-74)]
+* xref:verification.adoc[Verification (75-80)]
+* xref:what-safety-critical-means.adoc[What Safety-Critical Means (81-87)]
+* xref:one-idiom-one-verifier.adoc[One Idiom, One Verifier (88-94)]
+* xref:external-sources.adoc[External Source Incorporation]

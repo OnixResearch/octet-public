@@ -1,0 +1,36 @@
+warning: boolean binding `enabled` should have a predicate prefix
+  --> $DIR/bool_naming_macro_fallback.rs:3:13
+   |
+LL |         let enabled = true;
+   |             ^^^^^^^
+...
+LL |     make_flag!();
+   |     ------------ in this macro invocation
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Positive Predicates
+   = note: `#[warn(tigerstyle::bool_naming)]` on by default
+   = note: this warning originates in the macro `make_flag` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: rename binding to `is_enabled`
+   |
+LL |         let is_enabled = true;
+   |             +++
+
+warning: boolean binding `ready` should have a predicate prefix
+  --> $DIR/bool_naming_macro_fallback.rs:13:9
+   |
+LL |     let ready = true;
+   |         ^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Positive Predicates
+help: rename binding to `is_ready`
+   |
+LL ~     let is_ready = true;
+LL ~     let _a = is_ready;
+   |
+
+warning: 2 warnings emitted
+

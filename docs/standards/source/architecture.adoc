@@ -1,0 +1,83 @@
+= Architecture
+:page-range: 4-10
+
+Structural decisions for Rust systems that must be correct under pressure.
+
+Hexagonal ports, safety gates, boring technology choices, and the discipline of making boundaries explicit. Architecture entries here address the question every safety-critical system eventually forces: where do you draw the line between what the compiler guarantees and what you must enforce yourself?
+
+== Boundaries the Compiler Can See
+
+Domain-Driven Design drew module boundaries in documentation. Rust draws them in the type system.
+
+Two crates in a robotics system. One drives actuators. One reads from accelerometers, gyroscopes, and temperature probes. Both need to identify the physical devices they talk to, so early in the project an engineer makes a reasonable decision: one crate defines a `DeviceId` newtype, and the other depends on it.
+
+The code compiles. The architecture diagram looks clean. It ships.
+
+Six months later, the motor team migrates from a flat CAN bus to a hierarchical bus topology. A device is no longer a single integer. It is a bus address and a slot number. `DeviceId` becomes a struct.
+
+The change cascades. The sensor crate breaks. The orchestration layer that depends on both breaks. The logging pipeline that serializes device IDs breaks. Every crate that reached into one domain to grab what seemed like a shared concept now pays for a change it had no say in.
+
+The ID was never truly shared. It was owned by one crate and borrowed by everyone else without acknowledging the cost.
+
+== Boundaries as architecture
+
+Eric Evans introduced the bounded context in 2003. The idea: within a boundary, every term has one meaning. `DeviceId` means one thing inside the motor-control system and something different inside the sensing system. When you cross the boundary, you translate. You never assume the same word means the same thing on both sides.
+
+Rust enforces this mechanically. Every crate is a compilation unit with its own namespace. Types are private by default. Crossing a crate boundary requires `pub`, and `pub` is a declaration of intent. It says: this is my API. This is what I promise. Everything else is mine.
+
+The fix for the problem is the same fix Evans prescribed twenty years ago. Each crate defines its own ID type. Translation happens at the boundary.
+
+Both types are cheap. The `From` or `TryFrom` implementation is the anti-corruption layer. The orchestration crate is the only place that knows how to translate between the two worlds, and that knowledge is explicit, tested, and visible in the dependency graph.
+
+=== Five concepts that crossed the gap
+
+DDD's vocabulary maps to Rust's type system with surprising precision.
+
+.Bounded context
+Each crate owns its domain model. One crate defines motor types. Another defines sensor types. Neither imports the other's domain types. If the orchestration layer needs both, it depends on both and translates at the seam.
+
+.Value object
+DDD's value objects are immutable, identity-free, and compared by value. That is exactly what a Rust newtype is. A `MotorId` is not a `SensorId`. It carries domain meaning, it restricts the API surface, and it compiles away to nothing.
+
+.Ubiquitous language
+DDD insists the team speaks the same language as the code. In Rust, type names are the language. When an engineer says "the motor faulted," the code should say `MotorFault`. When they say "we got a stale reading," the code should say `StaleReading`. The type is not documentation about a concept. It is the concept.
+
+.Aggregate boundary
+DDD's aggregate root owns its children and enforces invariants through a single entry point. Rust does this with ownership. The struct that owns the collection is the only code that can add, remove, or reorder its members. No one else has direct access to the internals.
+
+.Anti-corruption layer
+When integrating with external hardware drivers or third-party crates, define a trait for what you need. Implement it for the external type. Never let external types leak into your domain. If the external crate changes its API, the damage stops at the adapter. Your domain code never knew about the foreign types in the first place.
+
+== When boundaries are too tight
+
+This can be taken too far. A crate boundary has real cost: a separate `Cargo.toml`, a compilation unit, and a versioning decision. If two modules evolve at the same pace, are maintained by the same team, and share the same release cycle, forcing them into separate crates creates ceremony without benefit.
+
+The test is whether the boundary prevents a real coupling problem. If two modules always change together and are always deployed together, they may belong in the same crate as sibling modules. The visibility modifier gives you internal boundaries without the overhead of a crate split.
+
+== The deeper point
+
+Rust is different. The module system makes boundaries syntactic. `pub` is a conscious act. Crate boundaries are compilation boundaries. When you violate a boundary, the compiler tells you. When you translate between contexts, the conversion implementation is right there in the code, auditable and testable.
+
+This does not mean Rust prevents bad architecture. You can still put everything in one crate, make everything public, and pretend boundaries do not exist. The compiler will not stop you. It gives you the tools. It does not give you the judgment to use them.
+
+That part is still ours.
+
+== Grounding
+
+[quote, Eric Evans, Domain-Driven Design]
+____
+A bounded context delimits the applicability of a particular model so that team members have a clear and shared understanding of what each term means.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 8]
+____
+Each crate has its own separate set of items, with its own namespace, but you can import items from one crate into another.
+____
+
+== Effect capability boundaries
+
+Unison's ability model becomes a Rust boundary rule: core code names effects as data or accepts narrow capability traits, while shell code interprets those capabilities. Clocks, files, environment, network, credentials, process spawning, and remote calls must not appear as ambient authority inside pure core modules. Capability names should expose the authority they grant, and remote capabilities must record timeout, retry, idempotency, and receipt expectations at the boundary.
+
+== Top-level purity and delayed effects
+
+Statics, lazy initialization, constructors, and builders should validate values and assemble plans only. Work that reads time, environment, files, sockets, randomness, or process state is a delayed effect: represent it as data and execute it through an explicit shell or handler.

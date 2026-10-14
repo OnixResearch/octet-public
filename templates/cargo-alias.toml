@@ -1,0 +1,14 @@
+# Copy this into your consumer workspace as `.cargo/config.toml`
+# to make `cargo octet-check` the default-on checked build path.
+#
+# Usage:
+#   cargo octet-check        # runs the Octet gate, then cargo check
+#   cargo octet-check --lib  # runs the gate, then cargo check --lib
+#
+# The gate runs first. If it fails (exit 1 = lint findings, exit 2 = integration
+# failure), the build does not proceed. CI must not pass --allow-style-violations.
+
+[alias]
+# Leading `!` is required: Cargo shell aliases are the only alias form that can
+# short-circuit with `&&` before running `cargo check`.
+octet-check = "!cargo octet check -- && cargo check"

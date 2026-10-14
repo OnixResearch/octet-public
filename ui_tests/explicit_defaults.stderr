@@ -1,0 +1,78 @@
+warning: implicit default on external type — construct with explicit values
+  --> $DIR/explicit_defaults/explicit_defaults.rs:9:18
+   |
+LL |     let _queue = VecDeque::<u8>::default();
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Defaults): construct foreign-crate values explicitly instead of relying on `Default` Example: let client = reqwest::ClientBuilder::new();
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Defaults
+   = note: `#[warn(tigerstyle::explicit_defaults)]` on by default
+help: use explicit constructor instead of `Default::default()`
+   |
+LL -     let _queue = VecDeque::<u8>::default();
+LL +     let _queue = std::collections::VecDeque::new(/* fields */);
+   |
+
+warning: implicit default on external type — construct with explicit values
+  --> $DIR/explicit_defaults/explicit_defaults.rs:13:32
+   |
+LL |     let _queue: VecDeque<u8> = Default::default();
+   |                                ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Defaults): construct foreign-crate values explicitly instead of relying on `Default` Example: let client = reqwest::ClientBuilder::new();
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Defaults
+help: use explicit constructor instead of `Default::default()`
+   |
+LL -     let _queue: VecDeque<u8> = Default::default();
+LL +     let _queue: VecDeque<u8> = std::collections::VecDeque::new(/* fields */);
+   |
+
+warning: implicit default on external type — construct with explicit values
+  --> $DIR/explicit_defaults/explicit_defaults.rs:17:18
+   |
+LL |     let _queue = <VecDeque<u8> as Default>::default();
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Defaults): construct foreign-crate values explicitly instead of relying on `Default` Example: let client = reqwest::ClientBuilder::new();
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Defaults
+help: use explicit constructor instead of `Default::default()`
+   |
+LL -     let _queue = <VecDeque<u8> as Default>::default();
+LL +     let _queue = std::collections::VecDeque::new(/* fields */);
+   |
+
+warning: implicit default on external type — construct with explicit values
+  --> $DIR/explicit_defaults/explicit_defaults.rs:21:16
+   |
+LL |     let _cfg = shared_types::Config::default();
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Defaults): construct foreign-crate values explicitly instead of relying on `Default` Example: let client = reqwest::ClientBuilder::new();
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Defaults
+help: use explicit constructor instead of `Default::default()`
+   |
+LL -     let _cfg = shared_types::Config::default();
+LL +     let _cfg = shared_types::Config::new(/* fields */);
+   |
+
+warning: implicit default on external type — construct with explicit values
+  --> $DIR/explicit_defaults/explicit_defaults.rs:27:11
+   |
+LL |         ..Default::default()
+   |           ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Defaults): construct foreign-crate values explicitly instead of relying on `Default` Example: let client = reqwest::ClientBuilder::new();
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Defaults
+help: use explicit constructor instead of `Default::default()`
+   |
+LL -         ..Default::default()
+LL +         ..shared_types::Config::new(/* fields */)
+   |
+
+warning: 5 warnings emitted
+

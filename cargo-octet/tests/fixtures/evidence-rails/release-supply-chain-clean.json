@@ -1,0 +1,9 @@
+{
+  "auditable_binary": {
+    "dependency_metadata": true
+  },
+  "sbom": {
+    "packages": 2
+  },
+  "vulnerabilities": []
+}

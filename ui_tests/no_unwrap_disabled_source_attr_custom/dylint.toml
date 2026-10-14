@@ -1,0 +1,2 @@
+[tigerstyle]
+disabled_lints = ["no_unwrap"]

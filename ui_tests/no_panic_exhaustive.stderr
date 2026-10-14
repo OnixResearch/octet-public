@@ -1,0 +1,12 @@
+warning: `unreachable!` will abort the process on execution
+  --> $DIR/no_panic_exhaustive.rs:24:14
+   |
+LL |         _ => unreachable!("Mode::B still reaches this arm"),
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::no_panic)]` on by default
+
+warning: 1 warning emitted
+

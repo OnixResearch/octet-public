@@ -1,0 +1,42 @@
+schema: spec-driven
+
+project:
+  name: octet
+  description: Custom Clippy lints and agent-facing guidance enforcing Tiger Style coding principles
+  language: rust
+
+domains:
+  - safety
+  - naming
+  - structure
+  - purity
+  - concurrency
+  - performance
+  - documentation
+
+context: |
+  Rust lint crate using dylint or cargo-marker.
+  Lints enforce Tiger Style rules derived from TigerBeetle's coding philosophy.
+  Primary consumer is the aspen distributed systems project.
+  Lints target production code — test code gets exemptions where noted.
+  We use nix flakes for builds, nextest for testing.
+  The repo-local compatibility agent skill remains under .agents/skills/slotcar-repo/ until skill discovery is renamed.
+
+rules:
+  proposal:
+    - "Keep it under 500 words"
+    - "Reference concrete violations found in aspen"
+    - "Follow `openspec/templates/proposal.md`; name exact repo-relative files/artifacts, concrete package/profile/fixture or downstream target scope when applicable, downstream validation boundaries, ordering/dependencies, explicit non-goal boundaries, and planned saved evidence or helper/gate runs with exact expected output/schema before drafting specs, design, or tasks"
+    - "Follow `openspec/templates/spec.md` for delta-spec authoring; keep change-local specs in delta form, start each added or modified requirement with `The system MUST ...`, give every added or modified requirement at least one `#### Scenario:` block, cross-check proposal/design obligations into explicit requirements or named scenarios, enumerate boundary cases/negative controls/continued-warning or continued-blocking cases when behavior has non-trigger or regression-catching paths, and describe exact proof output/schema when artifacts matter"
+  design:
+    - "Follow `openspec/templates/design.md`; every added or modified scenario heading or zero-scenario requirement must appear in a decision's `**Covers:**` field; proposal/spec obligation cross-checks must map proposal verification promises, affected artifacts, non-goal boundaries, delta-spec boundary cases, negative controls, continued-warning cases, and saved proof obligations into decisions or proof-plan entries; name boundary cases, continued-warning cases, and intentional gaps reviewers must see; every saved proof artifact must state its exact expected output or acceptance signal"
+  tasks:
+    - "Changes must cover every MUST added by their delta specs"
+    - "Follow `openspec/templates/tasks.md` for `I<n>`, `V<n>`, and `H<n>` task IDs, the exact `## Change Status` section, and the trailing `## Verification Coverage` section"
+    - "Keep implementation, deterministic verification, and human/oracle checkpoints in separate checkbox units; an `I<n>` task becomes invalid if it includes markers like `verify`, `save`, `capture`, `evidence=`, or a repo-relative `evidence/` path"
+    - "Compare `tasks.md` against the delta-spec scenario headings and keep one `## Verification Coverage` row per added or modified scenario, even when multiple rows share one artifact; each `V<n>` task must name the exact scenario, command/helper, required input/artifact or fixture, evidence path, and expected PASS output, diagnostic, schema field, or acceptance signal"
+    - "Keep `## Change Status` immediately before `## Verification Coverage`; use either `- Status: in-progress` plus unchecked governed `I<n>`, `V<n>`, and `H<n>` IDs in file order, or `- Status: complete` plus `- Open tasks: none`"
+    - "Block these exact change-status findings when they apply: `tasks.md is missing ## Change Status`, `Change status section is malformed or misplaced`, `Change status says complete but unchecked tasks remain`, `Change status says in-progress but no open tasks remain`, `Change status open-task list does not match unchecked tasks`"
+    - "`H<n>` tasks are invalid unless they include exact `command=`, pinned `input=` or prerequisite artifact, one `asserts=` claim, and saved `evidence=` path; broad workflows, implicit inputs, bundled assertions, or missing evidence paths are underspecified"
+    - "Keep a reference-to-skill crosswalk for skill-coverage changes"
+    - "Record validation evidence before marking the change complete; broad tasks such as `test config parsing` are insufficient when the spec requires a specific absent-field default, explicit override, required artifact, negative control, or continued-warning case"

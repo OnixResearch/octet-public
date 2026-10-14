@@ -1,0 +1,23 @@
+error: boolean binding `ready` should have a predicate prefix
+  --> $DIR/group_deny_naming.rs:6:9
+   |
+LL |     let ready = true;
+   |         ^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Positive Predicates
+note: the lint level is defined here
+  --> $DIR/group_deny_naming.rs:3:9
+   |
+LL | #![deny(tigerstyle::naming)]
+   |         ^^^^^^^^^^^^^^^^^^
+   = note: `#[deny(tigerstyle::bool_naming)]` implied by `#[deny(tigerstyle::naming)]`
+help: rename binding to `is_ready`
+   |
+LL ~     let is_ready = true;
+LL ~     let _ = is_ready;
+   |
+
+error: aborting due to 1 previous error
+

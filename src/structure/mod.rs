@@ -1,0 +1,16 @@
+pub mod ambiguous_params;
+pub mod borrowed_argument_types;
+pub mod compound_condition;
+pub mod concrete_construction_in_core;
+pub mod deref_polymorphism;
+pub mod excessive_file_length;
+pub mod fat_trait;
+pub mod function_length;
+pub mod magic_number;
+pub mod module_file_count;
+pub mod nested_conditionals;
+pub mod platform_dependent_cast;
+pub mod too_many_parameters;
+pub mod type_accumulation;
+pub mod unjustified_allow;
+pub mod usize_in_public_api;

@@ -1,0 +1,274 @@
+[
+  {
+    "lint_name": "compound_assertion",
+    "fixture": "compound_assertion"
+  },
+  {
+    "lint_name": "function_length",
+    "fixture": "function_length"
+  },
+  {
+    "lint_name": "acronym_style",
+    "fixture": "acronym_style"
+  },
+  {
+    "lint_name": "numeric_units",
+    "fixture": "numeric_units"
+  },
+  {
+    "lint_name": "magic_number",
+    "fixture": "magic_number"
+  },
+  {
+    "lint_name": "excessive_file_length",
+    "fixture": "excessive_file_length"
+  },
+  {
+    "lint_name": "module_file_count",
+    "fixture": "module_file_count"
+  },
+  {
+    "lint_name": "underscore_in_module_filename",
+    "fixture": "underscore_in_module_filename"
+  },
+  {
+    "lint_name": "non_trait_imports",
+    "fixture": "non_trait_imports"
+  },
+  {
+    "lint_name": "renamed_imports",
+    "fixture": "renamed_imports"
+  },
+  {
+    "lint_name": "path_segment_repetition",
+    "fixture": "path_segment_repetition"
+  },
+  {
+    "lint_name": "unbounded_loop",
+    "fixture": "unbounded_loop"
+  },
+  {
+    "lint_name": "compound_condition",
+    "fixture": "compound_condition"
+  },
+  {
+    "lint_name": "verified_purity",
+    "fixture": "verified/verified_purity"
+  },
+  {
+    "lint_name": "unjustified_allow",
+    "fixture": "unjustified_allow"
+  },
+  {
+    "lint_name": "nested_conditionals",
+    "fixture": "nested_conditionals"
+  },
+  {
+    "lint_name": "assertion_density",
+    "fixture": "assertion_density"
+  },
+  {
+    "lint_name": "multi_lock_ordering",
+    "fixture": "multi_lock_ordering"
+  },
+  {
+    "lint_name": "ignored_join_handle",
+    "fixture": "ignored_join_handle"
+  },
+  {
+    "lint_name": "explicit_defaults",
+    "fixture": "explicit_defaults/explicit_defaults"
+  },
+  {
+    "lint_name": "unbounded_channel",
+    "fixture": "unbounded_channel/unbounded_channel"
+  },
+  {
+    "lint_name": "unbounded_collection_growth",
+    "fixture": "unbounded_collection_growth"
+  },
+  {
+    "lint_name": "sentinel_fallback",
+    "fixture": "sentinel_fallback"
+  },
+  {
+    "lint_name": "usize_in_public_api",
+    "fixture": "usize_in_public_api"
+  },
+  {
+    "lint_name": "borrowed_argument_types",
+    "fixture": "borrowed_argument_types"
+  },
+  {
+    "lint_name": "deref_polymorphism",
+    "fixture": "deref_polymorphism"
+  },
+  {
+    "lint_name": "clone_then_borrow",
+    "fixture": "clone_then_borrow"
+  },
+  {
+    "lint_name": "allocation_in_loop",
+    "fixture": "allocation_in_loop"
+  },
+  {
+    "lint_name": "too_many_parameters",
+    "fixture": "too_many_parameters"
+  },
+  {
+    "lint_name": "fat_trait",
+    "fixture": "fat_trait"
+  },
+  {
+    "lint_name": "concrete_construction_in_core",
+    "fixture": "concrete_construction_in_core/concrete_construction_in_core"
+  },
+  {
+    "lint_name": "type_accumulation",
+    "fixture": "type_accumulation"
+  },
+  {
+    "lint_name": "negated_predicate",
+    "fixture": "negated_predicate"
+  },
+  {
+    "lint_name": "bool_naming",
+    "fixture": "bool_naming"
+  },
+  {
+    "lint_name": "ignored_result",
+    "fixture": "ignored_result"
+  },
+  {
+    "lint_name": "drop_must_use",
+    "fixture": "drop_must_use"
+  },
+  {
+    "lint_name": "fallible_int_fallback",
+    "fixture": "fallible_int_fallback"
+  },
+  {
+    "lint_name": "unchecked_narrowing",
+    "fixture": "unchecked_narrowing"
+  },
+  {
+    "lint_name": "unchecked_division",
+    "fixture": "unchecked_division"
+  },
+  {
+    "lint_name": "contradictory_time",
+    "fixture": "contradictory_time"
+  },
+  {
+    "lint_name": "ambient_clock",
+    "fixture": "ambient_clock"
+  },
+  {
+    "lint_name": "ambient_env",
+    "fixture": "ambient_env"
+  },
+  {
+    "lint_name": "ambient_random",
+    "fixture": "ambient_random"
+  },
+  {
+    "lint_name": "global_state_in_core",
+    "fixture": "global_state_in_core/global_state_in_core"
+  },
+  {
+    "lint_name": "impure_call_in_core",
+    "fixture": "impure_call_in_core/impure_call_in_core"
+  },
+  {
+    "lint_name": "interior_mutability_in_core",
+    "fixture": "interior_mutability_in_core/interior_mutability_in_core"
+  },
+  {
+    "lint_name": "logging_in_core",
+    "fixture": "logging_in_core/logging_in_core"
+  },
+  {
+    "lint_name": "missing_const_fn",
+    "fixture": "missing_const_fn"
+  },
+  {
+    "lint_name": "mutating_input_in_pure",
+    "fixture": "mutating_input_in_pure"
+  },
+  {
+    "lint_name": "nondeterministic_output",
+    "fixture": "nondeterministic_output"
+  },
+  {
+    "lint_name": "pure_attr_contract",
+    "fixture": "pure_attr_contract/pure_attr_contract"
+  },
+  {
+    "lint_name": "resource_return_from_core",
+    "fixture": "resource_return_from_core/resource_return_from_core"
+  },
+  {
+    "lint_name": "spawn_in_core",
+    "fixture": "spawn_in_core/spawn_in_core"
+  },
+  {
+    "lint_name": "zero_alloc_attr_contract",
+    "fixture": "zero_alloc_attr_contract/zero_alloc_attr_contract"
+  },
+  {
+    "lint_name": "catch_all_on_enum",
+    "fixture": "catch_all_on_enum"
+  },
+  {
+    "lint_name": "foreign_enum_catch_all",
+    "fixture": "foreign_enum_catch_all"
+  },
+  {
+    "lint_name": "fragile_exhaustive_enum_match",
+    "fixture": "fragile_exhaustive_enum_match"
+  },
+  {
+    "lint_name": "platform_dependent_cast",
+    "fixture": "platform_dependent_cast"
+  },
+  {
+    "lint_name": "float_for_currency",
+    "fixture": "float_for_currency"
+  },
+  {
+    "lint_name": "ambiguous_params",
+    "fixture": "ambiguous_params"
+  },
+  {
+    "lint_name": "raw_arithmetic_overflow",
+    "fixture": "raw_arithmetic_overflow"
+  },
+  {
+    "lint_name": "no_unwrap",
+    "fixture": "no_unwrap"
+  },
+  {
+    "lint_name": "no_panic",
+    "fixture": "no_panic"
+  },
+  {
+    "lint_name": "public_unsafe_api",
+    "fixture": "public_unsafe_api"
+  },
+  {
+    "lint_name": "defaulting_trait_method",
+    "fixture": "defaulting_trait_method"
+  },
+  {
+    "lint_name": "no_todo",
+    "fixture": "no_todo"
+  },
+  {
+    "lint_name": "unjustified_no_todo_allow",
+    "fixture": "no_todo_allow"
+  },
+  {
+    "lint_name": "no_recursion",
+    "fixture": "no_recursion"
+  }
+]

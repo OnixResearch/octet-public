@@ -1,0 +1,4 @@
+verifier = octet-standards
+nix-package = octet-standards-0.1.0
+rust-toolchain = rust-toolchain.toml
+closure-accounting = verifier-binary + rust toolchain + policy registry inputs

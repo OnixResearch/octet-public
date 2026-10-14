@@ -1,0 +1,3 @@
+[octet]
+core_source_scopes = ["global_state_in_core"]
+disabled_lints = ["concrete_construction_in_core", "interior_mutability_in_core"]

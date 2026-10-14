@@ -1,0 +1,32 @@
+warning: `Result` value silently discarded with `let _ = ...`
+  --> $DIR/ignored_result.rs:6:5
+   |
+LL |     let _ = buf.write_all(b"hello");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle fallible results explicitly with `?`, `match`, or an intentional logged drop Example: tx.send(msg)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::ignored_result)]` on by default
+help: propagate the error with `?` instead of discarding
+   |
+LL -     let _ = buf.write_all(b"hello");
+LL +     buf.write_all(b"hello")?
+   |
+
+warning: `Result` value silently discarded in statement position
+  --> $DIR/ignored_result.rs:12:5
+   |
+LL |     buf.write_all(b"hello");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle fallible results explicitly with `?`, `match`, or an intentional logged drop Example: tx.send(msg)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of discarding
+   |
+LL |     buf.write_all(b"hello")?;
+   |                            +
+
+warning: 2 warnings emitted
+

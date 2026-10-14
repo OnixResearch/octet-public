@@ -1,0 +1,18 @@
+warning: division by `count` without zero check
+  --> $DIR/unchecked_division.rs:3:5
+   |
+LL |     total / count
+   |     ^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Division): guard divisors before division so zero is impossible Example: assert!(divisor != 0); let q = value / divisor;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Explicit Division
+   = note: `#[warn(tigerstyle::unchecked_division)]` on by default
+help: guard `count` before division
+   |
+LL -     total / count
+LL +     { let __tigerstyle_divisor = count; assert!(__tigerstyle_divisor != 0); total / __tigerstyle_divisor }
+   |
+
+warning: 1 warning emitted
+

@@ -1,0 +1,64 @@
+= Build What You Test
+:page-range: 63-68
+
+When test setup obscures test intent, the builder pattern makes each test a declaration of its own preconditions.
+
+A test file for a motor controller. Forty-seven tests. Every one begins the same way.
+
+Fourteen fields. Most tests care about one or two. But every test calls the same helper, because constructing the configuration by hand means specifying all fourteen, and nobody wants to write that out each time.
+
+The code compiles. The tests pass. It ships.
+
+This is a story about what happens when someone changes the default.
+
+== The calcified fixture
+
+A new motor revision requires the default timeout to change from 500ms to 750ms. An engineer updates the shared fixture. Twelve tests fail. Not because they were testing timeout behavior. Because they asserted on the full struct, or because downstream logic branched on the timeout value, and the tests happened to encode the old default in their expectations.
+
+The engineer stares at twelve failures and cannot tell which ones matter. Three tests genuinely verify timeout handling and need updating. Nine tests never cared about timeout at all -- they were testing PID response, speed limits, and thermal shutdown. But they were coupled to the fixture's timeout through an invisible dependency.
+
+This is what Meszaros calls the General Fixture smell: a shared setup that does more than any single test requires. Every test inherits the full fixture. Every test is implicitly coupled to every field. No test declares which fields it actually depends on.
+
+The fixture calcifies. Engineers stop modifying it because they cannot predict the blast radius. New fields get awkward defaults that exist to avoid breaking old tests, not because they represent meaningful configurations. The test suite becomes an obstacle to change -- the opposite of its purpose.
+
+== The builder
+
+Now each test states exactly what it depends on and nothing more.
+
+The timeout test declares: "I am about timeout behavior, and nothing else." The speed test declares: "I am about speed clamping, and nothing else." When someone changes the default timeout in the builder, the speed test does not break. It never mentioned timeout. It has no opinion.
+
+== Test code is infrastructure
+
+The builder lives behind a test helper module. It is not production code. But it is infrastructure -- the foundation that every test in the module stands on.
+
+Treat it accordingly. A builder with bad defaults produces flaky tests. A builder missing a method forces engineers back to constructing raw structs, re-introducing the coupling the builder was meant to eliminate. A builder that silently ignores a new field means tests run against configurations that cannot exist in production.
+
+When you add a field to the configuration struct, add it to the builder. Give it a meaningful default. Add a method. This is not ceremony. This is the same discipline you apply to production APIs.
+
+== When not to build
+
+If the struct has two or three fields and every test needs all of them, a builder adds ceremony without clarity.
+
+The builder earns its keep when the struct has enough fields that tests start lying about what they depend on. That threshold is not a number. It is a question: can a reader look at the test and immediately know which preconditions matter? If the answer is no -- if the setup buries intent under irrelevant fields -- the builder is overdue.
+
+== The deeper point
+
+In One Behavior, One Type, the principle was: when a concept is implicit and scattered, name it. Give it structure. Make the compiler enforce it.
+
+The builder is the same principle applied to test infrastructure. A shared fixture is an implicit contract -- every test depends on it, but no test says which parts it needs. The builder makes each dependency explicit. A test that constructs its own preconditions through named method calls cannot be broken by changes to unrelated defaults.
+
+This is what separates tests that earn trust from tests that erode it. Tests that lie about their dependencies teach the team to ignore failures. Tests that declare their dependencies teach the team to trust them.
+
+Build what you test. Test what you build. Make the preconditions visible.
+
+== Grounding
+
+[quote, xUnit Test Patterns (Meszaros), Chapter 16]
+____
+The fixture is too general for the specific tests that use it.
+____
+
+[quote, Programming Rust, 2nd Edition (Blandy, Orendorff, Tindall), Chapter 23]
+____
+The builder pattern in Rust uses method chaining with consumption to construct complex values step by step, ensuring the final object is always in a valid state.
+____

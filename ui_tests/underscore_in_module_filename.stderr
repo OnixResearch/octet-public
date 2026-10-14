@@ -1,0 +1,12 @@
+warning: module filename `compute_vm.rs` contains an underscore; prefer `compute/vm.rs`
+  --> $ROOT/ui_tests/../policy_inputs/underscore_module_filename/compute_vm.rs:1:1
+   |
+LL | pub fn boot_compute_vm() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Module Paths): replace compound module filenames with responsibility-based directory paths Example: compute/vm.rs
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::underscore_in_module_filename)]` on by default
+
+warning: 1 warning emitted
+

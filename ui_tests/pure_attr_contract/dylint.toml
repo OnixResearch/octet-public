@@ -1,0 +1,18 @@
+[octet]
+disabled_lints = [
+  "ambient_env",
+  "ambient_random",
+  "global_state_in_core",
+  "impure_call_in_core",
+  "interior_mutability_in_core",
+  "logging_in_core",
+  "mutating_input_in_pure",
+  "resource_return_from_core",
+  "spawn_in_core",
+  "no_panic",
+  "no_todo",
+  "no_unwrap",
+  "unbounded_loop",
+  "ignored_join_handle",
+  "magic_number",
+]

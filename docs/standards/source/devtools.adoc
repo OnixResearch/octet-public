@@ -1,0 +1,104 @@
+= DevTools
+:page-range: 31-36
+
+Tools that enforce standards automatically.
+
+Polyglot code analysis, cross-service flow verification, and the principle that if a standard is not enforced by tooling, it is a suggestion. DevTools entries here cover the craft of building developer tools in Rust and Go that make quality the path of least resistance.
+
+== The Standard Is the Toolchain
+
+A standard that lives in a wiki page is a suggestion. A standard that lives in the toolchain is a law.
+
+A team ships an embedded sensor platform in Rust. Thirty modules, five engineers, a shared wiki. Someone adds a coding standard: "All public functions must have doc comments." It makes sense. The sensor calibration API surfaces to downstream integrators. Undocumented functions cost hours of reverse-engineering.
+
+Three months later, half the codebase is undocumented. No one reads the wiki. The standard died quietly, the way all unenforced standards die -- not through defiance, but through forgetting.
+
+Meanwhile, another team working on the same hardware adds a single line to their lint configuration.
+
+Every undocumented public function is now a compiler error. Not a warning. Not a suggestion highlighted in yellow. An error that stops the build cold. Three months later, their standard survived intact. Not because their engineers had better discipline. Because the toolchain enforced it.
+
+This is a story about what separates standards from suggestions.
+
+== The principle
+
+Martin Fowler's 2006 article on Continuous Integration established a framework that most teams now take for granted: a single-command build, self-testing code, fast feedback loops, staged pipelines. The deeper principle beneath the practices is this: every quality gate must be automated, or it will erode.
+
+Rust is the only mainstream language where the compiler itself is a standards enforcement tool. Type safety, ownership rules, lifetime checking, data-race prevention -- these are not guidelines. They are standards that compile. The devtools layer extends this principle to everything the compiler does not cover: style, dependencies, documentation, and unsafe behavior.
+
+=== The full chain looks like this
+
+* `cargo check` -- compilation as the first gate. In Rust, this is already a stronger gate than most languages offer at any stage.
+* `cargo clippy -- -D warnings` -- lint enforcement. Not advisory. Enforcement.
+* `cargo fmt --check` -- formatting as a non-negotiable, not a preference.
+* `cargo test` -- self-testing code, automated.
+* `cargo deny` -- dependency auditing: license compliance, known advisories, duplicate crate detection.
+* `cargo miri test` -- undefined behavior detection in unsafe code.
+
+Each tool extends the compiler's authority into territory the compiler does not reach. Together, they form a single answer to the question "is this code acceptable?" -- and that answer is a machine's answer, not a human's memory of what the wiki said.
+
+== Enforcing, not advising
+
+The default Clippy configuration warns. Warnings are suggestions. To make Clippy a standards enforcement tool, you deny warnings.
+
+For project-wide lint configuration that travels with the repository, use checked-in configuration files and CI rules.
+
+These files are not documentation. They are executable policy. A new engineer clones the repository, runs `cargo clippy`, and the toolchain teaches them the team's standards through compiler errors. No wiki required.
+
+== The fast build
+
+Fowler's original guidance targets ten minutes for a CI build. Rust's compilation model makes this harder to hit naively -- a clean debug build of a large workspace can exceed that easily. The answer is the same answer Fowler gave: staged pipelines.
+
+A fast commit build runs on every push and targets under five minutes.
+
+The commit build catches formatting violations, lint failures, doc gaps, and unit test regressions before they reach code review. The deep build -- integration tests, Miri, exhaustive property tests -- runs on merge to main or on a nightly schedule. A developer pushing a branch gets feedback in minutes. The mainline gets thorough verification before anything reaches production.
+
+== The mainline is sacred
+
+Fowler's principle: a broken mainline is an emergency. Not a "we'll fix it in the next PR" situation. An emergency.
+
+In Rust, this means: if CI fails on main, everything stops. You do not stack changes on top of a red main. You do not merge a quick fix that you have not verified locally. The broken build is the highest-priority item on the team until it is green.
+
+This sounds obvious. In practice, the pressure to keep shipping is constant, and the temptation to merge "just this one thing" onto a broken main is real. The toolchain makes the right behavior easy: a CI gate on the main branch that blocks merges when tests fail. The standard is not "we agree to keep main green." The standard is "the merge button is disabled when main is red."
+
+== The deeper point
+
+Every language has linters. Every language has formatters. Every language has CI pipelines. What Rust offers is something more fundamental: a compiler that already enforces a class of standards -- memory safety, thread safety, and type correctness -- that other languages delegate to runtime checks, code review, or hope.
+
+The devtools layer builds on this foundation. Clippy extends the compiler's judgment to style and correctness patterns. `rustfmt` eliminates an entire category of code review discussion. `cargo deny` extends the compiler's supply-chain awareness. Miri extends the compiler's safety guarantees into unsafe territory.
+
+The result is a toolchain where a correct program is the path of least resistance. Writing unsafe code requires an explicit `unsafe` block. Skipping documentation requires an explicit lint allowance. Ignoring a lint requires an explicit suppression with a reason. The default is compliance. Deviation requires intent.
+
+This is what separates a standard from a suggestion. A suggestion relies on human memory and goodwill. A standard is enforced by a machine that does not forget, does not get tired, and does not decide that "just this once" is acceptable. The wiki page decays. The toolchain endures.
+
+Put the standard in the toolchain. It will outlast every engineer on the team.
+
+== Dynamic evidence profiles
+
+Some bug classes need runtime or profiling evidence in addition to static linting. Memory and allocation errors, heap growth, cache behavior, thread races, unsafe boundaries, FFI ownership, and release readiness each need a selected tool, run timing, and acceptance signal.
+
+These profiles are opt-in evidence rails. A normal consumer lint run must not require Valgrind, Miri, sanitizers, heap profilers, cache profilers, or Loom unless a separate OpenSpec promotes one profile for a declared scope. The evidence artifact must include the exact command, tool version, target workload or fixture, expected acceptance signal, observed result, and suppression summary.
+
+== Grounding
+
+[quote, Martin Fowler, "Continuous Integration" (2006)]
+____
+Everyone commits to the mainline every day… The whole point of Continuous Integration is that no one is far from that mainline.
+____
+
+[quote, The Pragmatic Programmer (Hunt and Thomas), Tip 61]
+____
+Don't Use Manual Procedures… People just aren't as repeatable as computers. Nor should we expect them to be.
+____
+
+[quote, Rust for Rustaceans (Gjengset), Chapter 21]
+____
+Set up a CI pipeline for your project as early as possible… At a minimum, your CI pipeline should include: formatting checks, linting, testing, and code coverage.
+____
+
+== Content-addressed evidence and function fingerprints
+
+Tiger Style uses content addressing for evidence identity, not as a replacement for Git. Finding records, fixture manifests, transcripts, and function fingerprints should include BLAKE3 content identifiers when they are used as review gates. A function fingerprint proves that the reviewed token stream is unchanged; it does not prove that the function is correct.
+
+== Live example verification
+
+Documentation examples should be executable or fixture-backed when they make verification claims. A prose-only example must say it is illustrative. A live example manifest records the source document, fixture path, command, expected result, and content hash so changed examples invalidate stale evidence.

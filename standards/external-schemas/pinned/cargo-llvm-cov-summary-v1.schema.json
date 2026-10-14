@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "octet:pinned:cargo-llvm-cov-summary-v1",
+  "title": "cargo llvm-cov summary accepted by Octet evidence imports",
+  "type": "object",
+  "properties": {
+    "schema_version": { "const": "cargo-llvm-cov-summary/v1" },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "line_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "branch_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "function_percent": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": true
+    },
+    "regressions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric"],
+        "properties": {
+          "metric": { "type": "string", "minLength": 1 },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "threshold_failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric"],
+        "properties": {
+          "metric": { "type": "string", "minLength": 1 },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["summary"],
+  "additionalProperties": true
+}

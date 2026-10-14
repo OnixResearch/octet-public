@@ -1,0 +1,11 @@
+## Tasks
+
+- [ ] [serial] Define and register typed Nickel Wasm artifact profiles, deterministic exports, allowed kinds/worlds/features/imports/resources, severity posture, and config/receipt ownership. r[octet.wasm_component.profile]
+- [ ] [depends:wasm-artifact-profile] Pin one wasm-tools library cohort and bind its crate/tool versions plus BLAKE3 cohort identity into report and bundle schemas. r[octet.wasm_component.cohort]
+- [ ] [depends:wasm-tools-cohort] Implement pure byte parsing, validation, fact extraction, policy evaluation, deterministic finding order, exact-byte identity, and normalized-interface identity. r[octet.wasm_component.validation] r[octet.wasm_component.identity] r[octet.wasm_component.functional_core]
+- [ ] [depends:wasm-artifact-core] Add CLI/artifact-directory integration, stable exit behavior, JSON/SARIF findings, summary/provenance files, and artifact verification. r[octet.wasm_component.findings]
+- [ ] [depends:wasm-artifact-bundle] Add the stable exact-byte Mantle handoff, binding artifact/profile/cohort/report identities without trusting store paths or importing build semantics; retain standalone invocation. r[octet.wasm_component.mantle_handoff]
+- [ ] [parallel] Add positive standalone and Mantle-invoked module/component/world fixtures plus negative malformed, disallowed-feature, wrong-world, undeclared-WASI, duplicate-metadata, growth-policy, stale-profile, artifact/report mismatch, and identity-confusion fixtures. r[octet.wasm_component.fixtures] r[octet.wasm_component.mantle_handoff]
+- [ ] [parallel] Add bounded deterministic wasm-smith, wit-smith, wasm-mutate, and wasm-shrink corpus manifests with seeds, transform identities, expected issue classes, and shrink predicates. r[octet.wasm_component.fixtures]
+- [ ] [depends:wasm-artifact-bundle] Export verified artifact facts and decisions to Valence only as recorded-only or boundary evidence with explicit execution/authority/equivalence/release non-claims. r[octet.wasm_component.valence_export] r[octet.wasm_component.nonclaims]
+- [ ] [depends:wasm-artifact-fixtures] Run focused core and CLI tests, generated positive/negative corpus checks, artifact verification, policy freshness checks, Valence export fixtures, Cairn validation, proposal/design/tasks gates, and the smallest relevant Octet checks. r[octet.wasm_component.final_validation]

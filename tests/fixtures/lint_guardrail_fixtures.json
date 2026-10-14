@@ -1,0 +1,342 @@
+[
+  {
+    "lint_name": "compound_assertion",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "function_length",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "acronym_style",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "numeric_units",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "magic_number",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "excessive_file_length",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "module_file_count",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "underscore_in_module_filename",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "non_trait_imports",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "renamed_imports",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "path_segment_repetition",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "unbounded_loop",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "compound_condition",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "verified_purity",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "unjustified_allow",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "nested_conditionals",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "assertion_density",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "multi_lock_ordering",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "ignored_join_handle",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "explicit_defaults",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "unbounded_channel",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "unbounded_collection_growth",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "sentinel_fallback",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "usize_in_public_api",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "borrowed_argument_types",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "deref_polymorphism",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "clone_then_borrow",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "allocation_in_loop",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "too_many_parameters",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "fat_trait",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "concrete_construction_in_core",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "type_accumulation",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "negated_predicate",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "bool_naming",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "ignored_result",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "drop_must_use",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "fallible_int_fallback",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "unchecked_narrowing",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "unchecked_division",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "contradictory_time",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "ambient_clock",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "ambient_env",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "ambient_random",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "global_state_in_core",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "impure_call_in_core",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "interior_mutability_in_core",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "logging_in_core",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "missing_const_fn",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "mutating_input_in_pure",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "nondeterministic_output",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "pure_attr_contract",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "resource_return_from_core",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "spawn_in_core",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "zero_alloc_attr_contract",
+    "fixture": "purity_effect_lints_guardrails",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "catch_all_on_enum",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "foreign_enum_catch_all",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "fragile_exhaustive_enum_match",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "platform_dependent_cast",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "float_for_currency",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "ambiguous_params",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "raw_arithmetic_overflow",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "no_unwrap",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "no_panic",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "public_unsafe_api",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "defaulting_trait_method",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "no_todo",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "unjustified_no_todo_allow",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  },
+  {
+    "lint_name": "no_recursion",
+    "fixture": "lint_guardrail_common",
+    "category": "safe_shape"
+  }
+]

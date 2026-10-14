@@ -1,0 +1,75 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "cargo-tigerstyle",
+          "version": "0.1.0",
+          "rules": [
+            {
+              "id": "no_unwrap",
+              "shortDescription": { "text": "use of `.unwrap()`; prefer `expect()` or explicit error handling" },
+              "properties": { "group": "tigerstyle::safety" }
+            },
+            {
+              "id": "function_length",
+              "shortDescription": { "text": "function exceeds configured line limit" },
+              "properties": { "group": "tigerstyle::structure" }
+            },
+            {
+              "id": "unbounded_channel",
+              "shortDescription": { "text": "use of unbounded channel" },
+              "properties": { "group": "tigerstyle::concurrency" }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "no_unwrap",
+          "level": "warning",
+          "message": { "text": "use of `.unwrap()`; prefer `expect()` with a descriptive message, or handle the error explicitly" },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "src/connection.rs" },
+                "region": { "startLine": 42, "startColumn": 5 }
+              }
+            }
+          ],
+          "properties": { "findingIndex": "F1" }
+        },
+        {
+          "ruleId": "function_length",
+          "level": "warning",
+          "message": { "text": "function `handle_request` is 82 lines long (limit: 70)" },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "src/router.rs" },
+                "region": { "startLine": 15, "startColumn": 1 }
+              }
+            }
+          ],
+          "properties": { "findingIndex": "F2" }
+        },
+        {
+          "ruleId": "unbounded_channel",
+          "level": "warning",
+          "message": { "text": "use of unbounded channel; prefer bounded channels to prevent memory exhaustion" },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "src/resolver.rs" },
+                "region": { "startLine": 28, "startColumn": 9 }
+              }
+            }
+          ],
+          "properties": { "findingIndex": "F3" }
+        }
+      ]
+    }
+  ]
+}

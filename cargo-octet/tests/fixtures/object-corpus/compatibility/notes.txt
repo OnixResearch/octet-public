@@ -1,0 +1,1 @@
+This fixture is intentionally not Rust source; object corpus check must reject it.

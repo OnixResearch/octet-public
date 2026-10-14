@@ -1,0 +1,14 @@
+warning: function has 8 parameters (limit: 7) — consider an options struct
+  --> $DIR/max_parameters_custom/max_parameters_custom.rs:5:1
+   |
+LL | / fn eight_parameters(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8, g: u8, h: u8) {
+LL | |     let _ = (a, b, c, d, e, f, g, h);
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Simple Interfaces): group many parameters into a named options struct instead of a long positional signature Example: fn connect(opts: ConnectOptions) -> ...
+   = note: see Tiger Style guide: Explicit Interfaces
+   = note: `#[warn(tigerstyle::too_many_parameters)]` on by default
+
+warning: 1 warning emitted
+

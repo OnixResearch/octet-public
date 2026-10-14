@@ -1,0 +1,10 @@
+{
+  "imports": [
+    {
+      "name": "local",
+      "source": "audits.toml"
+    }
+  ],
+  "exemptions": [],
+  "unaudited": []
+}

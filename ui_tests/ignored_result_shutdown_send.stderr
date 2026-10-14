@@ -1,0 +1,33 @@
+warning: `Result` value silently discarded with `let _ = ...`
+  --> $DIR/ignored_result_shutdown_send.rs:28:5
+   |
+LL |     let _ = tx.send(1);
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle fallible results explicitly with `?`, `match`, or an intentional logged drop Example: tx.send(msg)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::ignored_result)]` on by default
+help: propagate the error with `?` instead of discarding
+   |
+LL -     let _ = tx.send(1);
+LL +     tx.send(1)?
+   |
+
+warning: `Result` value silently discarded with `let _ = ...`
+  --> $DIR/ignored_result_shutdown_send.rs:32:5
+   |
+LL |     let _ = tx.send(1);
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle fallible results explicitly with `?`, `match`, or an intentional logged drop Example: tx.send(msg)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of discarding
+   |
+LL -     let _ = tx.send(1);
+LL +     tx.send(1)?
+   |
+
+warning: 2 warnings emitted
+

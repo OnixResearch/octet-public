@@ -1,0 +1,14 @@
+warning: conditional nesting is 6 levels deep (limit: 5)
+  --> $DIR/nesting_custom/nesting_custom.rs:22:25
+   |
+LL | /                         if value > 5 {
+LL | |                             return true;
+LL | |                         }
+   | |_________________________^
+   |
+   = help: Tiger Style (Simple Control Flow): flatten control flow with guards, early returns, or helper predicates Example: if !is_ready { return; }
+   = note: see Tiger Style guide: Simple Control Flow
+   = note: `#[warn(tigerstyle::nested_conditionals)]` on by default
+
+warning: 1 warning emitted
+

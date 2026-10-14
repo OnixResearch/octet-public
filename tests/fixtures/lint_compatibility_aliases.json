@@ -1,0 +1,274 @@
+[
+  {
+    "alias_name": "compound_assertion",
+    "canonical_lint_name": "tigerstyle::compound_assertion"
+  },
+  {
+    "alias_name": "function_length",
+    "canonical_lint_name": "tigerstyle::function_length"
+  },
+  {
+    "alias_name": "acronym_style",
+    "canonical_lint_name": "tigerstyle::acronym_style"
+  },
+  {
+    "alias_name": "numeric_units",
+    "canonical_lint_name": "tigerstyle::numeric_units"
+  },
+  {
+    "alias_name": "magic_number",
+    "canonical_lint_name": "tigerstyle::magic_number"
+  },
+  {
+    "alias_name": "excessive_file_length",
+    "canonical_lint_name": "tigerstyle::excessive_file_length"
+  },
+  {
+    "alias_name": "module_file_count",
+    "canonical_lint_name": "tigerstyle::module_file_count"
+  },
+  {
+    "alias_name": "underscore_in_module_filename",
+    "canonical_lint_name": "tigerstyle::underscore_in_module_filename"
+  },
+  {
+    "alias_name": "non_trait_imports",
+    "canonical_lint_name": "tigerstyle::non_trait_imports"
+  },
+  {
+    "alias_name": "renamed_imports",
+    "canonical_lint_name": "tigerstyle::renamed_imports"
+  },
+  {
+    "alias_name": "path_segment_repetition",
+    "canonical_lint_name": "tigerstyle::path_segment_repetition"
+  },
+  {
+    "alias_name": "unbounded_loop",
+    "canonical_lint_name": "tigerstyle::unbounded_loop"
+  },
+  {
+    "alias_name": "compound_condition",
+    "canonical_lint_name": "tigerstyle::compound_condition"
+  },
+  {
+    "alias_name": "verified_purity",
+    "canonical_lint_name": "tigerstyle::verified_purity"
+  },
+  {
+    "alias_name": "unjustified_allow",
+    "canonical_lint_name": "tigerstyle::unjustified_allow"
+  },
+  {
+    "alias_name": "nested_conditionals",
+    "canonical_lint_name": "tigerstyle::nested_conditionals"
+  },
+  {
+    "alias_name": "assertion_density",
+    "canonical_lint_name": "tigerstyle::assertion_density"
+  },
+  {
+    "alias_name": "multi_lock_ordering",
+    "canonical_lint_name": "tigerstyle::multi_lock_ordering"
+  },
+  {
+    "alias_name": "ignored_join_handle",
+    "canonical_lint_name": "tigerstyle::ignored_join_handle"
+  },
+  {
+    "alias_name": "explicit_defaults",
+    "canonical_lint_name": "tigerstyle::explicit_defaults"
+  },
+  {
+    "alias_name": "unbounded_channel",
+    "canonical_lint_name": "tigerstyle::unbounded_channel"
+  },
+  {
+    "alias_name": "unbounded_collection_growth",
+    "canonical_lint_name": "tigerstyle::unbounded_collection_growth"
+  },
+  {
+    "alias_name": "sentinel_fallback",
+    "canonical_lint_name": "tigerstyle::sentinel_fallback"
+  },
+  {
+    "alias_name": "usize_in_public_api",
+    "canonical_lint_name": "tigerstyle::usize_in_public_api"
+  },
+  {
+    "alias_name": "borrowed_argument_types",
+    "canonical_lint_name": "tigerstyle::borrowed_argument_types"
+  },
+  {
+    "alias_name": "deref_polymorphism",
+    "canonical_lint_name": "tigerstyle::deref_polymorphism"
+  },
+  {
+    "alias_name": "clone_then_borrow",
+    "canonical_lint_name": "tigerstyle::clone_then_borrow"
+  },
+  {
+    "alias_name": "allocation_in_loop",
+    "canonical_lint_name": "tigerstyle::allocation_in_loop"
+  },
+  {
+    "alias_name": "too_many_parameters",
+    "canonical_lint_name": "tigerstyle::too_many_parameters"
+  },
+  {
+    "alias_name": "fat_trait",
+    "canonical_lint_name": "tigerstyle::fat_trait"
+  },
+  {
+    "alias_name": "concrete_construction_in_core",
+    "canonical_lint_name": "tigerstyle::concrete_construction_in_core"
+  },
+  {
+    "alias_name": "type_accumulation",
+    "canonical_lint_name": "tigerstyle::type_accumulation"
+  },
+  {
+    "alias_name": "negated_predicate",
+    "canonical_lint_name": "tigerstyle::negated_predicate"
+  },
+  {
+    "alias_name": "bool_naming",
+    "canonical_lint_name": "tigerstyle::bool_naming"
+  },
+  {
+    "alias_name": "ignored_result",
+    "canonical_lint_name": "tigerstyle::ignored_result"
+  },
+  {
+    "alias_name": "drop_must_use",
+    "canonical_lint_name": "tigerstyle::drop_must_use"
+  },
+  {
+    "alias_name": "fallible_int_fallback",
+    "canonical_lint_name": "tigerstyle::fallible_int_fallback"
+  },
+  {
+    "alias_name": "unchecked_narrowing",
+    "canonical_lint_name": "tigerstyle::unchecked_narrowing"
+  },
+  {
+    "alias_name": "unchecked_division",
+    "canonical_lint_name": "tigerstyle::unchecked_division"
+  },
+  {
+    "alias_name": "contradictory_time",
+    "canonical_lint_name": "tigerstyle::contradictory_time"
+  },
+  {
+    "alias_name": "ambient_clock",
+    "canonical_lint_name": "tigerstyle::ambient_clock"
+  },
+  {
+    "alias_name": "ambient_env",
+    "canonical_lint_name": "tigerstyle::ambient_env"
+  },
+  {
+    "alias_name": "ambient_random",
+    "canonical_lint_name": "tigerstyle::ambient_random"
+  },
+  {
+    "alias_name": "global_state_in_core",
+    "canonical_lint_name": "tigerstyle::global_state_in_core"
+  },
+  {
+    "alias_name": "impure_call_in_core",
+    "canonical_lint_name": "tigerstyle::impure_call_in_core"
+  },
+  {
+    "alias_name": "interior_mutability_in_core",
+    "canonical_lint_name": "tigerstyle::interior_mutability_in_core"
+  },
+  {
+    "alias_name": "logging_in_core",
+    "canonical_lint_name": "tigerstyle::logging_in_core"
+  },
+  {
+    "alias_name": "missing_const_fn",
+    "canonical_lint_name": "tigerstyle::missing_const_fn"
+  },
+  {
+    "alias_name": "mutating_input_in_pure",
+    "canonical_lint_name": "tigerstyle::mutating_input_in_pure"
+  },
+  {
+    "alias_name": "nondeterministic_output",
+    "canonical_lint_name": "tigerstyle::nondeterministic_output"
+  },
+  {
+    "alias_name": "pure_attr_contract",
+    "canonical_lint_name": "tigerstyle::pure_attr_contract"
+  },
+  {
+    "alias_name": "resource_return_from_core",
+    "canonical_lint_name": "tigerstyle::resource_return_from_core"
+  },
+  {
+    "alias_name": "spawn_in_core",
+    "canonical_lint_name": "tigerstyle::spawn_in_core"
+  },
+  {
+    "alias_name": "zero_alloc_attr_contract",
+    "canonical_lint_name": "tigerstyle::zero_alloc_attr_contract"
+  },
+  {
+    "alias_name": "catch_all_on_enum",
+    "canonical_lint_name": "tigerstyle::catch_all_on_enum"
+  },
+  {
+    "alias_name": "foreign_enum_catch_all",
+    "canonical_lint_name": "tigerstyle::foreign_enum_catch_all"
+  },
+  {
+    "alias_name": "fragile_exhaustive_enum_match",
+    "canonical_lint_name": "tigerstyle::fragile_exhaustive_enum_match"
+  },
+  {
+    "alias_name": "platform_dependent_cast",
+    "canonical_lint_name": "tigerstyle::platform_dependent_cast"
+  },
+  {
+    "alias_name": "float_for_currency",
+    "canonical_lint_name": "tigerstyle::float_for_currency"
+  },
+  {
+    "alias_name": "ambiguous_params",
+    "canonical_lint_name": "tigerstyle::ambiguous_params"
+  },
+  {
+    "alias_name": "raw_arithmetic_overflow",
+    "canonical_lint_name": "tigerstyle::raw_arithmetic_overflow"
+  },
+  {
+    "alias_name": "no_unwrap",
+    "canonical_lint_name": "tigerstyle::no_unwrap"
+  },
+  {
+    "alias_name": "no_panic",
+    "canonical_lint_name": "tigerstyle::no_panic"
+  },
+  {
+    "alias_name": "public_unsafe_api",
+    "canonical_lint_name": "tigerstyle::public_unsafe_api"
+  },
+  {
+    "alias_name": "defaulting_trait_method",
+    "canonical_lint_name": "tigerstyle::defaulting_trait_method"
+  },
+  {
+    "alias_name": "no_todo",
+    "canonical_lint_name": "tigerstyle::no_todo"
+  },
+  {
+    "alias_name": "unjustified_no_todo_allow",
+    "canonical_lint_name": "tigerstyle::unjustified_no_todo_allow"
+  },
+  {
+    "alias_name": "no_recursion",
+    "canonical_lint_name": "tigerstyle::no_recursion"
+  }
+]

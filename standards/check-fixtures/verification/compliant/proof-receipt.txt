@@ -1,0 +1,21 @@
+proof-receipt-schema: tigerstyle-proof-receipt/v1
+proof-backend: local-command-receipt
+proof-runner: octet-standards
+proof-environment: local-source-root
+trust-boundary: opt-in command execution proves local fixture proof command evidence shape, not arbitrary downstream semantic correctness
+proof-verifier: octet-standards@proof-receipt/v1
+proof-verifier-blake3: 9fb0cd3ff1b2898eba4c6f71479f93ae3cdc80f869cd8ae5e6355235ec5f9aef
+proof-verifier-binary: octet-standards
+proof-verifier-binary-blake3: ca07415846ec49c45311f7b889ba9be3f316e180ad51eab64b0903c5dcd27821
+proof-verifier-build-closure: nix-octet-standards-build-closure/v1
+proof-verifier-build-closure-blake3: d482e4bbbb8e9e1a102319c19c55327cc6944fbb9abbd67122e1f9f88a9109ee
+proof-verifier-nix-derivation: octet-standards.drv
+proof-verifier-nix-derivation-blake3: 395cf66a51543cf89028075deef9cf172bac902fd777f0ba0bead91aa68afec4
+proof-verifier-nix-closure: nix-store-recursive-closure/v1
+proof-verifier-nix-closure-blake3: b1501c0c0d38a17b4a5ddd298136b1c168a499237b872cf02fc72f2650a002f2
+proof-verifier-nix-closure-graph-blake3: 0ed5ac9f1899c34eeda9035c5a165eefeb0beb254a1e36e354e458ae97d4943b
+proof-toolchain: rust-toolchain.toml
+proof-toolchain-blake3: 50692525e10589e3a1060a0ed0adc77f695ad5617121b572e549ef9855ceb7a8
+proof-command-blake3: 71f5bd32c3c27f0795008e3ff5ee56e7736a7fac5b2d06fbb38cd8d19b4a6609
+proof-source-blake3: standards/check-fixtures/verification/compliant/src/lib.rs:641fadb612cd129e2f9682cdf660e132257779c81ef6c9195cd4d506023d4a5d
+proof-result: pass deterministic-effect-handlers

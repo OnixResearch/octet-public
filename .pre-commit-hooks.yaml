@@ -1,0 +1,16 @@
+- id: octet-deny-all
+  name: Octet/Tiger Style deny-all lints
+  description: Run cargo octet check with every Octet/Tiger Style lint promoted to deny.
+  entry: hooks/octet-deny-all.sh
+  language: script
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
+- id: tigerstyle-deny-all
+  name: Tiger Style deny-all lints (legacy alias)
+  description: Legacy hook id that runs the same Octet deny-all lint gate.
+  entry: hooks/octet-deny-all.sh
+  language: script
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]

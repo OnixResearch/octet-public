@@ -1,0 +1,60 @@
+warning: state machine transition core `wildcard_transition` over `State` and `Event` uses wildcard fallback (state-machine-wildcard-fallback); handle every state/event pair explicitly
+  --> $DIR/state_machine_exhaustiveness_negative.rs:23:5
+   |
+LL | /     match (state, event) {
+LL | |         (State::Idle, Event::Start) => Ok(State::Running),
+LL | |         _ => Err(InvalidTransition),
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (State Machine Exhaustiveness): mark transition cores and handle every state/event pair explicitly without wildcard fallback or mutation-coupled decisions Example: #[octet::state_machine_core] fn transition(state: State, event: Event) -> Result<State, InvalidTransition>
+   = note: see Tiger Style guide: Enum Matches / State Machines
+note: the lint level is defined here
+  --> $DIR/state_machine_exhaustiveness_negative.rs:3:9
+   |
+LL | #![warn(state_machine_exhaustiveness)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::state_machine_exhaustiveness)]` implied by `#[warn(state_machine_exhaustiveness)]`
+
+warning: state machine transition core `wildcard_transition` over `State` and `Event` hides invalid transitions (hidden-invalid-transition); 3 state/event pair(s) require explicit next-state or invalid-transition handling
+  --> $DIR/state_machine_exhaustiveness_negative.rs:23:5
+   |
+LL | /     match (state, event) {
+LL | |         (State::Idle, Event::Start) => Ok(State::Running),
+LL | |         _ => Err(InvalidTransition),
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (State Machine Exhaustiveness): mark transition cores and handle every state/event pair explicitly without wildcard fallback or mutation-coupled decisions Example: #[octet::state_machine_core] fn transition(state: State, event: Event) -> Result<State, InvalidTransition>
+   = note: see Tiger Style guide: Enum Matches / State Machines
+
+warning: state machine transition core `mutation_transition` over `State` and `Event` mutates transition state (mutation-coupled-transition); return an explicit decision from a pure core
+  --> $DIR/state_machine_exhaustiveness_negative.rs:32:5
+   |
+LL | /     match (state, event) {
+LL | |         (State::Idle, Event::Start) => {
+LL | |             next = State::Running;
+LL | |             Ok(next)
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (State Machine Exhaustiveness): mark transition cores and handle every state/event pair explicitly without wildcard fallback or mutation-coupled decisions Example: #[octet::state_machine_core] fn transition(state: State, event: Event) -> Result<State, InvalidTransition>
+   = note: see Tiger Style guide: Enum Matches / State Machines
+
+warning: state machine transition core `unsupported_transition` has unsupported source shape (unsupported-state-machine-shape): expected a tuple match over typed state and event enums
+  --> $DIR/state_machine_exhaustiveness_negative.rs:47:1
+   |
+LL | / fn unsupported_transition(state: State, event: Event) -> Result<State, InvalidTransition> {
+LL | |     if matches!(state, State::Idle) && matches!(event, Event::Start) {
+LL | |         Ok(State::Running)
+LL | |     } else {
+...  |
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (State Machine Exhaustiveness): mark transition cores and handle every state/event pair explicitly without wildcard fallback or mutation-coupled decisions Example: #[octet::state_machine_core] fn transition(state: State, event: Event) -> Result<State, InvalidTransition>
+   = note: see Tiger Style guide: Enum Matches / State Machines
+
+warning: 4 warnings emitted
+

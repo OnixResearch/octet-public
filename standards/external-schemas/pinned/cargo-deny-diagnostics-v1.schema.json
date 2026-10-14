@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "octet:pinned:cargo-deny-diagnostics-v1",
+  "title": "Cargo deny diagnostics accepted by Octet evidence imports",
+  "type": "object",
+  "properties": {
+    "schema_version": { "const": "cargo-deny-diagnostics/v1" },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "message"],
+        "properties": {
+          "category": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": ["diagnostics"],
+  "additionalProperties": true
+}

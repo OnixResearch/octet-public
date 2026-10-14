@@ -1,0 +1,37 @@
+[package]
+name = "cargo-octet"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+description = "First-class downstream consumer integration for Octet"
+
+[[bin]]
+name = "cargo-octet"
+path = "src/main.rs"
+
+[[bin]]
+name = "cargo-slotcar"
+path = "src/bin/cargo-slotcar.rs"
+
+[[bin]]
+name = "cargo-tigerstyle"
+path = "src/bin/cargo-tigerstyle.rs"
+
+[dependencies]
+octet-lint-metadata = { path = "../crates/octet-lint-metadata" }
+octet-standards = { path = "../crates/octet-standards" }
+valence-core = { path = "../crates/valence-core" }
+cap-std = "3"
+blake3 = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+syn = { version = "2", features = ["full", "visit"] }
+toml = "1"
+
+[build-dependencies]
+blake3 = "1"
+
+[dev-dependencies]
+hegeltest = { version = "0.14.12", features = ["native"] }
+iddqd = "0.4.5"
+tempfile = "3"

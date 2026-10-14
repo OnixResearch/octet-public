@@ -1,0 +1,48 @@
+let contracts = import "../../contracts.ncl" in
+let PolicyRegistry = contracts.PolicyRegistry in
+let PolicyRegistryRules = contracts.PolicyRegistryRules in
+{
+  schema_version = "fixture",
+  checker_ids = ["registry", "octet-standards"],
+  policies = [{
+    policy_id = "tigerstyle.fixture.missing-core-crates",
+    pillar = "fixture",
+    source_path = "docs/standards/source/architecture.adoc",
+    source_heading = "Boundaries the Compiler Can See",
+    source_anchor = "docs/standards/source/architecture.adoc#boundaries-the-compiler-can-see",
+    summary = "Fixture with crate-boundary mechanism missing core_crates.",
+    classification = "hard",
+    enforcement_level = "hard",
+    current_enforcement_mode = "gate",
+    target_enforcement_mode = "structural",
+    escalation_criteria = "fixture escalation criteria",
+    mechanisms = [{
+      kind = "crate-boundary",
+      description = "boundary with no core_crates",
+      exported_obligations = ["shell depends on core"],
+      crate_boundary = ["infrastructure-shell"],
+      shell_crates = ["infrastructure-shell/Cargo.toml"],
+      core_crates = [],
+      forbidden_core_deps = ["tokio"],
+      external_domain_patterns = [],
+      core_no_std = false,
+    }],
+    checker_owner = "fixture",
+    checker_id = "octet-standards",
+    default_severity = "error",
+    suppression_requirements = {
+      requires_policy_id = true,
+      requires_source_section = true,
+      requires_owner = true,
+      requires_rationale = true,
+      requires_review_trigger = true,
+      requires_safer_default = true,
+    },
+    fixture_coverage = { status = "planned", compliant = [], noncompliant = [] },
+    verification_evidence_requirements = ["rejects missing core_crates"],
+    classification_rationale = "Fixture proves missing core_crates fails closed.",
+    false_positive_risk = "none",
+    existing_enforcement = ["registry"],
+    custom_checker_justification = "fixture",
+  }],
+} | PolicyRegistry | PolicyRegistryRules

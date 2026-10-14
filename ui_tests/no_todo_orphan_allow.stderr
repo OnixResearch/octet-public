@@ -1,0 +1,121 @@
+warning: `panic!` will abort the process on execution
+  --> $DIR/no_todo_orphan_allow.rs:49:5
+   |
+LL |     panic!("panic should still warn");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::no_panic)]` on by default
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` is reserved for temporary `todo!()` stubs, not `panic!`
+  --> $DIR/no_todo_orphan_allow.rs:47:1
+   |
+LL | #[allow(tigerstyle::no_todo)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::unjustified_no_todo_allow)]` on by default
+
+warning: `unimplemented!` will abort the process on execution
+  --> $DIR/no_todo_orphan_allow.rs:55:5
+   |
+LL |     unimplemented!("unimplemented should still warn");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` is reserved for temporary `todo!()` stubs, not `unimplemented!`
+  --> $DIR/no_todo_orphan_allow.rs:53:1
+   |
+LL | #[allow(no_todo)]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `unreachable!` will abort the process on execution
+  --> $DIR/no_todo_orphan_allow.rs:61:5
+   |
+LL |     unreachable!("unreachable should still warn");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` is reserved for temporary `todo!()` stubs, not `unreachable!`
+  --> $DIR/no_todo_orphan_allow.rs:59:1
+   |
+LL | #[allow(tigerstyle::no_todo)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` no longer covers any `todo!()` stub; remove it
+  --> $DIR/no_todo_orphan_allow.rs:7:1
+   |
+LL | #[allow(tigerstyle::no_todo)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` no longer covers any `todo!()` stub; remove it
+  --> $DIR/no_todo_orphan_allow.rs:13:1
+   |
+LL | #[allow(no_todo)]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` no longer covers any `todo!()` stub; remove it
+  --> $DIR/no_todo_orphan_allow.rs:20:5
+   |
+LL |     #[allow(tigerstyle::no_todo)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` no longer covers any `todo!()` stub; remove it
+  --> $DIR/no_todo_orphan_allow.rs:28:5
+   |
+LL |     #[allow(no_todo)]
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` no longer covers any `todo!()` stub; remove it
+  --> $DIR/no_todo_orphan_allow.rs:35:19
+   |
+LL | #[cfg_attr(all(), allow(tigerstyle::no_todo))]
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` no longer covers any `todo!()` stub; remove it
+  --> $DIR/no_todo_orphan_allow.rs:41:19
+   |
+LL | #[cfg_attr(all(), allow(no_todo))]
+   |                   ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: 12 warnings emitted
+

@@ -1,0 +1,18 @@
+warning: compound assertion should be split into separate assertions
+  --> $DIR/compound_assertion_indented.rs:3:9
+   |
+LL |         assert!(a > 1 && b > 1);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Assertion Quality): split compound assertions so the failing clause is obvious Example: assert!(a > 0); assert!(b > 0);
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Assertion Density
+   = note: `#[warn(tigerstyle::compound_assertion)]` on by default
+help: split into separate assertions
+   |
+LL ~         assert!(a > 1);
+LL ~         assert!(b > 1);
+   |
+
+warning: 1 warning emitted
+

@@ -1,0 +1,55 @@
+{
+  "schema_version": "octet-external-schema-contract-manifest/v1",
+  "generator": "cargo-octet.external-schema-contracts/v1",
+  "generation_command": "nix develop -c cargo test -p cargo-octet external_schema_contracts",
+  "contracts": [
+    {
+      "contract_id": "cargo-deny-diagnostics-v1",
+      "tool_family": "cargo-deny",
+      "schema_version": "cargo-deny-diagnostics/v1",
+      "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+      "generator_mode": "record-contract",
+      "unsupported_keywords": [],
+      "source_schema": {
+        "path": "standards/external-schemas/pinned/cargo-deny-diagnostics-v1.schema.json",
+        "blake3": "73f33dca1b82af7754b3064d98812a8d3cf7629f0fa11a13af27b58a15d766ab",
+        "bytes": 765
+      },
+      "generated_contract": {
+        "path": "standards/external-schemas/contracts/generated.ncl",
+        "blake3": "e4726c1024dcac155699bace3ed8943502cb7c13980cac57da7bcdd3534611cc",
+        "bytes": 2278
+      }
+    },
+    {
+      "contract_id": "cargo-llvm-cov-summary-v1",
+      "tool_family": "cargo-llvm-cov",
+      "schema_version": "cargo-llvm-cov-summary/v1",
+      "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+      "generator_mode": "record-contract",
+      "unsupported_keywords": [],
+      "source_schema": {
+        "path": "standards/external-schemas/pinned/cargo-llvm-cov-summary-v1.schema.json",
+        "blake3": "fc3a9d638c49ea08fa16bc701e80141441a84c84b72d740d12b8f3ac169bb1f4",
+        "bytes": 1318
+      },
+      "generated_contract": {
+        "path": "standards/external-schemas/contracts/generated.ncl",
+        "blake3": "e4726c1024dcac155699bace3ed8943502cb7c13980cac57da7bcdd3534611cc",
+        "bytes": 2278
+      }
+    }
+  ],
+  "generated_artifacts": [
+    {
+      "path": "standards/external-schemas/contracts/generated.ncl",
+      "blake3": "e4726c1024dcac155699bace3ed8943502cb7c13980cac57da7bcdd3534611cc",
+      "bytes": 2278
+    },
+    {
+      "path": "standards/external-schemas/index.ncl",
+      "blake3": "e61e90d484a7860783cd89ac2b6c3721e0843cca6d4fc2a9c75eb75395cfee7e",
+      "bytes": 255
+    }
+  ]
+}

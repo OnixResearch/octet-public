@@ -1,0 +1,63 @@
+warning: `.expect()` in production code will panic on failure
+  --> $DIR/no_unwrap_compile_time_known.rs:11:5
+   |
+LL |     Some(1_u32).expect("constructor expect should still warn")
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::no_unwrap)]` on by default
+help: propagate the error with `?` instead of panicking
+   |
+LL -     Some(1_u32).expect("constructor expect should still warn")
+LL +     Some(1_u32)?
+   |
+
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/no_unwrap_compile_time_known.rs:15:5
+   |
+LL |     "not an ip".parse().unwrap()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of panicking
+   |
+LL -     "not an ip".parse().unwrap()
+LL +     "not an ip".parse()?
+   |
+
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/no_unwrap_compile_time_known.rs:29:5
+   |
+LL |     "still warns".parse().unwrap()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of panicking
+   |
+LL -     "still warns".parse().unwrap()
+LL +     "still warns".parse()?
+   |
+
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/no_unwrap_compile_time_known.rs:33:5
+   |
+LL |     input.parse().unwrap()
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of panicking
+   |
+LL -     input.parse().unwrap()
+LL +     input.parse()?
+   |
+
+warning: 4 warnings emitted
+

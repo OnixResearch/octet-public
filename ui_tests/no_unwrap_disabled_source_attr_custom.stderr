@@ -1,0 +1,10 @@
+warning: unknown lint: `no_unwrap`
+  --> $DIR/no_unwrap_disabled_source_attr_custom/no_unwrap_disabled_source_attr_custom.rs:1:9
+   |
+LL | #![deny(no_unwrap)]
+   |         ^^^^^^^^^
+   |
+   = note: `#[warn(unknown_lints)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,9 @@
+[package]
+name = "zero-alloc-attr-contract-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "zero_alloc_attr_contract.rs"
+
+[workspace]

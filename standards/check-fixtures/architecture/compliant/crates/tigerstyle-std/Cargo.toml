@@ -1,0 +1,2 @@
+[dependencies]
+tigerstyle-core = { path = "../tigerstyle-core" }

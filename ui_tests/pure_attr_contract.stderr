@@ -1,0 +1,114 @@
+warning: marked pure function contains direct filesystem impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:11:1
+   |
+LL | / fn pure_reads_file() {
+LL | |     let _bytes = std::fs::read("state.bin");
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::pure_attr_contract)]` on by default
+
+warning: marked pure function contains direct environment impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:16:1
+   |
+LL | / fn pure_reads_env() {
+LL | |     let _home = std::env::var("HOME");
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct randomness impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:21:1
+   |
+LL | / fn pure_random() -> u64 {
+LL | |     rand::random()
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct logging impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:26:1
+   |
+LL | / fn pure_logs(value: u64) {
+LL | |     println!("{value}");
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct task spawning impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:31:1
+   |
+LL | / fn pure_spawns() {
+LL | |     let _handle = std::thread::spawn(|| {});
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct global state impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:36:1
+   |
+LL | / fn pure_global_state() {
+LL | |     static mut VALUE: u64 = 0;
+LL | |     let _value = core::ptr::addr_of!(VALUE);
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct interior mutability impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:42:1
+   |
+LL | / fn pure_interior_mutability() {
+LL | |     let _cell = std::cell::RefCell::new(0);
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct mutating input impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:47:1
+   |
+LL | / fn pure_mutating_input(counter: &mut u64) -> u64 {
+LL | |     *counter
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct panic impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:52:1
+   |
+LL | / fn pure_panics() {
+LL | |     panic!("pure panic");
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: marked pure function contains direct resource return impurity; this lint checks direct effects only, not transitive proof
+  --> $DIR/pure_attr_contract/pure_attr_contract.rs:57:1
+   |
+LL | / fn pure_returns_file() -> std::fs::File {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep functions marked pure free of direct platform effects, mutating inputs, panics, globals, and resource handles Example: #[tigerstyle::pure] fn compute(input: Input) -> Output
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 10 warnings emitted
+
