@@ -22,22 +22,25 @@ Octet currently ships 68 Dylint lints across 6 domains. The repo also owns a
 separate standards registry/checker seam for policy traceability and
 non-Dylint source-shape rules.
 
-## Source-only publication candidate
+## Source-only public consumption
 
-This historyless candidate derives from source `374bd16b26cee2af34211a29bfa531c016811f51`.
-It is not yet published and is not a byte-identical copy of that Git revision.
+The independently rooted `terrane-toolchain-374bd16` branch of
+[`OnixResearch/octet-public`](https://github.com/OnixResearch/octet-public)
+publishes this older production Verus/tooling cohort, derived from source
+`374bd16b26cee2af34211a29bfa531c016811f51`.
+It is not a byte-identical copy of that Git revision.
 Private local settings and archived evidence directories are withheld; retained
 operator checkout paths are illustrative. Historical checkboxes, receipts, and
 fingerprint evidence references do not attest to this derived source. The
 withheld transcripts are not publicly replayable, and edited notes are not
 verbatim evidence. License texts and upstream notices are retained.
 
-This candidate does not replace the newer `890f424` Aeneas provider revision.
-The original newer tree embeds private Git-history bundles; a separate derived
-candidate now replaces them with real signed synthetic-root fixtures and
-repository-owned replay producers, rather than carrying that history forward.
-Fresh package checks and public dependency pins are required before consumers
-can use this candidate as a reviewed release.
+This source does not replace the newer `890f424` Aeneas-provider cohort on the
+mirror's independently rooted `main` branch. The cohorts are not merged; do not
+substitute newer compiler code for this older consumer. Live dependency
+selections use immutable public sources. Pin a full reviewed public commit;
+fresh package checks are required before release admission. Frozen fixture and
+generated-index bytes retain their historical labels, not fresh proof claims.
 
 ## Quick start
 
@@ -61,7 +64,7 @@ cargo octet check
 Nix, from the canonical repo flake without installing into the consumer toolchain:
 
 ```bash
-nix run github:OnixResearch/octet#cargo-octet -- check
+nix run github:OnixResearch/octet-public/terrane-toolchain-374bd16#cargo-octet -- check
 ```
 
 Local checkout alternative:
@@ -278,7 +281,7 @@ lands; Octet command and config names are the preferred product surfaces.
 | --- | --- | --- |
 | public site | `octet.dev` | `slotcar.dev` is historical until a site decision lands |
 | project name | `Octet` / `octet` | `slotcar` is legacy product identity |
-| GitHub repo reference | `github:OnixResearch/octet` | legacy repo slugs are obsolete |
+| GitHub repo reference | `github:OnixResearch/octet-public/terrane-toolchain-374bd16` | Source-only older cohort; pin a full reviewed commit |
 | crate and lint package | `octet` | `slotcar`/`tigerstyle` package aliases are compatibility only |
 | lint runner binary | `cargo-octet` | `cargo-slotcar` and `cargo-tigerstyle` route to the same engine as aliases |
 | lint runner command | `cargo octet check` | `cargo slotcar check` and `cargo tigerstyle check` are transition aliases |

@@ -10,7 +10,7 @@
     };
     flake-utils.url = "github:numtide/flake-utils";
     cairn = {
-      url = "github:onixresearch/cairn";
+      url = "github:OnixResearch/cairn-public/e25e782f8dafac98b906b48b9d15c965996e18f9";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     dylint-src = {
@@ -2138,8 +2138,8 @@ MAIN
             test -s "$readme"
             grep -F 'name = "valence-core"' "$manifest" >/dev/null
             grep -F 'readme = "README.md"' "$manifest" >/dev/null
-            grep -F 'repository = "https://github.com/OnixResearch/octet"' "$manifest" >/dev/null
-            grep -F 'documentation = "https://github.com/OnixResearch/octet/tree/main/crates/valence-core"' "$manifest" >/dev/null
+            grep -F 'repository = "https://github.com/OnixResearch/octet-public"' "$manifest" >/dev/null
+            grep -F 'documentation = "https://github.com/OnixResearch/octet-public/tree/terrane-toolchain-374bd16/crates/valence-core"' "$manifest" >/dev/null
             grep -F 'keywords = ["valence", "evidence", "octet", "blake3"]' "$manifest" >/dev/null
             grep -F 'categories = ["development-tools"]' "$manifest" >/dev/null
             assert_inventory "$readme"

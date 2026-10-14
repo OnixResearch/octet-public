@@ -303,8 +303,9 @@ Octet is designed for local or consumer-CI execution:
   CI boundary;
 - no required hosted service: Octet does not require uploading source or
   artifacts to an Octet-operated service;
-- pin-capable runner path: consumers can pin `github:OnixResearch/octet` to a
-  release tag or commit, or use `path:/path/to/octet#cargo-octet`;
+- pin-capable runner path: consumers can pin the older public
+  `github:OnixResearch/octet-public/terrane-toolchain-374bd16` cohort to a reviewed
+  commit, or use `path:/path/to/octet#cargo-octet`;
 - source-visible toolchain: this repository contains the runner, lint library,
   standards checker, policy registry, and generated artifact seam;
 - local artifact directory: `cargo octet check --artifact-dir artifacts/octet`

@@ -1,56 +1,93 @@
 {
   "nodes": {
+    "artifact": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791999372,
+        "narHash": "sha256-dTexT+CcfyYZLtA1c8K41Z1rjJh/sewlNuDSQssKNm8=",
+        "ref": "refs/heads/main",
+        "rev": "f379f2583b5d152cfd6d58919738652861793c90",
+        "revCount": 1,
+        "type": "git",
+        "url": "https://github.com/OnixResearch/onix-artifact-public.git"
+      },
+      "original": {
+        "rev": "f379f2583b5d152cfd6d58919738652861793c90",
+        "type": "git",
+        "url": "https://github.com/OnixResearch/onix-artifact-public.git"
+      }
+    },
+    "bounded-exec": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792014863,
+        "narHash": "sha256-n9UZx4GlhDLShotMNBSVisIJpTrkqLYs2LtW2dcipCQ=",
+        "ref": "refs/heads/main",
+        "rev": "ff4af395b2c415fddd1ed51f4829aeba2d4259a5",
+        "revCount": 2,
+        "type": "git",
+        "url": "https://github.com/OnixResearch/bounded-exec-public.git"
+      },
+      "original": {
+        "rev": "ff4af395b2c415fddd1ed51f4829aeba2d4259a5",
+        "type": "git",
+        "url": "https://github.com/OnixResearch/bounded-exec-public.git"
+      }
+    },
     "cairn": {
       "inputs": {
+        "artifact": "artifact",
+        "bounded-exec": "bounded-exec",
+        "cap-root": "cap-root",
+        "durable-file-publication": "durable-file-publication",
+        "kiln-core": "kiln-core",
+        "mantle-build-contract": "mantle-build-contract",
+        "nickel-1-17-0": "nickel-1-17-0",
+        "nickel-export": "nickel-export",
         "nixpkgs": [
           "nixpkgs"
         ],
-        "slotcar": "slotcar"
+        "octet": "octet"
       },
       "locked": {
-        "lastModified": 1783451492,
-        "narHash": "sha256-peDt26MipCBaq6sAu90DsjfJywZu8KTF4WEv1nzR7sI=",
-        "owner": "onixresearch",
-        "repo": "cairn",
-        "rev": "fb1a7403a7897f7fa161e0b3c5d86b4cf19e52f8",
+        "lastModified": 1792015605,
+        "narHash": "sha256-CKrexq3bKxDZdYbVxcG0So9O9FQmukbdnope7GWWSHE=",
+        "owner": "OnixResearch",
+        "repo": "cairn-public",
+        "rev": "e25e782f8dafac98b906b48b9d15c965996e18f9",
         "type": "github"
       },
       "original": {
-        "owner": "onixresearch",
-        "repo": "cairn",
+        "owner": "OnixResearch",
+        "repo": "cairn-public",
+        "rev": "e25e782f8dafac98b906b48b9d15c965996e18f9",
         "type": "github"
       }
     },
-    "cairn_2": {
-      "inputs": {
-        "nixpkgs": [
-          "cairn",
-          "slotcar",
-          "nixpkgs"
-        ],
-        "slotcar": "slotcar_2"
-      },
+    "cap-root": {
+      "flake": false,
       "locked": {
-        "lastModified": 1779500840,
-        "narHash": "sha256-tnsP7kS55Druw+k+/ZD+4hd5f0JsLgW8komD6LSCWJ4=",
-        "owner": "onixresearch",
-        "repo": "cairn",
-        "rev": "3c470b9478072fed00234000d5abee07c20eda1c",
-        "type": "github"
+        "lastModified": 1784443737,
+        "narHash": "sha256-2eiyxmhW8/qj30ALccgkt5hatRMk2OcazmU3SCI/Opo=",
+        "ref": "refs/heads/main",
+        "rev": "8991e2572578c16e590c2f1c0915db6c46c5d9cb",
+        "revCount": 2,
+        "type": "git",
+        "url": "https://seed.radicle.garden/z3cWBCK7VPbEmbL5MAvKJWKjCE745.git"
       },
       "original": {
-        "owner": "onixresearch",
-        "repo": "cairn",
-        "type": "github"
+        "rev": "8991e2572578c16e590c2f1c0915db6c46c5d9cb",
+        "type": "git",
+        "url": "https://seed.radicle.garden/z3cWBCK7VPbEmbL5MAvKJWKjCE745.git"
       }
     },
     "crane": {
       "locked": {
-        "lastModified": 1773857772,
-        "narHash": "sha256-5xsK26KRHf0WytBtsBnQYC/lTWDhQuT57HJ7SzuqZcM=",
+        "lastModified": 1765145449,
+        "narHash": "sha256-aBVHGWWRzSpfL++LubA0CwOOQ64WNLegrYHwsVuVN7A=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "b556d7bbae5ff86e378451511873dfd07e4504cd",
+        "rev": "69f538cdce5955fcd47abfed4395dc6d5194c1c5",
         "type": "github"
       },
       "original": {
@@ -89,6 +126,23 @@
         "type": "github"
       }
     },
+    "durable-file-publication": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785189981,
+        "narHash": "sha256-fKxZ+3rzWzVuawILnmpiYCCe8PT/z6usopFMbr2KFbI=",
+        "ref": "refs/heads/main",
+        "rev": "951c27f59003cea9bfdb40ed4d89653d50fada1f",
+        "revCount": 9,
+        "type": "git",
+        "url": "https://seed.radicle.garden/z3tAR4For7qw8ZirkJzoDw1VNDDLM.git"
+      },
+      "original": {
+        "rev": "951c27f59003cea9bfdb40ed4d89653d50fada1f",
+        "type": "git",
+        "url": "https://seed.radicle.garden/z3tAR4For7qw8ZirkJzoDw1VNDDLM.git"
+      }
+    },
     "dylint-src": {
       "flake": false,
       "locked": {
@@ -123,20 +177,19 @@
         "type": "github"
       }
     },
-    "dylint-src_3": {
+    "flake-compat": {
       "flake": false,
       "locked": {
-        "lastModified": 1774225669,
-        "narHash": "sha256-3OkN9IX1ommW6JZlgOOalz8Zx8tQGNgjaM7LVMYFZVg=",
-        "owner": "trailofbits",
-        "repo": "dylint",
-        "rev": "0e0a71eefe6f01563d11acc6e1d7af1d505934a9",
+        "lastModified": 1767039857,
+        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
+        "owner": "NixOS",
+        "repo": "flake-compat",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
         "type": "github"
       },
       "original": {
-        "owner": "trailofbits",
-        "repo": "dylint",
-        "rev": "0e0a71eefe6f01563d11acc6e1d7af1d505934a9",
+        "owner": "NixOS",
+        "repo": "flake-compat",
         "type": "github"
       }
     },
@@ -194,18 +247,124 @@
         "type": "github"
       }
     },
-    "nixpkgs": {
+    "gitignore": {
+      "inputs": {
+        "nixpkgs": [
+          "cairn",
+          "nickel-1-17-0",
+          "pre-commit-hooks",
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1773840656,
-        "narHash": "sha256-9tpvMGFteZnd3gRQZFlRCohVpqooygFuy9yjuyRL2C0=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "9cf7092bdd603554bd8b63c216e8943cf9b12512",
+        "lastModified": 1709087332,
+        "narHash": "sha256-HG2cCnktfHsKV0s4XW83gU3F57gaTljL9KNSuG6bnQs=",
+        "owner": "hercules-ci",
+        "repo": "gitignore.nix",
+        "rev": "637db329424fd7e46cf4185293b9cc8c88c95394",
         "type": "github"
       },
       "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-unstable",
+        "owner": "hercules-ci",
+        "repo": "gitignore.nix",
+        "type": "github"
+      }
+    },
+    "kiln-core": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788142402,
+        "narHash": "sha256-ULVaEH8tOiR2SoHVkpB5dB7ZKrvu99VxQ8KBLytP+RM=",
+        "ref": "refs/heads/main",
+        "rev": "5d99f4e9bb954743443e340baece31256b4c53f1",
+        "revCount": 68,
+        "type": "git",
+        "url": "https://seed.radicle.garden/z2wsvXm5S2sJGvuV1k5JHiwi1PbKE.git"
+      },
+      "original": {
+        "rev": "5d99f4e9bb954743443e340baece31256b4c53f1",
+        "type": "git",
+        "url": "https://seed.radicle.garden/z2wsvXm5S2sJGvuV1k5JHiwi1PbKE.git"
+      }
+    },
+    "mantle-build-contract": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787295942,
+        "narHash": "sha256-wbxOOf78rb1fN/gxifOF0Me/XwndgNVsStaz9IZyOck=",
+        "ref": "refs/heads/main",
+        "rev": "0bbab77e23ab95caa4e4184b9945cfaa5c8040e2",
+        "revCount": 2607,
+        "type": "git",
+        "url": "https://github.com/OnixResearch/mantle.git"
+      },
+      "original": {
+        "rev": "0bbab77e23ab95caa4e4184b9945cfaa5c8040e2",
+        "type": "git",
+        "url": "https://github.com/OnixResearch/mantle.git"
+      }
+    },
+    "nickel-1-17-0": {
+      "inputs": {
+        "crane": "crane",
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs",
+        "pre-commit-hooks": "pre-commit-hooks",
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1781039631,
+        "narHash": "sha256-D+OI00Ouwm0v65igIYSCGPXKCl6/SZsOyz1wFM1VAF4=",
+        "owner": "nickel-lang",
+        "repo": "nickel",
+        "rev": "1320a983e6c3d1e2fb53dd2464b084b4903b1426",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nickel-lang",
+        "repo": "nickel",
+        "rev": "1320a983e6c3d1e2fb53dd2464b084b4903b1426",
+        "type": "github"
+      }
+    },
+    "nickel-export": {
+      "inputs": {
+        "cairn": [
+          "cairn"
+        ],
+        "nixpkgs": [
+          "cairn",
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay_2"
+      },
+      "locked": {
+        "lastModified": 1783990479,
+        "narHash": "sha256-dV4+/jghpJ89F5DHprdjxyru8kllMAurS2DsBGn/ibA=",
+        "owner": "OnixResearch",
+        "repo": "nickel-export",
+        "rev": "257fafc1c746f1faf156207043a4c826bfb16d49",
+        "type": "github"
+      },
+      "original": {
+        "owner": "OnixResearch",
+        "repo": "nickel-export",
+        "rev": "257fafc1c746f1faf156207043a4c826bfb16d49",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1765472234,
+        "narHash": "sha256-9VvC20PJPsleGMewwcWYKGzDIyjckEz8uWmT0vCDYK0=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "2fbfb1d73d239d2402a8fe03963e37aab15abe8b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -242,32 +401,77 @@
         "type": "github"
       }
     },
+    "octet": {
+      "inputs": {
+        "crane": "crane_2",
+        "dylint-src": "dylint-src",
+        "flake-utils": "flake-utils_2",
+        "nixpkgs": "nixpkgs_2",
+        "rust-overlay": "rust-overlay_3"
+      },
+      "locked": {
+        "lastModified": 1792014859,
+        "narHash": "sha256-UOkHaZuLrKHn0XOzwJFqiKfXEIAfsGESK7iHMyoNhro=",
+        "owner": "OnixResearch",
+        "repo": "slotcar-public",
+        "rev": "e0d07898aafd26a307eb4c5579dbd0e7931f991b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "OnixResearch",
+        "repo": "slotcar-public",
+        "rev": "e0d07898aafd26a307eb4c5579dbd0e7931f991b",
+        "type": "github"
+      }
+    },
+    "pre-commit-hooks": {
+      "inputs": {
+        "flake-compat": "flake-compat",
+        "gitignore": "gitignore",
+        "nixpkgs": [
+          "cairn",
+          "nickel-1-17-0",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1767281941,
+        "narHash": "sha256-6MkqajPICgugsuZ92OMoQcgSHnD6sJHwk8AxvMcIgTE=",
+        "owner": "cachix",
+        "repo": "git-hooks.nix",
+        "rev": "f0927703b7b1c8d97511c4116eb9b4ec6645a0fa",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cachix",
+        "repo": "git-hooks.nix",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "cairn": "cairn",
         "crane": "crane_3",
-        "dylint-src": "dylint-src_3",
+        "dylint-src": "dylint-src_2",
         "flake-utils": "flake-utils_3",
         "nixpkgs": "nixpkgs_3",
-        "rust-overlay": "rust-overlay_3"
+        "rust-overlay": "rust-overlay_4"
       }
     },
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
           "cairn",
-          "slotcar",
-          "cairn",
-          "slotcar",
+          "nickel-1-17-0",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1774235565,
-        "narHash": "sha256-D8OOwvq3zDDCtIhMcNueb9tGSZaZUanKpWDleRgQ80U=",
+        "lastModified": 1765593578,
+        "narHash": "sha256-qbl874bCIy9+OLImdfBfZ9ITUDDjjTAB04Dk4PlZFV0=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "dc00324a2438762582b49954373112b8eab29cab",
+        "rev": "348b94ed9ddffccdf1a65582a2dcff0a4a3eeeb4",
         "type": "github"
       },
       "original": {
@@ -280,7 +484,29 @@
       "inputs": {
         "nixpkgs": [
           "cairn",
-          "slotcar",
+          "nickel-export",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783921439,
+        "narHash": "sha256-DsSIQSRMrLOz40LrGZ03sp2RlJ9sz3wKpd8XPTOzXnw=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "e013376c32a8fcf07ddb6ec71739552bc118b7bd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_3": {
+      "inputs": {
+        "nixpkgs": [
+          "cairn",
+          "octet",
           "nixpkgs"
         ]
       },
@@ -298,7 +524,7 @@
         "type": "github"
       }
     },
-    "rust-overlay_3": {
+    "rust-overlay_4": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
@@ -315,51 +541,6 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
-    "slotcar": {
-      "inputs": {
-        "cairn": "cairn_2",
-        "crane": "crane_2",
-        "dylint-src": "dylint-src_2",
-        "flake-utils": "flake-utils_2",
-        "nixpkgs": "nixpkgs_2",
-        "rust-overlay": "rust-overlay_2"
-      },
-      "locked": {
-        "lastModified": 1783449144,
-        "narHash": "sha256-OvqB00mDIsGDOcuK5jvPJUModVz9WbIBuM/l06TABHc=",
-        "owner": "OnixResearch",
-        "repo": "slotcar",
-        "rev": "2f8213a88781d9d38bb81319d06a50805d48ccd3",
-        "type": "github"
-      },
-      "original": {
-        "owner": "OnixResearch",
-        "repo": "slotcar",
-        "type": "github"
-      }
-    },
-    "slotcar_2": {
-      "inputs": {
-        "crane": "crane",
-        "dylint-src": "dylint-src",
-        "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
-        "rust-overlay": "rust-overlay"
-      },
-      "locked": {
-        "lastModified": 1778903772,
-        "narHash": "sha256-8F7g650MFMXm5zyOBadWg0pOHxXccDgwbOVUZYLwwkQ=",
-        "owner": "onixresearch",
-        "repo": "slotcar",
-        "rev": "b18a547801dfebaa5ee3e748e3ebefed1a66cb17",
-        "type": "github"
-      },
-      "original": {
-        "owner": "onixresearch",
-        "repo": "slotcar",
         "type": "github"
       }
     },
