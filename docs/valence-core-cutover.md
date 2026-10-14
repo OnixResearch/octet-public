@@ -7,10 +7,16 @@
 Octet consumes standalone Valence as the canonical owner of Valence pure evidence semantics. Production calls route through `cargo-octet/src/valence_core_shim.rs` to this exact dependency:
 
 ```toml
-valence-core = { git = "https://github.com/OnixResearch/valence.git", rev = "5f1c2ba5072c6f9622fa59b1af20502985f569fd", package = "valence-core" }
+valence-core = { git = "https://github.com/OnixResearch/valence-public.git", rev = "99cbe41f742035c37b6a7b503e4748e2e5ce2bea", package = "valence-core" }
 ```
 
 The selected revision contains `cairn/archive/2026-07-12-harden-preserves-integrity-boundaries`, including the corrected Preserves integrity and typed claim-boundary profile. The Nickel-authored cutover manifest at `standards/valence-core-cutover/manifest.ncl` binds that revision, Cargo source identity, archive path, module source hashes, fixture commands, and non-claims. Its generated runtime projection is `standards/valence-core-cutover/generated-manifest.json`.
+
+This independently rooted public export retains the historical archive labels.
+Its sanitized evidence-index module has a new measured source hash; the current
+manifest binds those public bytes, while frozen legacy compatibility fixtures
+remain unchanged. Source availability and matching metadata do not renew the
+archived check results or establish release admission.
 
 The old Octet-hosted source remains only at `crates/valence-core/` as the non-publishable, non-workspace package `octet-valence-legacy-fixture`. It is a bounded positive/negative compatibility corpus and cannot satisfy a canonical `valence-core` dependency.
 

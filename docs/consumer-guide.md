@@ -252,8 +252,8 @@ same pinned hook checkout:
 
 ```yaml
 repos:
-  - repo: https://github.com/OnixResearch/octet
-    # Replace with a reviewed release tag or commit SHA.
+  - repo: https://github.com/OnixResearch/octet-public
+    # Replace with a reviewed full commit from the newer provider main cohort.
     rev: 0123456789abcdef0123456789abcdef01234567
     hooks:
       - id: octet-deny-all

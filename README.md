@@ -38,10 +38,13 @@ A Nickel catalog defines nominal domains for primitive aliases, raw core values,
 
 Checked-path configuration uses the exact reviewed Nickel cohort. Read [`docs/nickel-toolchain.md`](docs/nickel-toolchain.md).
 
-## Source-only publication candidate
+## Source-only public consumption
 
-This historyless candidate derives from `890f424cd7b1b2015f39c0eb5747f1bd1e576028`;
-it is not a byte-identical publication of that revision. Private local settings
+The independently rooted `main` branch of
+[`OnixResearch/octet-public`](https://github.com/OnixResearch/octet-public)
+publishes this newer Aeneas-provider cohort, derived from
+`890f424cd7b1b2015f39c0eb5747f1bd1e576028`.
+It is not a byte-identical publication of that revision. Private local settings
 and archival transcripts were withheld, and operator paths in ordinary guidance
 are illustrative. Signed collaboration fixtures use independent synthetic Git
 roots, never the original Octet history.
@@ -50,9 +53,9 @@ Bound proof-fixture and generated-index bytes remain unchanged, including their
 historical command-path labels. Those labels are fixture/index data, not portable
 replay commands. Historical receipts and completed checklists do not verify this
 derived tree.
-Public dependency repinning and fresh release gates remain required before
-release admission; an available source tree or passing structural check is not
-a proof or release-readiness claim.
+Live dependency selections use immutable public sources; fresh release gates
+remain required before release admission. An available source tree or passing
+structural check is not a proof or release-readiness claim.
 
 Octet maintainers own this export and its fixture replay; Terrane is the current
 consumer. Re-run the explicit fixture producers and checks against the exact
@@ -64,7 +67,13 @@ Octet is under active development. Nix pins Rust, Dylint, Verus, solvers, and su
 
 Direct Cargo use is an advanced path. It must reproduce the same pins.
 
-This candidate retains historical dependency coordinates until approved public snapshots are published and repinned. Source availability does not prove correctness, security, or release readiness.
+Pin a full reviewed public commit for consumption. The separate
+`terrane-toolchain-374bd16` branch retains the older production Verus/tooling
+cohort with its own independent root; it is not merged with this provider and
+must not be replaced by newer compiler code. Historical proof fixtures and
+signed collaboration receipts remain bound to their recorded source identities,
+not to the current Cairn input. Replaying against a new Cairn source requires
+its real CLI and fresh repository-owned producer output, not relabelled receipts.
 
 ## Quick start
 
@@ -88,7 +97,7 @@ cargo octet check
 Public Nix flake:
 
 ```bash
-nix run github:OnixResearch/octet#cargo-octet -- check
+nix run github:OnixResearch/octet-public/main#cargo-octet -- check
 ```
 
 Local checkout:
@@ -338,7 +347,7 @@ Canonical attributes use `tigerstyle::<lint>`. Domain groups use `tigerstyle::<d
 |---|---|---|
 | Public site | `octet.dev` | `slotcar.dev` is historical |
 | Project | `Octet` or `octet` | `slotcar` is legacy |
-| Repository | `github:OnixResearch/octet` | Old repository names are obsolete |
+| Repository | `github:OnixResearch/octet-public` | Source-only public mirror; pin the intended cohort |
 | Package | `octet` | `slotcar` and `tigerstyle` are aliases |
 | Runner binary | `cargo-octet` | `cargo-slotcar` and `cargo-tigerstyle` are aliases |
 | Runner command | `cargo octet check` | Legacy commands route to the same engine |

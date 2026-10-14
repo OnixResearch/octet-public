@@ -41,16 +41,16 @@ let CutoverManifest = {
   supported_claim | NonEmptyString,
   non_claims | NonClaims,
 } in
-let ValenceRevision = "5f1c2ba5072c6f9622fa59b1af20502985f569fd" in
+let ValenceRevision = "99cbe41f742035c37b6a7b503e4748e2e5ce2bea" in
 let CutoverNonClaim = "standalone Valence cutover proves dependency/source ownership and DTO compatibility only; it does not prove behavioral correctness, semantic equivalence, pure-cache eligibility, external consumer compatibility, cross-toolchain determinism, or release eligibility" in
 {
   schema_version = "octet-valence-core-cutover-manifest/v2",
   standalone_source = {
-    coordinate = "github:OnixResearch/valence?dir=crates/valence-core",
-    cargo_git_url = "https://github.com/OnixResearch/valence.git",
+    coordinate = "github:OnixResearch/valence-public?dir=crates/valence-core",
+    cargo_git_url = "https://github.com/OnixResearch/valence-public.git",
     crate_target = "valence-core",
     revision = ValenceRevision,
-    cargo_source = "git+https://github.com/OnixResearch/valence.git?rev=%{ValenceRevision}#%{ValenceRevision}",
+    cargo_source = "git+https://github.com/OnixResearch/valence-public.git?rev=%{ValenceRevision}#%{ValenceRevision}",
     hardened_profile_archive = "cairn/archive/2026-07-12-harden-preserves-integrity-boundaries",
     local_override_policy = "local path overrides are development-only diagnostics and MUST NOT replace the exact release dependency or lock identity",
   },
@@ -67,7 +67,7 @@ let CutoverNonClaim = "standalone Valence cutover proves dependency/source owner
     {
       module_or_schema = "evidence_index",
       standalone_path = "crates/valence-core/src/evidence_index.rs",
-      standalone_source_b3 = "b3:75320ed218e1a726745ad166b394c2a640159ec08863fa7e231e2f221d780c4e",
+      standalone_source_b3 = "b3:e71dffafd2bbc6c1bb49ec2ffebf4b8a5b2821b39f71c717762a9abf41b6d147",
       legacy_fixture_path = "crates/valence-core/src/evidence_index.rs",
       compatibility_disposition = "legacy-fixture",
       fixture_refs = ["evidence-index-compatible"],
@@ -110,7 +110,7 @@ let CutoverNonClaim = "standalone Valence cutover proves dependency/source owner
     {
       consumer = "Aspen",
       current_dependency = "git package valence-core from github:OnixResearch/octet",
-      target_dependency = "git+https://github.com/OnixResearch/valence.git?rev=%{ValenceRevision}",
+      target_dependency = "git+https://github.com/OnixResearch/valence-public.git?rev=%{ValenceRevision}",
       validation_command = "cargo test -p cargo-octet valence_cutover -- --nocapture; cargo test -p cargo-octet evidence_index -- --nocapture; cargo test -p cargo-octet object -- --nocapture",
       non_claim = CutoverNonClaim,
     },

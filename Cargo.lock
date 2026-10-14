@@ -114,7 +114,7 @@ dependencies = [
 [[package]]
 name = "bounded-exec"
 version = "0.1.0"
-source = "git+ssh://git@github.com/OnixResearch/bounded-exec.git?rev=44eb74eb639194665ee820562d5b2ce2c3ff6a94#44eb74eb639194665ee820562d5b2ce2c3ff6a94"
+source = "git+https://github.com/OnixResearch/bounded-exec-public.git?rev=ff4af395b2c415fddd1ed51f4829aeba2d4259a5#ff4af395b2c415fddd1ed51f4829aeba2d4259a5"
 dependencies = [
  "bounded-exec-core",
  "nix",
@@ -123,7 +123,7 @@ dependencies = [
 [[package]]
 name = "bounded-exec-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/OnixResearch/bounded-exec.git?rev=44eb74eb639194665ee820562d5b2ce2c3ff6a94#44eb74eb639194665ee820562d5b2ce2c3ff6a94"
+source = "git+https://github.com/OnixResearch/bounded-exec-public.git?rev=ff4af395b2c415fddd1ed51f4829aeba2d4259a5#ff4af395b2c415fddd1ed51f4829aeba2d4259a5"
 dependencies = [
  "blake3",
 ]
@@ -1155,7 +1155,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "valence-core"
 version = "0.1.0"
-source = "git+https://github.com/OnixResearch/valence.git?rev=5f1c2ba5072c6f9622fa59b1af20502985f569fd#5f1c2ba5072c6f9622fa59b1af20502985f569fd"
+source = "git+https://github.com/OnixResearch/valence-public.git?rev=99cbe41f742035c37b6a7b503e4748e2e5ce2bea#99cbe41f742035c37b6a7b503e4748e2e5ce2bea"
 dependencies = [
  "blake3",
  "iddqd",

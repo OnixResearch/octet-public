@@ -21,8 +21,8 @@ path = "src/bin/cargo-tigerstyle.rs"
 octet-architecture-ir = { path = "../crates/octet-architecture-ir" }
 octet-lint-metadata = { path = "../crates/octet-lint-metadata" }
 octet-standards = { path = "../crates/octet-standards" }
-valence-core = { git = "https://github.com/OnixResearch/valence.git", rev = "5f1c2ba5072c6f9622fa59b1af20502985f569fd", package = "valence-core" }
-bounded-exec = { git = "ssh://git@github.com/OnixResearch/bounded-exec.git", rev = "44eb74eb639194665ee820562d5b2ce2c3ff6a94", package = "bounded-exec" }
+valence-core = { git = "https://github.com/OnixResearch/valence-public.git", rev = "99cbe41f742035c37b6a7b503e4748e2e5ce2bea", package = "valence-core" }
+bounded-exec = { git = "https://github.com/OnixResearch/bounded-exec-public.git", rev = "ff4af395b2c415fddd1ed51f4829aeba2d4259a5", package = "bounded-exec" }
 cap-std = "3"
 blake3 = "1"
 serde = { version = "1", features = ["derive"] }

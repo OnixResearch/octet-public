@@ -52,7 +52,11 @@ cargo octet evidence collect \
   --artifact-dir artifacts/coverage
 ```
 
-The run uses Bounded Exec from `OnixResearch/bounded-exec` at revision `44eb74eb639194665ee820562d5b2ce2c3ff6a94`. The owner-authorized reuse covers the bounded process mechanism only.
+The run uses the independent public Bounded Exec source at
+`OnixResearch/bounded-exec-public`, revision
+`ff4af395b2c415fddd1ed51f4829aeba2d4259a5`. The owner-authorized reuse covers
+the bounded process mechanism only. Historical benchmark corpus labels retain
+their original source selections; they are not fresh observations for this pin.
 
 The shell clears the child environment. The Nix composition supplies the exact Cargo program, provider path, vendor configuration, and runtime library path.
 

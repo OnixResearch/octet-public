@@ -10,7 +10,7 @@
     };
     flake-utils.url = "github:numtide/flake-utils";
     cairn = {
-      url = "github:onixresearch/cairn";
+      url = "github:OnixResearch/cairn-public/e25e782f8dafac98b906b48b9d15c965996e18f9";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     dylint-src = {
@@ -18,7 +18,7 @@
       flake = false;
     };
     valence = {
-      url = "github:OnixResearch/valence/5f1c2ba5072c6f9622fa59b1af20502985f569fd";
+      url = "github:OnixResearch/valence-public/99cbe41f742035c37b6a7b503e4748e2e5ce2bea";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nickel-export = {
@@ -3804,7 +3804,7 @@
                     echo 'canonical dependency unexpectedly falls back to hosted path' >&2
                     exit 1
                   fi
-                  grep -F "valence-core = { git = \"https://github.com/OnixResearch/valence.git\", rev = \"$expected_revision\"" "$repo/cargo-octet/Cargo.toml" >/dev/null
+                  grep -F "valence-core = { git = \"https://github.com/OnixResearch/valence-public.git\", rev = \"$expected_revision\"" "$repo/cargo-octet/Cargo.toml" >/dev/null
                   test "$(grep -Fc "source = \"$expected_source\"" "$lockfile")" -eq 1
                   test "$(grep -Fc 'name = "valence-core"' "$lockfile")" -eq 1
                   grep -F 'pub(crate) use valence_core::' "$repo/cargo-octet/src/valence_core_shim.rs" >/dev/null
