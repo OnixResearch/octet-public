@@ -1,0 +1,14 @@
+{
+  "policy_hash": "policy-fixture",
+  "registry": {
+    "schema_version": "cairn.requirement-id-registry.v1",
+    "boundary": "requirement ID registry resolution proves ownership and linkage only; it does not prove requirement satisfaction, implementation correctness, test coverage, or release eligibility",
+    "non_claims": ["not requirement satisfaction", "not implementation correctness", "not test coverage", "not release eligibility"],
+    "rows": [
+      {"requirement_id": "cairn.requirement_id_registry.contract", "namespace": "cairn", "owner_repo": "cairn", "accepted_spec": ".cairn/specs/requirement-id-registry/spec.md", "status": "active", "aliases": [], "allowed_consumers": ["octet"]}
+    ]
+  },
+  "references": [
+    {"requirement_id": "cairn.requirement_id_registry.contract", "consumer": "octet", "expected_owner": "cairn"}
+  ]
+}

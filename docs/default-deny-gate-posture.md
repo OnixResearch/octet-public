@@ -10,21 +10,26 @@ default-on posture for consumers who want it.
 
 ## What this provides
 
-### 1. Cargo alias template
+### 1. Checked-build wrapper template
 
-`templates/cargo-alias.toml` is a copyable `.cargo/config.toml` alias that
-makes `cargo octet-check` run the Octet gate followed by `cargo check`:
+`templates/octet-check.sh` is a copyable POSIX shell wrapper that runs the
+Octet gate followed by `cargo check`:
 
-```toml
-[alias]
-octet-check = "!cargo octet check -- && cargo check"
+```sh
+#!/bin/sh
+set -eu
+
+cargo octet check
+exec cargo check "$@"
 ```
 
-Consumers who want the default-on posture copy this into their
-`.cargo/config.toml` and use `cargo octet-check` as their primary build
-command. The leading `!` is required because Cargo shell aliases are the alias
-form that can short-circuit with `&&`. The gate runs first; if it fails, the
-build does not proceed.
+Consumers who want the default-on posture copy it into their workspace (for
+example as `scripts/octet-check`), mark it executable, and use it as their
+primary build command; arguments are passed to `cargo check` only. Cargo
+aliases expand only to Cargo arguments and cannot run two commands or stop
+between them, so the posture needs this wrapper. The gate runs first; if it
+fails, the script exits with the gate's status and the build does not
+proceed.
 
 ### 2. Posture documentation
 
@@ -32,9 +37,10 @@ This document defines the posture:
 
 - **Default-on**: the gate runs before the build, not after. The checked path
   is the primary path, not an opt-in.
-- **Bypass is explicit and labeled**: `--allow-style-violations` and
-  `OCTET_STYLE_GATE_DISABLE=1` exist for emergency local builds and
-  one-off migrations. CI must not pass these flags.
+- **No hidden bypass**: Octet ships no flag or environment variable that
+  skips the gate. Skipping it means running plain `cargo check` instead of
+  the wrapper, which is visible in the command itself. CI must always run
+  the gate.
 - **Exit codes are stable for automation**: `0` clean, `1` lint findings,
   `2` integration failure. CI gates on non-zero.
 - **The gate is byte-deterministic**: the same source + config + toolchain
@@ -60,8 +66,10 @@ directory before the build proceeds. CI should fail on any non-zero exit.
 - A `build.rs` that automatically runs the gate on every `cargo build`. This
   would add latency to every incremental build and would couple the gate to
   the Rust build graph in a way that breaks the functional-core /
-  imperative-shell boundary. The cargo alias is the lighter-weight
+  imperative-shell boundary. The wrapper script is the lighter-weight
   alternative.
+- A gate bypass flag or environment variable. None exists; the checked path
+  is skipped only by not running it.
 - Enforcement that consumers adopt the posture. The templates are copyable;
   adoption is the consumer's decision. The posture doc makes the
   recommendation explicit.

@@ -60,7 +60,8 @@ fn run_valence_check(args: EvidenceIndexArgs) -> Result<i32, String> {
 }
 
 fn run_codebase_build(args: &EvidenceIndexArgs) -> Result<i32, String> {
-    let inputs = collect_artifact_inputs(&args.artifacts, &args.artifact_dirs)?;
+    let own_output = args.output.as_deref().map(resolve_output_path).transpose()?.flatten();
+    let inputs = collect_artifact_inputs(&args.artifacts, &args.artifact_dirs, own_output.as_deref())?;
     let mode = if args.advisory {
         EvidenceIndexBuildMode::Advisory
     } else {
@@ -90,13 +91,33 @@ fn run_codebase_html(args: &EvidenceIndexArgs) -> Result<i32, String> {
     Ok(EXIT_SUCCESS)
 }
 
+/// Resolves the build's own output path so directory scans can skip a previously written index.
+fn resolve_output_path(output: &Path) -> Result<Option<PathBuf>, String> {
+    if output.exists() {
+        return fs::canonicalize(output)
+            .map(Some)
+            .map_err(|error| format!("canonicalize {}: {error}", output.display()));
+    }
+    let Some(file_name) = output.file_name() else {
+        return Ok(None);
+    };
+    let parent = output.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    if !parent.is_dir() {
+        return Ok(None);
+    }
+    fs::canonicalize(parent)
+        .map(|parent| Some(parent.join(file_name)))
+        .map_err(|error| format!("canonicalize {}: {error}", parent.display()))
+}
+
 fn collect_artifact_inputs(
     artifacts: &[PathBuf],
     artifact_dirs: &[PathBuf],
+    own_output: Option<&Path>,
 ) -> Result<Vec<EvidenceArtifactInput>, String> {
     let mut paths = artifacts.to_vec();
     for directory in artifact_dirs {
-        collect_supported_files(directory, &mut paths)?;
+        collect_supported_files(directory, own_output, &mut paths)?;
     }
     paths.sort();
     paths.dedup();
@@ -113,9 +134,9 @@ fn collect_artifact_inputs(
         .collect()
 }
 
-fn collect_supported_files(path: &Path, paths: &mut Vec<PathBuf>) -> Result<(), String> {
+fn collect_supported_files(path: &Path, own_output: Option<&Path>, paths: &mut Vec<PathBuf>) -> Result<(), String> {
     if path.is_file() {
-        if supported_directory_file(path) {
+        if supported_directory_file(path) && !is_own_output(path, own_output) {
             paths.push(path.to_path_buf());
         }
         return Ok(());
@@ -133,9 +154,15 @@ fn collect_supported_files(path: &Path, paths: &mut Vec<PathBuf>) -> Result<(), 
         {
             continue;
         }
-        collect_supported_files(&child, paths)?;
+        collect_supported_files(&child, own_output, paths)?;
     }
     Ok(())
+}
+
+fn is_own_output(path: &Path, own_output: Option<&Path>) -> bool {
+    own_output.is_some_and(|own_output| {
+        path.file_name() == own_output.file_name() && fs::canonicalize(path).is_ok_and(|path| path == own_output)
+    })
 }
 
 fn supported_directory_file(path: &Path) -> bool {
@@ -203,10 +230,41 @@ mod tests {
         fs::write(root.join("target/ignored.json"), b"{}").expect("write ignored target json");
 
         let mut paths = Vec::new();
-        collect_supported_files(&root, &mut paths).expect("collect files");
+        collect_supported_files(&root, None, &mut paths).expect("collect files");
         paths.sort();
 
         assert_eq!(paths, vec![root.join("evidence.json")]);
+        fs::remove_dir_all(root).expect("remove temp dir");
+    }
+
+    #[test]
+    fn codebase_index_directory_collector_skips_own_output() {
+        let root = unique_temp_dir("own-output");
+        fs::create_dir_all(root.join("nested")).expect("create nested dir");
+        fs::write(root.join("evidence.json"), b"{}").expect("write evidence json");
+        fs::write(root.join("index.json"), b"{}").expect("write earlier index output");
+        fs::write(root.join("nested/index.json"), b"{}").expect("write same-named evidence json");
+        let own_output = resolve_output_path(&root.join("nested/../index.json"))
+            .expect("resolve output path")
+            .expect("output parent exists");
+
+        let mut paths = Vec::new();
+        collect_supported_files(&root, Some(&own_output), &mut paths).expect("collect files");
+        paths.sort();
+
+        assert_eq!(paths, vec![root.join("evidence.json"), root.join("nested/index.json")]);
+        fs::remove_dir_all(root).expect("remove temp dir");
+    }
+
+    #[test]
+    fn codebase_index_output_path_resolves_before_first_write() {
+        let root = unique_temp_dir("first-write");
+        fs::create_dir_all(&root).expect("create temp dir");
+
+        let resolved = resolve_output_path(&root.join("index.json")).expect("resolve output path");
+
+        assert_eq!(resolved, Some(fs::canonicalize(&root).expect("canonicalize root").join("index.json")));
+        assert_eq!(resolve_output_path(&root.join("missing/index.json")).expect("resolve output path"), None);
         fs::remove_dir_all(root).expect("remove temp dir");
     }
 

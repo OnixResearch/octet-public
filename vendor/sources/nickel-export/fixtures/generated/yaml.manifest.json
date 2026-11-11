@@ -1,0 +1,56 @@
+{
+  "schema": "onix-nickel-export-manifest/v1",
+  "generator": "nickel-export-core/v1",
+  "evaluator": {
+    "identity": "nixpkgs:nickel",
+    "version": "nickel-lang-cli-1.17.0",
+    "options": [
+      "contract=fixtures/contract.ncl",
+      "format=yaml",
+      "import-path=fixtures"
+    ],
+    "import_path_policy": "declared_only"
+  },
+  "exports": [
+    {
+      "schema": "onix-nickel-export-receipt/v1",
+      "family_id": "fixtures.yaml",
+      "source": {
+        "path": "fixtures/config.ncl",
+        "identity": "b3:9e5b958d59b2e8f9f80ac3579350f5d177909a816061794cf0b248ad45a2cb03",
+        "bytes": 53
+      },
+      "dependencies": [
+        {
+          "path": "fixtures/contract.ncl",
+          "identity": "b3:59b65f18034994376daffa985eda2da3f5d7f43ac746078474908ae1e1652c9d",
+          "bytes": 40
+        }
+      ],
+      "import_paths": [
+        "fixtures"
+      ],
+      "selector": "",
+      "contract": "fixtures/contract.ncl",
+      "format": "yaml",
+      "output": {
+        "path": "fixtures/generated/config.yaml",
+        "identity": "b3:897cef34ecf0340006b76c5125bef96085e19aaadbd5ee430b1a353e97e2cf28",
+        "bytes": 43
+      },
+      "evaluator": {
+        "identity": "nixpkgs:nickel",
+        "version": "nickel-lang-cli-1.17.0",
+        "options": [
+          "contract=fixtures/contract.ncl",
+          "format=yaml",
+          "import-path=fixtures"
+        ],
+        "import_path_policy": "declared_only"
+      },
+      "diagnostics": [],
+      "non_claim": "Nickel export success proves only exact declared input and output identities under the recorded evaluator descriptor; it does not prove deployability, product-policy conformance, evaluator equivalence, build success, or release eligibility"
+    }
+  ],
+  "manifest_identity": "b3:4368db82c72fac18b89f71742735da2aa062f37d28efc41cfd7b84d09fd42c1a"
+}

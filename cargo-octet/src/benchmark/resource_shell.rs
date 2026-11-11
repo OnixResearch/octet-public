@@ -1,4 +1,7 @@
-use super::*;
+use super::AllocationObservation;
+use super::CopyObservation;
+use super::Profile;
+use super::resources;
 
 pub(super) fn read_allocation_file(
     workspace_root: &std::path::Path,

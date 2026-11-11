@@ -1,0 +1,121 @@
+{
+  "distribution_changes": "Source snapshots are unmodified Git archive selections and retain original manifests. Cargo directory-source packages are normalized by Cargo vendor and retain Cargo checksum manifests; no Rust source is patched.",
+  "excluded_material": "Unselected lifecycle history, operator/session state, credentials, caches, build outputs, and hosting configuration are not imported.",
+  "ownership": "Octet owns distribution intake and freshness; upstream repositories retain implementation and claim authority.",
+  "schema_version": "octet-public-dependency-sources/v1",
+  "sources": [
+    {
+      "archive_sha256": "52f02e1b87b58a6b95c1132b11149f6041b597a930b6de080d55c4eb607b8134",
+      "cargo_packages": [
+        "valence-core-0.1.0"
+      ],
+      "destination": "vendor/sources/valence",
+      "license": "MPL-2.0 (valence-core); AGPL-3.0-or-later (other selected repository material)",
+      "name": "valence",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "rust-toolchain.toml",
+        "README.md",
+        "LICENSES",
+        "crates",
+        "pilots",
+        "contracts",
+        "fixtures",
+        "docs/licensing.md",
+        "cairn/archive/2026-07-12-harden-preserves-integrity-boundaries"
+      ],
+      "repository": "https://github.com/OnixResearch/valence.git",
+      "revision": "5f1c2ba5072c6f9622fa59b1af20502985f569fd"
+    },
+    {
+      "archive_sha256": "636a508057666aa6339be7b4c5c733ad24af98f585a3c59636159d512daec27e",
+      "cargo_packages": [
+        "bounded-exec-0.1.0",
+        "bounded-exec-core-0.1.0"
+      ],
+      "destination": "vendor/sources/bounded-exec",
+      "license": "AGPL-3.0-or-later",
+      "name": "bounded-exec",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "rust-toolchain.toml",
+        "README.md",
+        "LICENSE",
+        "crates"
+      ],
+      "repository": "https://github.com/OnixResearch/bounded-exec.git",
+      "revision": "44eb74eb639194665ee820562d5b2ce2c3ff6a94"
+    },
+    {
+      "archive_sha256": "77e14df0ca95624ae5d8e9fc9fe45aaa057fc7e698123cfadeb2d09e0600298b",
+      "cargo_packages": [
+        "nickel-export-core-0.1.0"
+      ],
+      "destination": "vendor/sources/nickel-export",
+      "license": "AGPL-3.0-or-later",
+      "name": "nickel-export",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "rust-toolchain.toml",
+        "README.md",
+        "LICENSE",
+        "crates",
+        "config",
+        "fixtures",
+        "cairn/specs/deterministic-nickel-export"
+      ],
+      "repository": "https://github.com/OnixResearch/nickel-export",
+      "revision": "257fafc1c746f1faf156207043a4c826bfb16d49"
+    },
+    {
+      "archive_sha256": "53c0ad3acfc0ea734b0af8093fecdef83b2a3345b02820360d71c7afbd55762e",
+      "cargo_packages": [],
+      "destination": "vendor/sources/cairn",
+      "license": "MIT OR Apache-2.0 (core and reusable material); AGPL-3.0-or-later (CLI and documentation); vendored components retain their notices",
+      "name": "cairn",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "rust-toolchain.toml",
+        "README.md",
+        "LICENSE-MIT",
+        "LICENSE-APACHE",
+        "LICENSES",
+        "crates",
+        "vendor",
+        "cairn-policy",
+        "fixtures",
+        "docs/agent-guidance-context.md",
+        "docs/hermes/cairn-workflow-skill.md",
+        "docs/licensing.md"
+      ],
+      "repository": "https://github.com/OnixResearch/cairn",
+      "revision": "695124d459574ba7aeba6097310d237f393c243c"
+    },
+    {
+      "archive_sha256": "3dcff961426360f2bcd7ae7bef5dfe7bf100ef7dcd16b5d9621c75590c2bc620",
+      "cargo_packages": [],
+      "destination": "vendor/sources/artifact",
+      "license": "MIT OR Apache-2.0",
+      "name": "artifact",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "rust-toolchain.toml",
+        "README.md",
+        "LICENSE",
+        "LICENSE-MIT",
+        "LICENSE-APACHE",
+        "NOTICE",
+        "provenance",
+        "crates",
+        "fixtures"
+      ],
+      "repository": "https://github.com/OnixResearch/onix-artifact.git",
+      "revision": "e41340bec587b6d049b5cc518ec7db925dde84be"
+    }
+  ]
+}

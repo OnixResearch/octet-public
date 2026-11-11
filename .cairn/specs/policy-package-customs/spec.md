@@ -58,6 +58,8 @@ r[octet.policy_package_customs.boundaries.secrets]
 - GIVEN a package contains raw secrets, credentials, private keys, or other secret material
 - WHEN the customs gate evaluates the package
 - THEN validation MUST fail or require a non-candidate exclusion rationale before promotion.
+- AND the scan MUST cover package sources, positive and negative fixtures, and generated artifacts.
+- AND an exclusion rationale MUST excuse secret material only when the package status is `non-candidate`.
 
 #### Scenario: Remote fetch is not part of validation
 

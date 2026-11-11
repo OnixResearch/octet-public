@@ -16,6 +16,22 @@ LL - pub fn get_item(index: usize) -> Option<u8> {
 LL + pub fn get_item(index: u64) -> Option<u8> {
    |
 
+warning: narrowing cast from `usize` to `u8` without bounds check
+  --> $DIR/usize_in_public_api.rs:4:10
+   |
+LL |     Some(index as u8)
+   |          ^^^^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+   = note: `#[warn(tigerstyle::unchecked_narrowing)]` on by default
+help: replace with `u8::try_from(...)`
+   |
+LL -     Some(index as u8)
+LL +     Some(u8::try_from(index).ok()?)
+   |
+
 warning: `usize` in public API — use `u32` or `u64` for cross-platform consistency
   --> $DIR/usize_in_public_api.rs:7:1
    |
@@ -34,7 +50,7 @@ LL + pub fn platform_len() -> u64 {
    |
 
 warning: `usize` in public API — use `u32` or `u64` for cross-platform consistency
-  --> $DIR/usize_in_public_api.rs:16:5
+  --> $DIR/usize_in_public_api.rs:32:5
    |
 LL | /     pub fn slot(&self, idx: usize) -> usize {
 LL | |         idx
@@ -50,5 +66,5 @@ LL -     pub fn slot(&self, idx: usize) -> usize {
 LL +     pub fn slot(&self, idx: u64) -> u64 {
    |
 
-warning: 3 warnings emitted
+warning: 4 warnings emitted
 

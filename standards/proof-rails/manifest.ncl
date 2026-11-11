@@ -1,7 +1,7 @@
 let contracts = import "contracts.ncl" in
 let default_timeout_ms = 30000 in
 let default_log_max_bytes = 4096 in
-let aeneas_timeout_ms = 900000 in
+let aeneas_timeout_ms = 2700000 in
 let aeneas_log_max_bytes = 1048576 in
 let productionReceiptVerifier = {
   verifier_id = "verus@0.2026.05.17.e479cce",
@@ -81,6 +81,33 @@ let productionReceiptVerifier = {
       stderr_max_bytes = default_log_max_bytes,
       environment_allowlist = ["PATH"],
     },
+    checked_increment_production = {
+      backend = "verus",
+      command = "octet-production-verus verus/proofs/checked_increment_bound.rs",
+      command_argv = ["octet-production-verus", "verus/proofs/checked_increment_bound.rs"],
+      source_paths = ["src/verified/checked_increment.rs"],
+      proof_paths = ["verus/proofs/checked_increment_bound.rs"],
+      receipt_paths = [
+        "proofs/octet.verus_proof_rails.checked-increment-production-rail-0.receipt",
+      ],
+      pass_signal = "verification results:: 1 verified, 0 errors",
+      trust_boundaries = ["production Verus binary verifies the declared u64 checked-increment contract model; it does not establish refinement to the plain Rust function or whole-program correctness"],
+      receipt_binding = "blake3-command-and-source",
+      receipt_provenance = {
+        schema_version = "octet-verus-proof-receipt/v1",
+        runner = "octet-standards",
+        environment = "cargo-octet-prove",
+        requires_backend = true,
+        requires_trust_boundary = true,
+      },
+      receipt_verifier = productionReceiptVerifier,
+      verifier_mode = "production",
+      checked_scope = "formal-proof:production:octet.verus_proof_rails.checked-increment-production#rail-0",
+      timeout_ms = default_timeout_ms,
+      stdout_max_bytes = default_log_max_bytes,
+      stderr_max_bytes = default_log_max_bytes,
+      environment_allowlist = ["PATH"],
+    },
     ordering_reflexive_production = {
       backend = "verus",
       command = "octet-production-verus verus/proofs/ordering_reflexive.rs",
@@ -141,6 +168,42 @@ let productionReceiptVerifier = {
       stdout_max_bytes = aeneas_log_max_bytes,
       stderr_max_bytes = aeneas_log_max_bytes,
       environment_allowlist = ["PATH", "CHARON_TOOLCHAIN_IS_IN_PATH", "LD_LIBRARY_PATH", "HOME", "MATHLIB_NO_CACHE_ON_UPDATE"],
+    },
+    vermilion_canary = {
+      backend = "vermilion-canary",
+      command = "cargo octet prove --rail octet.vermilion_canary_rail.recorded",
+      command_argv = ["cargo", "octet", "prove", "--rail", "octet.vermilion_canary_rail.recorded"],
+      source_paths = ["standards/proof-rails/vermilion-lean/evidence/2026-11-09-u64-pilot/checked.rs"],
+      proof_paths = ["standards/proof-rails/vermilion-lean/evidence/2026-11-09-u64-pilot/receipt.json"],
+      receipt_paths = ["standards/proof-rails/vermilion-lean/evidence/2026-11-09-u64-pilot/receipt.json"],
+      pass_signal = "vermilion-canary-result: pass",
+      trust_boundaries = [
+        "recorded-only measured Vermilion canary; the canary is not a formal proof or a fresh provider execution",
+        "the canary does not prove translation soundness, provider soundness, whole-program correctness, semantic equivalence, or release eligibility",
+      ],
+      receipt_binding = "recorded-only",
+      receipt_provenance = {
+        schema_version = "octet-vermilion-live-canary-receipt/v1",
+        runner = "octet-standards",
+        environment = "cargo-octet-prove-recorded-canary",
+        requires_backend = false,
+        requires_trust_boundary = true,
+      },
+      receipt_verifier = {
+        verifier_id = "vermilion-lean@7c83bbca96940538eb282a67ca923893e5aa0e06",
+        verifier_digest = "7c83bbca96940538eb282a67ca923893e5aa0e06",
+        verifier_binary_path = "vermilion",
+        verifier_binary_digest = "7c83bbca96940538eb282a67ca923893e5aa0e06",
+        toolchain_id = "leanprover/lean4:v4.33.0",
+        toolchain_digest = "db584cd6d46c92f209a44c0f1c829460d327499d",
+      },
+      verifier_mode = "recorded",
+      checked_scope = "recorded-only:vermilion-canary:octet.vermilion_canary_rail.recorded#rail-0",
+      theorem_id = "octet.bounded_increment.checked/v1",
+      timeout_ms = default_timeout_ms,
+      stdout_max_bytes = default_log_max_bytes,
+      stderr_max_bytes = default_log_max_bytes,
+      environment_allowlist = [],
     },
     aeneas_external_consumer = {
       backend = "aeneas-lean",

@@ -15,18 +15,7 @@ fn clean_and_crash_receipts_preserve_bounded_identity() {
     assert!(validate(&clean).is_empty());
     assert_eq!(clean.initial_corpus_root, clean.final_corpus_root);
 
-    let mut crash = clean;
-    crash.outcome = "crash".to_owned();
-    crash.crash_input = Some(artifact("artifacts/crash-deadbeef", CRASH_IDENTITY));
-    let reproducer = artifact("artifacts/minimized-deadbeef", REPRODUCER_IDENTITY);
-    crash.replay_argv = vec![
-        "cargo".to_owned(),
-        "fuzz".to_owned(),
-        "run".to_owned(),
-        TARGET.to_owned(),
-        reproducer.path.clone(),
-    ];
-    crash.minimized_reproducer = Some(reproducer);
+    let crash = crash_fixture("artifacts/crash-deadbeef");
     let evaluation = evaluate_envelope(&serde_json::to_string(&crash).expect("serialize crash fixture"));
     assert!(evaluation.diagnostics.is_empty());
     assert!(evaluation.is_crash_observed);
@@ -64,6 +53,28 @@ fn crash_artifacts_replay_and_tier_are_required() {
 }
 
 #[test]
+fn crash_receipts_bind_named_libfuzzer_finding_artifacts() {
+    for name in ["crash-deadbeef", "leak-deadbeef", "oom-deadbeef", "timeout-deadbeef"] {
+        let finding = crash_fixture(&format!("artifacts/{name}"));
+        assert!(validate(&finding).is_empty(), "{name}: {:?}", validate(&finding));
+    }
+    for name in ["seed", "minimized-deadbeef", "slow-unit-deadbeef"] {
+        let unnamed = crash_fixture(&format!("artifacts/{name}"));
+        assert_eq!(validate(&unnamed).len(), 1, "{name} is not a libFuzzer finding artifact");
+    }
+}
+
+#[test]
+fn compiler_identity_binds_only_the_reviewed_rustc_commit() {
+    let reviewed = format!("rustc 1.96.0-nightly\ncommit-hash: {RUSTC_COMMIT_HASH}\nhost: x86_64-unknown-linux-gnu\n");
+    assert_eq!(compiler_identity(&reviewed), Ok(format!("b3:{}", blake3::hash(reviewed.as_bytes()).to_hex())));
+
+    let other = reviewed.replace(RUSTC_COMMIT_HASH, "0123456789abcdef0123456789abcdef01234567");
+    assert!(compiler_identity(&other).is_err());
+    assert!(compiler_identity("rustc 1.96.0-nightly\nhost: x86_64-unknown-linux-gnu\n").is_err());
+}
+
+#[test]
 fn checked_in_clean_crash_and_invalid_fixtures_are_classified() {
     let clean = evaluate_envelope(include_str!("../../../tests/fixtures/evidence-rails/cargo-fuzz-clean.json"));
     assert!(clean.diagnostics.is_empty(), "{:?}", clean.diagnostics);
@@ -89,6 +100,7 @@ fn generated_nickel_profile_is_fresh_and_matches_rust_policy() {
     assert_eq!(profile["engine"], ENGINE);
     assert_eq!(profile["target"], TARGET);
     assert_eq!(profile["toolchain"], TOOLCHAIN);
+    assert_eq!(profile["rustc_commit_hash"], RUSTC_COMMIT_HASH);
     assert_eq!(profile["sanitizer"], SANITIZER);
     assert_eq!(profile["command_argv"], serde_json::json!(command_argv()));
     assert_eq!(profile["max_total_time_seconds"], MAX_TOTAL_TIME_SECONDS);
@@ -155,6 +167,22 @@ fn fixture() -> ReceiptDetails {
         claimed_properties: Vec::new(),
         non_claims: vec![REQUIRED_NON_CLAIM.to_owned()],
     }
+}
+
+fn crash_fixture(crash_path: &str) -> ReceiptDetails {
+    let mut crash = fixture();
+    crash.outcome = "crash".to_owned();
+    crash.crash_input = Some(artifact(crash_path, CRASH_IDENTITY));
+    let reproducer = artifact("artifacts/minimized-deadbeef", REPRODUCER_IDENTITY);
+    crash.replay_argv = vec![
+        "cargo".to_owned(),
+        "fuzz".to_owned(),
+        "run".to_owned(),
+        TARGET.to_owned(),
+        reproducer.path.clone(),
+    ];
+    crash.minimized_reproducer = Some(reproducer);
+    crash
 }
 
 fn artifact(path: &str, identity: &str) -> ArtifactIdentity {

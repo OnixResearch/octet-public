@@ -23,7 +23,7 @@
     "ordinary collaboration update refuses conflicts and does not prove or perform conflict resolution"
   ],
   "receipt_hash": "0cdf2280cc20ff3369cd2cc87d22fec8b61f988ef727ba8bba6eb0cd67a403c0",
-  "root": "inspection-workspace",
+  "root": ".",
   "valid": false,
   "verdict": "FAIL"
 }

@@ -1,0 +1,13 @@
+warning: `#[allow(tigerstyle::no_todo)]` / `#[allow(no_todo)]` no longer covers any `todo!()` stub; remove it
+  --> $DIR/no_todo_crate_orphan_allow.rs:4:1
+   |
+LL | #![allow(no_todo)]
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Todo Escape): reserve `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` for temporary `todo!()` stubs with an adjacent `//` justification comment Example: // justified stub while API lands
+           #[allow(tigerstyle::no_todo)] fn stub() { todo!() }
+   = note: see Tiger Style guide: Error Handling / Panics
+   = note: `#[warn(tigerstyle::unjustified_no_todo_allow)]` on by default
+
+warning: 1 warning emitted
+

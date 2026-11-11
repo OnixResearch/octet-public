@@ -7,6 +7,8 @@ let OctetTraceabilityProfile = {
     { root = ".cairn/specs/cob-collaboration-adoption/spec.md", source_kind = "accepted_specs", extensions = ["md"] },
     { root = ".cairn/specs/cob-collaboration-conflict-recovery/spec.md", source_kind = "accepted_specs", extensions = ["md"] },
     { root = ".cairn/specs/runner-self-check/spec.md", source_kind = "accepted_specs", extensions = ["md"] },
+    { root = ".cairn/specs/artifact-bundle-verification/spec.md", source_kind = "accepted_specs", extensions = ["md"] },
+    { root = ".cairn/specs/project-architecture-gate/spec.md", source_kind = "accepted_specs", extensions = ["md"] },
   ],
   evidence_sources = [
     { root = "cargo-octet/src/baseline.rs", source_kind = "rust_source", extensions = ["rs"] },

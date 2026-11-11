@@ -153,6 +153,8 @@ pub fn validate_provenance_chain(
 }
 
 // r[impl octet.evidence_provenance.producer_registry]
+// The producer registry is one static table; splitting it would hide the full registry.
+#[allow(clippy::too_many_lines)]
 fn provenance_producers() -> &'static [ProvenanceProducer] {
     &[
         ProvenanceProducer {

@@ -55,10 +55,19 @@ r[octet.dependency_direction.scope] The boundary config MUST let consumers choos
 
 r[octet.dependency_direction.scope.default]
 
-- GIVEN a consumer declares no explicit dependency-kind scope
+- GIVEN a consumer declares no explicit dependency-kind scope, or an empty one
 - WHEN the check resolves the edge scope
 - THEN it MUST inspect normal and build dependencies and MUST exclude dev-dependencies.
 - AND a consumer that opts in to dev-dependency inspection MUST be able to enable it through the boundary field.
+
+#### Scenario: Unknown edge kinds are reported
+
+r[octet.dependency_direction.scope.unknown]
+
+- GIVEN the boundary field names a dependency kind other than `normal`, `build`, or `dev`
+- WHEN the check resolves the edge scope
+- THEN it MUST emit a diagnostic naming each unknown kind
+- AND it MUST inspect the remaining known kinds, or normal and build dependencies when none remain.
 
 ### Requirement: Pure core and imperative shell boundary
 
@@ -72,3 +81,21 @@ r[octet.dependency_direction.shell.purity]
 - WHEN the pure core classifies edges
 - THEN the core function MUST accept an already-parsed graph and MUST NOT execute cargo, read the filesystem, or touch the environment.
 - AND the imperative shell MUST own `cargo metadata` invocation and package classification.
+
+#### Scenario: Cargo metadata failure fails closed
+
+r[octet.dependency_direction.shell.metadata_failure]
+
+- GIVEN the architecture family is selected, the crate-boundary mechanism is active, and no `__octet/cargo-metadata.json` source is supplied
+- WHEN no `--source` path has a `Cargo.toml` ancestor, or the imperative shell cannot run `cargo metadata --format-version 1`, the command exits non-zero, or it prints non-UTF-8 output
+- THEN the checker MUST emit an error-severity crate-boundary diagnostic naming the missing workspace or the cargo failure
+- AND the dependency-direction check MUST NOT pass without a crate graph.
+
+#### Scenario: Incomplete crate graph fails closed
+
+r[octet.dependency_direction.shell.graph_gaps]
+
+- GIVEN cargo metadata, supplied or produced by the shell, has no `resolve` graph, or a declared `core_crates`, `shell_crates`, or `adapter_crates` entry matches no package or no resolved workspace member
+- WHEN the dependency-direction check runs
+- THEN the checker MUST emit an error-severity crate-boundary diagnostic naming the missing `resolve` graph, the unmatched declared path, or the unresolved declared package
+- AND the check MUST NOT pass for a declared crate it cannot see in the graph.

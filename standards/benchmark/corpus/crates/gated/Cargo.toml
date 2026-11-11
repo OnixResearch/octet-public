@@ -1,0 +1,13 @@
+[package]
+name = "gated"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[features]
+default = []
+strict = []
+
+[dependencies]
+core-api = { path = "../core-api" }
+infra-api = { path = "../infra-api" }

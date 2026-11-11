@@ -17,6 +17,7 @@ let contracts = import "./octet-self-architecture.contracts.ncl" in
       "crates/octet-standards/src",
       "src",
       "cargo-octet/src",
+      "cargo-octet/build.rs",
     ],
     targets = [{
       triple = "x86_64-unknown-linux-gnu",
@@ -73,6 +74,11 @@ let contracts = import "./octet-self-architecture.contracts.ncl" in
     {
       scope_kind = "source",
       scope = "cargo-octet/src",
+      role = "composition-root",
+    },
+    {
+      scope_kind = "source",
+      scope = "cargo-octet/build.rs",
       role = "composition-root",
     },
     {
@@ -313,7 +319,7 @@ let contracts = import "./octet-self-architecture.contracts.ncl" in
     max_unknowns = 65536,
     max_spans = 262144,
     max_span_bytes = 1048576,
-    max_shard_bytes = 67108864,
+    max_shard_bytes = 134217728,
     max_artifact_bytes = 268435456,
   },
   non_claims = [

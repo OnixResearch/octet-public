@@ -1,0 +1,18 @@
+{
+  "policy": {
+    "default_algorithm": "BLAKE3",
+    "exceptions": [],
+    "non_claims": [
+      "hash policy validation does not prove artifact truth"
+    ]
+  },
+  "fields": [
+    {
+      "schema": "cairn.receipt.v1",
+      "field_path": "receipt_hash",
+      "algorithm": "BLAKE3",
+      "digest": "not-a-digest",
+      "stack_owned_identity": true
+    }
+  ]
+}

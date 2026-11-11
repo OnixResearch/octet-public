@@ -4,6 +4,11 @@ let OneOf = fun allowed => std.contract.from_predicate (fun value => std.is_stri
 let PackageStatus = OneOf ["draft", "promotable", "existing", "non-candidate"] in
 let PackageKind = OneOf ["policy", "profile", "template", "proof-rail", "generated-contract", "contract"] in
 let SchemaVersion = std.contract.from_predicate (fun value => value == "octet-policy-package-manifest/v1") in
+# Kinds that define contracts, schemas, profiles, templates, or policy rules and need freshness coverage.
+let ExportCoverageKinds = ["policy", "profile", "template", "generated-contract", "contract"] in
+let is_export_command = fun command =>
+  std.string.contains "nickel export" command || std.string.contains "nickel-export-manifest" command
+in
 let GeneratedArtifactContract = {
   path | NonEmptyString,
   generation_command | NonEmptyString,
@@ -38,6 +43,12 @@ let PackageRulesContract = std.contract.from_predicate (fun package =>
     || (
       std.array.length package.positive_fixtures > 0
       && std.array.length package.negative_fixtures > 0
+      && std.array.length package.registry_family_ids > 0
+      && (
+        !(std.array.elem package.kind ExportCoverageKinds)
+        || std.array.length package.generated_artifacts > 0
+        || std.array.any is_export_command package.generation_commands
+      )
     )
   )
 ) in

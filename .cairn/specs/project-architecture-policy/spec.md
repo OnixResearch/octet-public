@@ -125,17 +125,19 @@ Project policy MUST select exactly one mode from `inventory`, `advisory`, `gate`
 r[octet.project_architecture_policy.waivers]
 
 An architecture waiver MUST bind a stable finding ID, policy identity, source BLAKE3, owner, reason, review condition, and affected claim.
+The waiver policy identity MUST be the BLAKE3 of the canonical policy JSON with `waivers` emptied, because a policy export cannot contain the hash of its own bytes.
+The architecture receipt MUST expose that identity so an operator can copy it into a waiver.
 
 #### Scenario: Exact current waiver applies
 
-- GIVEN every waiver field matches one current architecture finding and source identity
+- GIVEN every waiver field matches one current architecture finding, source identity, and waiver-free policy identity
 - WHEN waiver evaluation runs
 - THEN the finding MAY receive status `waived`
 - AND the finding MUST remain visible in human and machine output
 
 #### Scenario: Waiver is broad or stale
 
-- GIVEN a waiver omits an exact binding, matches multiple findings, or references changed source or policy bytes
+- GIVEN a waiver omits an exact binding, matches multiple findings, or references changed source bytes or changed non-waiver policy content
 - WHEN waiver evaluation runs
 - THEN the waiver MUST NOT suppress a finding
 - AND strict modes MUST emit a blocking waiver diagnostic

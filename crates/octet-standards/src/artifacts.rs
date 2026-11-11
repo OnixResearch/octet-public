@@ -183,6 +183,16 @@ pub fn validate_artifact_manifest_texts(
             errors.push(format!("artifact manifest contains stale or unknown generated artifact `{}`", actual.path));
         }
     }
+    let mut seen_paths = BTreeSet::new();
+    let mut duplicate_paths = BTreeSet::new();
+    for actual in &manifest.artifacts {
+        if !seen_paths.insert(actual.path.as_str()) {
+            duplicate_paths.insert(actual.path.as_str());
+        }
+    }
+    for path in duplicate_paths {
+        errors.push(format!("artifact manifest has duplicate entries for generated artifact `{path}`"));
+    }
 
     errors
 }
@@ -786,8 +796,10 @@ fn escape_toml_string(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::artifacts::artifact_manifest;
     use crate::artifacts::render_check_config_toml;
     use crate::artifacts::seed_manifest_artifact;
+    use crate::artifacts::validate_artifact_manifest_texts;
     use crate::model::PolicyRegistry;
 
     #[test]
@@ -822,5 +834,31 @@ mod tests {
         assert!(output.starts_with("schema_version = \"1\"\n"));
         assert!(output.contains("checker_ids = [\"checker-b\", \"checker-a\"]\n"));
         assert!(output.contains("hard_policy_ids = []\n"));
+    }
+
+    #[test]
+    fn duplicate_manifest_paths_fail_closed() {
+        let registry = PolicyRegistry {
+            schema_version: "test".to_owned(),
+            checker_ids: Vec::new(),
+            policies: Vec::new(),
+            seed_manifests: Vec::new(),
+            config_receipt_families: Vec::new(),
+        };
+        let artifacts = [("octet-policies.json", "{}\n")];
+        let mut manifest = artifact_manifest(&registry, &artifacts);
+        assert!(validate_artifact_manifest_texts(&manifest, &artifacts).is_empty());
+        let mut stale_duplicate = manifest.artifacts[0].clone();
+        stale_duplicate.blake3 = "stale".to_owned();
+        manifest.artifacts.push(stale_duplicate);
+
+        let errors = validate_artifact_manifest_texts(&manifest, &artifacts);
+
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("duplicate entries for generated artifact `octet-policies.json`")),
+            "{errors:?}"
+        );
     }
 }

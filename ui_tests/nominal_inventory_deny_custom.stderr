@@ -1,0 +1,15 @@
+warning: octet `nominal_domain_mode = "inventory"` caps `primitive_domain_alias` at `warn`; ignoring `deny` from `dylint.toml` lint_levels
+
+warning: alias `SessionId` ends with reviewed domain suffix `Id` and needs policy classification
+  --> $DIR/nominal_inventory_deny_custom/nominal_inventory_deny_custom.rs:3:6
+   |
+LL | type SessionId = String;
+   |      ^^^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): replace registered primitive domain aliases with private nominal wrappers and checked constructors Example: pub struct UnitId(String);
+   = note: see Tiger Style guide: Explicit Interfaces
+   = note: `-W tigerstyle::primitive-domain-alias` implied by `-W primitive-domain-alias`
+   = help: to override `-W primitive-domain-alias` add `#[allow(tigerstyle::primitive_domain_alias)]`
+
+warning: 2 warnings emitted
+

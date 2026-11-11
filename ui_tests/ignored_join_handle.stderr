@@ -1,5 +1,5 @@
 warning: spawned task or thread join handle is discarded
-  --> $DIR/ignored_join_handle.rs:7:5
+  --> $DIR/ignored_join_handle.rs:11:5
    |
 LL |     std::thread::spawn(|| STATEMENT_RESULT);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -9,7 +9,7 @@ LL |     std::thread::spawn(|| STATEMENT_RESULT);
    = note: `#[warn(tigerstyle::ignored_join_handle)]` on by default
 
 warning: spawned task or thread join handle is discarded
-  --> $DIR/ignored_join_handle.rs:12:13
+  --> $DIR/ignored_join_handle.rs:16:13
    |
 LL |     let _ = std::thread::spawn(|| WILDCARD_RESULT);
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -17,5 +17,39 @@ LL |     let _ = std::thread::spawn(|| WILDCARD_RESULT);
    = help: Tiger Style (Task Lifecycle): store, await, join, or explicitly abort spawned work instead of discarding its handle Example: let handle = tokio::spawn(work); handle.await?;
    = note: see Tiger Style guide: Concurrency / Task Lifecycle
 
-warning: 2 warnings emitted
+warning: spawned task or thread join handle is discarded
+  --> $DIR/ignored_join_handle.rs:32:13
+   |
+LL |     let _ = std::thread::Builder::new().spawn(|| BUILDER_RESULT);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Task Lifecycle): store, await, join, or explicitly abort spawned work instead of discarding its handle Example: let handle = tokio::spawn(work); handle.await?;
+   = note: see Tiger Style guide: Concurrency / Task Lifecycle
+
+warning: `Result` value silently discarded with `let _ = ...`
+  --> $DIR/ignored_join_handle.rs:32:5
+   |
+LL |     let _ = std::thread::Builder::new().spawn(|| BUILDER_RESULT);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle fallible results explicitly with `?`, `match`, or an intentional logged drop Example: tx.send(msg)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::ignored_result)]` on by default
+help: propagate the error with `?` instead of discarding
+   |
+LL -     let _ = std::thread::Builder::new().spawn(|| BUILDER_RESULT);
+LL +     std::thread::Builder::new().spawn(|| BUILDER_RESULT)?;
+   |
+
+warning: spawned task or thread join handle is discarded
+  --> $DIR/ignored_join_handle.rs:37:13
+   |
+LL |     let _ = spawn.then(|| std::thread::spawn(|| OPTIONAL_RESULT));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Task Lifecycle): store, await, join, or explicitly abort spawned work instead of discarding its handle Example: let handle = tokio::spawn(work); handle.await?;
+   = note: see Tiger Style guide: Concurrency / Task Lifecycle
+
+warning: 5 warnings emitted
 

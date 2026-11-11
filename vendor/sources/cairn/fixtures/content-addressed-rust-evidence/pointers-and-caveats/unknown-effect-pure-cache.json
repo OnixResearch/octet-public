@@ -1,0 +1,30 @@
+{
+  "schema": "octet.name-pointer.v1",
+  "pointer_hash": "feea4ee97d2541dcefd3998c4143f6433ab1399305b2a952db97e744a3f36e31",
+  "name": "demo::math::add_one",
+  "old_object_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+  "new_object_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+  "reason": "source-token body changed",
+  "diff_summary": "body_hash changed; signature_hash unchanged",
+  "rollback_handle": "pointer://demo::math::add_one@1111111111111111111111111111111111111111111111111111111111111111",
+  "mutation_manifest": {
+    "manifest_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+    "touched_files": [
+      {
+        "path": "octet/pointers/demo.math.add_one.json",
+        "before_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+        "after_hash": "5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    ]
+  },
+  "drift_check": {
+    "status": "valid",
+    "checked_object_hash": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "caveats": {
+    "dependency_status": "source-scanner-token-set",
+    "macro_status": "source-visible",
+    "effect_status": "unknown",
+    "pure_cache_eligible": true
+  }
+}

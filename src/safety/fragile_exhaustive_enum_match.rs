@@ -9,6 +9,7 @@ use rustc_session::declare_tool_lint;
 use rustc_session::impl_lint_pass;
 
 use crate::diagnostics::emit_tiger_style_lint;
+use crate::markers::attrs_carry_marker;
 
 const LINT_NAME: &str = "fragile_exhaustive_enum_match";
 
@@ -38,7 +39,7 @@ impl FragileExhaustiveEnumMatch {
 impl_lint_pass!(FragileExhaustiveEnumMatch => [FRAGILE_EXHAUSTIVE_ENUM_MATCH]);
 
 fn enum_type<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx hir::Expr<'tcx>) -> Option<rustc_middle::ty::AdtDef<'tcx>> {
-    let ty::Adt(adt, _) = cx.typeck_results().expr_ty(expr).kind() else {
+    let ty::Adt(adt, _) = cx.typeck_results().expr_ty(expr).peel_refs().kind() else {
         return None;
     };
     adt.is_enum().then_some(*adt)
@@ -48,12 +49,7 @@ fn enum_has_marker(cx: &LateContext<'_>, adt: rustc_middle::ty::AdtDef<'_>, mark
     let Some(local_def_id) = adt.did().as_local() else {
         return false;
     };
-    let hir_id = cx.tcx.local_def_id_to_hir_id(local_def_id);
-    let marker_tail = marker.rsplit("::").next().unwrap_or(marker);
-    cx.tcx.hir_attrs(hir_id).iter().any(|attr| {
-        let rendered = format!("{attr:?}");
-        rendered.contains(marker) || rendered.contains(marker_tail)
-    })
+    attrs_carry_marker(cx.tcx.hir_attrs(cx.tcx.local_def_id_to_hir_id(local_def_id)), marker)
 }
 
 fn arm_mentions_variant(cx: &LateContext<'_>, arm: &hir::Arm<'_>, variant_name: &str) -> bool {

@@ -56,21 +56,32 @@ pub(crate) fn execute_from_profile(workspace_root: &Path, profile_text: &str) ->
         Err(error) => return failed_output(error),
     };
     let work_root = fresh_work_root(&source_root);
-    let snapshot_path = PathBuf::from(SNAPSHOT_FILE_NAME);
-    let observation = crate::aeneas_execution::execute_reused_charon_stage(ReusedCharonStageInput {
-        charon_argv: profile.extraction.command_argv,
-        charon_executable,
-        network_sandbox,
-        source_root,
-        work_root: work_root.clone(),
-        snapshot_path: snapshot_path.clone(),
-        limits: AeneasExecutionLimits {
-            timeout_ms: profile.limits.timeout_ms,
-            stdout_max_bytes: profile.limits.stdout_max_bytes,
-            stderr_max_bytes: profile.limits.stderr_max_bytes,
+    run_pinned_charon_stage(
+        ReusedCharonStageInput {
+            charon_argv: profile.extraction.command_argv,
+            charon_executable,
+            network_sandbox,
+            source_root,
+            work_root,
+            snapshot_path: PathBuf::from(SNAPSHOT_FILE_NAME),
+            limits: AeneasExecutionLimits {
+                timeout_ms: profile.limits.timeout_ms,
+                stdout_max_bytes: profile.limits.stdout_max_bytes,
+                stderr_max_bytes: profile.limits.stderr_max_bytes,
+            },
+            environment_allowlist: profile.extraction.environment_allowlist,
         },
-        environment_allowlist: profile.extraction.environment_allowlist,
-    });
+        profile.limits.snapshot_max_bytes,
+    )
+}
+
+/// Run the pinned Charon stage in `input.work_root`, read its snapshot, and remove the work root
+/// when this run claimed it; a root that already existed belongs to another run and stays intact.
+fn run_pinned_charon_stage(input: ReusedCharonStageInput, snapshot_max_bytes: usize) -> CharonSemanticShellOutput {
+    let work_root = input.work_root.clone();
+    let snapshot_path = input.snapshot_path.clone();
+    let run = crate::aeneas_execution::execute_reused_charon_stage(input);
+    let observation = run.observation;
     let mut diagnostics = observation.diagnostics;
     if observation.exit_code != Some(0) {
         diagnostics.push(format!("pinned Charon stage exited with {:?}", observation.exit_code));
@@ -93,11 +104,10 @@ pub(crate) fn execute_from_profile(workspace_root: &Path, profile_text: &str) ->
     } else {
         Vec::new()
     };
-    if snapshot_bytes.len() > profile.limits.snapshot_max_bytes {
+    if snapshot_bytes.len() > snapshot_max_bytes {
         diagnostics.push(format!(
-            "pinned Charon snapshot exceeds configured byte limit: {} > {}",
+            "pinned Charon snapshot exceeds configured byte limit: {} > {snapshot_max_bytes}",
             snapshot_bytes.len(),
-            profile.limits.snapshot_max_bytes
         ));
     }
     let snapshot_text = match String::from_utf8(snapshot_bytes) {
@@ -107,7 +117,9 @@ pub(crate) fn execute_from_profile(workspace_root: &Path, profile_text: &str) ->
             String::new()
         }
     };
-    if let Err(error) = fs::remove_dir_all(&work_root) {
+    if run.work_root_claimed
+        && let Err(error) = fs::remove_dir_all(&work_root)
+    {
         diagnostics.push(format!("remove Charon semantic work root `{}`: {error}", work_root.display()));
     }
     diagnostics.sort();
@@ -152,6 +164,46 @@ mod tests {
     fn missing_provider_environment_fails_before_execution() {
         let result = pinned_path("OCTET_CHARON_SEMANTIC_MISSING_TEST", "test executable");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn pinned_charon_stage_removes_only_a_work_root_it_claimed() {
+        let temporary = tempfile::tempdir().expect("Charon semantic test root");
+        let source_root = temporary.path().join("source");
+        fs::create_dir(&source_root).expect("create source root");
+        let profile = core::parse_profile(super::super::PROFILE_JSON).expect("shipped profile parses");
+        let input = |work_root: PathBuf| ReusedCharonStageInput {
+            charon_argv: profile.extraction.command_argv.clone(),
+            charon_executable: temporary.path().join("missing-charon"),
+            network_sandbox: temporary.path().join("missing-sandbox"),
+            source_root: source_root.clone(),
+            work_root,
+            snapshot_path: PathBuf::from(SNAPSHOT_FILE_NAME),
+            limits: AeneasExecutionLimits {
+                timeout_ms: profile.limits.timeout_ms,
+                stdout_max_bytes: profile.limits.stdout_max_bytes,
+                stderr_max_bytes: profile.limits.stderr_max_bytes,
+            },
+            environment_allowlist: profile.extraction.environment_allowlist.clone(),
+        };
+
+        let existing = temporary.path().join("existing");
+        let marker = existing.join("owned-by-another-run");
+        fs::create_dir(&existing).expect("create existing work root");
+        fs::write(&marker, "keep").expect("write marker");
+        let refused_claim = input(existing.clone());
+        let mut refused_validation = input(existing);
+        refused_validation.charon_executable = PathBuf::from("relative-charon");
+        for refused in [refused_claim, refused_validation] {
+            let output = run_pinned_charon_stage(refused, profile.limits.snapshot_max_bytes);
+            assert_ne!(output.exit_code, 0);
+            assert_eq!(fs::read_to_string(&marker).expect("refused work root stays intact"), "keep");
+        }
+
+        let fresh = temporary.path().join("fresh");
+        let output = run_pinned_charon_stage(input(fresh.clone()), profile.limits.snapshot_max_bytes);
+        assert_ne!(output.exit_code, 0);
+        assert!(!fresh.exists(), "claimed work root must be removed: {:?}", output.diagnostics);
     }
 
     #[test]

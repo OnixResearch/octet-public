@@ -1,0 +1,16 @@
+warning: allow(non_upper_case_globals) incompatible with previous forbid
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_accept.rs:18:10
+   |
+LL | #![forbid(nonstandard_style)]
+   |           ----------------- `forbid` level set here
+...
+LL | #[derive(serde::Serialize)]
+   |          ^^^^^^^^^^^^^^^^ overruled by previous forbid
+   |
+   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+   = note: for more information, see issue #81670 <https://github.com/rust-lang/rust/issues/81670>
+   = note: `#[warn(forbidden_lint_groups)]` (part of `#[warn(future_incompatible)]`) on by default
+   = note: this warning originates in the derive macro `serde::Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 1 warning emitted
+

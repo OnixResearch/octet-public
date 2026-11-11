@@ -98,9 +98,17 @@ reported pattern:
   enclosing function body and the emitted multipart suggestion covers
   declaration plus every collected use site
 - the `MachineApplicable` promotion for local-variable renames MUST fall back
-  to `MaybeIncorrect` when any collected span originates from macro expansion
-  or when the binding escapes the enclosing function body through a closure
-  capture that the lint cannot rewrite
+  to `MaybeIncorrect` when any collected span originates from macro expansion,
+  when the binding escapes the enclosing function body through a closure
+  capture that the lint cannot rewrite, or when the new name is already bound
+  or resolvable in the enclosing function (a parameter, a local, or an item a
+  `let` pattern would resolve to), since the rename would capture it
+- because the positive name means the opposite of the negated one, the
+  `negated_predicate` local-variable rename MUST also negate the value: the
+  declaration takes the negated initializer and every read becomes a negated
+  read (an existing `!name` collapses to the new name); it MUST fall back to
+  `MaybeIncorrect` for mutable or uninitialized bindings and for bindings that
+  are borrowed explicitly or through method autoref
 - `numeric_units`, `unjustified_allow`, `float_for_currency`, `no_todo`,
   `ambient_clock`, `unbounded_channel`, `explicit_defaults`, `catch_all_on_enum`,
   `multi_lock_ordering`, `compound_condition`, and `unbounded_collection_growth`
@@ -111,6 +119,22 @@ reported pattern:
   `contradictory_time`, and `usize_in_public_api` MUST use `MaybeIncorrect`
   when the suggested change may alter guards, control flow, error propagation,
   or type-width behavior
+- `platform_dependent_cast` MAY use `MachineApplicable` only for casts that
+  std converts losslessly on every platform (`u8`/`u16` to `usize`;
+  `i8`/`i16`/`u8` to `isize`), rewritten to `<target>::from(...)`; it MUST
+  suggest `<target>::try_from(...)?` only when the enclosing body returns a
+  `Result` whose error type converts from the cast's `TryFrom` error, MUST
+  suggest `.ok()?` for `Option` bodies, MUST use `HasPlaceholders` when the
+  failure handling has to be written by the maintainer, and MUST report casts
+  whose cast or operand comes from a macro expansion without a suggestion
+- `unchecked_narrowing` MUST choose the failure handling of its
+  `<target>::try_from(...)` suggestion by the same rules as
+  `platform_dependent_cast`, from the return type of the innermost enclosing
+  function, closure, or async body: `?` only for a `Result` whose error type
+  converts from the cast's `TryFrom` error, `.ok()?` for `Option`, and a
+  `HasPlaceholders` rewrite when the maintainer has to write the failure
+  handling; it MUST offer no suggestion in const contexts or for casts whose
+  cast or operand comes from a macro expansion
 
 #### Scenario: Top-level conjunction gets machine-applicable split
 
@@ -143,7 +167,16 @@ reported pattern:
 - THEN the suggestion is a multipart suggestion covering the declaration span
   and every use of `is_not_ready` within the enclosing function body
 - AND the suggestion uses `MachineApplicable`
+- AND the rewritten declaration is `let is_ready = !false;` and every read of
+  `is_not_ready` becomes `!is_ready`, so each value is unchanged
 - AND the `.fixed` proof compiles without manual edits
+
+#### Scenario: Rename that would capture an existing name stays review-required
+
+- GIVEN `bool_naming` reports `let dirty = cache.is_dirty();` in a function
+  that also takes an `is_dirty` parameter
+- WHEN tigerstyle emits the structured suggestion
+- THEN the suggestion uses `MaybeIncorrect` instead of `MachineApplicable`
 
 #### Scenario: Macro-expanded binding falls back to review-required
 

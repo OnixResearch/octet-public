@@ -10,12 +10,14 @@ const EXPECTED_CURRENT_BASIS_POINTS: u64 = 9_200;
 const PRECISION_NUMERATOR: u64 = 2;
 const PRECISION_DENOMINATOR: u64 = 3;
 const EXPECTED_PRECISION_BASIS_POINTS: u64 = 6_666;
-const OWNER_ONLY_PERMISSIONS: u32 = 0o700;
 const SUPPLIED_PERCENTAGE: f64 = 100.0;
 const COVERED_FIELD: &str = "\"covered\":90";
 const PERCENTAGE_ONLY_FIELD: &str = "\"percent\":90.0";
 const TINY_LOG_LIMIT: usize = 2;
 const TOOL_FAILURE_EXIT: i32 = 7;
+const REAL_LLVM_COV_REPORT: &str =
+    include_str!("../../tests/fixtures/evidence-rails/coverage-native-llvm-cov-0.8.3.json");
+const REAL_REPORT_FILE_COUNT: usize = 2;
 
 #[test]
 fn profile_registry_and_identity_are_fresh() {
@@ -27,6 +29,33 @@ fn profile_registry_and_identity_are_fresh() {
     assert_eq!(profile.metrics, ["lines", "branches", "functions", "regions"]);
     assert!(profile.command_argv.contains(&"--output-path".to_owned()));
     assert!(profile.command_argv.contains(&"--offline".to_owned()));
+    assert!(
+        profile.command_argv.contains(&"--branch".to_owned()),
+        "the branches metric needs cargo-llvm-cov branch instrumentation"
+    );
+}
+
+#[test]
+fn real_cargo_llvm_cov_export_versions_normalize_and_unknown_versions_fail() {
+    // r[verify octet.coverage_baseline.verification]
+    let profile = selected_profile(PROFILE_ID).expect("coverage profile");
+    let normalized =
+        native::normalize(REAL_LLVM_COV_REPORT, &profile, SOURCE_IDENTITY).expect("normalize real export 3.1.0 report");
+    assert_eq!(normalized.file_count, REAL_REPORT_FILE_COUNT);
+    let counts = |metric: MetricCount| (metric.covered, metric.total);
+    assert_eq!(counts(normalized.counts.lines), (3, 4));
+    assert_eq!(counts(normalized.counts.branches), (2, 4));
+    assert_eq!(counts(normalized.counts.functions), (3, 4));
+    assert_eq!(counts(normalized.counts.regions), (14, 19));
+
+    let legacy = native_report(CURRENT_COVERED, TOTAL_COUNT, "cargo-octet/src/lib.rs");
+    assert!(legacy.contains("\"version\":\"2.0.1\""));
+    assert!(native::normalize(&legacy, &profile, SOURCE_IDENTITY).is_ok());
+
+    let unknown = REAL_LLVM_COV_REPORT.replace("\"version\":\"3.1.0\"", "\"version\":\"3.2.0\"");
+    assert_ne!(unknown, REAL_LLVM_COV_REPORT);
+    let diagnostics = native::normalize(&unknown, &profile, SOURCE_IDENTITY).expect_err("unknown version rejected");
+    assert_eq!(diagnostics, ["coverage native report version is unsupported"]);
 }
 
 #[test]
@@ -94,23 +123,40 @@ fn exact_integer_precision_does_not_use_supplied_percentages() {
     assert_eq!(normalized.counts.lines.percentage_basis_points, EXPECTED_PRECISION_BASIS_POINTS);
 }
 
+#[test]
+fn report_without_branch_instrumentation_fails_with_branch_diagnostic() {
+    // r[verify octet.coverage_baseline.verification]
+    let mut report: serde_json::Value =
+        serde_json::from_str(&native_report(CURRENT_COVERED, TOTAL_COUNT, "cargo-octet/src/lib.rs"))
+            .expect("parse native coverage fixture");
+    report["data"][0]["totals"]["branches"] =
+        serde_json::json!({"count": 0, "covered": 0, "notcovered": 0, "percent": 0});
+    let report = serde_json::to_string(&report).expect("serialize zero-branch fixture");
+    let profile = selected_profile(PROFILE_ID).expect("coverage profile");
+    let diagnostics =
+        native::normalize(&report, &profile, SOURCE_IDENTITY).expect_err("zero branch totals are rejected");
+    assert_eq!(diagnostics, [
+        "coverage native report has no branch counts; run cargo llvm-cov with `--branch` so the branches metric is \
+         measured"
+    ]);
+}
+
 #[cfg(unix)]
 #[test]
 fn bounded_native_run_uses_fixed_argv_and_dedicated_report() {
     // r[verify octet.coverage_baseline.profile]
     // r[verify octet.coverage_baseline.boundary]
-    use std::os::unix::fs::PermissionsExt as _;
+    use crate::test_support::write_executable_script;
 
     let directory = tempfile::tempdir().expect("create coverage shell fixture");
     let report = native_report(CURRENT_COVERED, TOTAL_COUNT, "cargo-octet/src/lib.rs");
     let script = directory.path().join("cargo-fixture");
     let config = directory.path().join("cargo-config.toml");
     std::fs::write(&config, "[net]\noffline = true\n").expect("write Cargo config fixture");
-    std::fs::write(&script, format!("#!/bin/sh\nprintf '%s' '{report}' > .octet/coverage/current-native.json\n"))
-        .expect("write coverage executable fixture");
-    let mut permissions = std::fs::metadata(&script).expect("inspect fixture executable").permissions();
-    permissions.set_mode(OWNER_ONLY_PERMISSIONS);
-    std::fs::set_permissions(&script, permissions).expect("make fixture executable");
+    write_executable_script(
+        &script,
+        &format!("#!/bin/sh\nprintf '%s' '{report}' > .octet/coverage/current-native.json\n"),
+    );
 
     let profile = selected_profile(PROFILE_ID).expect("coverage profile");
     let observation = shell::run_with(directory.path(), &profile, shell::RuntimeTools {
@@ -123,7 +169,7 @@ fn bounded_native_run_uses_fixed_argv_and_dedicated_report() {
     assert_eq!(observation.current_text, report);
     assert_eq!(observation.exit_code, 0);
 
-    std::fs::write(&script, "#!/bin/sh\nprintf 'overflow'\n").expect("write output-limit fixture");
+    write_executable_script(&script, "#!/bin/sh\nprintf 'overflow'\n");
     let mut limited_profile = profile.clone();
     limited_profile.max_log_bytes = TINY_LOG_LIMIT;
     let error = shell::run_with(directory.path(), &limited_profile, shell::RuntimeTools {
@@ -135,7 +181,7 @@ fn bounded_native_run_uses_fixed_argv_and_dedicated_report() {
     .expect_err("coverage output limit is rejected");
     assert!(error.contains("did not succeed"));
 
-    std::fs::write(&script, format!("#!/bin/sh\nexit {TOOL_FAILURE_EXIT}\n")).expect("write tool-failure fixture");
+    write_executable_script(&script, &format!("#!/bin/sh\nexit {TOOL_FAILURE_EXIT}\n"));
     let error = shell::run_with(directory.path(), &profile, shell::RuntimeTools {
         cargo: script,
         path: "/bin".into(),

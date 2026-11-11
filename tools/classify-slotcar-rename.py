@@ -97,7 +97,7 @@ def is_compatibility_context(rel: str, line: str) -> bool:
         return True
     if "global `tigerstyle` skill" in line:
         return True
-    if "/path/to/git/slotcar" in line or "/path/to/slotcar" in line:
+    if "~/git/slotcar" in line or "/path/to/slotcar" in line:
         return True
     if line.startswith("TOOL=") and "/slotcar/" in line:
         return True

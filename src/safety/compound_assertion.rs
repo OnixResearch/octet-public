@@ -1,11 +1,16 @@
+use std::ops::Range;
+
+use rustc_ast::BinOpKind;
 use rustc_ast::Expr;
 use rustc_ast::ExprKind;
+use rustc_ast::UnOp;
 use rustc_errors::Applicability;
 use rustc_lint::EarlyContext;
 use rustc_lint::EarlyLintPass;
 use rustc_lint::LintContext;
-use rustc_session::declare_lint_pass;
 use rustc_session::declare_tool_lint;
+use rustc_session::impl_lint_pass;
+use rustc_span::Pos;
 use rustc_span::Span;
 
 use crate::diagnostics::LintSuggestion;
@@ -22,217 +27,213 @@ declare_tool_lint! {
     "compound assertion should be split into separate assertions"
 }
 
-declare_lint_pass!(CompoundAssertion => [COMPOUND_ASSERTION]);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum TopLevelBooleanOp {
-    And,
-    Or,
+#[derive(Default)]
+pub struct CompoundAssertion {
+    /// Expression of the statement entered most recently. The early lint visitor
+    /// runs `check_stmt` immediately before `check_expr` on that expression, so a
+    /// matching id means the expanded `assert!` sits in statement position.
+    statement_expr: Option<rustc_ast::NodeId>,
 }
 
+impl_lint_pass!(CompoundAssertion => [COMPOUND_ASSERTION]);
+
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct TopLevelAssertionSplit {
-    op: TopLevelBooleanOp,
+struct AssertionSplit {
     clauses: Vec<String>,
     has_trailing_semicolon: bool,
 }
 
-/// Scan a macro-call snippet for top-level `&&` or `||` inside `assert!(...)`.
-///
-/// We work from the callsite source text because Dylint does not reliably run
-/// pre-expansion passes. The expanded AST still carries the original macro
-/// callsite span, which lets us re-read the user's source.
-fn has_top_level_compound_assertion(snippet: &str) -> bool {
-    let Some(rest) = snippet.strip_prefix("assert!(") else {
-        return false;
+/// Classify the condition of an expanded `assert!`, which lowers to
+/// `if !condition { panic(...) }`: return the condition when its top-level
+/// operator is `&&` or `||`, together with that operator.
+fn top_level_boolean_condition(cond: &Expr) -> Option<(&Expr, BinOpKind)> {
+    let ExprKind::Unary(UnOp::Not, condition) = &cond.kind else {
+        return None;
     };
-
-    let mut depth = 1usize;
-    let mut chars = rest.chars().peekable();
-
-    while let Some(ch) = chars.next() {
-        match ch {
-            '(' | '[' | '{' => depth += 1,
-            ')' | ']' | '}' => {
-                depth = depth.saturating_sub(1);
-                if depth == 0 {
-                    break;
-                }
-            }
-            '&' if depth == 1 && chars.peek() == Some(&'&') => return true,
-            '|' if depth == 1 && chars.peek() == Some(&'|') => return true,
-            _ => {}
-        }
-    }
-
-    false
+    let ExprKind::Binary(op, _, _) = &condition.kind else {
+        return None;
+    };
+    matches!(op.node, BinOpKind::And | BinOpKind::Or).then_some((&**condition, op.node))
 }
 
-fn top_level_assertion_split(snippet: &str) -> Option<TopLevelAssertionSplit> {
-    let trimmed = snippet.trim();
-    let rest = trimmed.strip_prefix("assert!(")?;
-    let rest = rest.trim_end();
-    let has_trailing_semicolon = rest.ends_with(';');
-    let rest = if has_trailing_semicolon {
-        rest[..rest.len() - 1].trim_end()
-    } else {
-        rest
-    };
-    let body = rest.strip_suffix(')')?;
-    let (op, clauses) = parse_top_level_boolean_clauses(body)?;
+/// Collect the operator spans of the `op` chain rooted at `expr` in source
+/// order, so `a && b && c` yields both `&&` tokens. Operands written by a nested
+/// macro are leaves: their operators are not in the user's source.
+fn collect_operator_spans(expr: &Expr, op: BinOpKind, spans: &mut Vec<Span>) {
+    if expr.span.from_expansion() {
+        return;
+    }
+    if let ExprKind::Binary(bin_op, lhs, rhs) = &expr.kind
+        && bin_op.node == op
+    {
+        collect_operator_spans(lhs, op, spans);
+        spans.push(bin_op.span);
+        collect_operator_spans(rhs, op, spans);
+    }
+}
 
-    Some(TopLevelAssertionSplit {
-        op,
+/// Whether `text` holds a `//` or `/* */` comment outside string and char
+/// literals.
+fn contains_comment(text: &str) -> bool {
+    rustc_lexer::tokenize(text, rustc_lexer::FrontmatterAllowed::No).any(|token| {
+        matches!(token.kind, rustc_lexer::TokenKind::LineComment { .. } | rustc_lexer::TokenKind::BlockComment { .. })
+    })
+}
+
+/// Split the source text of `assert!(condition)` into one clause per operand of
+/// the top-level operator chain. `condition` and `operators` are byte ranges
+/// into `call_text` taken from the parsed condition, so `&&` inside a clause
+/// (a double reference such as `&&expected`) never splits it. Returns `None`
+/// when the call carries a panic message, when a clause holds a comment (a
+/// trailing `//` comment would swallow the clause's closing `)`), or when the
+/// call is not the plain `assert!(...)` shape that a rewrite can reproduce.
+fn split_assertion_call(
+    call_text: &str,
+    condition: Range<usize>,
+    operators: &[Range<usize>],
+) -> Option<AssertionSplit> {
+    let prefix = call_text.get(..condition.start)?;
+    if prefix.trim() != "assert!(" {
+        return None;
+    }
+
+    let suffix = call_text.get(condition.end..)?.trim();
+    let (suffix, has_trailing_semicolon) = match suffix.strip_suffix(';') {
+        Some(rest) => (rest.trim_end(), true),
+        None => (suffix, false),
+    };
+    // Anything but the closing parenthesis, such as `, "message"`, blocks the split.
+    if suffix != ")" {
+        return None;
+    }
+
+    let mut clauses = Vec::with_capacity(operators.len() + 1);
+    let mut start = condition.start;
+    for operator in operators {
+        clauses.push(call_text.get(start..operator.start)?.trim().to_owned());
+        start = operator.end;
+    }
+    clauses.push(call_text.get(start..condition.end)?.trim().to_owned());
+    if clauses.len() < 2 || clauses.iter().any(|clause| clause.is_empty() || contains_comment(clause)) {
+        return None;
+    }
+
+    Some(AssertionSplit {
         clauses,
         has_trailing_semicolon,
     })
 }
 
-fn parse_top_level_boolean_clauses(body: &str) -> Option<(TopLevelBooleanOp, Vec<String>)> {
-    let mut depth = 0usize;
-    let mut start = 0usize;
-    let mut op = None;
-    let mut clauses = Vec::new();
-    let mut chars = body.char_indices().peekable();
-    let mut in_string = false;
-    let mut in_char = false;
-    let mut escaped = false;
-
-    while let Some((idx, ch)) = chars.next() {
-        if in_string {
-            if escaped {
-                escaped = false;
-            } else {
-                match ch {
-                    '\\' => escaped = true,
-                    '"' => in_string = false,
-                    _ => {}
-                }
-            }
-            continue;
-        }
-
-        if in_char {
-            if escaped {
-                escaped = false;
-            } else {
-                match ch {
-                    '\\' => escaped = true,
-                    '\'' => in_char = false,
-                    _ => {}
-                }
-            }
-            continue;
-        }
-
-        match ch {
-            '"' => in_string = true,
-            '\'' => in_char = true,
-            '(' | '[' | '{' => depth += 1,
-            ')' | ']' | '}' => depth = depth.checked_sub(1)?,
-            ',' if depth == 0 => return None,
-            '&' if depth == 0 => {
-                if let Some((next_idx, '&')) = chars.peek().copied() {
-                    chars.next();
-                    if matches!(op, Some(TopLevelBooleanOp::Or)) {
-                        return None;
-                    }
-                    op = Some(TopLevelBooleanOp::And);
-                    clauses.push(body[start..idx].trim().to_owned());
-                    start = next_idx + 1;
-                }
-            }
-            '|' if depth == 0 => {
-                if let Some((next_idx, '|')) = chars.peek().copied() {
-                    chars.next();
-                    if matches!(op, Some(TopLevelBooleanOp::And)) {
-                        return None;
-                    }
-                    op = Some(TopLevelBooleanOp::Or);
-                    clauses.push(body[start..idx].trim().to_owned());
-                    start = next_idx + 1;
-                }
-            }
-            _ => {}
-        }
-    }
-
-    if in_string || in_char || depth != 0 {
-        return None;
-    }
-
-    let op = op?;
-    clauses.push(body[start..].trim().to_owned());
-    if clauses.iter().any(String::is_empty) {
-        return None;
-    }
-
-    Some((op, clauses))
+/// Locate the condition and its operator chain inside the `assert!` callsite and
+/// split the call's source text at those operators.
+fn split_expanded_assertion(
+    callsite: Span,
+    call_text: &str,
+    condition: &Expr,
+    op: BinOpKind,
+) -> Option<AssertionSplit> {
+    let mut operator_spans = Vec::new();
+    collect_operator_spans(condition, op, &mut operator_spans);
+    let base = callsite.lo();
+    let relative =
+        |span: Span| callsite.contains(span).then(|| (span.lo() - base).to_usize()..(span.hi() - base).to_usize());
+    let operators = operator_spans.into_iter().map(relative).collect::<Option<Vec<_>>>()?;
+    split_assertion_call(call_text, relative(condition.span)?, &operators)
 }
 
-fn compound_assertion_suggestion(cx: &EarlyContext<'_>, callsite: Span, snippet: &str) -> Option<LintSuggestion> {
-    let split = top_level_assertion_split(snippet)?;
-    if split.op != TopLevelBooleanOp::And || split.clauses.len() < 2 {
-        return None;
-    }
-
-    let indent = " ".repeat(cx.sess().source_map().lookup_char_pos(callsite.lo()).col.0);
-    let replacement = format!("assert!({})", split.clauses[0]);
-    let mut tail = String::new();
-    for (index, clause) in split.clauses.iter().enumerate().skip(1) {
-        tail.push_str(";\n");
-        tail.push_str(&indent);
-        tail.push_str("assert!(");
-        tail.push_str(clause);
-        tail.push(')');
-        if index + 1 == split.clauses.len() && split.has_trailing_semicolon {
-            tail.push(';');
+fn compound_assertion_suggestion(
+    cx: &EarlyContext<'_>,
+    callsite: Span,
+    split: &AssertionSplit,
+    is_statement: bool,
+) -> LintSuggestion {
+    let (replacement, tail) = if is_statement {
+        let indent = " ".repeat(cx.sess().source_map().lookup_char_pos(callsite.lo()).col.0);
+        let replacement = format!("assert!({})", split.clauses[0]);
+        let mut tail = String::new();
+        for (index, clause) in split.clauses.iter().enumerate().skip(1) {
+            tail.push_str(";\n");
+            tail.push_str(&indent);
+            tail.push_str("assert!(");
+            tail.push_str(clause);
+            tail.push(')');
+            if index + 1 == split.clauses.len() && split.has_trailing_semicolon {
+                tail.push(';');
+            }
         }
-    }
+        (replacement, tail)
+    } else {
+        // Outside statement position (match arm, closure body, ...) no `;` may follow
+        // the call, so keep a single unit-typed block expression.
+        let replacement = format!("{{ assert!({})", split.clauses[0]);
+        let mut tail = String::new();
+        for clause in split.clauses.iter().skip(1) {
+            tail.push_str("; assert!(");
+            tail.push_str(clause);
+            tail.push(')');
+        }
+        tail.push_str(" }");
+        (replacement, tail)
+    };
 
-    Some(LintSuggestion::Multipart {
+    LintSuggestion::Multipart {
         message: "split into separate assertions".to_owned(),
         parts: vec![(callsite, replacement), (callsite.shrink_to_hi(), tail)],
         applicability: Applicability::MachineApplicable,
-    })
+    }
 }
 
 impl EarlyLintPass for CompoundAssertion {
+    fn check_stmt(&mut self, _cx: &EarlyContext<'_>, stmt: &rustc_ast::Stmt) {
+        self.statement_expr = match &stmt.kind {
+            rustc_ast::StmtKind::Expr(expr) | rustc_ast::StmtKind::Semi(expr) => Some(expr.id),
+            _ => None,
+        };
+    }
+
     fn check_expr(&mut self, cx: &EarlyContext<'_>, expr: &Expr) {
         // Only inspect expressions originating from macro expansion.
         if !expr.span.from_expansion() {
             return;
         }
 
-        // Limit to expanded `if` nodes from `assert!` to avoid duplicate
-        // diagnostics on children that share the same callsite.
-        if !matches!(expr.kind, ExprKind::If(..)) {
+        // `assert!(cond)` expands to `if !cond { panic(...) }`. Limiting to that
+        // `if` avoids duplicate diagnostics on children sharing the callsite.
+        let ExprKind::If(cond, _, _) = &expr.kind else {
             return;
-        }
+        };
 
         let callsite = expr.span.source_callsite();
         let source_map = cx.sess().source_map();
         let Ok(snippet) = source_map.span_to_snippet(callsite) else {
             return;
         };
-        let trimmed = snippet.trim();
-
-        if !trimmed.starts_with("assert!(") {
+        if !snippet.trim_start().starts_with("assert!(") {
             return;
         }
 
-        if !has_top_level_compound_assertion(trimmed) {
+        let Some((condition, op)) = top_level_boolean_condition(cond) else {
+            return;
+        };
+        // An operator produced by a nested macro is not in the user's source.
+        if condition.span.from_expansion() || !callsite.contains(condition.span) {
             return;
         }
 
-        if let Some(suggestion) = compound_assertion_suggestion(cx, callsite, trimmed) {
+        let is_statement = self.statement_expr == Some(expr.id);
+        // Only a conjunction splits into assertions that keep its meaning.
+        let split = match op {
+            BinOpKind::And => split_expanded_assertion(callsite, &snippet, condition, op),
+            _ => None,
+        };
+        if let Some(split) = split {
             emit_tiger_style_lint_with_suggestion(
                 cx,
                 COMPOUND_ASSERTION,
                 callsite,
                 "compound assertion should be split into separate assertions",
                 "compound_assertion",
-                suggestion,
+                compound_assertion_suggestion(cx, callsite, &split, is_statement),
             );
         } else {
             emit_tiger_style_lint(
@@ -248,39 +249,34 @@ impl EarlyLintPass for CompoundAssertion {
 
 #[cfg(test)]
 mod tests {
-    use super::TopLevelAssertionSplit;
-    use super::TopLevelBooleanOp;
-    use super::has_top_level_compound_assertion;
-    use super::top_level_assertion_split;
+    use super::AssertionSplit;
+    use super::split_assertion_call;
 
-    #[test]
-    fn detects_top_level_compound_assertion() {
-        assert!(has_top_level_compound_assertion("assert!(a && b)"));
-        assert!(has_top_level_compound_assertion("assert!(a || b)"));
-        assert!(!has_top_level_compound_assertion("assert!(a)"));
-        assert!(!has_top_level_compound_assertion("assert!(items.iter().all(|x| x > 0 && x < 10))"));
-        assert!(!has_top_level_compound_assertion("debug_assert!(a && b)"));
+    /// Split `call_text` with the condition located by text and each 2-byte
+    /// operator given as an offset into the condition.
+    fn split(call_text: &str, condition: &str, operator_offsets: &[usize]) -> Option<AssertionSplit> {
+        let start = call_text.find(condition).expect("condition in call text");
+        let operators: Vec<_> = operator_offsets.iter().map(|offset| start + offset..start + offset + 2).collect();
+        split_assertion_call(call_text, start..start + condition.len(), &operators)
     }
 
     #[test]
-    fn parses_machine_applicable_top_level_conjunction() {
+    fn splits_conjunction_at_operator_offsets() {
         assert_eq!(
-            top_level_assertion_split("assert!(a > 0 && b > 0);"),
-            Some(TopLevelAssertionSplit {
-                op: TopLevelBooleanOp::And,
-                clauses: vec!["a > 0".into(), "b > 0".into()],
+            split("assert!(a > 0 && b > 0 && c);", "a > 0 && b > 0 && c", &[6, 15]),
+            Some(AssertionSplit {
+                clauses: vec!["a > 0".into(), "b > 0".into(), "c".into()],
                 has_trailing_semicolon: true,
             })
         );
     }
 
     #[test]
-    fn parses_top_level_disjunction_without_machine_applicable_fix() {
+    fn keeps_double_reference_inside_its_clause() {
         assert_eq!(
-            top_level_assertion_split("assert!(a > 0 || b > 0)"),
-            Some(TopLevelAssertionSplit {
-                op: TopLevelBooleanOp::Or,
-                clauses: vec!["a > 0".into(), "b > 0".into()],
+            split("assert!(item == &&expected && ready)", "item == &&expected && ready", &[19]),
+            Some(AssertionSplit {
+                clauses: vec!["item == &&expected".into(), "ready".into()],
                 has_trailing_semicolon: false,
             })
         );
@@ -288,6 +284,31 @@ mod tests {
 
     #[test]
     fn rejects_message_bearing_assertions_for_machine_applicable_fix() {
-        assert_eq!(top_level_assertion_split("assert!(a > 0 && b > 0, \"boom\")"), None);
+        assert_eq!(split("assert!(a > 0 && b > 0, \"boom\")", "a > 0 && b > 0", &[6]), None);
+    }
+
+    #[test]
+    fn rejects_a_condition_without_an_operator() {
+        assert_eq!(split("assert!(ready)", "ready", &[]), None);
+    }
+
+    #[test]
+    fn rejects_clauses_with_comments() {
+        assert_eq!(
+            split(
+                "assert!(\n    ready // set by init\n        && done\n)",
+                "ready // set by init\n        && done",
+                &[29]
+            ),
+            None
+        );
+        assert_eq!(split("assert!(ready /* init */ && done)", "ready /* init */ && done", &[17]), None);
+        assert_eq!(
+            split("assert!(path == \"a//b\" && done)", "path == \"a//b\" && done", &[15]),
+            Some(AssertionSplit {
+                clauses: vec!["path == \"a//b\"".into(), "done".into()],
+                has_trailing_semicolon: false,
+            })
+        );
     }
 }

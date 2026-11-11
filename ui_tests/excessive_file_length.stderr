@@ -10,5 +10,20 @@ LL | | pub fn oversized_policy_module() -> u64 { 1 }
    = note: see Tiger Style guide: File Length
    = note: `#[warn(tigerstyle::excessive_file_length)]` on by default
 
-warning: 1 warning emitted
+warning: source file is 350 lines (limit: 300)
+  --> $ROOT/ui_tests/../policy_inputs/registry/oversized_registry_module.rs:1:1
+   |
+LL | / // oversized production-like policy input in an ordinary `registry` module directory
+LL | | pub fn registry_module_item_001() -> u64 { 1 }
+LL | | pub fn registry_module_item_002() -> u64 { 1 }
+LL | | pub fn registry_module_item_003() -> u64 { 1 }
+...  |
+LL | | pub fn registry_module_item_348() -> u64 { 1 }
+LL | | pub fn registry_module_item_349() -> u64 { 1 }
+   | |_______________________________________________^
+   |
+   = help: Tiger Style (File Length): split oversized source files along module or responsibility boundaries Example: mod parser; mod planner; mod executor;
+   = note: see Tiger Style guide: File Length
+
+warning: 2 warnings emitted
 

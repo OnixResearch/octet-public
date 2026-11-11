@@ -7,7 +7,7 @@
 - Register every config/receipt family in `standards/policies/registry.ncl` under `config_receipt_families` as `nickel-authored`, `rust-derived`, or `non-candidate`; keep generated artifacts covered by `octet-artifact-manifest.json` freshness checks.
 
 ## Downstream rollout evidence
-- Use `openspec/changes/archive/2026-04-13-aspen-consumer-rollout/` as the canonical Aspen phase-1 starter-rollout reference. Current `/path/to/git/aspen` scripts may already include later scope and lint promotions. Replay helpers and checkpoint notes must cite that archive path explicitly, not just a local Aspen worktree.
+- Use `openspec/changes/archive/2026-04-13-aspen-consumer-rollout/` as the canonical Aspen phase-1 starter-rollout reference. Current `~/git/aspen` scripts may already include later scope and lint promotions. Replay helpers and checkpoint notes must cite that archive path explicitly, not just a local Aspen worktree.
 - Repo `.gitignore` ignores `/.pi`; shareable project-local pi skills for this repo belong under `.agents/skills/`, not `.pi/skills/`.
 - Consumer rollout guidance now lives in `docs/downstream-rollout.md`, with the active copyable consumer config in `templates/dylint.toml`.
 - Historical wrapper default `../tigerstyle` only worked when the consumer repo was a direct sibling of `tigerstyle`; nested consumers like `mc/valence` needed wrapper-side auto-detection (for example `../../tigerstyle`) or an explicit `TIGERSTYLE_PATH`.
@@ -20,7 +20,7 @@
 - Archiving one change can also stale cross-change examples in other archived markdown or synced main specs that named that change's old active path; after archiving, grep `openspec/` for `openspec/changes/<change>/` and decide whether any collateral references should move to the archive path too.
 - If a saved replay narrows the enabled lint set through per-lint config, make the transcript self-describing by patching the copied wrapper banner for that run or saving the applied `dylint.toml` snapshot alongside the log.
 - If a completed rollout task claims the consumer template changed, archive a small artifact or verification note that shows the exact `templates/dylint.toml` hunk; a diffstat-only mention is not enough for review.
-- For repeated first-class consumer evidence runs, prefer `nix build .#cargo-tigerstyle` and reuse the wrapped `cargo-tigerstyle` binary from the Nix store; it already pins `TIGERSTYLE_TOOLCHAIN`, `TIGERSTYLE_DRIVER_PATH`, and `TIGERSTYLE_LINT_LIB`, so repeated Aspen probes do not rebuild the driver or lint library each run.
+- For repeated first-class consumer evidence runs, prefer `nix build .#cargo-tigerstyle` and reuse the wrapped `cargo-tigerstyle` binary from the Nix store; it already pins `OCTET_TOOLCHAIN`, `OCTET_DRIVER_PATH`, and `OCTET_LINT_LIB`, so repeated Aspen probes do not rebuild the driver or lint library each run.
 - Saved check helpers must assert every printed summary claim, including zero-warning claims like `aspen-hlc: 0 starter findings`.
 - If a transcript starts with `$ bash ...`, store and document the capture helper or exact shell wrapper that emits that preamble; do not claim a quieter inner helper produced it.
 - When a reviewable fix depends on `cargo test --test ui -- --ignored --nocapture`, save that ignored-run transcript under the change evidence path; a generic `cargo test --lib --test ui` artifact is not enough for newly added UI fixtures.
@@ -57,14 +57,19 @@
 - The custom `tests/ui.rs` harness now supports snapshot refresh via `BLESS=1 cargo test --test ui -- --ignored --nocapture`; use it inside `nix develop` when updating `.stderr` files.
 - `tests/ui.rs` now also has ignored rail `autofix_machine_applicable`; it discovers every checked-in `ui_tests/*.fixed`, runs `cargo fix` in a temporary Cargo crate with the built tigerstyle Dylint wrapper, compares the result to the `.fixed` file, reruns `cargo fix` to prove idempotence, then reruns `cargo check` and asserts zero warnings remain.
 
-## OpenSpec workflow
-- Repo-local OpenSpec task guidance now lives at `openspec/templates/tasks.md`; active changes should dogfood that `I<n>` / `V<n>` / `H<n>` shape and end with `## Verification Coverage`.
+## Legacy OpenSpec workflow
+
+Use this section only for a repository-approved legacy OpenSpec task. For native changes, preserve the Cairn layout and required gates.
+
+- Repo-local OpenSpec task guidance lives at `openspec/templates/tasks.md`; active changes should dogfood that `I<n>` / `V<n>` / `H<n>` shape and end with `## Verification Coverage`.
 - `I<n>` tasks are implementation-only units; if a checkbox text says `verify`, `save`, `capture`, `evidence=`, or names an `evidence/` path, split that work into `V<n>` or `H<n>` instead.
 - `## Verification Coverage` is scenario-based, not artifact-based: every added or modified scenario heading gets its own row even when multiple rows point at one shared transcript.
 - `H<n>` tasks must carry all four replay fields: `command=`, `input=`, `asserts=`, and `evidence=`.
 - For OpenSpec gate-fixture proof here, keep the committed fixture under `tests/fixtures/openspec-task-governance/`, temporarily copy it into `openspec/changes/<fixture-name>/` before calling `openspec_gate`, then remove the temporary active change after saving the transcript.
-- Shell-launched `pi -p` helpers that rely on `openspec_gate` need explicit `-e ~/.pi/agent/extensions/openspec-gates.ts`; default non-interactive pi startup may omit that tool.
-- When cross-family gate reruns are blocked by reviewer quota or current conversation context causes recursive missing-evidence findings, temporarily switch to `reviewer_selection off` and run a fresh `pi --no-session -e ~/.pi/agent/extensions/openspec-gates.ts -p "Call the openspec_gate tool ... Print the full result."`; same-family review avoids the exhausted Claude lane and keeps the transcript free of current-session prompt leakage.
+- Before a legacy `openspec_gate` run, verify that the required extension exists and exposes the tool. If unavailable, report the gate blocker. Do not substitute another gate or disable review policy.
+- Shell-launched `pi -p` helpers for that gate need explicit `-e ~/.pi/agent/extensions/openspec-gates.ts`. For Pueue tasks without input, append `</dev/null` so Pi receives stdin EOF.
+- If reviewer quota blocks a gate, record the exact blocker. Keep the required reviewer policy unchanged.
+- If conversation context contaminates review, use a fresh session. Keep the required policy and explicit repository target unchanged. Use `pi --no-session -e ~/.pi/agent/extensions/openspec-gates.ts -p "Call the openspec_gate tool ... Print the full result." </dev/null`. Keep the required gate blocked until fresh output shows that it passed.
 - `openspec archive` can create a new main spec with a placeholder `## Purpose` line (`TBD - created by archiving change ...`); replace that placeholder before committing the archive.
 - If a change links contributor docs back to an existing canonical main spec (for example `openspec/specs/performance/spec.md`), say explicitly in the proposal that the main spec already exists and the link targets that canonical file rather than the change-local delta path, or proposal/design gates may treat the spec path as unresolved.
 - When a change requires saved deterministic proof artifacts under `evidence/`, make the spec/design name each artifact's exact expected output, not just the file path; gate review treats path-only artifact requirements as underspecified.

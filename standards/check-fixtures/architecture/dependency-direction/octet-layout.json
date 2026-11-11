@@ -1,0 +1,13 @@
+{
+  "packages": [
+    { "id": "core", "name": "tigerstyle-core", "manifest_path": "/workspace/crates/tigerstyle-core/Cargo.toml" },
+    { "id": "shell", "name": "tigerstyle-std", "manifest_path": "/workspace/crates/tigerstyle-std/Cargo.toml" }
+  ],
+  "resolve": {
+    "nodes": [
+      { "id": "core", "deps": [] },
+      { "id": "shell", "deps": [{ "pkg": "core", "dep_kinds": [{ "kind": null }] }] }
+    ]
+  },
+  "workspace_members": ["core", "shell"]
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "cairn.receipt.v1",
+  "valid": true,
+  "result": {
+    "ok": true,
+    "count": 2
+  },
+  "command": "test-diff-baseline"
+}

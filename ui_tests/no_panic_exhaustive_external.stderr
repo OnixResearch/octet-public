@@ -1,5 +1,5 @@
 warning: `unreachable!` will abort the process on execution
-  --> $DIR/no_panic_exhaustive_external.rs:10:14
+  --> $DIR/no_panic_exhaustive_external.rs:11:14
    |
 LL |         _ => unreachable!("external enum should still warn"),
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

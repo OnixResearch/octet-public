@@ -8,5 +8,23 @@ LL |         _ => unreachable!("Mode::B still reaches this arm"),
    = note: see Tiger Style guide: Error Handling / Panics
    = note: `#[warn(tigerstyle::no_panic)]` on by default
 
-warning: 1 warning emitted
+warning: `unreachable!` will abort the process on execution
+  --> $DIR/no_panic_exhaustive.rs:39:14
+   |
+LL |         _ => unreachable!("Payload::Number(1) still reaches this arm"),
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `unreachable!` will abort the process on execution
+  --> $DIR/no_panic_exhaustive.rs:48:14
+   |
+LL |         _ => unreachable!("Payload::Named with id 0 still reaches this arm"),
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: 3 warnings emitted
 

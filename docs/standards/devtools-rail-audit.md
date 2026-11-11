@@ -9,7 +9,7 @@ standards checker moved into the `octet` repo.
 | `octet.devtools.deny-warnings` | rustc / Clippy | crate-level `#![deny(clippy::all)]`, `#![deny(clippy::pedantic)]`, and `cargo clippy --workspace --all-targets -- -D warnings` |
 | `octet.devtools.formatting` | rustfmt | `rustfmt.toml`, `cargo fmt --all --check`, and flake `fmt` check |
 | `octet.devtools.documentation-gates` | rustc | crate-level `#![deny(missing_docs)]` for Rust crate roots |
-| `octet.devtools.lint-suppressions` | `octet-standards` | suppression parser validates policy ID, source section, owner, rationale, review trigger, safer default, and narrow scope; flake `standards-fixtures` proves compliant and noncompliant fixture behavior |
+| `octet.devtools.lint-suppressions` | `octet-standards` | suppression parser validates policy ID, source section, owner, rationale, review trigger, safer default, and narrow scope; valid suppressions move only the covered policy/path/line diagnostic into `suppressed_diagnostics`; flake `standards-fixtures` proves compliant, noncompliant, and hard-rule suppression fixture behavior |
 | `octet.architecture.fcis-crate-boundary` | `octet-standards` | architecture fixtures prove the FCIS source-shape checker without coupling it to the Dylint crate |
 | `octet.idioms.thin-forwarder-verifier` | Tiger Style lints | `.#cargo-octet` wrapper supplies `clang`, `mold`, `pkg-config`, and the pinned Rust toolchain |
 

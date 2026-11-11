@@ -24,12 +24,17 @@ evidence. It is not a correctness, safety, or verification claim.
 
 ## Rollback
 
-Pointer updates write receipts with the previous hash. Roll back a bad pointer
-move without mutating either target hash:
+Pointer updates write receipts with the previous hash and artifact kind. Roll
+back a bad pointer move without mutating either target hash:
 
 ```sh
 cargo octet roadmap pointer rollback --registry review-registry.json --receipt update.json
 ```
+
+Rollback restores both the previous hash and its artifact kind. It refuses
+(exit code 2, registry unchanged) when the label no longer points at the
+receipt's new target, so replaying an old receipt cannot silently revert later
+pointer updates; roll back the most recent receipt first.
 
 Pointer history keeps the previous immutable target visible for review. Missing
 labels should fail strict validation with the missing label and expected target

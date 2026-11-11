@@ -51,15 +51,15 @@ pub fn average_bytes(
     total_bytes: u64,
     completed_operations: u64,
 ) -> Result<u64, AverageBytesError> {
-    if completed_operations == 0 {
-        return Err(AverageBytesError::NoCompletedOperations);
+    if completed_operations > 0 {
+        Ok(total_bytes / completed_operations)
+    } else {
+        Err(AverageBytesError::NoCompletedOperations)
     }
-
-    Ok(total_bytes / completed_operations)
 }
 ```
 
-The bounded remediation rationale is direct: name the zero-operation case and reject it before division. The function remains pure and easy to test.
+The bounded remediation rationale is direct: name the zero-operation case and reject it before division. The guarded `if`/`else` form is used deliberately because the public walkthrough runner recognizes an enclosing zero guard; the newer development lint also accepts an early return, but the public source pin predates that recognition. The function remains pure and easy to test.
 
 ## Save and verify local evidence
 

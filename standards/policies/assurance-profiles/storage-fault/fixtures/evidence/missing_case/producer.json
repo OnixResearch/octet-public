@@ -1,0 +1,20 @@
+{
+  "schema_version": "octet-storage-fault-producer-receipt/v1",
+  "producer": "chaoscontrol",
+  "source_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "candidate_blake3": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "claim_scope": "bounded-observation",
+  "cases": [
+    {
+      "case_id": "clean-write-sync",
+      "outcome": "passed"
+    },
+    {
+      "case_id": "uncertain-commit",
+      "outcome": "passed"
+    }
+  ],
+  "non_claims": [
+    "Saved producer evidence covers only the declared cases and recorded outcomes; it does not prove filesystem, device, or hardware durability."
+  ]
+}

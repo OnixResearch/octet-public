@@ -31,10 +31,37 @@ fn later_assert(x: u64) -> u32 {
     narrowed
 }
 
+fn signed_upper_assert_only(x: i64) -> u32 {
+    // Should warn: negative values pass the upper-bound assert and wrap
+    assert!(x <= u32::MAX as i64);
+    x as u32
+}
+
+fn signed_both_asserts(x: i64) -> u32 {
+    // Should NOT warn: earlier same-block asserts prove both target bounds
+    assert!(x >= 0);
+    assert!(x <= u32::MAX as i64);
+    x as u32
+}
+
+#[allow(platform_dependent_cast)]
+fn asserted_usize_narrow(x: usize) -> u32 {
+    // Should NOT warn: earlier same-block assert proves bound
+    assert!(x <= u32::MAX as usize);
+    x as u32
+}
+
+fn unasserted_usize_narrow(x: usize) -> u32 {
+    // Should warn: no bound on the `usize` source
+    x as u32
+}
+
 fn main() {
     asserted_narrow(100);
     unrelated_assert(100, 100);
     shadowed_assert(100);
     wrong_bound_shape(100);
+    signed_upper_assert_only(100);
+    signed_both_asserts(100);
     later_assert(100);
 }

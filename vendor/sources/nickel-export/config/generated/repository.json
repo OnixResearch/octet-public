@@ -1,0 +1,37 @@
+{
+  "evaluator": {
+    "identity": "nixpkgs:nickel",
+    "import_path_policy": "declared_only",
+    "version": "nickel-lang-cli-1.17.0"
+  },
+  "license": "AGPL-3.0-or-later",
+  "name": "nickel-export",
+  "non_claims": [
+    "No Nickel evaluation occurs in nickel-export-core.",
+    "A receipt does not prove evaluator equivalence, deployability, build success, product-policy conformance, or release eligibility.",
+    "Declared-only external evaluator receipts do not claim an evaluator-observed dependency closure."
+  ],
+  "packages": [
+    "nickel-export-core",
+    "nickel-export"
+  ],
+  "release_checks": [
+    "cargo-test",
+    "cargo-clippy",
+    "cargo-format",
+    "core-no-std-host",
+    "core-no-std-wasm",
+    "cairn-policy",
+    "nickel-contracts",
+    "cli-e2e",
+    "fixture-freshness"
+  ],
+  "repository": "https://github.com/OnixResearch/nickel-export",
+  "schemas": [
+    "onix-nickel-export-request/v1",
+    "onix-nickel-export-diagnostic/v1",
+    "onix-nickel-export-shell-error/v1",
+    "onix-nickel-export-receipt/v1",
+    "onix-nickel-export-manifest/v1"
+  ]
+}

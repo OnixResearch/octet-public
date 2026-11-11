@@ -1,5 +1,9 @@
 // r[impl octet.benchmark_evidence.comparison]
-use super::*;
+use super::ComparisonPolicy;
+use super::ComparisonResult;
+use super::PerformanceComparison;
+use super::RunSet;
+use super::Sample;
 
 const BASIS_POINTS_SCALE: u128 = 10_000;
 const MEDIAN_PAIR_WIDTH: usize = 2;

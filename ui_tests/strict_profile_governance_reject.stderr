@@ -1,0 +1,109 @@
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:6:1
+   |
+LL | #![allow(tigerstyle::structure)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:9:1
+   |
+LL | #[allow(tigerstyle::structure)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:19:1
+   |
+LL | #[allow(tigerstyle::structure)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:23:1
+   |
+LL | #[allow(unjustified_allow)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[expect(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:27:1
+   |
+LL | #[expect(tigerstyle::unjustified_allow)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[warn(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:31:1
+   |
+LL | #[warn(unjustified_no_todo_allow)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:35:1
+   |
+LL | #[allow(tigerstyle::safety)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:55:11
+   |
+LL | module!(#[allow(tigerstyle::structure)] forwarded {});
+   |           ^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:58:10
+   |
+LL | leveled!(allow forwarded_level);
+   |          ^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:61:1
+   |
+LL | #[/**/allow(tigerstyle::structure)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:67:9
+   |
+LL |         #[allow(tigerstyle::structure)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[warn(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:82:1
+   |
+LL | #[warn(tigerstyle::safety)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[warn(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:88:1
+   |
+LL | #[warn(tigerstyle::safety)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:96:9
+   |
+LL |         #[allow(tigerstyle::structure)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:105:27
+   |
+LL |         #[cfg_attr(all(), allow(tigerstyle::structure))]
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:114:9
+   |
+LL |         #[allow(tigerstyle::structure)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[warn(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_reject.rs:122:9
+   |
+LL |         #[warn(tigerstyle::safety)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+LL | repeated_attributes!(lowered_by_invocation);
+   | ------------------------------------------- in this macro invocation
+   |
+   = note: this error originates in the macro `repeated_attributes` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: aborting due to 17 previous errors
+

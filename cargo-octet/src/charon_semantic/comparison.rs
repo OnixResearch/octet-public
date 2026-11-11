@@ -17,6 +17,7 @@ const STATUS_DISAGREE: &str = "disagree";
 const STATUS_CHARON_ONLY: &str = "charon-only";
 const STATUS_SOURCE_TOKEN_ONLY: &str = "source-token-only";
 const STATUS_UNKNOWN: &str = "unknown";
+const FACT_VALUE_SEPARATOR: &str = ", ";
 
 pub(crate) fn compare(
     projection: &SemanticProjection,
@@ -77,10 +78,10 @@ fn validate_parents(parents: &[ComparisonParent]) -> Vec<String> {
             if fact.item.trim().is_empty() || fact.fact.trim().is_empty() || fact.value.trim().is_empty() {
                 diagnostics.push(format!("comparison parent `{}` contains an empty fact field", parent.authority));
             }
-            if !facts.insert((fact.item.clone(), fact.fact.clone())) {
+            if !facts.insert((fact.item.clone(), fact.fact.clone(), fact.value.clone())) {
                 diagnostics.push(format!(
-                    "comparison parent `{}` contains duplicate fact `{}` for `{}`",
-                    parent.authority, fact.fact, fact.item
+                    "comparison parent `{}` contains duplicate fact `{}` value `{}` for `{}`",
+                    parent.authority, fact.fact, fact.value, fact.item
                 ));
             }
         }
@@ -94,16 +95,29 @@ fn projection_facts(
 ) -> BTreeMap<(String, String), String> {
     let mut facts = BTreeMap::new();
     for item in &projection.items {
-        facts.insert((item.qualified_name.clone(), "item-presence".to_owned()), "present".to_owned());
-        facts.insert((item.qualified_name.clone(), "control-flow".to_owned()), item.control_flow.clone());
+        insert_fact(&mut facts, &item.qualified_name, "item-presence", "present");
+        insert_fact(&mut facts, &item.qualified_name, "control-flow", &item.control_flow);
     }
     for edge in &projection.edges {
-        facts.insert((edge.from.clone(), edge.kind.clone()), edge.to.clone());
+        insert_fact(&mut facts, &edge.from, &edge.kind, &edge.to);
     }
     for candidate in candidates {
-        facts.insert((candidate.item.clone(), "effect-candidate".to_owned()), candidate.candidate.clone());
+        insert_fact(&mut facts, &candidate.item, "effect-candidate", &candidate.candidate);
     }
+    render_fact_values(facts)
+}
+
+fn insert_fact(facts: &mut BTreeMap<(String, String), BTreeSet<String>>, item: &str, fact: &str, value: &str) {
+    facts.entry((item.to_owned(), fact.to_owned())).or_default().insert(value.to_owned());
+}
+
+/// Multi-valued facts (several edges or effect candidates for one item) compare as their
+/// sorted, de-duplicated value set so no value is dropped and input order cannot change a row.
+fn render_fact_values(facts: BTreeMap<(String, String), BTreeSet<String>>) -> BTreeMap<(String, String), String> {
     facts
+        .into_iter()
+        .map(|(key, values)| (key, values.into_iter().collect::<Vec<_>>().join(FACT_VALUE_SEPARATOR)))
+        .collect()
 }
 
 fn compare_parent(
@@ -111,21 +125,20 @@ fn compare_parent(
     source_identity: &str,
     parent: &ComparisonParent,
 ) -> Vec<ComparisonRow> {
-    let parent_facts = parent
-        .facts
-        .iter()
-        .map(|fact| ((fact.item.clone(), fact.fact.clone()), fact.value.clone()))
-        .collect::<BTreeMap<_, _>>();
+    let mut grouped_parent_facts = BTreeMap::new();
+    for fact in &parent.facts {
+        insert_fact(&mut grouped_parent_facts, &fact.item, &fact.fact, &fact.value);
+    }
+    let parent_facts = render_fact_values(grouped_parent_facts);
     if parent.source_identity != source_identity {
-        return parent
-            .facts
-            .iter()
-            .map(|fact| ComparisonRow {
+        return parent_facts
+            .into_iter()
+            .map(|((item, fact), parent_value)| ComparisonRow {
                 parent_authority: parent.authority.clone(),
-                item: fact.item.clone(),
-                fact: fact.fact.clone(),
-                charon_value: charon_facts.get(&(fact.item.clone(), fact.fact.clone())).cloned(),
-                parent_value: Some(fact.value.clone()),
+                charon_value: charon_facts.get(&(item.clone(), fact.clone())).cloned(),
+                item,
+                fact,
+                parent_value: Some(parent_value),
                 status: STATUS_UNKNOWN.to_owned(),
             })
             .collect();
@@ -172,6 +185,7 @@ fn summarize(rows: &[ComparisonRow]) -> ComparisonSummary {
 mod tests {
     use super::*;
     use crate::charon_semantic::model::ComparisonFact;
+    use crate::charon_semantic::model::SemanticEdge;
     use crate::charon_semantic::model::SemanticItem;
     use crate::charon_semantic::model::SourceIdentity;
     use crate::charon_semantic::model::TargetMetadata;
@@ -280,5 +294,92 @@ mod tests {
         };
         let diagnostics = compare(&projection(), &[], SOURCE_IDENTITY, &[parent]).expect_err("duplicates must fail");
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("duplicate fact")));
+    }
+
+    fn source_token_parent(facts: &[(&str, &str, &str)]) -> ComparisonParent {
+        ComparisonParent {
+            schema_version: COMPARISON_PARENT_SCHEMA.to_owned(),
+            authority: SOURCE_TOKEN_AUTHORITY.to_owned(),
+            identity: PARENT_IDENTITY.to_owned(),
+            source_identity: SOURCE_IDENTITY.to_owned(),
+            facts: facts
+                .iter()
+                .map(|(item, fact, value)| ComparisonFact {
+                    item: (*item).to_owned(),
+                    fact: (*fact).to_owned(),
+                    value: (*value).to_owned(),
+                })
+                .collect(),
+        }
+    }
+
+    fn candidate(name: &str) -> EffectCandidate {
+        EffectCandidate {
+            item: "fixture::root".to_owned(),
+            candidate: name.to_owned(),
+            evidence: format!("explicit {name} construct"),
+        }
+    }
+
+    fn row<'a>(report: &'a SemanticComparison, fact: &str) -> &'a ComparisonRow {
+        report
+            .rows
+            .iter()
+            .find(|row| row.item == "fixture::root" && row.fact == fact)
+            .expect("comparison row should exist")
+    }
+
+    #[test]
+    fn multi_edge_items_compare_every_edge_target() {
+        let mut projection = projection();
+        for target in ["fixture::b", "fixture::a"] {
+            for kind in ["local-call", "item-dependency"] {
+                projection.edges.push(SemanticEdge {
+                    from: "fixture::root".to_owned(),
+                    to: target.to_owned(),
+                    kind: kind.to_owned(),
+                });
+            }
+        }
+        let parent = source_token_parent(&[
+            ("fixture::root", "local-call", "fixture::a"),
+            ("fixture::root", "local-call", "fixture::b"),
+            ("fixture::root", "item-dependency", "fixture::a"),
+        ]);
+        let report = compare(&projection, &[], SOURCE_IDENTITY, &[parent])
+            .expect("repeated parent facts with distinct values should validate")
+            .expect("comparison should exist");
+        let local_call = row(&report, "local-call");
+        assert_eq!(local_call.charon_value.as_deref(), Some("fixture::a, fixture::b"));
+        assert_eq!(local_call.parent_value.as_deref(), Some("fixture::a, fixture::b"));
+        assert_eq!(local_call.status, STATUS_AGREE);
+        let dependency = row(&report, "item-dependency");
+        assert_eq!(dependency.charon_value.as_deref(), Some("fixture::a, fixture::b"));
+        assert_eq!(dependency.parent_value.as_deref(), Some("fixture::a"));
+        assert_eq!(dependency.status, STATUS_DISAGREE);
+    }
+
+    #[test]
+    fn multi_candidate_items_are_order_independent() {
+        let parent = source_token_parent(&[("fixture::root", "effect-candidate", "panic")]);
+        let panic_last = compare(
+            &projection(),
+            &[candidate("drop"), candidate("panic")],
+            SOURCE_IDENTITY,
+            std::slice::from_ref(&parent),
+        )
+        .expect("comparison should validate")
+        .expect("comparison should exist");
+        let drop_last =
+            compare(&projection(), &[candidate("panic"), candidate("panic"), candidate("drop")], SOURCE_IDENTITY, &[
+                parent,
+            ])
+            .expect("comparison should validate")
+            .expect("comparison should exist");
+        assert_eq!(panic_last, drop_last);
+        let effect = row(&panic_last, "effect-candidate");
+        assert_eq!(effect.charon_value.as_deref(), Some("drop, panic"));
+        assert_eq!(effect.parent_value.as_deref(), Some("panic"));
+        assert_eq!(effect.status, STATUS_DISAGREE);
     }
 }

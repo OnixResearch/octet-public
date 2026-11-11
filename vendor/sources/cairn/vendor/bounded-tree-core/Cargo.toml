@@ -1,0 +1,14 @@
+[package]
+name = "bounded-tree-core"
+description = "Pure bounded filesystem-tree admission and copy planning"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+publish = false
+repository = "rad:zqhtZvsteJhxCJE96dMAZSZ9y1PX"
+rust-version = "1.85.0"
+version = "0.1.0"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]

@@ -12,7 +12,6 @@
         "-runs=100000",
         "-seed=1"
       ],
-      "compiler_identity": "nix:fenix-nightly-2026-03-21-x86_64-unknown-linux-gnu",
       "corpus_dir": "fuzz/corpus/octet-profile-intake",
       "dictionary_path": "",
       "engine": "libfuzzer",
@@ -29,6 +28,7 @@
         "Cargo-fuzz evidence covers one target, seed, corpus, sanitizer, and bounded run; it is not exhaustive coverage, memory-safety proof, panic-freedom proof, or release eligibility.",
         "A clean bounded run does not prove that undiscovered crashes do not exist."
       ],
+      "rustc_commit_hash": "ac7f9ec7da74d37fd28667c86bf117a39ba5b02a",
       "sanitizer": "address",
       "seed": 1,
       "target": "octet-profile-intake",
@@ -50,15 +50,18 @@
     },
     {
       "allowed_commands": [
-        "cargo test --cfg loom"
+        "cargo test"
       ],
+      "command_env": {
+        "RUSTFLAGS": "--cfg loom"
+      },
       "expected_signal": "passed",
       "name": "loom-concurrency",
       "non_claim": "Loom evidence covers the selected model and bounds only and is not exhaustive runtime verification.",
       "not_default": true,
       "risk_class": "bounded concurrency schedule exploration",
       "timing": "suspected-bug",
-      "tool": "cargo test with loom cfg"
+      "tool": "cargo test with RUSTFLAGS=--cfg loom"
     },
     {
       "allowed_commands": [

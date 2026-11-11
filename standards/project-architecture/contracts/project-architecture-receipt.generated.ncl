@@ -35,7 +35,7 @@ let EffectClosureParent = {
 } in
 {
   ProjectArchitectureReceipt = {
-    schema_version | OneOf ["octet-project-architecture-receipt/v1"],
+    schema_version | OneOf ["octet-project-architecture-receipt/v3"],
     receipt_id | Blake3,
     project_id | NonEmptyString,
     mode | Mode,
@@ -44,6 +44,7 @@ let EffectClosureParent = {
     checker_id | NonEmptyString,
     policy_source_blake3 | Blake3,
     policy_blake3 | Blake3,
+    waiver_policy_blake3 | Blake3,
     lint_phase_status | OneOf ["clean", "warning-only", "lint-failure", "integration-failure"],
     command_blake3 | Blake3,
     cargo_graph_id | Blake3,
@@ -63,6 +64,15 @@ let EffectClosureParent = {
     authorized_effect_type_ids | Array Blake3,
     findings | Array Finding,
     unknown_ids | Array Blake3,
+    test_only | std.contract.from_predicate (fun value =>
+      value == null || (std.is_record value
+        && std.record.has_field "unit_ids" value
+        && std.record.has_field "fact_ids" value
+        && std.record.has_field "unknown_ids" value
+        && std.is_array value.unit_ids && std.array.all (fun id => std.is_string id && std.string.length id == 64) value.unit_ids
+        && std.is_array value.fact_ids && std.array.all (fun id => std.is_string id && std.string.length id == 64) value.fact_ids
+        && std.is_array value.unknown_ids && std.array.all (fun id => std.is_string id && std.string.length id == 64) value.unknown_ids)
+    ),
     applied_waiver_ids | Array Blake3,
     effect_closure | Dyn,
     non_claims | Array NonEmptyString,

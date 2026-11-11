@@ -63,6 +63,18 @@ The gate MUST evaluate direct and configured transitive dependency edges against
 - WHEN dependency evaluation runs
 - THEN the gate MUST emit a forbidden outward-edge or construction diagnostic
 
+#### Scenario: Adapter construction is wrapped in a result
+
+- GIVEN a domain core or application shell calls an adapter constructor returning `Result<Self, _>`, `Option<_>`, `Box<_>`, or `Arc<_>`
+- WHEN construction evaluation runs
+- THEN the gate MUST emit the construction diagnostic for the adapter type held by value in the result
+
+#### Scenario: Adapter use is not adapter construction
+
+- GIVEN an adapter or shell borrows, locks, pins, iterates, moves, or clones a shared handle to an injected adapter, or calls a generic function that returns an adapter value it received
+- WHEN construction evaluation runs
+- THEN the gate MUST NOT emit a construction diagnostic for that adapter type
+
 #### Scenario: Composition root selects adapters
 
 - GIVEN a declared composition root constructs permitted inbound and outbound adapters and supplies them to the application shell
@@ -143,6 +155,7 @@ r[octet.project_architecture_gate.admission]
 r[octet.project_architecture_gate.waivers]
 
 The gate MUST apply only exact current architecture waivers after stable finding IDs are computed.
+Finding IDs, compiler unit identities, and the waiver policy identity MUST NOT depend on the policy's waiver list, so adding a waiver cannot make itself stale.
 
 #### Scenario: Exact waiver marks one finding
 
@@ -207,3 +220,86 @@ The implementation MUST include positive and negative fixtures for orchestration
 - WHEN integrated validation runs
 - THEN strict positive fixtures MUST pass deterministically
 - AND each bypass fixture MUST block with its declared diagnostic class
+
+### Requirement: Authorization identities follow protected effect declarations
+r[octet.project_architecture_gate.authority_scoped_receipt_ids]
+
+Receipt verification MUST require nonempty authorization fact and type identity arrays when at least one outbound-effect classification is protected.
+An unprotected-only effect list MUST NOT require protected authorization identities.
+The authority discriminator MUST control this requirement, independently of declaration order and optional protocol payload presence.
+Receipt identity, schema, evidence tier, parent bindings, required non-claims, and architecture findings MUST retain their existing checks.
+Successful self-verification MUST NOT promote an unprotected effect to authorized execution or establish a passing architecture phase.
+
+#### Scenario: Unprotected receipt has no protected identities
+
+- GIVEN a complete valid architecture evaluation with only unprotected outbound effects
+- WHEN the producer emits empty authorization identity arrays and the receipt is serialized and read back
+- THEN receipt self-verification MUST succeed and preserve the complete classification and non-claims
+
+#### Scenario: Protected requirement survives a mixed effect list
+
+- GIVEN a protected or mixed effect list with a current receipt identity
+- WHEN either authorization identity array is empty
+- THEN verification MUST reject the receipt regardless of declaration order or optional protocol payload presence
+
+#### Scenario: Unprotected classification does not bypass other checks
+
+- GIVEN separate cases with a tampered receipt, a missing required non-claim, or an actual unclassified outbound effect
+- WHEN receipt verification or architecture evaluation checks the affected boundary
+- THEN the corresponding identity, claim-boundary, or effect-classification check MUST reject that case
+
+### Requirement: Integration-test roles are compiler-bound
+r[octet.project_architecture_gate.test_ownership]
+
+A selected independent Cargo integration-test unit MAY use an explicit matching test source role.
+Its source root, target kind, configuration, and membership MUST be bound to compiler selection and checked during artifact replay.
+Library and binary test configurations MUST retain their production roles.
+Missing roots, test-looking names, and conflicting production source roles MUST remain blocking.
+Test-only observations MUST remain covered and explicitly disposed as non-production evidence.
+They MUST NOT discharge production architecture obligations. Shared production observations MUST NOT be hidden.
+The full selected lint and compilation scope MUST remain enabled.
+Production evidence MUST retain valid references after partitioning; missing test-only subjects MUST NOT become skipped production checks.
+The receipt MUST bind its test-only disposition and the unchanged full-input identities. Artifact replay MUST compare the complete disposition.
+No-std evidence MUST come from the active compiler-parsed crate attribute and retain each observing unit's membership.
+
+#### Scenario: Independent tests coexist with production units
+
+- GIVEN explicit integration-test source roles and complete compiler-bound production and test observations
+- WHEN the gate evaluates production architecture
+- THEN integration tests MUST remain covered with separate dispositions and production findings MUST remain visible
+
+#### Scenario: A production unit imports test-labelled source
+
+- GIVEN a production library, binary, or their test configuration imports test-labelled source
+- WHEN ownership is checked
+- THEN the source-role conflict MUST block regardless of filename or unit ordering
+
+#### Scenario: Test evidence attempts to satisfy production obligations
+
+- GIVEN test-only witnesses, ports, no-std facts, or unknowns and shared production observations
+- WHEN architecture evaluation and artifact replay run
+- THEN test-only evidence MUST NOT satisfy production obligations or hide required production unknowns
+
+#### Scenario: A resealed receipt changes its test-only disposition
+
+- GIVEN unchanged compiler inputs and a changed disposition with refreshed receipt, phase-status, and provenance hashes
+- WHEN the full artifact bundle is replayed
+- THEN reevaluation MUST reject the changed disposition even if receipt self-verification succeeds
+
+#### Scenario: A production import uses a parent-relative path or source alias
+
+- GIVEN test-labelled source imported through a parent-relative path or source symlink
+- WHEN source ownership is established
+- THEN physical workspace ownership MUST remain visible or collection MUST reject before emitting an accepted architecture result
+
+#### Scenario: Crate configuration differs between production and test observations
+
+- GIVEN active, inactive, library-test-disabled, or integration-only no-std attributes
+- WHEN compiler configuration evidence is collected
+- THEN only units with the active parsed crate attribute MUST receive no-std facts, and test-only facts MUST NOT satisfy production obligations
+
+#### Scenario: A package-scoped no-std obligation binds library units
+
+- GIVEN a `core_no_std` obligation that names a domain-core package with a build script, binary, example, or bench target
+- WHEN the obligation is evaluated
+- THEN the package's library and library-test units MUST each carry the active no-std fact, and its other targets MUST NOT be required to carry it

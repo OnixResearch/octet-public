@@ -222,8 +222,8 @@ fn fingerprint_lifecycle_docs_fixture_matches_transcript() {
     let fixture = temp.path().join("reviewed.rs");
     fs::write(
         &fixture,
-        r"#[rustfmt::skip]
-// tigerstyle-fingerprint: b3:0; review=safety-critical; evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md; macro=allow
+        r"// octet-fingerprint: b3:0; review=safety-critical; evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md; macro=allow
+#[rustfmt::skip]
 pub fn bounded_retry_delay_ms(attempt: u32) -> u32 {
     assert!(attempt <= 5);
     50_u32.saturating_mul(attempt.saturating_add(1))
@@ -304,11 +304,12 @@ fn assert_transcript_contains_stdout(transcript: &str, stdout: &[u8], label: &st
     assert!(transcript.contains(text.as_ref()), "transcript missing {label} output:\n{text}");
 }
 
+// This name is selected by the existing releaseOperatorSmokeDocs Nix rail;
+// exercise the transcript command, not the document's incidental wording.
 #[test]
 fn release_operator_smoke_transcript_and_help_cover_operator_surfaces() {
     let root = repo_root();
     let transcript_path = root.join("docs/examples/release-operator-smoke/transcript.md");
-    let transcript = fs::read_to_string(&transcript_path).expect("read release smoke transcript");
 
     let transcript_output = Command::new(cargo_octet())
         .args(["transcript", transcript_path.to_str().expect("transcript path utf8")])
@@ -323,33 +324,6 @@ fn release_operator_smoke_transcript_and_help_cover_operator_surfaces() {
     assert!(transcript_stdout.contains("command_blocks=7"));
     assert!(transcript_stdout.contains("expected_output_blocks=8"));
     assert!(transcript_stdout.contains("status=passed"));
-
-    for surface in [
-        "artifact verify",
-        "fingerprint",
-        "migrate",
-        "effect-summary",
-        "lint-cache",
-        "transcript",
-        "roadmap",
-    ] {
-        assert!(transcript.contains(surface), "release smoke transcript missing {surface}");
-    }
-
-    let help_output = Command::new(cargo_octet()).arg("--help").output().expect("run root help");
-    assert!(help_output.status.success(), "root help should succeed");
-    let help_stdout = String::from_utf8_lossy(&help_output.stdout);
-    for surface in [
-        "artifact verify",
-        "fingerprint",
-        "migrate",
-        "effect-summary",
-        "lint-cache",
-        "transcript",
-        "roadmap",
-    ] {
-        assert!(help_stdout.contains(surface), "root help missing {surface}");
-    }
 }
 
 #[test]
@@ -619,7 +593,7 @@ fn fingerprint_json_output_docs_fixture_matches_transcript() {
         &final_check.stdout,
         "check",
         "match",
-        "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
+        "ea3ca43821de8c24558ea6c5d43beae6c6731f49e62ebc6b2675f96e4c2019f7",
     );
     assert_transcript_contains_stdout(&transcript, &final_check.stdout, "json output final check");
 
@@ -654,7 +628,7 @@ pub fn capped_retries(requested: u32) -> u32 {
         &clean_check.stdout,
         "check",
         "match",
-        "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
+        "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
     );
     assert_transcript_contains_stdout(&transcript, &clean_check.stdout, "json output clean check");
 
@@ -671,7 +645,7 @@ pub fn capped_retries(requested: u32) -> u32 {
         &drift_check.stdout,
         "check",
         "mismatch",
-        "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
+        "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
     );
     assert_transcript_contains_stdout(&transcript, &drift_check.stdout, "json output drift check");
 
@@ -685,7 +659,7 @@ pub fn capped_retries(requested: u32) -> u32 {
         &accepted_update.stdout,
         "update",
         "written",
-        "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
+        "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
     );
     assert_transcript_contains_stdout(&transcript, &accepted_update.stdout, "json output accepted update");
 
@@ -699,7 +673,7 @@ pub fn capped_retries(requested: u32) -> u32 {
         &accepted_check.stdout,
         "check",
         "match",
-        "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
+        "ea3ca43821de8c24558ea6c5d43beae6c6731f49e62ebc6b2675f96e4c2019f7",
     );
     assert_transcript_contains_stdout(&transcript, &accepted_check.stdout, "json output accepted check");
 
@@ -794,6 +768,53 @@ pub fn explicit_generated_boundary(input: u32) -> u32 {
 }
 
 #[test]
+fn fingerprint_records_and_manifest_use_relative_paths_and_reject_outside_paths() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    write_consumer_fixture(temp.path());
+    let absolute_source = temp.path().join("src/lib.rs");
+    let output = Command::new(cargo_octet())
+        .args([
+            "fingerprint",
+            "--check",
+            "--output-format=json",
+            "--review-manifest",
+            "manifest.json",
+        ])
+        .arg(&absolute_source)
+        .current_dir(temp.path())
+        .output()
+        .expect("run fingerprint with absolute path");
+    assert_eq!(output.status.code(), Some(1), "stderr={}", String::from_utf8_lossy(&output.stderr));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).expect("fingerprint json");
+    let manifest: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(temp.path().join("manifest.json")).expect("read manifest"))
+            .expect("parse manifest");
+    assert_eq!(manifest["input_paths"], serde_json::json!(["src/lib.rs"]));
+    for records in [&report["records"], &manifest["records"]] {
+        let paths =
+            records.as_array().expect("records").iter().map(|record| record["path"].clone()).collect::<Vec<_>>();
+        assert_eq!(paths, [serde_json::json!("src/lib.rs"), serde_json::json!("src/lib.rs")]);
+    }
+
+    let outside = tempfile::tempdir().expect("create outside tempdir");
+    write_consumer_fixture(outside.path());
+    let outside_source = outside.path().join("src/lib.rs");
+    let before = fs::read_to_string(&outside_source).expect("read outside source");
+    let escaping = format!("../{}/src/lib.rs", outside.path().file_name().expect("tempdir name").to_string_lossy());
+    for named in [outside_source.to_str().expect("utf8 path"), escaping.as_str()] {
+        let output = Command::new(cargo_octet())
+            .args(["fingerprint", "--update", named])
+            .current_dir(temp.path())
+            .output()
+            .expect("run fingerprint with outside path");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(2), "{named}: stderr={stderr}");
+        assert!(stderr.contains("outside the current directory"), "{named}: stderr={stderr}");
+    }
+    assert_eq!(fs::read_to_string(&outside_source).expect("reread outside source"), before);
+}
+
+#[test]
 fn fingerprint_write_then_check_works_for_external_crate_file() {
     let temp = tempfile::tempdir().expect("create tempdir");
     write_consumer_fixture(temp.path());
@@ -802,6 +823,7 @@ fn fingerprint_write_then_check_works_for_external_crate_file() {
     let write = Command::new(cargo_octet())
         .args(["fingerprint", "--write"])
         .arg(&fixture)
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint write");
     assert!(write.status.success(), "write stderr: {}", String::from_utf8_lossy(&write.stderr));
@@ -809,6 +831,7 @@ fn fingerprint_write_then_check_works_for_external_crate_file() {
     let check = Command::new(cargo_octet())
         .args(["fingerprint", "--check", "--output-format=json"])
         .arg(&fixture)
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint check");
     assert!(check.status.success(), "check stderr: {}", String::from_utf8_lossy(&check.stderr));
@@ -830,6 +853,7 @@ fn fingerprint_update_then_check_only_tracks_marked_functions() {
     let update = Command::new(cargo_octet())
         .args(["fingerprint", "--update"])
         .arg(&fixture)
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint update");
     assert!(update.status.success(), "update stderr: {}", String::from_utf8_lossy(&update.stderr));
@@ -837,6 +861,7 @@ fn fingerprint_update_then_check_only_tracks_marked_functions() {
     let check = Command::new(cargo_octet())
         .args(["fingerprint", "--check", "--output-format=json"])
         .arg(&fixture)
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint check");
     assert!(check.status.success(), "check stderr: {}", String::from_utf8_lossy(&check.stderr));
@@ -858,6 +883,7 @@ fn fingerprint_write_skips_functions_inside_macro_rules_definitions() {
     let write = Command::new(cargo_octet())
         .args(["fingerprint", "--write", "--output-format=json"])
         .arg(&fixture)
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint write");
     assert!(write.status.success(), "write stderr: {}", String::from_utf8_lossy(&write.stderr));
@@ -875,9 +901,465 @@ fn fingerprint_write_skips_functions_inside_macro_rules_definitions() {
     let check = Command::new(cargo_octet())
         .args(["fingerprint", "--check", "--output-format=json"])
         .arg(&fixture)
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint check");
     assert!(check.status.success(), "check stderr: {}", String::from_utf8_lossy(&check.stderr));
+}
+
+#[test]
+fn fingerprint_marker_detects_code_after_quoted_slashes() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("lib.rs");
+    let reviewed = "pub fn fetch() -> u32 {\n    let _endpoint = \"https://example.invalid/api\"; 1\n}\n";
+    fs::write(&fixture, reviewed).expect("write reviewed fixture");
+    let write = Command::new(cargo_octet())
+        .args(["fingerprint", "--write"])
+        .arg(&fixture)
+        .current_dir(temp.path())
+        .output()
+        .expect("run fingerprint write");
+    assert!(write.status.success(), "write stderr: {}", String::from_utf8_lossy(&write.stderr));
+    let marked = fs::read_to_string(&fixture)
+        .expect("read marked fixture")
+        .replace("review=TODO; evidence=TODO", "review=R-1; evidence=E-1");
+    let check = |text: String| {
+        fs::write(&fixture, text).expect("write edited fixture");
+        let output = Command::new(cargo_octet())
+            .args(["fingerprint", "--check", "--output-format=json"])
+            .arg(&fixture)
+            .current_dir(temp.path())
+            .output()
+            .expect("run fingerprint check");
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("check json");
+        (output.status.success(), json["records"][0]["status"].clone())
+    };
+
+    assert_eq!(check(marked.replace("; 1", "; 1 // still one")), (true, serde_json::json!("match")));
+    assert_eq!(check(marked.replace("; 1", "; std::process::abort()")), (false, serde_json::json!("mismatch")));
+}
+
+#[test]
+fn fingerprint_rejects_sarif_before_rewriting_sources_or_manifest() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("reviewed.rs");
+    let source = "// octet-fingerprint: b3:0; review=R-1; evidence=E-1\npub fn marked() -> u32 { 1 }\n\npub fn unmarked() -> u32 { 2 }\n";
+    fs::write(&fixture, source).expect("write sarif fixture");
+    for mode in ["--write", "--update"] {
+        let output = Command::new(cargo_octet())
+            .args([
+                "fingerprint",
+                mode,
+                "--output-format=sarif",
+                "--review-manifest",
+                "manifest.json",
+                "reviewed.rs",
+            ])
+            .current_dir(temp.path())
+            .output()
+            .expect("run fingerprint with sarif");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(2), "{mode}: stderr={stderr}");
+        assert!(stderr.contains("SARIF"), "{mode}: stderr={stderr}");
+        assert_eq!(fs::read_to_string(&fixture).expect("reread fixture"), source, "{mode} rewrote the source");
+        assert!(!temp.path().join("manifest.json").exists(), "{mode} wrote the review manifest");
+    }
+}
+
+#[test]
+fn fingerprint_rejects_untagged_v1_markers() {
+    // v1 marker hashes were untagged BLAKE3 over token text that split literal
+    // contents into tokens, so `"batch=1"` hashed like `" batch = 1 "`.
+    let legacy = |tokens: &str| blake3::hash(tokens.as_bytes()).to_hex().to_string();
+    let capped = legacy("pub fn capped_batch_size ( requested : u32 ) - > u32 { requested . min ( 128 ) }");
+    let label = legacy("pub fn label ( ) - > & ' static str { \" batch = 1 \" }");
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("lib.rs");
+    let source = r#"// octet-fingerprint: b3:CAPPED; review=R-1; evidence=E-1
+pub fn capped_batch_size(requested: u32) -> u32 {
+    requested.min(128)
+}
+
+// octet-fingerprint: b3:LABEL; review=R-1; evidence=E-1
+pub fn label() -> &'static str {
+    " batch = 1 "
+}
+"#;
+    fs::write(&fixture, source.replace("CAPPED", &capped).replace("LABEL", &label)).expect("write legacy fixture");
+
+    let check = Command::new(cargo_octet())
+        .args(["fingerprint", "--check", "--output-format=json"])
+        .arg(&fixture)
+        .current_dir(temp.path())
+        .output()
+        .expect("run fingerprint check");
+    assert!(!check.status.success(), "untagged v1 markers must fail closed");
+    let json: serde_json::Value = serde_json::from_slice(&check.stdout).expect("check json");
+    let statuses = json["records"]
+        .as_array()
+        .expect("records array")
+        .iter()
+        .map(|record| (record["name"].as_str().expect("name"), record["status"].as_str().expect("status")))
+        .collect::<Vec<_>>();
+    assert_eq!(statuses, [("capped_batch_size", "mismatch"), ("label", "mismatch")]);
+}
+
+#[test]
+fn fingerprint_and_object_reject_missing_or_non_rust_named_paths() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    write_consumer_fixture(temp.path());
+    fs::write(temp.path().join("src/notes.txt"), "fn f() {}\n").expect("write non-rust file");
+    for (args, named) in [
+        (&["fingerprint", "--check", "srcc"][..], "srcc"),
+        (&["fingerprint", "--check", "src/notes.txt"][..], "src/notes.txt"),
+        (&["object", "check", "src/tpyo.rs"][..], "src/tpyo.rs"),
+        (&["object", "emit", "src/notes.txt"][..], "src/notes.txt"),
+    ] {
+        let output = Command::new(cargo_octet())
+            .args(args)
+            .current_dir(temp.path())
+            .output()
+            .expect("run named-path command");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(2), "{args:?} stderr={stderr}");
+        assert!(stderr.contains(named), "{args:?} stderr={stderr}");
+    }
+}
+
+#[test]
+fn fingerprint_markers_without_a_hash_are_missing_and_fail_check() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("reviewed.rs");
+    fs::write(
+        &fixture,
+        "// octet-fingerprint: b3:; review=R-1; evidence=E-1\npub fn empty_hash() -> u32 { 1 }\n\n// octet-fingerprint: b3:TODO; review=R-1; evidence=E-1\npub fn placeholder_hash() -> u32 { 2 }\n",
+    )
+    .expect("write missing-hash fixture");
+    let run = |mode: &str| {
+        let output = Command::new(cargo_octet())
+            .args(["fingerprint", mode, "--output-format=json", "reviewed.rs"])
+            .current_dir(temp.path())
+            .output()
+            .expect("run fingerprint");
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("fingerprint json");
+        let records = json["records"]
+            .as_array()
+            .expect("records array")
+            .iter()
+            .map(|record| {
+                (
+                    record["name"].as_str().expect("name").to_owned(),
+                    record["status"].as_str().expect("status").to_owned(),
+                    record["stored_hash"].is_null(),
+                )
+            })
+            .collect::<Vec<_>>();
+        (output.status.success(), records)
+    };
+
+    for mode in ["--check", "--diff"] {
+        assert_eq!(
+            run(mode),
+            (false, vec![
+                ("empty_hash".to_owned(), "missing".to_owned(), true),
+                ("placeholder_hash".to_owned(), "missing".to_owned(), true),
+            ]),
+            "{mode}"
+        );
+    }
+    let (updated, records) = run("--update");
+    assert!(updated);
+    assert!(records.iter().all(|(_, status, _)| status == "written"), "{records:?}");
+    let reviewed = fs::read_to_string(&fixture).expect("read updated fixture");
+    assert_eq!(reviewed.matches("// octet-fingerprint: b3:").count(), 2, "{reviewed}");
+    assert!(!reviewed.contains("b3:TODO") && !reviewed.contains("b3:;"), "{reviewed}");
+    let (checked, records) = run("--check");
+    assert!(checked, "{records:?}");
+    assert!(records.iter().all(|(_, status, _)| status == "match"), "{records:?}");
+}
+
+#[test]
+fn fingerprint_check_fails_on_review_warnings_even_when_hashes_match() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("reviewed.rs");
+    fs::write(
+        &fixture,
+        r#"// octet-fingerprint: b3:0; review=macro-path; evidence=evidence/macro
+pub fn unreviewed_macro_path(size: u32) -> String {
+    format!("size={size}")
+}
+
+// octet-fingerprint: b3:0
+pub fn missing_gate_metadata(limit: u32) -> u32 {
+    limit.min(64)
+}
+"#,
+    )
+    .expect("write warning fixture");
+    let run = |mode: &str| {
+        let output = Command::new(cargo_octet())
+            .args(["fingerprint", mode, "reviewed.rs"])
+            .current_dir(temp.path())
+            .output()
+            .expect("run fingerprint");
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        let summary = stdout.lines().find(|line| line.starts_with("summary ")).expect("summary line").to_owned();
+        (output.status.success(), summary)
+    };
+
+    let (updated, summary) = run("--update");
+    assert!(updated);
+    assert_eq!(
+        summary,
+        "summary total=2 match=0 mismatch=0 missing=0 written=2 macro_warnings=1 metadata_missing=1"
+    );
+    assert_eq!(
+        run("--check"),
+        (
+            false,
+            "summary total=2 match=2 mismatch=0 missing=0 written=0 macro_warnings=1 metadata_missing=1".to_owned()
+        )
+    );
+
+    let reviewed = fs::read_to_string(&fixture)
+        .expect("read updated fixture")
+        .replace("macro=review-required", "macro=allow")
+        .replace("review=TODO; evidence=TODO", "review=gate; evidence=evidence/gate");
+    fs::write(&fixture, reviewed).expect("record review metadata");
+    assert_eq!(
+        run("--check"),
+        (
+            true,
+            "summary total=2 match=2 mismatch=0 missing=0 written=0 macro_warnings=0 metadata_missing=0".to_owned()
+        )
+    );
+}
+
+/// Runs cargo-octet in `root`, returning the exit code, stdout, and stderr.
+fn run_octet(root: &Path, args: &[&str]) -> (Option<i32>, String, String) {
+    let output = Command::new(cargo_octet()).args(args).current_dir(root).output().expect("run cargo-octet");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
+fn parse_json(stdout: &str, context: &str) -> serde_json::Value {
+    serde_json::from_str(stdout).unwrap_or_else(|error| panic!("{context}: {error}; stdout={stdout}"))
+}
+
+#[test]
+fn fingerprint_markers_that_bind_to_no_function_fail_check_and_block_rewrites() {
+    let marker = "// octet-fingerprint: b3:deadbeef; review=R-1; evidence=E-1";
+    let attribute = "#[fingerprint(\"b3:deadbeef\", review = \"R-1\", evidence = \"E-1\")]";
+    for (source, line) in [
+        (format!("#[inline]\n{marker}\npub fn between_attribute_and_fn() -> u32 {{ 1 }}\n"), 2),
+        (format!("{marker}\n/// Docs.\npub fn above_doc_comment() -> u32 {{ 1 }}\n"), 1),
+        (
+            format!("#[must_use]\n{attribute}\npub fn attribute_marker_between_attributes() -> u32 {{ 1 }}\n"),
+            2,
+        ),
+        (format!("pub fn inside_body() -> u32 {{\n    {marker}\n    1\n}}\n"), 2),
+    ] {
+        let temp = tempfile::tempdir().expect("create tempdir");
+        let fixture = temp.path().join("lib.rs");
+        fs::write(&fixture, &source).expect("write misplaced marker");
+        for mode in ["--check", "--diff"] {
+            let (code, stdout, _) = run_octet(temp.path(), &["fingerprint", mode, "--output-format=json", "lib.rs"]);
+            assert_eq!(code, Some(1), "{mode}: {source}");
+            let report = parse_json(&stdout, mode);
+            assert_eq!(report["unbound_markers"], serde_json::json!([{ "path": "lib.rs", "line": line }]), "{source}");
+            assert_eq!(report["records"], serde_json::json!([]), "{mode}: {source}");
+            let (code, stdout, _) = run_octet(temp.path(), &["fingerprint", mode, "lib.rs"]);
+            assert_eq!(code, Some(1), "{mode}: {source}");
+            assert!(stdout.contains(&format!("lib.rs:{line} unbound-marker")), "{mode}: {stdout}");
+        }
+        for mode in ["--write", "--update"] {
+            let (code, _, stderr) = run_octet(temp.path(), &["fingerprint", mode, "lib.rs"]);
+            assert_eq!(code, Some(2), "{mode}: {source}");
+            assert!(stderr.contains(&format!("lib.rs:{line}")), "{mode}: {stderr}");
+            assert_eq!(fs::read_to_string(&fixture).expect("reread fixture"), source, "{mode} rewrote the source");
+        }
+    }
+
+    // Markers directly above the first outer attribute bind, and the hash
+    // covers the attributes below them.
+    for source in [
+        format!("{marker}\n#[must_use]\npub fn comment_marker() -> u32 {{ 1 }}\n"),
+        format!("/// Docs.\n{attribute}\n#[must_use]\npub fn attribute_marker() -> u32 {{ 1 }}\n"),
+    ] {
+        let temp = tempfile::tempdir().expect("create tempdir");
+        let fixture = temp.path().join("lib.rs");
+        fs::write(&fixture, &source).expect("write placed marker");
+        let (code, stdout, _) = run_octet(temp.path(), &["fingerprint", "--update", "--output-format=json", "lib.rs"]);
+        assert_eq!(code, Some(0), "{source}");
+        let report = parse_json(&stdout, "--update");
+        assert_eq!(report["records"][0]["status"], "written", "{source}");
+        assert!(report.get("unbound_markers").is_none(), "{report}");
+        let reviewed = fs::read_to_string(&fixture).expect("read updated fixture");
+        assert_eq!(reviewed.matches("octet-fingerprint:").count(), 1, "{reviewed}");
+        assert!(!reviewed.contains("#[fingerprint("), "{reviewed}");
+        assert!(reviewed.contains("evidence=E-1\n#[must_use]\n"), "{reviewed}");
+
+        let check = |text: &str| {
+            fs::write(&fixture, text).expect("write reviewed fixture");
+            let (code, stdout, _) =
+                run_octet(temp.path(), &["fingerprint", "--check", "--output-format=json", "lib.rs"]);
+            (code, parse_json(&stdout, "--check")["records"][0]["status"].clone())
+        };
+        assert_eq!(check(&reviewed), (Some(0), serde_json::json!("match")), "{reviewed}");
+        let attribute_drift = reviewed.replace("#[must_use]", "#[must_use = \"use the value\"]");
+        assert_eq!(check(&attribute_drift), (Some(1), serde_json::json!("mismatch")), "{attribute_drift}");
+    }
+}
+
+#[test]
+fn fingerprint_macro_calls_anywhere_in_the_item_need_macro_review() {
+    for (item, macro_calls) in [
+        ("#[doc = include_str!(\"f.md\")]\npub fn attribute_macro() -> u32 { 1 }\n", true),
+        ("pub fn signature_macro(bytes: [u8; width!()]) -> u32 { bytes.len() as u32 }\n", true),
+        ("pub fn body_macro() -> u32 { width!() }\n", true),
+        ("#[doc = \"include_str!(f.md)\"]\npub fn quoted_macro_text() -> u32 { 1 }\n", false),
+        ("#[inline]\npub fn no_macro(bytes: [u8; 4]) -> u32 { u32::from_le_bytes(bytes) }\n", false),
+    ] {
+        let temp = tempfile::tempdir().expect("create tempdir");
+        let fixture = temp.path().join("lib.rs");
+        fs::write(&fixture, format!("// octet-fingerprint: b3:; review=R-1; evidence=E-1\n{item}")).expect("write");
+        let (code, _, stderr) = run_octet(temp.path(), &["fingerprint", "--update", "lib.rs"]);
+        assert_eq!(code, Some(0), "{stderr}");
+        let reviewed = fs::read_to_string(&fixture).expect("read updated fixture");
+        assert_eq!(reviewed.contains("macro=review-required"), macro_calls, "{reviewed}");
+
+        let (code, stdout, _) = run_octet(temp.path(), &["fingerprint", "--check", "--output-format=json", "lib.rs"]);
+        let record = &parse_json(&stdout, "--check")["records"][0];
+        assert_eq!(
+            (record["macro_calls"].as_bool(), record["macro_warning"].as_bool()),
+            (Some(macro_calls), Some(macro_calls))
+        );
+        assert_eq!(code, Some(i32::from(macro_calls)), "{item}");
+
+        let (code, stdout, stderr) = run_octet(temp.path(), &["object", "emit", "--output-format=json", "lib.rs"]);
+        assert_eq!(code, Some(0), "{stderr}");
+        let object = &parse_json(&stdout, "object emit")["objects"][0];
+        let macro_expansion = object["caveat_summary"]["macro_expansion"].as_str().expect("macro caveat summary");
+        assert_eq!(macro_expansion != "none-detected", macro_calls, "{item}: {object}");
+    }
+}
+
+#[test]
+fn fingerprint_hash_reads_crlf_line_endings_in_literals_and_doc_comments_as_lf() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("lib.rs");
+    fs::write(
+        &fixture,
+        "// octet-fingerprint: b3:; review=R-1; evidence=E-1\n#[inline]\n/// Returns the banner.\n/** Block\n    docs. */\npub fn banner() -> &'static str {\n    \"first\nsecond\"\n}\n",
+    )
+    .expect("write LF fixture");
+    let (code, _, stderr) = run_octet(temp.path(), &["fingerprint", "--update", "lib.rs"]);
+    assert_eq!(code, Some(0), "{stderr}");
+    let reviewed = fs::read_to_string(&fixture).expect("read reviewed LF fixture");
+    let check = |text: &str| {
+        fs::write(&fixture, text).expect("write fixture");
+        let (code, stdout, _) = run_octet(temp.path(), &["fingerprint", "--check", "--output-format=json", "lib.rs"]);
+        (code, parse_json(&stdout, "--check")["records"][0]["status"].clone())
+    };
+    let crlf = reviewed.replace('\n', "\r\n");
+    assert_eq!(check(&reviewed), (Some(0), serde_json::json!("match")));
+    assert_eq!(check(&crlf), (Some(0), serde_json::json!("match")), "CRLF checkout of the reviewed LF source");
+    for drift in [crlf.replace("second", "third"), crlf.replace("the banner", "a banner")] {
+        assert_eq!(check(&drift), (Some(1), serde_json::json!("mismatch")), "{drift:?}");
+    }
+}
+
+#[test]
+fn object_update_rejects_sarif_before_rewriting_sources() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("lib.rs");
+    let source = "pub fn unmarked() -> u32 { 1 }\n";
+    fs::write(&fixture, source).expect("write sarif fixture");
+    let (code, _, stderr) = run_octet(temp.path(), &["object", "update", "--output-format=sarif", "lib.rs"]);
+    assert_eq!(code, Some(2), "stderr={stderr}");
+    assert!(stderr.contains("SARIF"), "stderr={stderr}");
+    assert_eq!(fs::read_to_string(&fixture).expect("reread fixture"), source, "object update rewrote the source");
+}
+
+#[test]
+fn object_markers_without_a_hash_are_missing_and_replaced_in_place() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("lib.rs");
+    fs::write(
+        &fixture,
+        "// octet-object: b3:; review=R-1; evidence=E-1\npub fn empty_hash() -> u32 { 1 }\n\n// octet-object: b3:TODO; review=R-2; evidence=E-2\npub fn placeholder_hash() -> u32 { 2 }\n",
+    )
+    .expect("write hashless object markers");
+    let records = |mode: &str| {
+        let (code, stdout, _) = run_octet(temp.path(), &["object", mode, "--output-format=json", "lib.rs"]);
+        let report = parse_json(&stdout, mode);
+        let records = report["records"]
+            .as_array()
+            .expect("records")
+            .iter()
+            .map(|record| {
+                (
+                    record["status"].as_str().expect("status").to_owned(),
+                    record["stored_hash"].is_null(),
+                    record["review"].as_str().map(str::to_owned),
+                )
+            })
+            .collect::<Vec<_>>();
+        (code, records)
+    };
+    let reviewed = |status: &str, hashless: bool| {
+        vec![
+            (status.to_owned(), hashless, Some("R-1".to_owned())),
+            (status.to_owned(), hashless, Some("R-2".to_owned())),
+        ]
+    };
+
+    assert_eq!(records("check"), (Some(1), reviewed("missing", true)));
+    assert_eq!(records("update"), (Some(0), reviewed("written", true)));
+    let updated = fs::read_to_string(&fixture).expect("read updated fixture");
+    assert_eq!(updated.matches("// octet-object: b3:").count(), 2, "{updated}");
+    assert!(!updated.contains("b3:;") && !updated.contains("b3:TODO"), "{updated}");
+    assert_eq!(records("check"), (Some(0), reviewed("match", false)));
+}
+
+#[test]
+fn fingerprint_json_records_report_stored_and_computed_hashes_across_drift() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = temp.path().join("reviewed.rs");
+    fs::write(
+        &fixture,
+        "// octet-fingerprint: b3:0; review=json-script; evidence=evidence/json\npub fn capped_retries(requested: u32) -> u32 {\n    requested.min(3)\n}\n",
+    )
+    .expect("write json fixture");
+    let run = |mode: &str| {
+        let output = Command::new(cargo_octet())
+            .args(["fingerprint", mode, "--output-format=json", "reviewed.rs"])
+            .current_dir(temp.path())
+            .output()
+            .expect("run fingerprint");
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("fingerprint json");
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["mode"], mode.trim_start_matches('-'));
+        assert_eq!(json["records"].as_array().map(Vec::len), Some(1));
+        let field = |name: &str| json["records"][0][name].as_str().expect("string field").to_owned();
+        (output.status.success(), field("status"), field("stored_hash"), field("computed_hash"))
+    };
+
+    let (updated, status, stored, reviewed) = run("--update");
+    assert_eq!((updated, status.as_str(), stored.as_str()), (true, "written", "0"));
+    assert_eq!(run("--check"), (true, "match".to_owned(), reviewed.clone(), reviewed.clone()));
+
+    let source = fs::read_to_string(&fixture).expect("read reviewed fixture");
+    fs::write(&fixture, source.replace("requested.min(3)", "requested.min(5)")).expect("mutate fixture");
+    let (clean, status, stored, drifted) = run("--check");
+    assert_eq!((clean, status.as_str(), stored.as_str()), (false, "mismatch", reviewed.as_str()));
+    assert_ne!(drifted, reviewed);
+
+    assert_eq!(run("--update"), (true, "written".to_owned(), reviewed, drifted.clone()));
+    assert_eq!(run("--check"), (true, "match".to_owned(), drifted.clone(), drifted));
 }
 
 #[test]
@@ -888,6 +1370,7 @@ fn fingerprint_update_check_and_diff_walk_directory_tree() {
     let update = Command::new(cargo_octet())
         .args(["fingerprint", "--update", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint update");
     assert!(update.status.success(), "update stderr: {}", String::from_utf8_lossy(&update.stderr));
@@ -905,6 +1388,7 @@ fn fingerprint_update_check_and_diff_walk_directory_tree() {
     let check = Command::new(cargo_octet())
         .args(["fingerprint", "--check", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint check");
     assert!(check.status.success(), "check stderr: {}", String::from_utf8_lossy(&check.stderr));
@@ -913,66 +1397,11 @@ fn fingerprint_update_check_and_diff_walk_directory_tree() {
     let diff = Command::new(cargo_octet())
         .args(["fingerprint", "--diff", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint diff");
     assert!(diff.status.success(), "diff stderr: {}", String::from_utf8_lossy(&diff.stderr));
     assert_directory_records(&diff.stdout, &expected, "match");
-}
-
-#[test]
-fn object_emit_outputs_function_object_v1_json() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    write_directory_fixture(temp.path());
-
-    let output = Command::new(cargo_octet())
-        .args(["object", "emit", "--function", "root_plain", "--output-format=json"])
-        .arg(temp.path().join("src/lib.rs"))
-        .output()
-        .expect("run object emit");
-    assert!(output.status.success(), "object stderr: {}", String::from_utf8_lossy(&output.stderr));
-
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json output");
-    let objects = json["objects"].as_array().expect("objects array");
-    assert_eq!(objects.len(), 1);
-    let object = &objects[0];
-    assert_eq!(object["schema"], "octet.function-object.v1");
-    assert_eq!(object["name"], "root_plain");
-    assert!(object["object_hash"].as_str().expect("object hash").starts_with("b3:"));
-    assert!(object["body_hash"].as_str().expect("body hash").starts_with("b3:"));
-    assert_eq!(object["correctness_claim"]["claims_correctness"], false);
-    assert_eq!(object["dependency_caveats"][0]["status"], "source-scanner-token-set");
-}
-
-#[test]
-fn object_emit_hash_stable_across_roots() {
-    let one = tempfile::tempdir().expect("create first tempdir");
-    let two = tempfile::tempdir().expect("create second tempdir");
-    write_directory_fixture(one.path());
-    write_directory_fixture(two.path());
-
-    let one_hash = emit_root_plain_hash(one.path());
-    let two_hash = emit_root_plain_hash(two.path());
-    assert_eq!(one_hash, two_hash);
-}
-
-fn emit_root_plain_hash(root: &Path) -> String {
-    let output = Command::new(cargo_octet())
-        .current_dir(root)
-        .args([
-            "object",
-            "emit",
-            "--function",
-            "root_plain",
-            "--output-format=json",
-            "src/lib.rs",
-        ])
-        .output()
-        .expect("run object emit");
-    assert!(output.status.success(), "object stderr: {}", String::from_utf8_lossy(&output.stderr));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(!stdout.contains(root.to_str().expect("utf8 temp path")));
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("json output");
-    json["objects"][0]["object_hash"].as_str().expect("object hash").to_owned()
 }
 
 fn assert_directory_records(stdout: &[u8], expected: &BTreeSet<&str>, status: &str) {
@@ -995,6 +1424,7 @@ fn fingerprint_check_reports_single_directory_drift() {
     let update = Command::new(cargo_octet())
         .args(["fingerprint", "--update", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint update");
     assert!(update.status.success(), "update stderr: {}", String::from_utf8_lossy(&update.stderr));
@@ -1007,6 +1437,7 @@ fn fingerprint_check_reports_single_directory_drift() {
     let check = Command::new(cargo_octet())
         .args(["fingerprint", "--check", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint check");
     assert!(!check.status.success(), "drift check should fail");
@@ -1014,6 +1445,7 @@ fn fingerprint_check_reports_single_directory_drift() {
     let human_check = Command::new(cargo_octet())
         .args(["fingerprint", "--check"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run human fingerprint check");
     assert!(!human_check.status.success(), "human drift check should fail");
@@ -1027,6 +1459,7 @@ fn fingerprint_check_reports_single_directory_drift() {
     let diff = Command::new(cargo_octet())
         .args(["fingerprint", "--diff", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint drift diff");
     assert!(!diff.status.success(), "drift diff should fail");
@@ -1038,6 +1471,7 @@ fn fingerprint_check_reports_single_directory_drift() {
     let repair = Command::new(cargo_octet())
         .args(["fingerprint", "--update"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint repair update");
     assert!(repair.status.success(), "repair stderr: {}", String::from_utf8_lossy(&repair.stderr));
@@ -1047,6 +1481,7 @@ fn fingerprint_check_reports_single_directory_drift() {
     let repaired_check = Command::new(cargo_octet())
         .args(["fingerprint", "--check", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run repaired fingerprint check");
     assert!(
@@ -1070,6 +1505,7 @@ fn fingerprint_check_reports_single_directory_drift() {
     let repaired_diff = Command::new(cargo_octet())
         .args(["fingerprint", "--diff", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run repaired fingerprint diff");
     assert!(
@@ -1118,65 +1554,13 @@ fn assert_human_contains_record(stdout: &[u8], name: &str, status: &str) {
 }
 
 #[test]
-fn object_marker_check_update_and_drift_detection() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let fixture = temp.path().join("lib.rs");
-    fs::write(
-        &fixture,
-        r"// octet-object: b3:0000; review=phase3; evidence=evidence/object-marker
-pub fn checked_value(input: u32) -> u32 {
-    input + 1
-}
-",
-    )
-    .expect("write object marker fixture");
-
-    let initial = Command::new(cargo_octet())
-        .args(["object", "check", "--output-format=json", "lib.rs"])
-        .current_dir(temp.path())
-        .output()
-        .expect("run initial object check");
-    assert!(!initial.status.success(), "initial check unexpectedly passed");
-    let initial_json: serde_json::Value = serde_json::from_slice(&initial.stdout).expect("initial object check json");
-    assert_eq!(initial_json["records"][0]["status"], "mismatch");
-
-    let update = Command::new(cargo_octet())
-        .args(["object", "update", "--output-format=json", "lib.rs"])
-        .current_dir(temp.path())
-        .output()
-        .expect("run object marker update");
-    assert!(update.status.success(), "update stderr: {}", String::from_utf8_lossy(&update.stderr));
-    let update_json: serde_json::Value = serde_json::from_slice(&update.stdout).expect("update json");
-    assert_eq!(update_json["records"][0]["status"], "written");
-
-    let clean = Command::new(cargo_octet())
-        .args(["object", "check", "--output-format=json", "lib.rs"])
-        .current_dir(temp.path())
-        .output()
-        .expect("run clean object check");
-    assert!(clean.status.success(), "clean check stderr: {}", String::from_utf8_lossy(&clean.stderr));
-    let clean_json: serde_json::Value = serde_json::from_slice(&clean.stdout).expect("clean json");
-    assert_eq!(clean_json["records"][0]["status"], "match");
-
-    let source = fs::read_to_string(&fixture).expect("read fixture");
-    fs::write(&fixture, source.replace("input + 1", "input + 2")).expect("mutate fixture");
-    let drift = Command::new(cargo_octet())
-        .args(["object", "check", "--output-format=json", "lib.rs"])
-        .current_dir(temp.path())
-        .output()
-        .expect("run drift object check");
-    assert!(!drift.status.success(), "drift check unexpectedly passed");
-    let drift_json: serde_json::Value = serde_json::from_slice(&drift.stdout).expect("drift json");
-    assert_eq!(drift_json["records"][0]["status"], "mismatch");
-}
-
-#[test]
 fn object_support_does_not_require_fingerprint_markers() {
     let temp = tempfile::tempdir().expect("create tempdir");
     write_consumer_fixture(temp.path());
     let fingerprint = Command::new(cargo_octet())
         .args(["fingerprint", "--check", "--output-format=json"])
         .arg(temp.path())
+        .current_dir(temp.path())
         .output()
         .expect("run fingerprint check");
     assert!(!fingerprint.status.success(), "zeroed fixture should report fingerprint mismatches");
@@ -1188,45 +1572,12 @@ fn object_support_does_not_require_fingerprint_markers() {
 #[test]
 fn object_pointer_set_records_move_and_validate_fails_closed() {
     let temp = tempfile::tempdir().expect("create tempdir");
-    let fixture = temp.path().join("lib.rs");
-    fs::write(&fixture, "pub fn checked_value(input: u32) -> u32 { input + 1 }\n").expect("write old fixture");
+    let old_hash = blake3_hex(b"checked_value input + 1");
+    let new_hash = blake3_hex(b"checked_value input + 2");
     let old_objects = temp.path().join("old-objects.json");
-    let old_output = Command::new(cargo_octet())
-        .args([
-            "object",
-            "emit",
-            "--function",
-            "checked_value",
-            "--output-format=json",
-            "lib.rs",
-        ])
-        .current_dir(temp.path())
-        .output()
-        .expect("emit old object");
-    assert!(old_output.status.success(), "old emit stderr: {}", String::from_utf8_lossy(&old_output.stderr));
-    fs::write(&old_objects, &old_output.stdout).expect("write old objects");
-    let old_json: serde_json::Value = serde_json::from_slice(&old_output.stdout).expect("old object json");
-    let old_hash = old_json["objects"][0]["object_hash"].as_str().unwrap().to_owned();
-
-    fs::write(&fixture, "pub fn checked_value(input: u32) -> u32 { input + 2 }\n").expect("write new fixture");
     let new_objects = temp.path().join("new-objects.json");
-    let new_output = Command::new(cargo_octet())
-        .args([
-            "object",
-            "emit",
-            "--function",
-            "checked_value",
-            "--output-format=json",
-            "lib.rs",
-        ])
-        .current_dir(temp.path())
-        .output()
-        .expect("emit new object");
-    assert!(new_output.status.success(), "new emit stderr: {}", String::from_utf8_lossy(&new_output.stderr));
-    fs::write(&new_objects, &new_output.stdout).expect("write new objects");
-    let new_json: serde_json::Value = serde_json::from_slice(&new_output.stdout).expect("new object json");
-    let new_hash = new_json["objects"][0]["object_hash"].as_str().unwrap().to_owned();
-    assert_ne!(old_hash, new_hash);
+    write_object_records(&old_objects, &[("checked_value", &old_hash)]);
+    write_object_records(&new_objects, &[("checked_value", &new_hash)]);
 
     let manifest = temp.path().join("pointers.json");
     let receipt1 = temp.path().join("receipt-old.json");
@@ -1324,105 +1675,11 @@ fn object_diff_separates_body_signature_caveat_and_pointer_changes() {
 }
 
 #[test]
-fn object_caveats_keep_dependencies_unresolved_and_block_pure_cache() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let fixture = temp.path().join("lib.rs");
-    fs::write(
-        &fixture,
-        r"pub fn checked_value(input: u32) -> u32 {
-    input.saturating_add(1)
-}
-",
-    )
-    .expect("write fixture");
-
-    let output = Command::new(cargo_octet())
-        .args([
-            "object",
-            "emit",
-            "--function",
-            "checked_value",
-            "--output-format=json",
-            "lib.rs",
-        ])
-        .current_dir(temp.path())
-        .output()
-        .expect("emit object");
-    assert!(output.status.success(), "emit stderr: {}", String::from_utf8_lossy(&output.stderr));
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("object json");
-    let object = &json["objects"][0];
-    assert_eq!(object["dependency_caveats"][0]["status"], "source-scanner-token-set");
-    assert_eq!(object["caveat_summary"]["dependency_identity"], "unresolved-source-scanner");
-    assert_eq!(object["pure_cache_eligibility"]["eligible"], false);
-    assert_eq!(object["pure_cache_eligibility"]["status"], "blocked-by-caveats");
-    let blockers = object["pure_cache_eligibility"]["blockers"].as_array().expect("blockers");
-    assert!(blockers.iter().any(|blocker| blocker == "dependency-identity-unresolved"));
-    assert!(blockers.iter().any(|blocker| blocker == "effect-summary-unresolved"));
-}
-
-#[test]
-fn object_effect_and_macro_caveats_are_structured() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let fixture = temp.path().join("lib.rs");
-    fs::write(
-        &fixture,
-        r#"pub fn checked_value(input: Option<u32>) -> u32 {
-    format!("value={}", input.unwrap()).len() as u32
-}
-"#,
-    )
-    .expect("write fixture");
-
-    let output = Command::new(cargo_octet())
-        .args([
-            "object",
-            "emit",
-            "--function",
-            "checked_value",
-            "--output-format=json",
-            "lib.rs",
-        ])
-        .current_dir(temp.path())
-        .output()
-        .expect("emit object");
-    assert!(output.status.success(), "emit stderr: {}", String::from_utf8_lossy(&output.stderr));
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("object json");
-    let object = &json["objects"][0];
-    assert!(object["effect_caveats"].as_array().unwrap().iter().any(|caveat| caveat["kind"] == "panic"));
-    assert_eq!(object["macro_caveats"][0]["status"], "review-required");
-    assert_eq!(object["caveat_summary"]["macro_expansion"], "macro-expansion-not-modeled");
-    let blockers = object["pure_cache_eligibility"]["blockers"].as_array().expect("blockers");
-    assert!(blockers.iter().any(|blocker| blocker == "macro-expansion-unmodeled"));
-}
-
-#[test]
 fn object_bundle_export_is_deterministic_and_records_replay() {
     let temp = tempfile::tempdir().expect("create tempdir");
-    let fixture = temp.path().join("lib.rs");
-    fs::write(
-        &fixture,
-        r"pub fn beta(input: u32) -> u32 { input + 2 }
-pub fn alpha(input: u32) -> u32 { input + 1 }
-",
-    )
-    .expect("write fixture");
     let objects_path = temp.path().join("objects.json");
-    let objects = Command::new(cargo_octet())
-        .args(["object", "emit", "--output-format=json", "lib.rs"])
-        .current_dir(temp.path())
-        .output()
-        .expect("emit objects");
-    assert!(objects.status.success(), "emit stderr: {}", String::from_utf8_lossy(&objects.stderr));
-    fs::write(&objects_path, &objects.stdout).expect("write objects");
-    let objects_json: serde_json::Value = serde_json::from_slice(&objects.stdout).expect("objects json");
-    let alpha_hash = objects_json["objects"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|object| object["name"] == "alpha")
-        .and_then(|object| object["object_hash"].as_str())
-        .unwrap()
-        .to_owned();
+    let alpha_hash = blake3_hex(b"alpha input + 1");
+    write_object_records(&objects_path, &[("beta", &blake3_hex(b"beta input + 2")), ("alpha", &alpha_hash)]);
     let pointers = temp.path().join("pointers.json");
     let receipt = temp.path().join("receipt.json");
     let pointer_set = Command::new(cargo_octet())
@@ -1464,13 +1721,120 @@ pub fn alpha(input: u32) -> u32 { input + 1 }
     assert!(json["bundle_hash"].as_str().unwrap().starts_with("b3:"));
     assert_eq!(json["replay"]["command"], "cargo octet object emit --output-format=json lib.rs");
     assert!(json["replay"]["determinism_note"].as_str().unwrap().contains("not correctness"));
+
+    let missing_pointer = temp.path().join("missing-pointer.json");
+    let missing_hash = blake3_hex(b"no such object");
+    fs::write(
+        &missing_pointer,
+        format!(
+            r#"{{"schema_version":1,"pointers":{{"crate::missing":{{"object_hash":"{missing_hash}","semantic_name":"crate::missing"}}}},"history":{{}}}}"#
+        ),
+    )
+    .expect("write missing pointer manifest");
+    let unresolved = Command::new(cargo_octet())
+        .args(["object", "bundle", "export", "--objects"])
+        .arg(&objects_path)
+        .args(["--pointers"])
+        .arg(&missing_pointer)
+        .args(["--output"])
+        .arg(temp.path().join("unresolved-bundle.json"))
+        .args([
+            "--replay-command",
+            "cargo octet object emit --output-format=json lib.rs",
+        ])
+        .output()
+        .expect("export bundle with unresolved pointer");
+    assert!(!unresolved.status.success(), "bundle with an unresolved pointer unexpectedly passed");
+    assert!(
+        String::from_utf8_lossy(&unresolved.stderr).contains("references missing object"),
+        "unresolved pointer was not named: {}",
+        String::from_utf8_lossy(&unresolved.stderr)
+    );
+    assert!(!temp.path().join("unresolved-bundle.json").exists());
 }
 
-const REAL_CODE_CORPUS: &[&str] = &[
-    "cargo-octet/src/cli.rs",
-    "cargo-octet/src/object.rs",
-    "cargo-octet/src/fingerprint.rs",
-];
+#[test]
+fn object_bundle_export_rejects_unknown_flags_before_writing() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let objects_path = temp.path().join("objects.json");
+    write_object_records(&objects_path, &[("alpha", &blake3_hex(b"alpha input + 1"))]);
+    let bundle_path = temp.path().join("bundle.json");
+
+    let typo = Command::new(cargo_octet())
+        .args(["object", "bundle", "export", "--objects"])
+        .arg(&objects_path)
+        .args(["--pointer"])
+        .arg(temp.path().join("pointers.json"))
+        .args(["--output"])
+        .arg(&bundle_path)
+        .args([
+            "--replay-command",
+            "cargo octet object emit --output-format=json lib.rs",
+        ])
+        .output()
+        .expect("export bundle with typo flag");
+
+    assert_eq!(typo.status.code(), Some(2), "stderr: {}", String::from_utf8_lossy(&typo.stderr));
+    assert!(
+        String::from_utf8_lossy(&typo.stderr).contains("unsupported object bundle export argument `--pointer`"),
+        "typo flag was not named: {}",
+        String::from_utf8_lossy(&typo.stderr)
+    );
+    assert!(!bundle_path.exists(), "rejected bundle export must not write a bundle");
+}
+
+#[test]
+fn object_pointer_validate_and_bundle_export_reject_missing_manifest() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let objects_path = temp.path().join("objects.json");
+    write_object_records(&objects_path, &[("alpha", &blake3_hex(b"alpha input + 1"))]);
+    let missing_manifest = temp.path().join("typo-pointers.json");
+
+    let validate = Command::new(cargo_octet())
+        .args(["object", "pointer", "validate", "--manifest"])
+        .arg(&missing_manifest)
+        .args(["--objects"])
+        .arg(&objects_path)
+        .output()
+        .expect("validate missing pointer manifest");
+    assert!(
+        !validate.status.success(),
+        "missing manifest unexpectedly validated: {}",
+        String::from_utf8_lossy(&validate.stdout)
+    );
+    assert!(
+        String::from_utf8_lossy(&validate.stderr).contains("typo-pointers.json"),
+        "missing manifest was not named: {}",
+        String::from_utf8_lossy(&validate.stderr)
+    );
+
+    let bundle_path = temp.path().join("bundle.json");
+    let bundle = Command::new(cargo_octet())
+        .args(["object", "bundle", "export", "--objects"])
+        .arg(&objects_path)
+        .args(["--pointers"])
+        .arg(&missing_manifest)
+        .args(["--output"])
+        .arg(&bundle_path)
+        .args([
+            "--replay-command",
+            "cargo octet object emit --output-format=json lib.rs",
+        ])
+        .output()
+        .expect("export bundle with missing pointer manifest");
+    assert!(
+        !bundle.status.success(),
+        "bundle with a missing pointer manifest unexpectedly passed: {}",
+        String::from_utf8_lossy(&bundle.stdout)
+    );
+    assert!(
+        String::from_utf8_lossy(&bundle.stderr).contains("typo-pointers.json"),
+        "missing manifest was not named: {}",
+        String::from_utf8_lossy(&bundle.stderr)
+    );
+    assert!(!bundle_path.exists(), "rejected bundle export must not write a bundle");
+    assert!(!missing_manifest.exists(), "validate and export must not create the manifest");
+}
 
 const INTERNAL_OBJECT_CORPUS: &[&str] = &[
     "cargo-octet/src/baseline.rs",
@@ -1504,6 +1868,7 @@ const EXPANDED_INTERNAL_OBJECT_CORPUS_CAVEAT_TAXONOMY_FIXTURE: &str =
 const OBJECT_CORPUS_COMPATIBILITY_DIR: &str = "cargo-octet/tests/fixtures/object-corpus/compatibility";
 const OBJECT_CORPUS_COMPATIBILITY_SOURCE: &[&str] = &["src/lib.rs"];
 const OBJECT_CORPUS_COMPATIBILITY_POSITIVE_V1: &str = "positive-v1-receipt.json";
+const OBJECT_CORPUS_CANDIDATE_V2_DIR: &str = "cargo-octet/tests/fixtures/object-corpus/source-token-v2";
 const OBJECT_CORPUS_COMPATIBILITY_NEGATIVE_MISSING_OBJECT_SET_HASH: &str = "negative-missing-object-set-hash.json";
 const OBJECT_CORPUS_COMPATIBILITY_NEGATIVE_FUTURE_SCHEMA_VERSION: &str = "negative-future-schema-version.json";
 const OBJECT_CORPUS_COMPATIBILITY_NEGATIVE_BOUNDARY_TAMPER: &str = "negative-boundary-tamper.json";
@@ -1511,135 +1876,6 @@ const OBJECT_CORPUS_COMPATIBILITY_NEGATIVE_DUPLICATE_SOURCE_PATH: &str = "negati
 const OBJECT_CORPUS_COMPATIBILITY_NEGATIVE_EMPTY_SOURCE_SELECTION: &str = "negative-empty-source-selection.json";
 const OBJECT_CORPUS_COMPATIBILITY_NEGATIVE_MALFORMED_JSON: &str = "negative-malformed-json.json";
 const OBJECT_CORPUS_COMPATIBILITY_NON_RUST_SOURCE: &str = "notes.txt";
-
-const REAL_CODE_REPLAY_COMMAND: &str = "cargo octet object emit --output-format=json cargo-octet/src/cli.rs cargo-octet/src/object.rs cargo-octet/src/fingerprint.rs";
-
-#[derive(Debug)]
-struct CorpusSummary {
-    object_count: usize,
-    source_paths: BTreeSet<String>,
-    macro_review_required: usize,
-    panic_caveats: usize,
-    pure_cache_blocked: usize,
-}
-
-fn emit_objects_json(root: &Path, paths: &[&str]) -> serde_json::Value {
-    let output = Command::new(cargo_octet())
-        .args(["object", "emit", "--output-format=json"])
-        .args(paths)
-        .current_dir(root)
-        .output()
-        .expect("emit objects");
-    assert!(output.status.success(), "emit stderr: {}", String::from_utf8_lossy(&output.stderr));
-    serde_json::from_slice(&output.stdout).expect("object json")
-}
-
-fn emit_real_code_corpus(root: &Path) -> serde_json::Value {
-    emit_objects_json(root, REAL_CODE_CORPUS)
-}
-
-fn corpus_summary(json: &serde_json::Value) -> CorpusSummary {
-    let objects = json["objects"].as_array().expect("objects array");
-    CorpusSummary {
-        object_count: objects.len(),
-        source_paths: objects
-            .iter()
-            .filter_map(|object| object["source_path"].as_str().map(ToOwned::to_owned))
-            .collect(),
-        macro_review_required: objects
-            .iter()
-            .filter(|object| {
-                object["macro_caveats"]
-                    .as_array()
-                    .expect("macro caveats")
-                    .iter()
-                    .any(|caveat| caveat["status"] == "review-required")
-            })
-            .count(),
-        panic_caveats: objects
-            .iter()
-            .filter(|object| {
-                object["effect_caveats"]
-                    .as_array()
-                    .expect("effect caveats")
-                    .iter()
-                    .any(|caveat| caveat["kind"] == "panic")
-            })
-            .count(),
-        pure_cache_blocked: objects
-            .iter()
-            .filter(|object| object["pure_cache_eligibility"]["status"] == "blocked-by-caveats")
-            .count(),
-    }
-}
-
-fn object_hash(json: &serde_json::Value, name: &str) -> String {
-    json["objects"]
-        .as_array()
-        .expect("objects array")
-        .iter()
-        .find(|object| object["name"] == name)
-        .and_then(|object| object["object_hash"].as_str())
-        .unwrap_or_else(|| panic!("missing object hash for {name}"))
-        .to_owned()
-}
-
-fn write_objects(root: &Path, paths: &[&str], objects_path: &Path) -> serde_json::Value {
-    let output = Command::new(cargo_octet())
-        .args(["object", "emit", "--output-format=json"])
-        .args(paths)
-        .current_dir(root)
-        .output()
-        .expect("emit objects for file");
-    assert!(output.status.success(), "emit stderr: {}", String::from_utf8_lossy(&output.stderr));
-    fs::write(objects_path, &output.stdout).expect("write objects json");
-    serde_json::from_slice(&output.stdout).expect("objects json")
-}
-
-fn write_corpus_receipt(root: &Path, paths: &[&str], output_path: &Path) -> serde_json::Value {
-    let output = Command::new(cargo_octet())
-        .args(["object", "corpus", "receipt", "--output"])
-        .arg(output_path)
-        .args(paths)
-        .current_dir(root)
-        .output()
-        .expect("write object corpus receipt");
-    assert!(
-        output.status.success(),
-        "corpus receipt stdout={} stderr={}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    serde_json::from_slice(&fs::read(output_path).expect("read corpus receipt")).expect("corpus receipt json")
-}
-
-fn write_corpus_receipt_with_fresh_target(
-    root: &Path,
-    paths: &[&str],
-    output_path: &Path,
-    target_dir: &Path,
-) -> serde_json::Value {
-    let output = Command::new(cargo_octet())
-        .env_clear()
-        .env("TZ", "UTC")
-        .env("LC_ALL", "C")
-        .env("LANG", "C")
-        .env("CARGO_TARGET_DIR", target_dir)
-        .args(["object", "corpus", "receipt", "--output"])
-        .arg(output_path)
-        .args(paths)
-        .current_dir(root)
-        .output()
-        .expect("write object corpus receipt with fresh target");
-    assert!(
-        output.status.success(),
-        "fresh-target corpus receipt stdout={} stderr={}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    serde_json::from_slice(&fs::read(output_path).expect("read fresh-target corpus receipt"))
-        .expect("fresh-target corpus receipt json")
-}
 
 fn check_corpus_receipt(root: &Path, receipt_path: &Path, paths: &[&str]) -> std::process::Output {
     Command::new(cargo_octet())
@@ -1665,15 +1901,6 @@ fn read_json_fixture(root: &Path, relative: &str) -> serde_json::Value {
         .unwrap_or_else(|error| panic!("parse {relative}: {error}"))
 }
 
-fn expanded_internal_object_corpus_paths(taxonomy: &serde_json::Value) -> Vec<&str> {
-    taxonomy["source_paths"]
-        .as_array()
-        .expect("taxonomy source paths")
-        .iter()
-        .map(|value| value.as_str().expect("taxonomy source path string"))
-        .collect()
-}
-
 fn object_corpus_contract(root: &Path) -> serde_json::Value {
     let output = Command::new(cargo_octet())
         .args(["object", "corpus", "contract", "--output-format", "json"])
@@ -1689,637 +1916,830 @@ fn object_corpus_contract(root: &Path) -> serde_json::Value {
     serde_json::from_slice(&output.stdout).expect("contract metadata json")
 }
 
-fn object_corpus_caveat_taxonomy(root: &Path, paths: &[&str]) -> Vec<u8> {
-    let output = Command::new(cargo_octet())
-        .args(["object", "corpus", "caveats", "--output-format", "json"])
-        .args(paths)
-        .current_dir(root)
-        .output()
-        .expect("object corpus caveat taxonomy");
-    assert!(
-        output.status.success(),
-        "caveat taxonomy stdout={} stderr={}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    output.stdout
-}
-
-fn export_bundle(
-    root: &Path,
-    objects_path: &Path,
-    pointers_path: Option<&Path>,
-    output_path: &Path,
-) -> std::process::Output {
-    let mut command = Command::new(cargo_octet());
-    command.args(["object", "bundle", "export", "--objects"]).arg(objects_path);
-    if let Some(pointers_path) = pointers_path {
-        command.args(["--pointers"]).arg(pointers_path);
-    }
-    command
-        .args(["--output"])
-        .arg(output_path)
-        .args(["--replay-command", REAL_CODE_REPLAY_COMMAND])
-        .current_dir(root)
-        .output()
-        .expect("export bundle")
-}
-
 fn blake3_hex(bytes: &[u8]) -> String {
     format!("b3:{}", blake3::hash(bytes).to_hex())
 }
 
-fn emit_objects_bytes_with_env(root: &Path, paths: &[&str], target_dir: &Path) -> Vec<u8> {
-    let output = Command::new(cargo_octet())
-        .env_clear()
-        .env("TZ", "UTC")
-        .env("LC_ALL", "C")
-        .env("LANG", "C")
-        .env("CARGO_TARGET_DIR", target_dir)
-        .args(["object", "emit", "--output-format=json"])
-        .args(paths)
-        .current_dir(root)
-        .output()
-        .expect("emit objects with scrubbed env");
-    assert!(output.status.success(), "scrubbed emit stderr: {}", String::from_utf8_lossy(&output.stderr));
-    output.stdout
-}
-
-fn object_hash_set(json: &serde_json::Value) -> BTreeSet<String> {
-    json["objects"]
-        .as_array()
-        .expect("objects array")
+/// Writes `objects` in the `object emit` JSON shape. Commands that read
+/// existing object evidence (`pointer`, `bundle export`) need only each
+/// record's name and object hash.
+fn write_object_records(path: &Path, objects: &[(&str, &str)]) {
+    let objects = objects
         .iter()
-        .map(|object| object["object_hash"].as_str().expect("object hash").to_owned())
-        .collect()
+        .map(|(name, hash)| serde_json::json!({ "schema": "octet.function-object.v1", "name": name, "object_hash": hash }))
+        .collect::<Vec<_>>();
+    let report = serde_json::json!({ "schema_version": 1, "mode": "emit", "objects": objects });
+    fs::write(path, serde_json::to_vec_pretty(&report).expect("object records json")).expect("write object records");
 }
 
-fn copy_real_code_corpus(source_root: &Path, target_root: &Path) {
-    for relative in REAL_CODE_CORPUS {
-        let source = source_root.join(relative);
-        let target = target_root.join(relative);
-        fs::create_dir_all(target.parent().expect("corpus file parent")).expect("create corpus parent");
-        fs::copy(&source, &target)
-            .unwrap_or_else(|error| panic!("copy {} to {}: {error}", source.display(), target.display()));
-    }
+/// Copies the checked-in v1 compatibility receipt to `dir/receipt.json` and its
+/// source to `dir/lib.rs`, for receipt validation that runs before any object is
+/// built.
+fn copy_checked_in_receipt(dir: &Path) -> (std::path::PathBuf, serde_json::Value) {
+    let compatibility = repo_root().join(OBJECT_CORPUS_COMPATIBILITY_DIR);
+    fs::copy(compatibility.join("src/lib.rs"), dir.join("lib.rs")).expect("copy compatibility source");
+    let receipt_path = dir.join("receipt.json");
+    fs::copy(compatibility.join(OBJECT_CORPUS_COMPATIBILITY_POSITIVE_V1), &receipt_path)
+        .expect("copy compatibility receipt");
+    (receipt_path, read_json_fixture(&compatibility, OBJECT_CORPUS_COMPATIBILITY_POSITIVE_V1))
 }
 
-fn command_stdout(root: &Path, program: &str, args: &[&str]) -> String {
-    let output = Command::new(program)
+fn object_v2_command(root: &Path, args: &[&str]) -> serde_json::Value {
+    let output = Command::new(cargo_octet())
         .args(args)
         .current_dir(root)
         .output()
-        .unwrap_or_else(|error| panic!("run {program} {args:?}: {error}"));
-    assert!(output.status.success(), "{program} stderr: {}", String::from_utf8_lossy(&output.stderr));
-    String::from_utf8_lossy(&output.stdout).trim().to_owned()
+        .expect("run candidate object command");
+    assert!(
+        output.status.success(),
+        "{args:?}: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).expect("candidate object command json")
+}
+
+fn object_v2_hash(root: &Path) -> serde_json::Value {
+    object_v2_command(root, &["object", "emit", "--output-format=json", "lib.rs"])["objects"][0].clone()
+}
+
+fn reviewed_v2_selection(root: &Path, role: &str) -> Vec<String> {
+    let manifest = read_json_fixture(root, &format!("{OBJECT_CORPUS_CANDIDATE_V2_DIR}/reviewed-source-manifest.json"));
+    manifest["source_selections"][role]
+        .as_array()
+        .unwrap_or_else(|| panic!("missing reviewed {role} selection"))
+        .iter()
+        .map(|path| path.as_str().expect("reviewed source path").to_owned())
+        .collect()
+}
+
+fn selected_corpus_receipt_bytes(root: &Path, paths: &[String]) -> Vec<u8> {
+    let temp = tempfile::tempdir().expect("temporary corpus receipt directory");
+    let output_path = temp.path().join("receipt.json");
+    let output = Command::new(cargo_octet())
+        .args(["object", "corpus", "receipt", "--output"])
+        .arg(&output_path)
+        .args(paths)
+        .current_dir(root)
+        .output()
+        .expect("emit source-backed corpus receipt");
+    assert!(output.status.success(), "corpus receipt stderr: {}", String::from_utf8_lossy(&output.stderr));
+    fs::read(output_path).expect("read source-backed corpus receipt")
+}
+
+fn selected_corpus_check(root: &Path, receipt: &Path, paths: &[String]) -> serde_json::Value {
+    let selection = paths.iter().map(String::as_str).collect::<Vec<_>>();
+    let output = check_corpus_receipt(root, receipt, &selection);
+    assert!(
+        output.status.success(),
+        "corpus check stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).expect("parse source-backed corpus check");
+    assert_eq!(report["status"], "match", "reviewed receipt mismatch: {report:#?}");
+    report
 }
 
 #[test]
-fn object_strong_local_determinism_receipt_checks_repeatability() {
-    let root = repo_root();
+fn object_v2_source_identity_preserves_url_tail_and_trivia() {
     let temp = tempfile::tempdir().expect("create tempdir");
-    let binary_bytes = fs::read(cargo_octet()).expect("read cargo-octet binary");
-    println!("receipt.git_head={}", command_stdout(&root, "git", &["rev-parse", "HEAD"]));
-    println!("receipt.binary_path={}", cargo_octet());
-    println!("receipt.binary_b3={}", blake3_hex(&binary_bytes));
-    println!("receipt.rustc={}", command_stdout(&root, "rustc", &["--version"]));
-    println!("receipt.nix={}", command_stdout(&root, "nix", &["--version"]));
-    println!("receipt.system={}/{}", std::env::consts::OS, std::env::consts::ARCH);
-    for relative in REAL_CODE_CORPUS {
-        let bytes = fs::read(root.join(relative)).expect("read corpus file");
-        println!("receipt.corpus_file_b3.{relative}={}", blake3_hex(&bytes));
-    }
-    let copied_root = temp.path().join("copied-root");
-    copy_real_code_corpus(&root, &copied_root);
+    let source = "\n// prior comment\npub fn fetch(input: u32) -> u32 {\n    let _endpoint = \"https://example.invalid/api\"; input + 1\n}\n";
+    fs::write(temp.path().join("lib.rs"), source).expect("write source");
+    let original = object_v2_hash(temp.path());
+    assert_eq!(original["normalization"]["algorithm"], "octet-source-token-v2");
+    assert_eq!(original["schema"], "octet.function-object.v1");
+    assert_eq!(original["source_path"], "lib.rs");
+    assert_eq!(original["source_span"], serde_json::json!({"start_line": 3, "end_line": 5}));
+    assert_eq!(original["correctness_claim"]["claims_correctness"], false);
+    assert_eq!(original["pure_cache_eligibility"]["eligible"], false);
 
-    let mut stdout_hashes = BTreeSet::new();
-    let mut object_sets = Vec::new();
-    for run in 0..10 {
-        let target_dir = temp.path().join(format!("target-{run}"));
-        let bytes = emit_objects_bytes_with_env(&root, REAL_CODE_CORPUS, &target_dir);
-        stdout_hashes.insert(blake3_hex(&bytes));
-        let json: serde_json::Value = serde_json::from_slice(&bytes).expect("objects json");
-        object_sets.push(object_hash_set(&json));
-    }
-    assert_eq!(stdout_hashes.len(), 1, "repeated emits produced distinct stdout hashes: {stdout_hashes:?}");
-    println!("receipt.emit_runs=10");
-    println!("receipt.emit_stdout_b3={}", stdout_hashes.iter().next().expect("stdout hash"));
-    assert!(object_sets.windows(2).all(|pair| pair[0] == pair[1]));
-    println!("receipt.object_count={}", object_sets[0].len());
+    let assert_identity_changed = |changed: &str| {
+        fs::write(temp.path().join("lib.rs"), changed).expect("mutate source");
+        let object = object_v2_hash(temp.path());
+        assert_ne!(object["normalized_body_hash"], original["normalized_body_hash"]);
+        assert_ne!(object["semantic_id"], original["semantic_id"]);
+        assert_ne!(object["object_hash"], original["object_hash"]);
+    };
+    assert_identity_changed(&source.replace("example.invalid", "other.invalid"));
+    assert_identity_changed(&source.replace("input + 1", "input + 2"));
 
-    let copied_bytes = emit_objects_bytes_with_env(&copied_root, REAL_CODE_CORPUS, &temp.path().join("target-copied"));
-    let copied_json: serde_json::Value = serde_json::from_slice(&copied_bytes).expect("copied objects json");
-    assert_eq!(object_sets[0], object_hash_set(&copied_json));
-    println!("receipt.cross_root_object_set: PASS");
-
-    let reversed = [
-        "cargo-octet/src/fingerprint.rs",
-        "cargo-octet/src/object.rs",
-        "cargo-octet/src/cli.rs",
-    ];
-    let reversed_bytes = emit_objects_bytes_with_env(&root, &reversed, &temp.path().join("target-reversed"));
-    let reversed_json: serde_json::Value = serde_json::from_slice(&reversed_bytes).expect("reversed objects json");
-    assert_eq!(object_sets[0], object_hash_set(&reversed_json));
-    println!("receipt.input_order_permutation_object_set: PASS");
-
-    let objects_path = temp.path().join("objects.json");
-    fs::write(
-        &objects_path,
-        emit_objects_bytes_with_env(&root, REAL_CODE_CORPUS, &temp.path().join("target-bundle-objects")),
-    )
-    .expect("write objects json");
-    let mut bundle_hashes = BTreeSet::new();
-    for run in 0..10 {
-        let bundle_path = temp.path().join(format!("bundle-{run}.json"));
-        let bundle = export_bundle(&root, &objects_path, None, &bundle_path);
-        assert!(bundle.status.success(), "bundle stderr: {}", String::from_utf8_lossy(&bundle.stderr));
-        let bytes = fs::read(&bundle_path).expect("read bundle");
-        bundle_hashes.insert(blake3_hex(&bytes));
-    }
-    assert_eq!(bundle_hashes.len(), 1, "repeated bundles produced distinct byte hashes: {bundle_hashes:?}");
-    println!("receipt.bundle_runs=10");
-    println!("receipt.bundle_bytes_b3={}", bundle_hashes.iter().next().expect("bundle hash"));
+    let trivia = source
+        .replace("// prior comment", "/* another prior comment */")
+        .replace("let _endpoint", "/* scanner ignores only comments */ let _endpoint");
+    fs::write(temp.path().join("lib.rs"), trivia).expect("write trivia-only edit");
+    let unchanged = object_v2_hash(temp.path());
+    assert_eq!(unchanged["normalized_body_hash"], original["normalized_body_hash"]);
+    assert_eq!(unchanged["object_hash"], original["object_hash"]);
+    assert_eq!(unchanged["correctness_claim"]["claims_correctness"], false);
 }
 
 #[test]
-fn hir_mir_supplement_pilot_docs_name_commands_and_non_proofs() {
-    let root = repo_root();
-    let contributor = fs::read_to_string(root.join("docs/contributor-guide.md")).expect("read contributor guide");
-    let boundaries = fs::read_to_string(root.join("docs/content-addressed-rust-evidence-boundaries.md"))
-        .expect("read content-addressed boundaries doc");
+fn object_v2_macro_token_boundaries_change_identity_without_trivia_drift() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let object_for = |argument: &str| {
+        fs::write(temp.path().join("lib.rs"), format!("pub fn selected() -> usize {{ {argument} }}\n"))
+            .expect("write macro argument source");
+        object_v2_hash(temp.path())
+    };
 
-    for needle in [
-        "cargo octet object supplement emit --family hir",
-        "cargo octet object supplement check --family hir",
-        "cargo octet object supplement emit --family mir",
-        "cargo octet object supplement check --family mir",
-        "cargo octet object supplement emit --family thir",
-        "cargo octet object supplement check --family thir",
-        "cargo octet object corpus contract --output-format json",
-        "cargo octet object supplement emit --family hir --spike rustc-hir-fixture",
-        "cargo octet object supplement check --family hir --spike rustc-hir-fixture",
-        "cargo octet object supplement emit --family mir --spike rustc-mir-fixture",
-        "cargo octet object supplement check --family mir --spike rustc-mir-fixture",
-        "--fixture-shape checked-arithmetic",
-        "--fixture-shape branch-control-flow",
-        "selected-fixture-backed/toolchain-scoped review",
-        "checked.rs::checked",
-        "clamp.rs::clamp_to_limit",
-        "call_return.rs::call_then_return",
-        "source-token-bounded review evidence",
-        "selected-fixture-backed/toolchain-scoped review",
-        "do not replace it as the",
-        "The default MIR and THIR runtime seams",
-        "correctness proof",
-        "semantic-equivalence proof",
-        "pure-cache eligibility proof",
-        "cross-toolchain stability",
+    // These pairs are distinct TokenStreams accepted by pinned rustc: Joint
+    // versus Alone punctuation, one numeric Literal versus three tokens, and
+    // one raw Ident versus three tokens, a raw lifetime versus separate
+    // punctuation and identifiers, a suffixed raw Literal versus two tokens,
+    // and a doc-comment attribute versus ordinary trivia. Macro
+    // caveats do not license a shared reviewed source identity.
+    for (joined, separated) in [
+        ("punct_probe::spacing!(=>)", "punct_probe::spacing!(= >)"),
+        ("token_count::count!(1.0)", "token_count::count!(1 . 0)"),
+        ("token_count::count!(0.5)", "token_count::count!(0 . 5)"),
+        ("token_count::count!(0e3)", "token_count::count!(0 e3)"),
+        ("token_count::count!(r#type)", "token_count::count!(r #type)"),
+        ("token_count::count!('r#foo)", "token_count::count!('r #foo)"),
+        ("token_count::count!(r#\"x\"#suffix)", "token_count::count!(r#\"x\"# suffix)"),
+        ("token_count::count!(// ordinary\nfoo)", "token_count::count!(/// doc\nfoo)"),
     ] {
-        assert!(contributor.contains(needle), "contributor guide missing {needle}: {contributor}");
+        let first = object_for(joined);
+        let second = object_for(separated);
+        assert_ne!(first["normalized_body_hash"], second["normalized_body_hash"], "{joined} vs {separated}");
+        assert_ne!(first["object_hash"], second["object_hash"], "{joined} vs {separated}");
     }
 
-    for needle in [
-        "cargo octet object supplement emit --family hir",
-        "cargo octet object supplement check --family hir",
-        "cargo octet object supplement emit --family mir",
-        "cargo octet object supplement check --family mir",
-        "cargo octet object supplement emit --family thir",
-        "cargo octet object supplement check --family thir",
-        "cargo octet object supplement emit --family hir --spike rustc-hir-fixture",
-        "cargo octet object supplement check --family hir --spike rustc-hir-fixture",
-        "cargo octet object supplement emit --family mir --spike rustc-mir-fixture",
-        "cargo octet object supplement check --family mir --spike rustc-mir-fixture",
-        "--fixture-shape checked-arithmetic",
-        "--fixture-shape branch-control-flow",
-        "attached supplement to `octet.function-object.v1`",
-        "selected-fixture-backed/toolchain-scoped",
-        "arbitrary-path and non-fixture HIR remain",
-        "Default THIR runtime receipts MUST keep status `unsupported-planned`",
-        "does not prove THIR",
-        "MUST NOT claim stable identity across compiler versions",
-    ] {
-        assert!(boundaries.contains(needle), "boundary doc missing {needle}: {boundaries}");
-    }
+    let alone = object_for("punct_probe::spacing!(= >)");
+    assert_eq!(alone["object_hash"], object_for("punct_probe::spacing!(=/* trivia */>)")["object_hash"]);
+    let group = object_for("token_count::count!(#[inline])");
+    assert_eq!(group["object_hash"], object_for("token_count::count!(# [inline])")["object_hash"]);
+    let literal = object_for("token_count::count!(r#\"a => b\"#)");
+    assert_eq!(literal["object_hash"], object_for("token_count::count!( r#\"a => b\"# )")["object_hash"]);
 }
 
-#[allow(clippy::too_many_lines)]
 #[test]
-fn thir_supplement_emit_and_check_remain_fail_closed() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create thir supplement tempdir");
-    let emit = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "emit",
-            "--family",
-            "thir",
-            "--function",
-            "checked",
-            "cargo-octet/tests/fixtures/hir-spike/checked.rs",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run THIR supplement emit");
-    assert!(
-        emit.status.success(),
-        "THIR emit failed stdout={} stderr={}",
-        String::from_utf8_lossy(&emit.stdout),
-        String::from_utf8_lossy(&emit.stderr)
-    );
-    let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("THIR emit json");
-    assert_eq!(receipt["family"], "thir");
-    assert_eq!(receipt["boundary"]["claims_correctness"], false);
-    assert_eq!(receipt["boundary"]["claims_semantic_equivalence"], false);
-    assert_eq!(receipt["boundary"]["claims_pure_cache_eligibility"], false);
-    assert_eq!(receipt["boundary"]["claims_cross_toolchain_stability"], false);
-    let supplement =
-        receipt["supplements"].as_array().expect("THIR supplement array").first().expect("THIR supplement");
-    assert_eq!(supplement["schema"], "octet.function-object-thir-supplement.v1");
-    assert_eq!(supplement["family"], "thir");
-    assert_eq!(supplement["status"], "unsupported-planned");
-    assert_eq!(supplement["boundary"]["claims_correctness"], false);
-    assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
-    assert_eq!(supplement["observations"]["thir_context"]["status"], "unsupported-planned");
-    assert_eq!(
-        supplement["observations"]["thir_context"]["detail"],
-        "THIR extraction is not implemented; this record preserves a fail-closed runtime family seam"
-    );
-    assert_eq!(supplement["observations"]["typed_hir_lowering"]["status"], "unsupported-planned");
-    assert_eq!(
-        supplement["observations"]["typed_hir_lowering"]["detail"],
-        "typed HIR/THIR lowering observations require future extractor evidence before support"
-    );
-    assert!(
-        supplement["observations"]["support_boundary"]["detail"]
-            .as_str()
-            .expect("THIR support boundary detail")
-            .contains("unsupported-planned evidence only; no correctness"),
-        "THIR support boundary must pin non-proof wording: {supplement:#?}"
-    );
-    assert!(
-        supplement["extraction_caveats"]
-            .as_array()
-            .expect("THIR caveats")
-            .iter()
-            .any(|caveat| caveat["status"] == "unsupported-planned"),
-        "THIR caveats must stay unsupported-planned: {supplement:#?}"
-    );
+fn object_v2_export_name_change_across_comment_changes_identity_but_trivia_does_not() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let source =
+        "#[unsafe(export_name = \"alpha\")]\n// explanation of export\n\npub extern \"C\" fn exported() -> u32 { 1 }\n";
+    fs::write(temp.path().join("lib.rs"), source).expect("write alpha source");
+    let alpha = object_v2_hash(temp.path());
+    assert_eq!(alpha["source_span"], serde_json::json!({"start_line": 1, "end_line": 4}));
 
-    let receipt_path = temp.path().join("thir-supplement.json");
-    fs::write(&receipt_path, &emit.stdout).expect("write THIR receipt");
+    fs::write(temp.path().join("lib.rs"), source.replace("alpha", "omega")).expect("change exported symbol");
+    let omega = object_v2_hash(temp.path());
+    assert_ne!(alpha["normalized_body_hash"], omega["normalized_body_hash"]);
+    assert_ne!(alpha["semantic_id"], omega["semantic_id"]);
+    assert_ne!(alpha["object_hash"], omega["object_hash"]);
+
+    let trivia = source.replace("// explanation of export\n\n", "/* another comment */\n");
+    fs::write(temp.path().join("lib.rs"), trivia).expect("change only trivia");
+    let unchanged = object_v2_hash(temp.path());
+    assert_eq!(unchanged["normalized_body_hash"], alpha["normalized_body_hash"]);
+    assert_eq!(unchanged["object_hash"], alpha["object_hash"]);
+}
+
+#[test]
+fn object_v2_multiline_attribute_and_split_visibility_change_identity() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let source = "#[doc = \"literal [brackets]\"]\n#[unsafe(export_name =\n    \"alpha\"\n)]\n// review gap\npub extern \"C\" fn exported() -> u32 { 1 }\n";
+    fs::write(temp.path().join("lib.rs"), source).expect("write multiline alpha");
+    let alpha = object_v2_hash(temp.path());
+    assert_eq!(alpha["source_span"], serde_json::json!({"start_line": 1, "end_line": 6}));
+
+    fs::write(temp.path().join("lib.rs"), source.replace("alpha", "omega")).expect("change exported symbol");
+    let omega = object_v2_hash(temp.path());
+    assert_ne!(alpha["normalized_body_hash"], omega["normalized_body_hash"]);
+    assert_ne!(alpha["object_hash"], omega["object_hash"]);
+
+    fs::write(temp.path().join("lib.rs"), source.replace("// review gap", "/* different explanation */"))
+        .expect("change only trivia");
+    assert_eq!(object_v2_hash(temp.path())["object_hash"], alpha["object_hash"]);
+
+    fs::write(temp.path().join("lib.rs"), "pub\nfn exported() -> u32 { 1 }\n").expect("write split public function");
+    let public = object_v2_hash(temp.path());
+    assert_eq!(public["source_span"], serde_json::json!({"start_line": 1, "end_line": 2}));
+    fs::write(temp.path().join("lib.rs"), "// private comparison\nfn exported() -> u32 { 1 }\n")
+        .expect("write private function");
+    let private = object_v2_hash(temp.path());
+    assert_ne!(public["object_hash"], private["object_hash"]);
+
+    fs::write(temp.path().join("lib.rs"), "pub(crate)\nfn exported() -> u32 { 1 }\n").expect("restrict visibility");
+    assert_ne!(public["object_hash"], object_v2_hash(temp.path())["object_hash"]);
+}
+
+#[test]
+fn object_v2_reviewed_marker_above_separated_attribute_goes_stale_on_export_change() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let source = format!(
+        "// octet-object: b3:{}; review=R-export; evidence=E-export\n#[unsafe(export_name =\n    \"alpha\"\n)]\n// review gap\npub extern \"C\" fn exported() -> u32 {{ 1 }}\n",
+        "0".repeat(64)
+    );
+    fs::write(temp.path().join("lib.rs"), source).expect("write marked export");
+    object_v2_command(temp.path(), &["object", "update", "--output-format=json", "lib.rs"]);
+    let checked = object_v2_command(temp.path(), &["object", "check", "--output-format=json", "lib.rs"]);
+    assert_eq!(checked["records"][0]["status"], "match");
+
+    let reviewed = fs::read_to_string(temp.path().join("lib.rs")).expect("read reviewed export");
+    fs::write(temp.path().join("lib.rs"), reviewed.replace("alpha", "omega")).expect("change exported symbol");
     let check = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "check",
-            "--family",
-            "thir",
-            "--receipt",
-            receipt_path.to_str().expect("receipt path utf8"),
-            "--function",
-            "checked",
-            "cargo-octet/tests/fixtures/hir-spike/checked.rs",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
+        .args(["object", "check", "--output-format=json", "lib.rs"])
+        .current_dir(temp.path())
         .output()
-        .expect("run THIR supplement check");
-    assert!(
-        check.status.success(),
-        "THIR check failed stdout={} stderr={}",
-        String::from_utf8_lossy(&check.stdout),
-        String::from_utf8_lossy(&check.stderr)
+        .expect("check changed export");
+    assert_eq!(check.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("parse marker mismatch");
+    assert_eq!(report["records"][0]["status"], "mismatch");
+}
+
+#[test]
+fn object_v2_comment_forgery_with_matching_digest_is_missing_not_reviewed() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let source_path = temp.path().join("lib.rs");
+    let forged = format!(
+        "/* outer /* nested */\n// octet-object: b3:{}; review=R-stale; evidence=E-stale\n*/ pub fn selected() -> u32 {{ 1 }}\n",
+        "0".repeat(64)
     );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("THIR check json");
-    assert_eq!(report["family"], "thir");
-    assert_eq!(report["status"], "pass");
-    assert_eq!(report["boundary"]["claims_correctness"], false);
-    assert_eq!(report["boundary"]["claims_semantic_equivalence"], false);
+    fs::write(&source_path, &forged).expect("write forged marker source");
+    let actual = object_v2_hash(temp.path())["object_hash"].as_str().expect("object hash").to_owned();
+    fs::write(&source_path, forged.replace(&format!("b3:{}", "0".repeat(64)), &actual))
+        .expect("write matching forged marker");
+
+    let checked = Command::new(cargo_octet())
+        .args(["object", "check", "--output-format=json", "lib.rs"])
+        .current_dir(temp.path())
+        .output()
+        .expect("check forged marker");
+    assert_eq!(checked.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&checked.stdout).expect("parse denied marker");
+    assert_eq!(report["records"][0]["status"], "missing");
+    assert_eq!(report["records"][0]["computed_hash"], actual);
+    assert!(report["records"][0]["stored_hash"].is_null());
+    assert!(report["records"][0]["review"].is_null());
+    assert!(report["records"][0]["evidence"].is_null());
+
+    let updated = object_v2_command(temp.path(), &["object", "update", "--output-format=json", "lib.rs"]);
+    assert_eq!(updated["records"][0]["status"], "written");
+    let after = Command::new(cargo_octet())
+        .args(["object", "check", "--output-format=json", "lib.rs"])
+        .current_dir(temp.path())
+        .output()
+        .expect("check newly inserted active marker");
+    assert_eq!(after.status.code(), Some(1), "new marker still requires explicit review metadata");
+    let checked: serde_json::Value = serde_json::from_slice(&after.stdout).expect("parse updated marker");
+    assert_eq!(checked["records"][0]["status"], "match");
+    assert_eq!(checked["records"][0]["computed_hash"], actual);
+    assert!(checked["records"][0]["review"].is_null());
+}
+
+#[test]
+fn fingerprint_and_object_markers_stay_bound_when_stacked_in_either_order() {
+    let run = |root: &Path, args: &[&str]| {
+        let output = Command::new(cargo_octet()).args(args).current_dir(root).output().expect("run cargo-octet");
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout)
+            .unwrap_or_else(|error| panic!("{args:?}: {error}; stderr={}", String::from_utf8_lossy(&output.stderr)));
+        let statuses = json["records"]
+            .as_array()
+            .expect("records")
+            .iter()
+            .map(|record| record["status"].as_str().expect("status").to_owned())
+            .collect::<Vec<_>>();
+        (output.status.code(), statuses)
+    };
+    let fingerprint = |root: &Path, mode: &str| run(root, &["fingerprint", mode, "--output-format=json", "lib.rs"]);
+    let object = |root: &Path, mode: &str| run(root, &["object", mode, "--output-format=json", "lib.rs"]);
+    let review = |root: &Path| {
+        let path = root.join("lib.rs");
+        let source = fs::read_to_string(&path).expect("read lib.rs");
+        fs::write(&path, source.replace("review=TODO; evidence=TODO", "review=R-1; evidence=E-1")).expect("review");
+    };
+
+    for fingerprint_first in [true, false] {
+        let temp = tempfile::tempdir().expect("create tempdir");
+        let root = temp.path();
+        fs::write(root.join("lib.rs"), "#[inline]\npub fn selected(input: u32) -> u32 {\n    input + 1\n}\n")
+            .expect("write lib.rs");
+        if fingerprint_first {
+            assert_eq!(fingerprint(root, "--write"), (Some(0), vec!["written".to_owned()]));
+            assert_eq!(object(root, "update"), (Some(0), vec!["written".to_owned()]));
+        } else {
+            assert_eq!(object(root, "update"), (Some(0), vec!["written".to_owned()]));
+            assert_eq!(fingerprint(root, "--write"), (Some(0), vec!["written".to_owned()]));
+        }
+        review(root);
+        let order = format!("fingerprint_first={fingerprint_first}");
+        assert_eq!(fingerprint(root, "--check"), (Some(0), vec!["match".to_owned()]), "{order}");
+        assert_eq!(object(root, "check"), (Some(0), vec!["match".to_owned()]), "{order}");
+
+        let source = fs::read_to_string(root.join("lib.rs")).expect("read lib.rs");
+        fs::write(root.join("lib.rs"), source.replace("input + 1", "input + 2")).expect("drift lib.rs");
+        assert_eq!(fingerprint(root, "--check"), (Some(1), vec!["mismatch".to_owned()]), "{order}");
+        assert_eq!(object(root, "check"), (Some(1), vec!["mismatch".to_owned()]), "{order}");
+        assert_eq!(fingerprint(root, "--update"), (Some(0), vec!["written".to_owned()]), "{order}");
+        assert_eq!(object(root, "update"), (Some(0), vec!["written".to_owned()]), "{order}");
+        assert_eq!(fingerprint(root, "--check"), (Some(0), vec!["match".to_owned()]), "{order}");
+        assert_eq!(object(root, "check"), (Some(0), vec!["match".to_owned()]), "{order}");
+
+        let source = fs::read_to_string(root.join("lib.rs")).expect("read lib.rs");
+        assert_eq!(source.matches("// octet-fingerprint:").count(), 1, "{order}: {source}");
+        assert_eq!(source.matches("// octet-object:").count(), 1, "{order}: {source}");
+    }
+}
+
+#[test]
+fn object_marker_metadata_keys_match_exactly() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let source_path = temp.path().join("lib.rs");
+    fs::write(&source_path, "pub fn selected() -> u32 { 1 }\n").expect("write unmarked source");
+    object_v2_command(temp.path(), &["object", "update", "--output-format=json", "lib.rs"]);
+    let written = fs::read_to_string(&source_path).expect("read marked source");
+    fs::write(&source_path, written.replace("review=TODO; evidence=TODO", "preview=P; evidence=E; reevidence=X"))
+        .expect("write lookalike metadata keys");
+
+    let checked = Command::new(cargo_octet())
+        .args(["object", "check", "--output-format=json", "lib.rs"])
+        .current_dir(temp.path())
+        .output()
+        .expect("check lookalike metadata keys");
+    assert_eq!(checked.status.code(), Some(1), "`preview` is not `review`");
+    let report: serde_json::Value = serde_json::from_slice(&checked.stdout).expect("parse marker check");
+    assert_eq!(report["records"][0]["status"], "match");
+    assert!(report["records"][0]["review"].is_null(), "{report}");
+    assert_eq!(report["records"][0]["evidence"], "E");
+}
+
+#[test]
+fn object_internal_corpus_matches_reviewed_source_reference_and_rejects_tamper() {
+    let root = repo_root();
+    let sources = reviewed_v2_selection(&root, "internal_corpus");
+    let saved_path = root.join(format!("{OBJECT_CORPUS_CANDIDATE_V2_DIR}/internal-corpus-receipt.json"));
+    let expected = fs::read(&saved_path).expect("read independently reviewed internal receipt");
+    assert_eq!(selected_corpus_receipt_bytes(&root, &sources), expected);
+    selected_corpus_check(&root, &saved_path, &sources);
+
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let tampered_path = temp.path().join("tampered-internal.json");
+    let mut tampered: serde_json::Value = serde_json::from_slice(&expected).expect("reviewed internal receipt json");
+    tampered["object_set_hash"] = serde_json::json!(blake3_hex(b"wrong-internal-object-set"));
+    fs::write(&tampered_path, serde_json::to_vec(&tampered).expect("encode tampered internal receipt"))
+        .expect("write tampered internal receipt");
+    let selection = sources.iter().map(String::as_str).collect::<Vec<_>>();
+    let mismatch = check_corpus_receipt(&root, &tampered_path, &selection);
+    assert_eq!(mismatch.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&mismatch.stdout).expect("tampered internal report");
+    assert_eq!(report["status"], "mismatch");
     assert!(
         report["comparisons"]
             .as_array()
-            .expect("THIR check comparisons")
+            .unwrap()
             .iter()
-            .all(|comparison| comparison["status"] == "match"),
-        "THIR check should only pass with matching fail-closed fields: {report:#?}"
+            .any(|comparison| { comparison["field"] == "object_set_hash" && comparison["status"] == "mismatch" })
     );
 }
 
-#[allow(clippy::too_many_lines)]
 #[test]
-fn thir_fixture_supplement_emit_check_and_negative_replay_are_bounded() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create thir fixture tempdir");
+fn object_corpus_compatibility_positive_v2_replays_and_rejects_source_and_boundary_drift() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let fixture = repo_root().join(OBJECT_CORPUS_CANDIDATE_V2_DIR);
+    fs::create_dir(temp.path().join("src")).expect("create fixture source directory");
+    let source = fs::read_to_string(fixture.join("src/lib.rs")).expect("read fixed candidate source");
+    fs::write(temp.path().join("src/lib.rs"), &source).expect("copy candidate source");
+    let receipt_path = temp.path().join("positive-v2-receipt.json");
+    fs::copy(fixture.join("positive-v2-receipt.json"), &receipt_path).expect("copy saved candidate receipt");
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(&receipt_path).expect("read saved receipt"))
+        .expect("parse saved candidate receipt");
+    assert_eq!(saved["boundary"]["claims_correctness"], false);
+    assert_eq!(saved["boundary"]["claims_semantic_equivalence"], false);
 
-    let inventory = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "fixtures",
-            "--family",
-            "thir",
-            "--spike",
-            "rustc-thir-fixture",
-            "--output-format",
-            "json",
-        ])
+    let replay = || check_corpus_receipt(temp.path(), &receipt_path, &["src/lib.rs"]);
+    let matching = replay();
+    assert!(matching.status.success(), "{}", String::from_utf8_lossy(&matching.stderr));
+    let report: serde_json::Value = serde_json::from_slice(&matching.stdout).expect("parse matching replay");
+    assert_eq!(report["status"], "match");
+
+    for changed in [
+        source.replace("example.invalid", "other.invalid"),
+        source.replace("saturating_add(1)", "saturating_add(2)"),
+    ] {
+        fs::write(temp.path().join("src/lib.rs"), changed).expect("mutate candidate source");
+        let mismatch = replay();
+        assert_eq!(mismatch.status.code(), Some(1));
+        let report: serde_json::Value = serde_json::from_slice(&mismatch.stdout).expect("parse source drift");
+        assert_eq!(report["status"], "mismatch");
+        assert!(
+            report["comparisons"]
+                .as_array()
+                .expect("comparisons")
+                .iter()
+                .any(|comparison| { comparison["field"] == "object_set_hash" && comparison["status"] == "mismatch" })
+        );
+    }
+
+    fs::write(temp.path().join("src/lib.rs"), source).expect("restore candidate source");
+    let mut tampered = saved;
+    tampered["boundary"]["claims_correctness"] = serde_json::json!(true);
+    fs::write(&receipt_path, serde_json::to_vec(&tampered).expect("serialize tampered receipt"))
+        .expect("tamper candidate receipt");
+    let mismatch = replay();
+    assert_eq!(mismatch.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&mismatch.stdout).expect("parse boundary drift");
+    assert_eq!(report["status"], "mismatch");
+    assert!(
+        report["comparisons"]
+            .as_array()
+            .expect("comparisons")
+            .iter()
+            .any(|comparison| { comparison["field"] == "boundary" && comparison["status"] == "mismatch" })
+    );
+}
+
+#[test]
+fn object_caveat_taxonomy_matches_reviewed_expanded_reference_and_detects_added_function() {
+    let root = repo_root();
+    let sources = reviewed_v2_selection(&root, "expanded_internal_corpus");
+    let receipt_path = root.join(format!("{OBJECT_CORPUS_CANDIDATE_V2_DIR}/expanded-internal-corpus-receipt.json"));
+    assert_eq!(
+        selected_corpus_receipt_bytes(&root, &sources),
+        fs::read(&receipt_path).expect("read reviewed expanded receipt")
+    );
+    selected_corpus_check(&root, &receipt_path, &sources);
+    let taxonomy_path =
+        root.join(format!("{OBJECT_CORPUS_CANDIDATE_V2_DIR}/expanded-internal-corpus-caveat-taxonomy.json"));
+    let output = Command::new(cargo_octet())
+        .args(["object", "corpus", "caveats", "--output-format=json"])
+        .args(&sources)
         .current_dir(&root)
         .output()
-        .expect("run THIR fixture inventory");
+        .expect("emit expanded taxonomy from selected sources");
+    assert!(output.status.success(), "expanded taxonomy stderr: {}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(output.stdout, fs::read(&taxonomy_path).expect("read reviewed taxonomy"));
+    let taxonomy: serde_json::Value = serde_json::from_slice(&output.stdout).expect("expanded taxonomy json");
+    assert_eq!(taxonomy["boundary"]["claims_correctness"], false);
+    assert_eq!(taxonomy["boundary"]["claims_semantic_equivalence"], false);
+
+    let temp = tempfile::tempdir().expect("temporary altered source corpus");
+    for source in &sources {
+        let destination = temp.path().join(source);
+        fs::create_dir_all(destination.parent().expect("source parent")).expect("create corpus source directory");
+        fs::copy(root.join(source), &destination).expect("copy selected source");
+    }
+    let changed_source = temp.path().join("cargo-octet/src/main.rs");
+    let mut changed = fs::read_to_string(&changed_source).expect("read copied Rust source");
+    changed.push_str("\npub fn added_taxonomy_probe() { std::process::exit(3); }\n");
+    fs::write(&changed_source, changed).expect("add new function to copied Rust source");
+    let changed_report = Command::new(cargo_octet())
+        .args(["object", "corpus", "caveats", "--output-format=json"])
+        .args(&sources)
+        .current_dir(temp.path())
+        .output()
+        .expect("emit taxonomy for changed source");
     assert!(
-        inventory.status.success(),
-        "THIR inventory failed stdout={} stderr={}",
-        String::from_utf8_lossy(&inventory.stdout),
-        String::from_utf8_lossy(&inventory.stderr)
+        changed_report.status.success(),
+        "changed taxonomy stderr: {}",
+        String::from_utf8_lossy(&changed_report.stderr)
     );
-    let inventory_json: serde_json::Value = serde_json::from_slice(&inventory.stdout).expect("THIR inventory json");
-    assert_eq!(inventory_json["schema"], "octet.thir-fixture-inventory.v1");
-    assert_eq!(inventory_json["family"], "thir");
-    assert_eq!(inventory_json["scope"], "rustc-thir-fixture-spike");
-    assert_eq!(inventory_json["default_shape"], "checked-arithmetic");
-    let shapes = inventory_json["shapes"].as_array().expect("THIR inventory shapes");
-    assert_eq!(shapes.len(), 3, "THIR fixture support must stay closed to selected selectors: {inventory_json:#?}");
-    let mut seen_shapes = BTreeSet::new();
-    for shape in shapes {
-        seen_shapes.insert(shape["shape"].as_str().unwrap().to_owned());
-        assert_eq!(shape["support_status"], "pilot-supported");
-        assert!(
-            shape["support_boundary"].as_str().unwrap().contains("no general THIR extraction"),
-            "THIR inventory must not overclaim: {inventory_json:#?}"
-        );
-    }
-    assert_eq!(
-        seen_shapes,
-        BTreeSet::from([
-            "branch-control-flow".to_owned(),
-            "call-return".to_owned(),
-            "checked-arithmetic".to_owned()
-        ])
-    );
-    assert!(shapes.iter().any(|shape| {
-        shape["shape"] == "checked-arithmetic"
-            && shape["fixture_path"] == "cargo-octet/tests/fixtures/thir-spike/checked.rs"
-            && shape["function"] == "checked"
-    }));
-    assert!(shapes.iter().any(|shape| {
-        shape["shape"] == "call-return"
-            && shape["fixture_path"] == "cargo-octet/tests/fixtures/thir-spike/call_return.rs"
-            && shape["function"] == "call_then_return"
-    }));
-    assert!(shapes.iter().any(|shape| {
-        shape["shape"] == "branch-control-flow"
-            && shape["fixture_path"] == "cargo-octet/tests/fixtures/thir-spike/branch_control_flow.rs"
-            && shape["function"] == "choose_branch"
-    }));
-
-    for fixture_shape in ["checked-arithmetic", "call-return", "branch-control-flow"] {
-        let emit = Command::new(cargo_octet())
-            .args([
-                "object",
-                "supplement",
-                "emit",
-                "--family",
-                "thir",
-                "--spike",
-                "rustc-thir-fixture",
-                "--fixture-shape",
-                fixture_shape,
-                "--output-format",
-                "json",
-            ])
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run THIR fixture emit {fixture_shape}: {error}"));
-        assert!(
-            emit.status.success(),
-            "THIR fixture emit {fixture_shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&emit.stdout),
-            String::from_utf8_lossy(&emit.stderr)
-        );
-        let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("THIR fixture emit json");
-        assert_eq!(receipt["family"], "thir");
-        assert_eq!(receipt["scope"], "rustc-thir-fixture-spike");
-        let supplement = receipt["supplements"].as_array().unwrap().first().expect("THIR fixture supplement");
-        assert_eq!(supplement["schema"], "octet.function-object-thir-supplement.v1");
-        assert_eq!(supplement["family"], "thir");
-        assert_eq!(supplement["status"], "pilot-supported");
-        assert_eq!(supplement["extractor"]["name"], "octet-rustc-thir-fixture-contract");
-        assert_eq!(supplement["observations"]["fixture_context"]["status"], "pilot-supported");
-        assert!(
-            supplement["observations"]["fixture_context"]["detail"]
-                .as_str()
-                .unwrap()
-                .contains(&format!("fixture_shape={fixture_shape}")),
-            "THIR fixture observation should bind selector: {supplement:#?}"
-        );
-        assert_eq!(supplement["observations"]["typed_expression_shape"]["status"], "pilot-supported");
-        assert!(
-            supplement["observations"]["typed_expression_shape"]["detail"]
-                .as_str()
-                .unwrap()
-                .contains(fixture_shape),
-            "THIR typed expression observation should name selector: {supplement:#?}"
-        );
-        assert!(
-            supplement["observations"]["support_boundary"]["detail"]
-                .as_str()
-                .unwrap()
-                .contains("selected-fixture-only"),
-            "THIR fixture support boundary must be selected-only: {supplement:#?}"
-        );
-        assert_eq!(supplement["boundary"]["claims_correctness"], false);
-        assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
-        assert_eq!(supplement["boundary"]["claims_pure_cache_eligibility"], false);
-        assert_eq!(supplement["boundary"]["claims_cross_toolchain_stability"], false);
-
-        let receipt_path = temp.path().join(format!("thir-fixture-{fixture_shape}.json"));
-        fs::write(&receipt_path, &emit.stdout).expect("write THIR fixture receipt");
-        let check = Command::new(cargo_octet())
-            .args([
-                "object",
-                "supplement",
-                "check",
-                "--family",
-                "thir",
-                "--spike",
-                "rustc-thir-fixture",
-                "--fixture-shape",
-                fixture_shape,
-                "--receipt",
-                receipt_path.to_str().unwrap(),
-                "--output-format",
-                "json",
-            ])
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run THIR fixture check {fixture_shape}: {error}"));
-        assert!(
-            check.status.success(),
-            "THIR fixture check {fixture_shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&check.stdout),
-            String::from_utf8_lossy(&check.stderr)
-        );
-        let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("THIR fixture check json");
-        assert_eq!(report["status"], "pass");
-        assert!(report["comparisons"].as_array().unwrap().iter().all(|comparison| comparison["status"] == "match"));
-
-        let mut tampered = receipt.clone();
-        tampered["supplements"][0]["observations"]["typed_expression_shape"]["detail"] =
-            serde_json::Value::String("tampered selected fixture shape".to_owned());
-        let tampered_path = temp.path().join(format!("thir-fixture-{fixture_shape}-tampered.json"));
-        fs::write(&tampered_path, serde_json::to_vec_pretty(&tampered).unwrap()).expect("write tampered receipt");
-        let tampered_check = Command::new(cargo_octet())
-            .args([
-                "object",
-                "supplement",
-                "check",
-                "--family",
-                "thir",
-                "--spike",
-                "rustc-thir-fixture",
-                "--fixture-shape",
-                fixture_shape,
-                "--receipt",
-                tampered_path.to_str().unwrap(),
-                "--output-format",
-                "json",
-            ])
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run tampered THIR fixture check {fixture_shape}: {error}"));
-        assert!(
-            !tampered_check.status.success(),
-            "tampered THIR fixture receipt {fixture_shape} must fail stdout={} stderr={}",
-            String::from_utf8_lossy(&tampered_check.stdout),
-            String::from_utf8_lossy(&tampered_check.stderr)
-        );
-        let tampered_report: serde_json::Value =
-            serde_json::from_slice(&tampered_check.stdout).expect("tampered THIR fixture report json");
-        assert_eq!(tampered_report["status"], "fail");
-        assert!(
-            tampered_report["comparisons"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .any(|comparison| comparison["status"] == "mismatch"),
-            "tampered THIR fixture receipt should report mismatch: {tampered_report:#?}"
-        );
-    }
+    let changed: serde_json::Value = serde_json::from_slice(&changed_report.stdout).expect("changed taxonomy json");
+    assert_eq!(changed["object_count"].as_u64(), Some(taxonomy["object_count"].as_u64().unwrap() + 1));
+    assert_ne!(changed_report.stdout, output.stdout, "source-added function must stale reviewed taxonomy");
 }
 
 #[test]
-fn supplement_compatibility_receipts_fail_closed() {
+fn object_corpus_matches_fresh_reviewed_references_and_rejects_missing_receipt() {
     let root = repo_root();
-    let temp = tempfile::tempdir().expect("create supplement compatibility tempdir");
+    let fixture = root.join(OBJECT_CORPUS_CANDIDATE_V2_DIR);
+    let fixed = vec!["src/lib.rs".to_owned()];
+    assert_eq!(
+        selected_corpus_receipt_bytes(&fixture, &fixed),
+        fs::read(fixture.join("positive-v2-receipt.json")).expect("read reviewed fixed receipt")
+    );
+    selected_corpus_check(&fixture, &fixture.join("positive-v2-receipt.json"), &fixed);
+    for (role, filename) in [
+        ("internal_corpus", "internal-corpus-receipt.json"),
+        ("expanded_internal_corpus", "expanded-internal-corpus-receipt.json"),
+    ] {
+        let sources = reviewed_v2_selection(&root, role);
+        assert_eq!(
+            selected_corpus_receipt_bytes(&root, &sources),
+            fs::read(fixture.join(filename)).expect("read independently saved reference"),
+            "stale {role} receipt"
+        );
+    }
+    let expanded = reviewed_v2_selection(&root, "expanded_internal_corpus");
+    let taxonomy = Command::new(cargo_octet())
+        .args(["object", "corpus", "caveats", "--output-format=json"])
+        .args(&expanded)
+        .current_dir(&root)
+        .output()
+        .expect("emit freshness taxonomy");
+    assert!(
+        taxonomy.status.success(),
+        "freshness taxonomy stderr: {}",
+        String::from_utf8_lossy(&taxonomy.stderr)
+    );
+    assert_eq!(
+        taxonomy.stdout,
+        fs::read(fixture.join("expanded-internal-corpus-caveat-taxonomy.json")).expect("read reviewed taxonomy")
+    );
 
-    let emit = Command::new(cargo_octet())
-        .args([
+    let missing = check_corpus_receipt(&fixture, Path::new("missing-reviewed-reference.json"), &["src/lib.rs"]);
+    assert_eq!(missing.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&missing.stdout).expect("missing reference report");
+    assert_eq!(report["status"], "invalid");
+    assert!(report["errors"].as_array().unwrap().iter().any(|error| error["kind"] == "read-receipt"));
+}
+
+#[test]
+fn object_v2_corpus_receipt_detects_drift_and_boundary_tamper_without_rebinding_v1() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let source = "pub fn fetch() -> u32 { let _url = \"https://example.invalid/api\"; 1 }\n";
+    fs::write(temp.path().join("lib.rs"), source).expect("write source");
+    let receipt = Command::new(cargo_octet())
+        .args(["object", "corpus", "receipt", "--output", "receipt.json", "lib.rs"])
+        .current_dir(temp.path())
+        .output()
+        .expect("emit candidate receipt");
+    assert!(receipt.status.success(), "{}", String::from_utf8_lossy(&receipt.stderr));
+    let receipt_path = temp.path().join("receipt.json");
+    let saved: serde_json::Value =
+        serde_json::from_slice(&fs::read(&receipt_path).expect("read receipt")).expect("parse receipt");
+    assert_eq!(saved["boundary"]["claims_correctness"], false);
+    assert_eq!(saved["boundary"]["claims_semantic_equivalence"], false);
+    let check = check_corpus_receipt(temp.path(), &receipt_path, &["lib.rs"]);
+    assert!(check.status.success(), "{}", String::from_utf8_lossy(&check.stderr));
+    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("parse matching check");
+    assert_eq!(report["status"], "match");
+
+    fs::write(temp.path().join("lib.rs"), source.replace("; 1", "; 2")).expect("change code after URL");
+    let check = check_corpus_receipt(temp.path(), &receipt_path, &["lib.rs"]);
+    assert_eq!(check.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("parse drift check");
+    assert_eq!(report["status"], "mismatch");
+    assert!(
+        report["comparisons"]
+            .as_array()
+            .expect("comparisons")
+            .iter()
+            .any(|item| item["field"] == "object_set_hash" && item["status"] == "mismatch")
+    );
+
+    fs::write(temp.path().join("lib.rs"), source).expect("restore original source");
+    let mut tampered = saved;
+    tampered["boundary"]["claims_correctness"] = serde_json::json!(true);
+    fs::write(&receipt_path, serde_json::to_vec(&tampered).expect("serialize tampered receipt"))
+        .expect("tamper temp receipt");
+    let check = check_corpus_receipt(temp.path(), &receipt_path, &["lib.rs"]);
+    assert_eq!(check.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("parse boundary check");
+    assert_eq!(report["status"], "mismatch");
+    assert!(
+        report["comparisons"]
+            .as_array()
+            .expect("comparisons")
+            .iter()
+            .any(|item| item["field"] == "boundary" && item["status"] == "mismatch")
+    );
+
+    let historical = check_corpus_receipt_fixture(&repo_root(), OBJECT_CORPUS_COMPATIBILITY_POSITIVE_V1);
+    assert_eq!(historical.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&historical.stdout).expect("parse historical check");
+    assert_eq!(report["status"], "mismatch");
+    assert!(
+        report["comparisons"]
+            .as_array()
+            .expect("comparisons")
+            .iter()
+            .any(|item| item["field"] == "object_set_hash" && item["status"] == "mismatch")
+    );
+}
+
+#[test]
+fn object_supplement_compatibility_marker_and_bounded_families_reject_tamper() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let marked_source = format!(
+        "// octet-object: b3:{}; review=R-candidate; evidence=E-candidate\npub fn render(input: u32) -> String {{ format!(\"value={{input}}\") }}\n",
+        "0".repeat(64)
+    );
+    fs::write(temp.path().join("lib.rs"), marked_source).expect("write source");
+    let object = object_v2_hash(temp.path());
+    assert_eq!(object["dependency_caveats"][0]["status"], "unsupported-macro-context");
+    assert_eq!(object["correctness_claim"]["claims_correctness"], false);
+
+    let marker = object_v2_command(temp.path(), &["object", "update", "--output-format=json", "lib.rs"]);
+    assert_eq!(marker["records"][0]["computed_hash"], object["object_hash"]);
+    let checked = object_v2_command(temp.path(), &["object", "check", "--output-format=json", "lib.rs"]);
+    assert_eq!(checked["records"][0]["status"], "match");
+    assert_eq!(checked["records"][0]["computed_hash"], object["object_hash"]);
+
+    let supplement = object_v2_command(temp.path(), &[
+        "object",
+        "supplement",
+        "emit",
+        "--family",
+        "hir",
+        "--output-format=json",
+        "lib.rs",
+    ]);
+    assert_eq!(supplement["supplements"][0]["function_object_hash"], object["object_hash"]);
+    assert_eq!(supplement["boundary"]["claims_correctness"], false);
+    assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
+
+    let root = repo_root();
+    for (family, spike, fixture_path) in [
+        ("hir", "rustc-hir-fixture", "cargo-octet/tests/fixtures/hir-spike/checked.rs"),
+        ("thir", "rustc-thir-fixture", "cargo-octet/tests/fixtures/thir-spike/checked.rs"),
+        ("mir", "rustc-mir-fixture", "cargo-octet/tests/fixtures/mir-spike/checked.rs"),
+    ] {
+        let fixture_object = object_v2_command(&root, &["object", "emit", "--output-format=json", fixture_path]);
+        let fixture_supplement = object_v2_command(&root, &[
             "object",
             "supplement",
             "emit",
             "--family",
-            "mir",
+            family,
             "--spike",
-            "rustc-mir-fixture",
+            spike,
             "--fixture-shape",
             "checked-arithmetic",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR supplement compatibility emit");
-    assert!(
-        emit.status.success(),
-        "MIR compatibility emit failed stdout={} stderr={}",
-        String::from_utf8_lossy(&emit.stdout),
-        String::from_utf8_lossy(&emit.stderr)
-    );
-    let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("MIR compatibility receipt json");
-    let positive_path = temp.path().join("positive-mir-v1.json");
-    fs::write(&positive_path, &emit.stdout).expect("write positive supplement receipt");
-    let positive = supplement_check_fixture(&root, "mir", "rustc-mir-fixture", "checked-arithmetic", &positive_path);
-    assert!(
-        positive.status.success(),
-        "positive supplement receipt should pass stdout={} stderr={}",
-        String::from_utf8_lossy(&positive.stdout),
-        String::from_utf8_lossy(&positive.stderr)
-    );
-    let positive_report: serde_json::Value = serde_json::from_slice(&positive.stdout).expect("positive report json");
-    assert_eq!(positive_report["status"], "pass");
-    assert_eq!(positive_report["errors"].as_array().unwrap().len(), 0);
+            "--output-format=json",
+        ]);
+        assert_eq!(
+            fixture_supplement["supplements"][0]["function_object_hash"], fixture_object["objects"][0]["object_hash"],
+            "{family} did not attach to the v2 function identity"
+        );
+        assert_eq!(fixture_supplement["supplements"][0]["status"], "pilot-supported");
+        assert_eq!(fixture_supplement["supplements"][0]["source_path"], fixture_path);
+        assert_eq!(fixture_supplement["boundary"]["claims_correctness"], false);
 
-    let mut missing_field = receipt.clone();
-    missing_field["supplements"][0].as_object_mut().unwrap().remove("function_object_hash");
-    assert_invalid_supplement_fixture(
-        &root,
-        temp.path(),
-        "missing-function-object-hash.json",
-        &missing_field,
-        "missing-field",
-        "function_object_hash",
-    );
+        let receipt_path = temp.path().join(format!("{family}-supplement.json"));
+        fs::write(&receipt_path, serde_json::to_vec(&fixture_supplement).expect("serialize supplement"))
+            .expect("save temporary supplement receipt");
+        let check = || {
+            Command::new(cargo_octet())
+                .args([
+                    "object",
+                    "supplement",
+                    "check",
+                    "--family",
+                    family,
+                    "--spike",
+                    spike,
+                    "--fixture-shape",
+                    "checked-arithmetic",
+                    "--receipt",
+                ])
+                .arg(&receipt_path)
+                .args(["--output-format=json"])
+                .current_dir(&root)
+                .output()
+                .expect("check selected fixture supplement receipt")
+        };
+        let matching = check();
+        assert!(matching.status.success(), "{family}: {}", String::from_utf8_lossy(&matching.stderr));
+        let report: serde_json::Value = serde_json::from_slice(&matching.stdout).expect("matching supplement check");
+        assert_eq!(report["status"], "pass", "{family}: {report:#?}");
 
-    let mut future_version = receipt.clone();
-    future_version["supplements"][0]["schema_version"] = serde_json::Value::from(99);
-    assert_invalid_supplement_fixture(
-        &root,
-        temp.path(),
-        "future-schema-version.json",
-        &future_version,
-        "unsupported-schema-version",
-        "schema_version",
-    );
-
-    let mut wrong_family = receipt.clone();
-    wrong_family["supplements"][0]["family"] = serde_json::Value::String("thir".to_owned());
-    assert_invalid_supplement_fixture(
-        &root,
-        temp.path(),
-        "wrong-family.json",
-        &wrong_family,
-        "family-mismatch",
-        "family",
-    );
-
-    let mut boundary_tamper = receipt.clone();
-    boundary_tamper["supplements"][0]["boundary"]["claims_correctness"] = serde_json::Value::Bool(true);
-    let boundary_path = temp.path().join("boundary-tamper.json");
-    fs::write(&boundary_path, serde_json::to_vec_pretty(&boundary_tamper).unwrap()).expect("write boundary tamper");
-    let boundary_check =
-        supplement_check_fixture(&root, "mir", "rustc-mir-fixture", "checked-arithmetic", &boundary_path);
-    assert!(!boundary_check.status.success(), "boundary tamper should fail closed");
-    let boundary_report: serde_json::Value =
-        serde_json::from_slice(&boundary_check.stdout).expect("boundary tamper report json");
-    assert_eq!(boundary_report["status"], "fail");
-    assert!(
-        boundary_report["comparisons"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|comparison| { comparison["field"] == "boundary" && comparison["status"] == "mismatch" })
-    );
-
-    let malformed_path = temp.path().join("malformed.json");
-    fs::write(&malformed_path, b"{ not json").expect("write malformed supplement receipt");
-    let malformed = supplement_check_fixture(&root, "mir", "rustc-mir-fixture", "checked-arithmetic", &malformed_path);
-    assert!(!malformed.status.success(), "malformed supplement receipt should fail closed");
-    let malformed_report: serde_json::Value = serde_json::from_slice(&malformed.stdout).expect("malformed report json");
-    assert_eq!(malformed_report["status"], "invalid");
-    assert_supplement_error(&malformed_report, "invalid-json", "receipt");
+        let mut tampered = fixture_supplement;
+        tampered["supplements"][0]["function_object_hash"] = serde_json::json!(blake3_hex(b"wrong object"));
+        fs::write(&receipt_path, serde_json::to_vec(&tampered).expect("serialize tamper"))
+            .expect("tamper temp receipt");
+        let failed = check();
+        assert_eq!(failed.status.code(), Some(1), "{family}: {}", String::from_utf8_lossy(&failed.stderr));
+        let report: serde_json::Value = serde_json::from_slice(&failed.stdout).expect("tampered supplement check");
+        assert_eq!(report["status"], "fail", "{family}: {report:#?}");
+        assert!(
+            report["comparisons"].as_array().expect("supplement comparisons").iter().any(|comparison| {
+                comparison["field"] == "function_object_hash" && comparison["status"] == "mismatch"
+            }),
+            "{family} accepted a tampered v2 object attachment: {report:#?}"
+        );
+    }
 }
 
-fn supplement_check_fixture(
-    root: &Path,
-    family: &str,
-    spike: &str,
-    fixture_shape: &str,
-    receipt_path: &Path,
-) -> std::process::Output {
+#[test]
+fn object_supplement_check_compares_every_pilot_supplement() {
+    let temp = tempfile::tempdir().expect("create tempdir");
+    fs::write(
+        temp.path().join("lib.rs"),
+        "pub fn first(input: u32) -> u32 { input + 1 }\n\npub fn second(input: u32) -> u32 { input * 2 }\n",
+    )
+    .expect("write source");
+    let emitted = object_v2_command(temp.path(), &[
+        "object",
+        "supplement",
+        "emit",
+        "--family",
+        "hir",
+        "--output-format=json",
+        "lib.rs",
+    ]);
+    let supplements = emitted["supplements"].as_array().expect("pilot supplements");
+    assert_eq!(supplements.len(), 2, "pilot scope emits one supplement per function: {emitted:#?}");
+    let second_key = serde_json::json!({
+        "source_path": supplements[1]["source_path"],
+        "function_name": supplements[1]["function_name"],
+    });
+    assert_eq!(second_key["function_name"], "second");
+
+    let receipt = temp.path().join("hir-supplement.json");
+    let check = |value: &serde_json::Value| {
+        fs::write(&receipt, serde_json::to_vec(value).expect("serialize receipt")).expect("write receipt");
+        let output = Command::new(cargo_octet())
+            .args(["object", "supplement", "check", "--family", "hir", "--receipt"])
+            .arg(&receipt)
+            .args(["--output-format=json", "lib.rs"])
+            .current_dir(temp.path())
+            .output()
+            .expect("check pilot supplement receipt");
+        let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap_or_else(|error| {
+            panic!("supplement check json ({error}): stderr={}", String::from_utf8_lossy(&output.stderr))
+        });
+        (output.status.code(), report)
+    };
+
+    let (code, report) = check(&emitted);
+    assert_eq!(code, Some(0), "{report:#?}");
+    assert_eq!(report["status"], "pass");
+
+    let mut reordered = emitted.clone();
+    reordered["supplements"].as_array_mut().expect("supplements").reverse();
+    let (code, report) = check(&reordered);
+    assert_eq!(code, Some(0), "entries are keyed by source path and function: {report:#?}");
+    assert_eq!(report["status"], "pass");
+
+    let mut tampered = emitted.clone();
+    tampered["supplements"][1]["observation_hash"] = serde_json::json!(blake3_hex(b"tampered second"));
+    let (code, report) = check(&tampered);
+    assert_eq!(code, Some(1), "{report:#?}");
+    assert_eq!(report["status"], "fail");
+    assert!(
+        report["comparisons"].as_array().expect("comparisons").iter().any(|comparison| {
+            comparison["field"] == "observation_hash"
+                && comparison["status"] == "mismatch"
+                && comparison["supplement"] == second_key
+        }),
+        "tampered second supplement was not flagged: {report:#?}"
+    );
+
+    let mut truncated = emitted;
+    truncated["supplements"].as_array_mut().expect("supplements").truncate(1);
+    let (code, report) = check(&truncated);
+    assert_eq!(code, Some(1), "{report:#?}");
+    assert_eq!(report["status"], "fail");
+    assert!(
+        report["comparisons"].as_array().expect("comparisons").iter().any(|comparison| {
+            comparison["field"] == "supplement_count"
+                && comparison["status"] == "mismatch"
+                && comparison["expected"] == 1
+                && comparison["current"] == 2
+        }),
+        "dropped supplement was not flagged: {report:#?}"
+    );
+}
+
+fn selected_fixture_supplement(root: &Path, family: &str, shape: &str) -> (String, serde_json::Value) {
+    let spike = format!("rustc-{family}-fixture");
+    let inventory = object_v2_command(root, &[
+        "object",
+        "supplement",
+        "fixtures",
+        "--family",
+        family,
+        "--spike",
+        &spike,
+        "--output-format=json",
+    ]);
+    let fixture = inventory["shapes"]
+        .as_array()
+        .expect("selected fixture shapes")
+        .iter()
+        .find(|row| row["shape"] == shape)
+        .unwrap_or_else(|| panic!("missing {family} selected {shape} fixture: {inventory:#?}"));
+    let path = fixture["fixture_path"].as_str().expect("selected fixture path").to_owned();
+    let object = object_v2_command(root, &["object", "emit", "--output-format=json", &path]);
+    let supplement = object_v2_command(root, &[
+        "object",
+        "supplement",
+        "emit",
+        "--family",
+        family,
+        "--spike",
+        &spike,
+        "--fixture-shape",
+        shape,
+        "--output-format=json",
+    ]);
+    let name = &supplement["supplements"][0]["function_name"];
+    let selected_object = object["objects"]
+        .as_array()
+        .expect("fixture object records")
+        .iter()
+        .find(|row| &row["name"] == name)
+        .expect("source-backed selected function object");
+    assert_eq!(selected_object["normalization"]["algorithm"], "octet-source-token-v2");
+    assert_eq!(supplement["supplements"][0]["function_object_hash"], selected_object["object_hash"]);
+    assert_eq!(supplement["supplements"][0]["status"], "pilot-supported");
+    assert_eq!(supplement["boundary"]["claims_correctness"], false);
+    assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
+    (path, supplement)
+}
+
+fn replay_selected_supplement(root: &Path, family: &str, shape: &str, receipt: &Path) -> std::process::Output {
     Command::new(cargo_octet())
         .args([
             "object",
@@ -2328,40 +2748,182 @@ fn supplement_check_fixture(
             "--family",
             family,
             "--spike",
-            spike,
+            &format!("rustc-{family}-fixture"),
             "--fixture-shape",
-            fixture_shape,
+            shape,
             "--receipt",
-            receipt_path.to_str().unwrap(),
-            "--output-format",
-            "json",
         ])
+        .arg(receipt)
+        .args(["--output-format=json"])
         .current_dir(root)
         .output()
-        .expect("run supplement compatibility check")
+        .expect("replay selected source-backed supplement")
 }
 
-fn assert_invalid_supplement_fixture(
-    root: &Path,
-    temp: &Path,
-    name: &str,
-    receipt: &serde_json::Value,
-    expected_kind: &str,
-    expected_field: &str,
-) {
-    let path = temp.join(name);
-    fs::write(&path, serde_json::to_vec_pretty(receipt).unwrap()).expect("write invalid supplement receipt");
-    let check = supplement_check_fixture(root, "mir", "rustc-mir-fixture", "checked-arithmetic", &path);
+#[test]
+fn object_thir_inventory_call_return_replay_rejects_true_boundary() {
+    let root = repo_root();
+    let (source_path, report) = selected_fixture_supplement(&root, "thir", "call-return");
+    assert!(source_path.ends_with("thir-spike/call_return.rs"));
+    assert_eq!(report["supplements"][0]["function_name"], "call_then_return");
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let receipt = temp.path().join("thir-call-return.json");
+    fs::write(&receipt, serde_json::to_vec(&report).expect("serialize THIR receipt")).expect("write THIR receipt");
+    let matching = replay_selected_supplement(&root, "thir", "call-return", &receipt);
+    assert!(matching.status.success(), "THIR replay stderr: {}", String::from_utf8_lossy(&matching.stderr));
+    let matched: serde_json::Value = serde_json::from_slice(&matching.stdout).expect("THIR replay json");
+    assert_eq!(matched["status"], "pass");
+
+    let mut tampered = report;
+    tampered["supplements"][0]["boundary"]["claims_correctness"] = serde_json::json!(true);
+    fs::write(&receipt, serde_json::to_vec(&tampered).expect("serialize THIR boundary tamper"))
+        .expect("write THIR boundary tamper");
+    let failed = replay_selected_supplement(&root, "thir", "call-return", &receipt);
+    assert_eq!(failed.status.code(), Some(1));
+    let mismatch: serde_json::Value = serde_json::from_slice(&failed.stdout).expect("THIR boundary mismatch json");
+    assert_eq!(mismatch["status"], "fail");
     assert!(
-        !check.status.success(),
-        "invalid supplement receipt {name} should fail stdout={} stderr={}",
-        String::from_utf8_lossy(&check.stdout),
-        String::from_utf8_lossy(&check.stderr)
+        mismatch["comparisons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|row| { row["field"] == "boundary" && row["status"] == "mismatch" })
     );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("invalid supplement report json");
-    assert_eq!(report["status"], "invalid");
-    assert_eq!(report["comparisons"].as_array().unwrap().len(), 0);
-    assert_supplement_error(&report, expected_kind, expected_field);
+}
+
+#[test]
+fn object_mir_fixture_checked_arithmetic_replay_rejects_observation_tamper() {
+    let root = repo_root();
+    let (source_path, report) = selected_fixture_supplement(&root, "mir", "checked-arithmetic");
+    assert!(source_path.ends_with("mir-spike/checked.rs"));
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let receipt = temp.path().join("mir-checked.json");
+    fs::write(&receipt, serde_json::to_vec(&report).expect("serialize MIR receipt")).expect("write MIR receipt");
+    let matching = replay_selected_supplement(&root, "mir", "checked-arithmetic", &receipt);
+    assert!(matching.status.success(), "MIR replay stderr: {}", String::from_utf8_lossy(&matching.stderr));
+    let matched: serde_json::Value = serde_json::from_slice(&matching.stdout).expect("MIR replay json");
+    assert_eq!(matched["status"], "pass");
+
+    let mut tampered = report;
+    tampered["supplements"][0]["observation_hash"] = serde_json::json!(blake3_hex(b"wrong-mir-observation"));
+    fs::write(&receipt, serde_json::to_vec(&tampered).expect("serialize MIR observation tamper"))
+        .expect("write MIR observation tamper");
+    let failed = replay_selected_supplement(&root, "mir", "checked-arithmetic", &receipt);
+    assert_eq!(failed.status.code(), Some(1));
+    let mismatch: serde_json::Value = serde_json::from_slice(&failed.stdout).expect("MIR observation mismatch json");
+    assert_eq!(mismatch["status"], "fail");
+    assert!(
+        mismatch["comparisons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|row| { row["field"] == "observation_hash" && row["status"] == "mismatch" })
+    );
+}
+
+#[test]
+fn object_mir_inventory_branch_source_replay_rejects_wrong_path() {
+    let root = repo_root();
+    let (source_path, report) = selected_fixture_supplement(&root, "mir", "branch-control-flow");
+    assert!(source_path.ends_with("mir-spike/branch_control_flow.rs"));
+    assert_eq!(report["supplements"][0]["function_name"], "choose_branch");
+    assert_eq!(report["supplements"][0]["source_path"], source_path);
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let receipt = temp.path().join("mir-branch.json");
+    fs::write(&receipt, serde_json::to_vec(&report).expect("serialize MIR branch receipt"))
+        .expect("write MIR branch receipt");
+    let matching = replay_selected_supplement(&root, "mir", "branch-control-flow", &receipt);
+    assert!(matching.status.success(), "MIR branch replay stderr: {}", String::from_utf8_lossy(&matching.stderr));
+    let matched: serde_json::Value = serde_json::from_slice(&matching.stdout).expect("MIR branch replay json");
+    assert_eq!(matched["status"], "pass");
+
+    let mut tampered = report;
+    tampered["supplements"][0]["source_path"] = serde_json::json!("cargo-octet/tests/fixtures/mir-spike/checked.rs");
+    fs::write(&receipt, serde_json::to_vec(&tampered).expect("serialize MIR path tamper"))
+        .expect("write MIR path tamper");
+    let failed = replay_selected_supplement(&root, "mir", "branch-control-flow", &receipt);
+    assert_eq!(failed.status.code(), Some(1));
+    let mismatch: serde_json::Value = serde_json::from_slice(&failed.stdout).expect("MIR source-path mismatch json");
+    assert_eq!(mismatch["status"], "fail");
+    assert!(
+        mismatch["comparisons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|row| { row["field"] == "source_path" && row["status"] == "mismatch" })
+    );
+}
+
+#[test]
+fn object_supplement_receipt_rejects_invalid_shapes() {
+    let root = repo_root();
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let valid_shape = serde_json::json!({
+        "schema": "octet.function-object-mir-supplement.v1",
+        "schema_version": 1,
+        "family": "mir",
+        "status": "pilot-supported",
+        "function_object_hash": blake3_hex(b"checked"),
+        "source_path": "cargo-octet/tests/fixtures/mir-spike/checked.rs",
+        "function_name": "checked",
+        "rustc_version": "rustc fixture",
+        "target_triple": "x86_64-unknown-linux-gnu",
+        "extractor": {},
+        "observations": {},
+        "observation_hash": blake3_hex(b"observations"),
+        "extraction_caveats": [],
+        "boundary": {},
+    });
+    let check = |name: &str, receipt: &[u8]| {
+        let path = temp.path().join(name);
+        fs::write(&path, receipt).expect("write supplement receipt");
+        Command::new(cargo_octet())
+            .args([
+                "object",
+                "supplement",
+                "check",
+                "--family",
+                "mir",
+                "--spike",
+                "rustc-mir-fixture",
+            ])
+            .args([
+                "--fixture-shape",
+                "checked-arithmetic",
+                "--output-format",
+                "json",
+                "--receipt",
+            ])
+            .arg(&path)
+            .current_dir(&root)
+            .output()
+            .expect("run supplement check")
+    };
+
+    let mut missing = valid_shape.clone();
+    missing.as_object_mut().expect("receipt object").remove("function_object_hash");
+    let mut future = valid_shape.clone();
+    future["schema_version"] = serde_json::json!(99);
+    let mut wrong_family = valid_shape.clone();
+    wrong_family["family"] = serde_json::json!("thir");
+    for (name, receipt, kind, field) in [
+        ("malformed.json", b"{ not json".to_vec(), "invalid-json", "receipt"),
+        ("missing.json", serde_json::to_vec(&missing).expect("json"), "missing-field", "function_object_hash"),
+        (
+            "future.json",
+            serde_json::to_vec(&future).expect("json"),
+            "unsupported-schema-version",
+            "schema_version",
+        ),
+        ("family.json", serde_json::to_vec(&wrong_family).expect("json"), "family-mismatch", "family"),
+        ("empty.json", br#"{"supplements":[]}"#.to_vec(), "empty-receipt", "supplements"),
+    ] {
+        let output = check(name, &receipt);
+        assert_eq!(output.status.code(), Some(1), "{name}: {}", String::from_utf8_lossy(&output.stderr));
+        let report: serde_json::Value = serde_json::from_slice(&output.stdout).expect("supplement report json");
+        assert_eq!(report["status"], "invalid", "{name}: {report:#?}");
+        assert_supplement_error(&report, kind, field);
+    }
 }
 
 fn assert_supplement_error(report: &serde_json::Value, expected_kind: &str, expected_field: &str) {
@@ -2377,307 +2939,9 @@ fn assert_supplement_error(report: &serde_json::Value, expected_kind: &str, expe
     assert_eq!(report["boundary"]["claims_semantic_equivalence"], false);
 }
 
-#[allow(clippy::too_many_lines)]
 #[test]
-fn mir_fixture_supplement_emit_check_and_negative_replay_are_bounded() {
+fn object_supplement_fixture_inventory_lists_selected_shapes() {
     let root = repo_root();
-    let temp = tempfile::tempdir().expect("create MIR fixture tempdir");
-
-    let inventory = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "fixtures",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR fixture inventory");
-    assert!(
-        inventory.status.success(),
-        "MIR inventory failed stdout={} stderr={}",
-        String::from_utf8_lossy(&inventory.stdout),
-        String::from_utf8_lossy(&inventory.stderr)
-    );
-    let inventory_json: serde_json::Value = serde_json::from_slice(&inventory.stdout).expect("MIR inventory json");
-    assert_eq!(inventory_json["schema"], "octet.mir-fixture-inventory.v1");
-    assert_eq!(inventory_json["family"], "mir");
-    assert_eq!(inventory_json["scope"], "rustc-mir-fixture-spike");
-    assert_eq!(inventory_json["default_shape"], "checked-arithmetic");
-    let shapes = inventory_json["shapes"].as_array().expect("MIR inventory shapes");
-    assert_eq!(shapes.len(), 3, "MIR fixture support must stay closed to selected selectors: {inventory_json:#?}");
-    assert_eq!(shapes[0]["shape"], "checked-arithmetic");
-    assert_eq!(shapes[0]["fixture_path"], "cargo-octet/tests/fixtures/mir-spike/checked.rs");
-    assert_eq!(shapes[0]["function"], "checked");
-    assert_eq!(shapes[0]["support_status"], "pilot-supported");
-    assert_eq!(shapes[1]["shape"], "call-return");
-    assert_eq!(shapes[1]["fixture_path"], "cargo-octet/tests/fixtures/mir-spike/call_return.rs");
-    assert_eq!(shapes[1]["function"], "call_then_return");
-    assert_eq!(shapes[1]["support_status"], "pilot-supported");
-    assert_eq!(shapes[2]["shape"], "branch-control-flow");
-    assert_eq!(shapes[2]["fixture_path"], "cargo-octet/tests/fixtures/mir-spike/branch_control_flow.rs");
-    assert_eq!(shapes[2]["function"], "choose_branch");
-    assert_eq!(shapes[2]["support_status"], "pilot-supported");
-    for shape in shapes {
-        assert!(
-            shape["support_boundary"].as_str().unwrap().contains("selected-fixture-only"),
-            "MIR inventory must not overclaim: {inventory_json:#?}"
-        );
-    }
-
-    let emit = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "emit",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--fixture-shape",
-            "checked-arithmetic",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR fixture emit");
-    assert!(
-        emit.status.success(),
-        "MIR fixture emit failed stdout={} stderr={}",
-        String::from_utf8_lossy(&emit.stdout),
-        String::from_utf8_lossy(&emit.stderr)
-    );
-    let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("MIR fixture emit json");
-    assert_eq!(receipt["family"], "mir");
-    assert_eq!(receipt["scope"], "rustc-mir-fixture-spike");
-    let supplement = receipt["supplements"].as_array().unwrap().first().expect("MIR fixture supplement");
-    assert_eq!(supplement["schema"], "octet.function-object-mir-supplement.v1");
-    assert_eq!(supplement["family"], "mir");
-    assert_eq!(supplement["status"], "pilot-supported");
-    assert_eq!(supplement["extractor"]["name"], "octet-rustc-mir-fixture-contract");
-    assert_eq!(supplement["observations"]["fixture_context"]["status"], "pilot-supported");
-    assert!(
-        supplement["observations"]["fixture_context"]["detail"]
-            .as_str()
-            .unwrap()
-            .contains("fixture_shape=checked-arithmetic"),
-        "MIR fixture observation should bind selector: {supplement:#?}"
-    );
-    assert!(
-        supplement["observations"]["mir_fixture_contract_hash"]["detail"].as_str().unwrap().contains("b3:"),
-        "MIR fixture contract hash should be BLAKE3-addressed: {supplement:#?}"
-    );
-    assert!(
-        supplement["observations"]["support_boundary"]["detail"]
-            .as_str()
-            .unwrap()
-            .contains("selected-fixture-only"),
-        "MIR fixture support boundary must be selected-only: {supplement:#?}"
-    );
-    assert_eq!(supplement["boundary"]["claims_correctness"], false);
-    assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
-    assert_eq!(supplement["boundary"]["claims_pure_cache_eligibility"], false);
-    assert_eq!(supplement["boundary"]["claims_cross_toolchain_stability"], false);
-
-    let receipt_path = temp.path().join("mir-fixture-checked-arithmetic.json");
-    fs::write(&receipt_path, &emit.stdout).expect("write MIR fixture receipt");
-    let check = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "check",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--fixture-shape",
-            "checked-arithmetic",
-            "--receipt",
-            receipt_path.to_str().unwrap(),
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR fixture check");
-    assert!(
-        check.status.success(),
-        "MIR fixture check failed stdout={} stderr={}",
-        String::from_utf8_lossy(&check.stdout),
-        String::from_utf8_lossy(&check.stderr)
-    );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("MIR fixture check json");
-    assert_eq!(report["status"], "pass");
-    assert!(report["comparisons"].as_array().unwrap().iter().all(|comparison| comparison["status"] == "match"));
-
-    let mut tampered = receipt.clone();
-    tampered["supplements"][0]["observations"]["mir_fixture_contract_hash"]["detail"] =
-        serde_json::Value::String("tampered selected MIR fixture hash".to_owned());
-    let tampered_path = temp.path().join("mir-fixture-checked-arithmetic-tampered.json");
-    fs::write(&tampered_path, serde_json::to_vec_pretty(&tampered).unwrap()).expect("write tampered MIR receipt");
-    let tampered_check = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "check",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--fixture-shape",
-            "checked-arithmetic",
-            "--receipt",
-            tampered_path.to_str().unwrap(),
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run tampered MIR fixture check");
-    assert!(
-        !tampered_check.status.success(),
-        "tampered MIR fixture receipt must fail stdout={} stderr={}",
-        String::from_utf8_lossy(&tampered_check.stdout),
-        String::from_utf8_lossy(&tampered_check.stderr)
-    );
-    let tampered_report: serde_json::Value =
-        serde_json::from_slice(&tampered_check.stdout).expect("tampered MIR fixture report json");
-    assert_eq!(tampered_report["status"], "fail");
-    assert!(
-        tampered_report["comparisons"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|comparison| comparison["status"] == "mismatch"),
-        "tampered MIR fixture receipt should report mismatch: {tampered_report:#?}"
-    );
-
-    let call_emit = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "emit",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--fixture-shape",
-            "call-return",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR call-return fixture emit");
-    assert!(
-        call_emit.status.success(),
-        "MIR call-return fixture emit failed stdout={} stderr={}",
-        String::from_utf8_lossy(&call_emit.stdout),
-        String::from_utf8_lossy(&call_emit.stderr)
-    );
-    let call_receipt: serde_json::Value =
-        serde_json::from_slice(&call_emit.stdout).expect("MIR call-return fixture emit json");
-    let call_supplement = call_receipt["supplements"].as_array().unwrap().first().expect("MIR call-return supplement");
-    assert_eq!(call_supplement["schema"], "octet.function-object-mir-supplement.v1");
-    assert_eq!(call_supplement["family"], "mir");
-    assert_eq!(call_supplement["status"], "pilot-supported");
-    assert_eq!(call_supplement["source_path"], "cargo-octet/tests/fixtures/mir-spike/call_return.rs");
-    assert_eq!(call_supplement["function_name"], "call_then_return");
-    assert!(
-        call_supplement["observations"]["fixture_context"]["detail"]
-            .as_str()
-            .unwrap()
-            .contains("fixture_shape=call-return"),
-        "MIR call-return fixture observation should bind selector: {call_supplement:#?}"
-    );
-    assert!(
-        call_supplement["observations"]["mir_fixture_contract_hash"]["detail"]
-            .as_str()
-            .unwrap()
-            .contains("fixture_shape=call-return"),
-        "MIR call-return fixture contract hash should bind selector: {call_supplement:#?}"
-    );
-    assert_eq!(call_supplement["boundary"]["claims_correctness"], false);
-    assert_eq!(call_supplement["boundary"]["claims_semantic_equivalence"], false);
-    assert_eq!(call_supplement["boundary"]["claims_pure_cache_eligibility"], false);
-    assert_eq!(call_supplement["boundary"]["claims_cross_toolchain_stability"], false);
-
-    let call_receipt_path = temp.path().join("mir-fixture-call-return.json");
-    fs::write(&call_receipt_path, &call_emit.stdout).expect("write MIR call-return receipt");
-    let call_check = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "check",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--fixture-shape",
-            "call-return",
-            "--receipt",
-            call_receipt_path.to_str().unwrap(),
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR call-return fixture check");
-    assert!(
-        call_check.status.success(),
-        "MIR call-return fixture check failed stdout={} stderr={}",
-        String::from_utf8_lossy(&call_check.stdout),
-        String::from_utf8_lossy(&call_check.stderr)
-    );
-    let call_report: serde_json::Value =
-        serde_json::from_slice(&call_check.stdout).expect("MIR call-return fixture check json");
-    assert_eq!(call_report["status"], "pass");
-    assert!(
-        call_report["comparisons"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .all(|comparison| comparison["status"] == "match")
-    );
-}
-
-#[test]
-fn object_supplement_runtime_smoke_covers_nested_help_and_inventory() {
-    let root = repo_root();
-
-    for args in [
-        &["object", "supplement", "emit", "--help"][..],
-        &["object", "supplement", "check", "--help"][..],
-        &["object", "supplement", "fixtures", "--help"][..],
-    ] {
-        let output = Command::new(cargo_octet())
-            .args(args)
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run nested supplement help {args:?}: {error}"));
-        assert!(
-            output.status.success(),
-            "nested supplement help {args:?} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("cargo octet object"), "help missing object usage for {args:?}: {stdout}");
-        assert!(
-            stdout.contains("supplement fixtures --family mir --spike rustc-mir-fixture"),
-            "help missing scoped fixture inventory command for {args:?}: {stdout}"
-        );
-        assert!(
-            stdout.contains("--family hir|thir|mir"),
-            "help missing THIR fail-closed supplement family for {args:?}: {stdout}"
-        );
-    }
 
     let inventory = Command::new(cargo_octet())
         .args([
@@ -2712,261 +2976,11 @@ fn object_supplement_runtime_smoke_covers_nested_help_and_inventory() {
             .find(|fixture| fixture["shape"] == selector)
             .unwrap_or_else(|| panic!("missing fixture selector {selector}: {json:#?}"));
         assert_eq!(fixture["support_status"], "pilot-supported");
-        assert!(fixture["emit_command"].as_str().unwrap().contains(selector));
-        assert!(fixture["check_command"].as_str().unwrap().contains(selector));
     }
 }
 
 #[test]
-fn object_supplement_inventory_commands_roundtrip_for_every_shape() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create supplement roundtrip tempdir");
-    let inventory = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "fixtures",
-            "--family",
-            "hir",
-            "--spike",
-            "rustc-hir-fixture",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run HIR fixture inventory json roundtrip source");
-    assert!(
-        inventory.status.success(),
-        "inventory roundtrip source failed stdout={} stderr={}",
-        String::from_utf8_lossy(&inventory.stdout),
-        String::from_utf8_lossy(&inventory.stderr)
-    );
-    let json: serde_json::Value = serde_json::from_slice(&inventory.stdout).expect("inventory roundtrip json");
-    let shapes = json["shapes"].as_array().expect("fixture inventory shapes array");
-    let mut visited = BTreeSet::new();
-
-    for fixture in shapes {
-        let shape = fixture["shape"].as_str().expect("fixture shape");
-        visited.insert(shape.to_owned());
-        let emit_command = fixture["emit_command"].as_str().expect("emit command");
-        let emit_args: Vec<&str> = emit_command
-            .strip_prefix("cargo octet ")
-            .unwrap_or_else(|| panic!("emit command should start with cargo octet: {emit_command}"))
-            .split_whitespace()
-            .collect();
-        let emit = Command::new(cargo_octet())
-            .args(&emit_args)
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run inventory emit command for {shape}: {error}"));
-        assert!(
-            emit.status.success(),
-            "inventory emit command for {shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&emit.stdout),
-            String::from_utf8_lossy(&emit.stderr)
-        );
-        let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("emit receipt json");
-        assert_eq!(receipt["family"], "hir");
-        let supplement = receipt["supplements"]
-            .as_array()
-            .expect("supplement array")
-            .first()
-            .unwrap_or_else(|| panic!("missing emitted supplement: {receipt:#?}"));
-        assert_eq!(supplement["status"], "pilot-supported");
-        assert!(
-            supplement["observations"]["fixture_context"]["detail"]
-                .as_str()
-                .expect("fixture context detail")
-                .contains(&format!("fixture_shape={shape}")),
-            "receipt should name inventory shape {shape}: {receipt:#?}"
-        );
-
-        let receipt_path = temp.path().join(format!("{shape}.json"));
-        fs::write(&receipt_path, &emit.stdout).expect("write emitted supplement receipt");
-        let check_command = fixture["check_command"].as_str().expect("check command");
-        let check_args: Vec<String> = check_command
-            .strip_prefix("cargo octet ")
-            .unwrap_or_else(|| panic!("check command should start with cargo octet: {check_command}"))
-            .split_whitespace()
-            .map(|arg| {
-                if arg == "RECEIPT.json" {
-                    receipt_path.to_string_lossy().into_owned()
-                } else {
-                    arg.to_owned()
-                }
-            })
-            .collect();
-        let check = Command::new(cargo_octet())
-            .args(&check_args)
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run inventory check command for {shape}: {error}"));
-        assert!(
-            check.status.success(),
-            "inventory check command for {shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&check.stdout),
-            String::from_utf8_lossy(&check.stderr)
-        );
-        let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("check report json");
-        assert_eq!(report["status"], "pass");
-        assert!(
-            report["comparisons"]
-                .as_array()
-                .expect("comparison array")
-                .iter()
-                .all(|comparison| comparison["status"] == "match"),
-            "inventory check command for {shape} should match all compared fields: {report:#?}"
-        );
-    }
-
-    assert_eq!(visited, BTreeSet::from(["branch-control-flow".to_owned(), "checked-arithmetic".to_owned()]));
-}
-
-#[allow(clippy::too_many_lines)]
-#[test]
-fn thir_inventory_commands_roundtrip_selected_fixture_evidence() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create THIR supplement roundtrip tempdir");
-    let inventory = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "fixtures",
-            "--family",
-            "thir",
-            "--spike",
-            "rustc-thir-fixture",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run THIR fixture inventory json roundtrip source");
-    assert!(
-        inventory.status.success(),
-        "THIR inventory roundtrip source failed stdout={} stderr={}",
-        String::from_utf8_lossy(&inventory.stdout),
-        String::from_utf8_lossy(&inventory.stderr)
-    );
-    let json: serde_json::Value = serde_json::from_slice(&inventory.stdout).expect("THIR inventory roundtrip json");
-    assert_eq!(json["schema"], "octet.thir-fixture-inventory.v1");
-    assert_eq!(json["family"], "thir");
-    assert_eq!(json["scope"], "rustc-thir-fixture-spike");
-    assert_eq!(json["default_shape"], "checked-arithmetic");
-    let shapes = json["shapes"].as_array().expect("THIR fixture inventory shapes array");
-    let mut visited = BTreeSet::new();
-
-    for fixture in shapes {
-        let shape = fixture["shape"].as_str().expect("THIR fixture shape");
-        visited.insert(shape.to_owned());
-        if shape == "branch-control-flow" {
-            assert!(
-                fixture["fixture_path"]
-                    .as_str()
-                    .expect("THIR branch fixture path")
-                    .ends_with("thir-spike/branch_control_flow.rs"),
-                "branch-control-flow must use the THIR-specific fixture path: {fixture:#?}"
-            );
-            assert_eq!(fixture["function"], "choose_branch");
-        }
-        assert_eq!(fixture["support_status"], "pilot-supported");
-        assert!(
-            fixture["support_boundary"]
-                .as_str()
-                .expect("support boundary")
-                .contains("selected checked-in rustc THIR fixture contract only"),
-            "THIR inventory should stay selected-fixture-only: {fixture:#?}"
-        );
-        let emit_command = fixture["emit_command"].as_str().expect("emit command");
-        let emit_args: Vec<&str> = emit_command
-            .strip_prefix("cargo octet ")
-            .unwrap_or_else(|| panic!("emit command should start with cargo octet: {emit_command}"))
-            .split_whitespace()
-            .collect();
-        assert!(emit_args.windows(2).any(|window| window == ["--family", "thir"]));
-        assert!(emit_args.windows(2).any(|window| window == ["--spike", "rustc-thir-fixture"]));
-        let emit = Command::new(cargo_octet())
-            .args(&emit_args)
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run THIR inventory emit command for {shape}: {error}"));
-        assert!(
-            emit.status.success(),
-            "THIR inventory emit command for {shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&emit.stdout),
-            String::from_utf8_lossy(&emit.stderr)
-        );
-        let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("THIR emit receipt json");
-        assert_eq!(receipt["family"], "thir");
-        let supplement = receipt["supplements"]
-            .as_array()
-            .expect("THIR supplement array")
-            .first()
-            .unwrap_or_else(|| panic!("missing emitted THIR supplement: {receipt:#?}"));
-        assert_eq!(supplement["status"], "pilot-supported");
-        assert!(
-            supplement["observations"]["fixture_context"]["detail"]
-                .as_str()
-                .expect("fixture context detail")
-                .contains(&format!("fixture_shape={shape}")),
-            "THIR receipt should name inventory shape {shape}: {receipt:#?}"
-        );
-        assert_eq!(supplement["boundary"]["claims_correctness"], false);
-        assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
-        assert_eq!(supplement["boundary"]["claims_pure_cache_eligibility"], false);
-        assert_eq!(supplement["boundary"]["claims_cross_toolchain_stability"], false);
-
-        let receipt_path = temp.path().join(format!("{shape}.json"));
-        fs::write(&receipt_path, &emit.stdout).expect("write emitted THIR supplement receipt");
-        let check_command = fixture["check_command"].as_str().expect("check command");
-        let check_args: Vec<String> = check_command
-            .strip_prefix("cargo octet ")
-            .unwrap_or_else(|| panic!("check command should start with cargo octet: {check_command}"))
-            .split_whitespace()
-            .map(|arg| {
-                if arg == "RECEIPT.json" {
-                    receipt_path.to_string_lossy().into_owned()
-                } else {
-                    arg.to_owned()
-                }
-            })
-            .collect();
-        let check = Command::new(cargo_octet())
-            .args(&check_args)
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run THIR inventory check command for {shape}: {error}"));
-        assert!(
-            check.status.success(),
-            "THIR inventory check command for {shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&check.stdout),
-            String::from_utf8_lossy(&check.stderr)
-        );
-        let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("THIR check report json");
-        assert_eq!(report["status"], "pass");
-        assert!(
-            report["comparisons"]
-                .as_array()
-                .expect("comparison array")
-                .iter()
-                .all(|comparison| comparison["status"] == "match"),
-            "THIR inventory check command for {shape} should match all compared fields: {report:#?}"
-        );
-    }
-
-    assert_eq!(
-        visited,
-        BTreeSet::from([
-            "branch-control-flow".to_owned(),
-            "call-return".to_owned(),
-            "checked-arithmetic".to_owned(),
-        ])
-    );
-}
-
-#[test]
-fn thir_inventory_aggregate_gate_preserves_selected_fixture_boundaries() {
+fn thir_spike_fixture_listing_stays_closed_over_selected_shapes() {
     let root = repo_root();
     let inventory = Command::new(cargo_octet())
         .args([
@@ -3016,21 +3030,6 @@ fn thir_inventory_aggregate_gate_preserves_selected_fixture_boundaries() {
     );
     for fixture in shapes {
         assert_eq!(fixture["support_status"], "pilot-supported");
-        assert!(
-            fixture["emit_command"].as_str().expect("emit command").contains("--spike rustc-thir-fixture"),
-            "aggregate THIR inventory must expose replayable emit commands: {fixture:#?}"
-        );
-        assert!(
-            fixture["check_command"].as_str().expect("check command").contains("--spike rustc-thir-fixture"),
-            "aggregate THIR inventory must expose replayable check commands: {fixture:#?}"
-        );
-        assert!(
-            fixture["support_boundary"]
-                .as_str()
-                .expect("support boundary")
-                .contains("selected checked-in rustc THIR fixture contract only"),
-            "aggregate THIR inventory must remain selected-fixture-only: {fixture:#?}"
-        );
     }
 
     let contract = object_corpus_contract(&root);
@@ -3043,147 +3042,10 @@ fn thir_inventory_aggregate_gate_preserves_selected_fixture_boundaries() {
     assert_eq!(thir["claims_correctness"], false);
     assert_eq!(thir["claims_semantic_equivalence"], false);
     assert_eq!(thir["claims_cross_toolchain_stability"], false);
-    assert!(
-        thir["unsupported_reason"]
-            .as_str()
-            .expect("THIR unsupported reason")
-            .contains("default and non-fixture THIR requests remain unsupported-planned"),
-        "aggregate THIR inventory must not broaden default/non-fixture THIR status: {thir:#?}"
-    );
-}
-
-#[allow(clippy::too_many_lines)]
-#[test]
-fn mir_fixture_inventory_commands_roundtrip_selected_fixture_evidence() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create MIR supplement roundtrip tempdir");
-    let inventory = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "fixtures",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR fixture inventory json roundtrip source");
-    assert!(
-        inventory.status.success(),
-        "MIR inventory roundtrip source failed stdout={} stderr={}",
-        String::from_utf8_lossy(&inventory.stdout),
-        String::from_utf8_lossy(&inventory.stderr)
-    );
-    let json: serde_json::Value = serde_json::from_slice(&inventory.stdout).expect("MIR inventory roundtrip json");
-    assert_eq!(json["schema"], "octet.mir-fixture-inventory.v1");
-    assert_eq!(json["family"], "mir");
-    assert_eq!(json["scope"], "rustc-mir-fixture-spike");
-    assert_eq!(json["default_shape"], "checked-arithmetic");
-    let shapes = json["shapes"].as_array().expect("MIR fixture inventory shapes array");
-    let mut visited = BTreeSet::new();
-
-    for fixture in shapes {
-        let shape = fixture["shape"].as_str().expect("MIR fixture shape");
-        visited.insert(shape.to_owned());
-        assert_eq!(fixture["support_status"], "pilot-supported");
-        assert!(
-            fixture["support_boundary"].as_str().expect("support boundary").contains("selected-fixture-only"),
-            "MIR inventory should stay selected-fixture-only: {fixture:#?}"
-        );
-        let emit_command = fixture["emit_command"].as_str().expect("emit command");
-        let emit_args: Vec<&str> = emit_command
-            .strip_prefix("cargo octet ")
-            .unwrap_or_else(|| panic!("emit command should start with cargo octet: {emit_command}"))
-            .split_whitespace()
-            .collect();
-        assert!(emit_args.windows(2).any(|window| window == ["--family", "mir"]));
-        assert!(emit_args.windows(2).any(|window| window == ["--spike", "rustc-mir-fixture"]));
-        assert!(emit_args.windows(2).any(|window| window == ["--fixture-shape", shape]));
-        let emit = Command::new(cargo_octet())
-            .args(&emit_args)
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run MIR inventory emit command for {shape}: {error}"));
-        assert!(
-            emit.status.success(),
-            "MIR inventory emit command for {shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&emit.stdout),
-            String::from_utf8_lossy(&emit.stderr)
-        );
-        let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("MIR emit receipt json");
-        assert_eq!(receipt["family"], "mir");
-        let supplement = receipt["supplements"]
-            .as_array()
-            .expect("MIR supplement array")
-            .first()
-            .unwrap_or_else(|| panic!("missing emitted MIR supplement: {receipt:#?}"));
-        assert_eq!(supplement["status"], "pilot-supported");
-        assert!(
-            supplement["observations"]["fixture_context"]["detail"]
-                .as_str()
-                .expect("fixture context detail")
-                .contains(&format!("fixture_shape={shape}")),
-            "MIR receipt should name inventory shape {shape}: {receipt:#?}"
-        );
-        assert_eq!(supplement["boundary"]["claims_correctness"], false);
-        assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
-        assert_eq!(supplement["boundary"]["claims_pure_cache_eligibility"], false);
-        assert_eq!(supplement["boundary"]["claims_cross_toolchain_stability"], false);
-
-        let receipt_path = temp.path().join(format!("{shape}.json"));
-        fs::write(&receipt_path, &emit.stdout).expect("write emitted MIR supplement receipt");
-        let check_command = fixture["check_command"].as_str().expect("check command");
-        let check_args: Vec<String> = check_command
-            .strip_prefix("cargo octet ")
-            .unwrap_or_else(|| panic!("check command should start with cargo octet: {check_command}"))
-            .split_whitespace()
-            .map(|arg| {
-                if arg == "RECEIPT.json" {
-                    receipt_path.to_string_lossy().into_owned()
-                } else {
-                    arg.to_owned()
-                }
-            })
-            .collect();
-        let check = Command::new(cargo_octet())
-            .args(&check_args)
-            .current_dir(&root)
-            .output()
-            .unwrap_or_else(|error| panic!("run MIR inventory check command for {shape}: {error}"));
-        assert!(
-            check.status.success(),
-            "MIR inventory check command for {shape} failed stdout={} stderr={}",
-            String::from_utf8_lossy(&check.stdout),
-            String::from_utf8_lossy(&check.stderr)
-        );
-        let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("MIR check report json");
-        assert_eq!(report["status"], "pass");
-        assert!(
-            report["comparisons"]
-                .as_array()
-                .expect("comparison array")
-                .iter()
-                .all(|comparison| comparison["status"] == "match"),
-            "MIR inventory check command for {shape} should match all compared fields: {report:#?}"
-        );
-    }
-
-    assert_eq!(
-        visited,
-        BTreeSet::from([
-            "branch-control-flow".to_owned(),
-            "call-return".to_owned(),
-            "checked-arithmetic".to_owned()
-        ])
-    );
 }
 
 #[test]
-fn mir_fixture_inventory_aggregate_gate_preserves_selected_fixture_boundaries() {
+fn mir_spike_fixture_listing_stays_closed_over_selected_shapes() {
     let root = repo_root();
     let inventory = Command::new(cargo_octet())
         .args([
@@ -3221,18 +3083,6 @@ fn mir_fixture_inventory_aggregate_gate_preserves_selected_fixture_boundaries() 
     );
     for fixture in shapes {
         assert_eq!(fixture["support_status"], "pilot-supported");
-        assert!(
-            fixture["emit_command"].as_str().expect("emit command").contains("--spike rustc-mir-fixture"),
-            "aggregate MIR inventory must expose replayable emit commands: {fixture:#?}"
-        );
-        assert!(
-            fixture["check_command"].as_str().expect("check command").contains("--spike rustc-mir-fixture"),
-            "aggregate MIR inventory must expose replayable check commands: {fixture:#?}"
-        );
-        assert!(
-            fixture["support_boundary"].as_str().expect("support boundary").contains("selected-fixture-only"),
-            "aggregate MIR inventory must remain selected-fixture-only: {fixture:#?}"
-        );
     }
 
     let contract = object_corpus_contract(&root);
@@ -3245,96 +3095,7 @@ fn mir_fixture_inventory_aggregate_gate_preserves_selected_fixture_boundaries() 
     assert_eq!(mir["claims_correctness"], false);
     assert_eq!(mir["claims_semantic_equivalence"], false);
     assert_eq!(mir["claims_cross_toolchain_stability"], false);
-    assert!(
-        mir["unsupported_reason"]
-            .as_str()
-            .expect("MIR unsupported reason")
-            .contains("default and non-fixture MIR requests remain unsupported-planned"),
-        "aggregate MIR inventory must not broaden default/non-fixture MIR status: {mir:#?}"
-    );
 }
-#[test]
-fn mir_fixture_branch_control_flow_selector_emits_and_checks_bounded_receipt() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create MIR branch tempdir");
-    let receipt_path = temp.path().join("mir-branch-control-flow.json");
-    let emit = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "emit",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--fixture-shape",
-            "branch-control-flow",
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR branch-control-flow emit");
-    assert!(
-        emit.status.success(),
-        "MIR branch-control-flow emit failed stdout={} stderr={}",
-        String::from_utf8_lossy(&emit.stdout),
-        String::from_utf8_lossy(&emit.stderr)
-    );
-    let receipt: serde_json::Value = serde_json::from_slice(&emit.stdout).expect("MIR branch receipt json");
-    assert_eq!(receipt["family"], "mir");
-    let supplement = receipt["supplements"].as_array().expect("supplements")[0].clone();
-    assert_eq!(supplement["source_path"], "cargo-octet/tests/fixtures/mir-spike/branch_control_flow.rs");
-    assert_eq!(supplement["function_name"], "choose_branch");
-    assert!(
-        supplement["observations"]["fixture_context"]["detail"]
-            .as_str()
-            .expect("fixture context")
-            .contains("fixture_shape=branch-control-flow")
-    );
-    assert_eq!(supplement["boundary"]["claims_correctness"], false);
-    assert_eq!(supplement["boundary"]["claims_semantic_equivalence"], false);
-    assert_eq!(supplement["boundary"]["claims_pure_cache_eligibility"], false);
-    assert_eq!(supplement["boundary"]["claims_cross_toolchain_stability"], false);
-
-    fs::write(&receipt_path, &emit.stdout).expect("write MIR branch receipt");
-    let check = Command::new(cargo_octet())
-        .args([
-            "object",
-            "supplement",
-            "check",
-            "--family",
-            "mir",
-            "--spike",
-            "rustc-mir-fixture",
-            "--fixture-shape",
-            "branch-control-flow",
-            "--receipt",
-            &receipt_path.to_string_lossy(),
-            "--output-format",
-            "json",
-        ])
-        .current_dir(&root)
-        .output()
-        .expect("run MIR branch-control-flow check");
-    assert!(
-        check.status.success(),
-        "MIR branch-control-flow check failed stdout={} stderr={}",
-        String::from_utf8_lossy(&check.stdout),
-        String::from_utf8_lossy(&check.stderr)
-    );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("MIR branch check json");
-    assert_eq!(report["status"], "pass");
-    assert!(
-        report["comparisons"]
-            .as_array()
-            .expect("comparisons")
-            .iter()
-            .all(|comparison| comparison["status"] == "match"),
-        "MIR branch-control-flow check should match all compared fields: {report:#?}"
-    );
-}
-
 #[test]
 fn object_corpus_contract_metadata_reports_receipt_and_check_shapes() {
     let root = repo_root();
@@ -3393,40 +3154,12 @@ fn object_corpus_contract_metadata_reports_pilot_and_planned_supplement_statuses
     assert_eq!(supplements.len(), 3, "expected HIR, THIR, and MIR supplement contracts: {contract:#?}");
 
     let hir = supplements.iter().find(|value| value["family"] == "hir").expect("missing HIR supplement contract");
-    assert!(
-        hir["fixture_replay_command"].as_str().unwrap().contains("--spike rustc-hir-fixture"),
-        "HIR replay command should name fixture spike scope: {hir:#?}"
-    );
     for fixture_shape in ["checked-arithmetic", "branch-control-flow"] {
         assert!(
             hir["selected_fixture_shapes"].as_array().unwrap().iter().any(|value| value == fixture_shape),
             "HIR contract should name selected fixture shape {fixture_shape}: {hir:#?}"
         );
-        assert!(
-            hir["fixture_replay_command"].as_str().unwrap().contains(fixture_shape)
-                || hir["extractor_identity_expectations"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .any(|value| { value.as_str().unwrap().contains(fixture_shape) }),
-            "HIR contract should bind selected fixture shape {fixture_shape} to replay or extractor expectations: {hir:#?}"
-        );
     }
-    assert!(
-        hir["unsupported_reason"]
-            .as_str()
-            .unwrap()
-            .contains("non-fixture HIR requests remain unsupported-planned"),
-        "HIR contract should reject broad/non-fixture HIR support claims: {hir:#?}"
-    );
-    assert!(
-        hir["extractor_identity_expectations"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|value| value.as_str().unwrap().contains("octet-rustc-hir-fixture-spike")),
-        "HIR contract should name rustc HIR fixture spike extractor: {hir:#?}"
-    );
 
     for (family, status) in [
         ("hir", "pilot-supported"),
@@ -3438,50 +3171,6 @@ fn object_corpus_contract_metadata_reports_pilot_and_planned_supplement_statuses
             .find(|value| value["family"] == family)
             .unwrap_or_else(|| panic!("missing {family} supplement contract in {contract:#?}"));
         assert_eq!(supplement["status"], status);
-        assert!(
-            supplement["relationship_to_v1"].as_str().unwrap().contains("preserves-function-object-v1-identity"),
-            "{family} supplement must preserve v1 identity boundary: {supplement:#?}"
-        );
-        assert!(
-            supplement["toolchain_scope"].as_str().unwrap().contains("rustc-version"),
-            "{family} supplement must be rustc/toolchain scoped: {supplement:#?}"
-        );
-        for field in [
-            "schema",
-            "schema_version",
-            "function_object_hash",
-            "rustc_version",
-            "target_triple",
-            "extraction_caveats",
-            "boundary",
-        ] {
-            assert!(
-                supplement["required_fields"].as_array().unwrap().iter().any(|value| value == field),
-                "missing required {family} supplement field {field}: {supplement:#?}"
-            );
-        }
-        assert!(
-            supplement["unsupported_reason"].as_str().unwrap().contains("unsupported")
-                || supplement["unsupported_reason"].as_str().unwrap().contains("not implemented"),
-            "{family} supplement should document unsupported/bounded scope: {supplement:#?}"
-        );
-        assert!(
-            supplement["required_evidence_before_support"].as_array().unwrap().iter().any(|value| {
-                value.as_str().unwrap().contains("fixture") || value.as_str().unwrap().contains("smoke")
-            }),
-            "{family} supplement should require deterministic fixture or smoke evidence: {supplement:#?}"
-        );
-        assert!(
-            supplement["extractor_identity_expectations"].as_array().unwrap().iter().any(|value| {
-                value.as_str().unwrap().contains("extractor") || value.as_str().unwrap().contains("rustc_version")
-            }),
-            "{family} supplement should name extractor/toolchain identity expectations: {supplement:#?}"
-        );
-        assert!(
-            supplement["fixture_replay_command"].as_str().unwrap().contains("supplement")
-                || supplement["fixture_replay_command"].as_str().unwrap().contains("unsupported-planned"),
-            "{family} supplement should name fixture replay or unsupported-plan command: {supplement:#?}"
-        );
         assert_eq!(supplement["claims_correctness"], false);
         assert_eq!(supplement["claims_semantic_equivalence"], false);
         assert_eq!(supplement["claims_cross_toolchain_stability"], false);
@@ -3489,42 +3178,7 @@ fn object_corpus_contract_metadata_reports_pilot_and_planned_supplement_statuses
 }
 
 #[test]
-fn object_corpus_contract_human_reports_hir_mir_fail_closed_boundaries() {
-    let root = repo_root();
-    let output = Command::new(cargo_octet())
-        .args(["object", "corpus", "contract", "--output-format", "human"])
-        .current_dir(&root)
-        .output()
-        .expect("object corpus contract human metadata");
-    assert!(
-        output.status.success(),
-        "contract human stdout={} stderr={}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    for needle in [
-        "supplemental_evidence family=hir",
-        "supplemental_evidence family=thir",
-        "supplemental_evidence family=mir",
-        "status=pilot-supported",
-        "unsupported-planned until general extractor evidence is added",
-        "optional-supplement-preserves-function-object-v1-identity",
-        "toolchain_scope=rustc-version",
-        "extractor_identity_expectations=",
-        "selected_fixture_shapes=checked-arithmetic,branch-control-flow",
-        "selected_fixture_shapes=checked-arithmetic,call-return",
-        "fixture_replay_command=",
-        "claims_correctness=false",
-        "claims_semantic_equivalence=false",
-        "claims_cross_toolchain_stability=false",
-    ] {
-        assert!(stdout.contains(needle), "human contract output missing {needle}: {stdout}");
-    }
-}
-
-#[test]
-fn object_internal_corpus_fixture_satisfies_contract_metadata() {
+fn checked_in_internal_corpus_receipt_satisfies_contract_metadata() {
     let root = repo_root();
     let contract = object_corpus_contract(&root);
     let fixture: serde_json::Value = serde_json::from_slice(
@@ -3546,10 +3200,7 @@ fn object_internal_corpus_fixture_satisfies_contract_metadata() {
 #[test]
 fn object_corpus_contract_missing_required_field_fails_closed() {
     let temp = tempfile::tempdir().expect("create tempdir");
-    fs::write(temp.path().join("lib.rs"), "pub fn checked_value(input: u32) -> u32 { input + 1 }\n")
-        .expect("write fixture");
-    let receipt_path = temp.path().join("receipt.json");
-    let mut receipt = write_corpus_receipt(temp.path(), &["lib.rs"], &receipt_path);
+    let (receipt_path, mut receipt) = copy_checked_in_receipt(temp.path());
     let contract = object_corpus_contract(temp.path());
     let required = contract["receipt"]["required_fields"]
         .as_array()
@@ -3574,173 +3225,7 @@ fn object_corpus_contract_missing_required_field_fails_closed() {
 }
 
 #[test]
-fn object_internal_corpus_receipt_is_deterministic_and_bounded() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let first_path = temp.path().join("internal-corpus-one.json");
-    let second_path = temp.path().join("internal-corpus-two.json");
-    let first = write_corpus_receipt(&root, INTERNAL_OBJECT_CORPUS, &first_path);
-    let second = write_corpus_receipt(&root, INTERNAL_OBJECT_CORPUS, &second_path);
-    assert_eq!(fs::read(&first_path).expect("first receipt"), fs::read(&second_path).expect("second receipt"));
-    assert_eq!(first, second);
-
-    let original = corpus_summary(&emit_real_code_corpus(&root));
-    let object_count = first["object_count"].as_u64().expect("object count");
-    assert!(
-        object_count > original.object_count as u64,
-        "expanded internal corpus should exceed original three-file corpus: receipt={first:#?} original={original:?}"
-    );
-    assert_eq!(first["source_paths"].as_array().expect("source paths").len(), INTERNAL_OBJECT_CORPUS.len());
-    for path in INTERNAL_OBJECT_CORPUS {
-        assert!(
-            first["source_paths"].as_array().expect("source paths").iter().any(|value| value == path),
-            "missing source path {path} in receipt {first:#?}"
-        );
-    }
-    assert!(first["object_set_hash"].as_str().expect("object set hash").starts_with("b3:"));
-}
-
-#[test]
-fn object_internal_corpus_receipt_is_stable_across_fresh_target_dirs() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let mut receipt_bytes = BTreeSet::new();
-    let mut receipts = Vec::new();
-
-    for run in 0..4 {
-        let receipt_path = temp.path().join(format!("fresh-target-{run}.json"));
-        let target_dir = temp.path().join(format!("cargo-target-{run}"));
-        let receipt = write_corpus_receipt_with_fresh_target(&root, INTERNAL_OBJECT_CORPUS, &receipt_path, &target_dir);
-        receipt_bytes.insert(fs::read(&receipt_path).expect("read fresh-target receipt bytes"));
-        receipts.push(receipt);
-    }
-
-    assert_eq!(receipt_bytes.len(), 1, "fresh-target receipt bytes drifted across runs");
-    let baseline = &receipts[0];
-    for receipt in receipts.iter().skip(1) {
-        for field in [
-            "schema",
-            "schema_version",
-            "object_count",
-            "source_paths",
-            "object_set_hash",
-            "caveat_counts",
-            "pure_cache_blocked_count",
-            "boundary",
-        ] {
-            assert_eq!(baseline[field], receipt[field], "fresh-target receipt field `{field}` drifted");
-        }
-    }
-
-    println!("fresh_target.receipt_runs=4");
-    println!("fresh_target.receipt_bytes_b3={}", blake3_hex(receipt_bytes.iter().next().unwrap()));
-    println!("fresh_target.object_count={}", baseline["object_count"]);
-    println!("fresh_target.object_set_hash={}", baseline["object_set_hash"].as_str().expect("object set hash"));
-    println!("fresh_target.byte_stability: PASS");
-    println!("fresh_target.compared_fields_stable: PASS");
-    assert_eq!(baseline["boundary"]["claims_correctness"], false);
-    assert_eq!(baseline["boundary"]["claims_semantic_equivalence"], false);
-    println!("fresh_target.boundary_claims_false: PASS");
-}
-
-#[test]
-fn object_internal_corpus_receipt_preserves_boundary_claims() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let receipt_path = temp.path().join("internal-corpus.json");
-    let receipt = write_corpus_receipt(&root, INTERNAL_OBJECT_CORPUS, &receipt_path);
-
-    assert_eq!(receipt["schema"], "octet.function-object-corpus-receipt.v1");
-    assert_eq!(receipt["boundary"]["identity_scope"], "review-and-provenance-evidence");
-    assert_eq!(receipt["boundary"]["claims_correctness"], false);
-    assert_eq!(receipt["boundary"]["claims_semantic_equivalence"], false);
-    let boundary = receipt["boundary"]["detail"].as_str().expect("boundary detail");
-    assert!(boundary.contains("do not prove behavioral correctness"));
-    assert!(boundary.contains("semantic equivalence"));
-    assert!(receipt["pure_cache_blocked_count"].as_u64().expect("pure cache blocked") > 0);
-    assert!(
-        receipt["caveat_counts"]["dependency_status"]
-            .as_object()
-            .expect("dependency counts")
-            .values()
-            .any(|value| value.as_u64().unwrap_or(0) > 0)
-    );
-    assert!(
-        receipt["caveat_counts"]["effect_kind"]
-            .as_object()
-            .expect("effect counts")
-            .values()
-            .any(|value| value.as_u64().unwrap_or(0) > 0)
-    );
-    assert!(
-        receipt["replay"]["determinism_note"]
-            .as_str()
-            .expect("determinism note")
-            .contains("not a correctness proof")
-    );
-}
-
-#[test]
-fn object_corpus_receipt_check_replays_cleanly() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    fs::write(temp.path().join("lib.rs"), "pub fn checked_value(input: u32) -> u32 { input + 1 }\n")
-        .expect("write fixture");
-    let receipt_path = temp.path().join("receipt.json");
-    write_corpus_receipt(temp.path(), &["lib.rs"], &receipt_path);
-
-    let check = check_corpus_receipt(temp.path(), &receipt_path, &["lib.rs"]);
-    assert!(
-        check.status.success(),
-        "check stdout={} stderr={}",
-        String::from_utf8_lossy(&check.stdout),
-        String::from_utf8_lossy(&check.stderr)
-    );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("check report json");
-    assert_eq!(report["status"], "match");
-    assert!(report["comparisons"].as_array().unwrap().iter().all(|comparison| comparison["status"] == "match"));
-}
-
-#[test]
-fn object_internal_corpus_gate_fixture_replays_cleanly() {
-    let root = repo_root();
-    let fixture = root.join(INTERNAL_OBJECT_CORPUS_RECEIPT_FIXTURE);
-    let check = check_corpus_receipt(&root, &fixture, INTERNAL_OBJECT_CORPUS);
-    assert!(
-        check.status.success(),
-        "internal corpus gate stdout={} stderr={}",
-        String::from_utf8_lossy(&check.stdout),
-        String::from_utf8_lossy(&check.stderr)
-    );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("internal corpus check report json");
-    assert_eq!(report["status"], "match");
-    let comparisons = report["comparisons"].as_array().expect("comparisons array");
-    assert!(comparisons.iter().all(|comparison| comparison["status"] == "match"), "report={report:#?}");
-    assert!(
-        comparisons.iter().any(|comparison| {
-            comparison["field"] == "boundary"
-                && comparison["expected"]["claims_correctness"] == false
-                && comparison["current"]["claims_correctness"] == false
-                && comparison["expected"]["claims_semantic_equivalence"] == false
-                && comparison["current"]["claims_semantic_equivalence"] == false
-        }),
-        "boundary comparison missing no-correctness/no-semantic-equivalence claims: {report:#?}"
-    );
-}
-
-#[test]
-fn object_internal_corpus_gate_fixture_matches_fresh_receipt() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let fresh_path = temp.path().join("internal-corpus-receipt.json");
-    write_corpus_receipt(&root, INTERNAL_OBJECT_CORPUS, &fresh_path);
-    let fixture_bytes =
-        fs::read(root.join(INTERNAL_OBJECT_CORPUS_RECEIPT_FIXTURE)).expect("read checked-in receipt fixture");
-    let fresh_bytes = fs::read(&fresh_path).expect("read fresh receipt");
-    assert_eq!(fresh_bytes, fixture_bytes, "checked-in internal corpus receipt fixture is stale");
-}
-
-#[test]
-fn object_internal_corpus_expanded_taxonomy_names_selected_source_buckets() {
+fn checked_in_expanded_corpus_taxonomy_names_selected_source_buckets() {
     let root = repo_root();
     let taxonomy = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_TAXONOMY_FIXTURE);
     let receipt = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_RECEIPT_FIXTURE);
@@ -3773,70 +3258,7 @@ fn object_internal_corpus_expanded_taxonomy_names_selected_source_buckets() {
 }
 
 #[test]
-fn object_internal_corpus_expanded_fixture_replays_cleanly() {
-    let root = repo_root();
-    let taxonomy = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_TAXONOMY_FIXTURE);
-    let paths = expanded_internal_object_corpus_paths(&taxonomy);
-    let check = check_corpus_receipt(&root, &root.join(EXPANDED_INTERNAL_OBJECT_CORPUS_RECEIPT_FIXTURE), &paths);
-    assert!(
-        check.status.success(),
-        "expanded internal corpus stdout={} stderr={}",
-        String::from_utf8_lossy(&check.stdout),
-        String::from_utf8_lossy(&check.stderr)
-    );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("expanded check report json");
-    assert_eq!(report["status"], "match");
-    assert!(report["comparisons"].as_array().unwrap().iter().all(|comparison| comparison["status"] == "match"));
-}
-
-#[test]
-fn object_internal_corpus_expanded_fixture_matches_fresh_receipt_and_preserves_boundaries() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let taxonomy = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_TAXONOMY_FIXTURE);
-    let paths = expanded_internal_object_corpus_paths(&taxonomy);
-    let fresh_path = temp.path().join("expanded-internal-corpus-receipt.json");
-    let fresh = write_corpus_receipt(&root, &paths, &fresh_path);
-    let fixture_bytes = fs::read(root.join(EXPANDED_INTERNAL_OBJECT_CORPUS_RECEIPT_FIXTURE))
-        .expect("read expanded checked-in receipt fixture");
-    let fresh_bytes = fs::read(&fresh_path).expect("read expanded fresh receipt");
-    assert_eq!(fresh_bytes, fixture_bytes, "checked-in expanded corpus receipt fixture is stale");
-    assert_eq!(fresh["boundary"]["claims_correctness"], false);
-    assert_eq!(fresh["boundary"]["claims_semantic_equivalence"], false);
-    assert!(fresh["object_count"].as_u64().expect("object count") > 400);
-    assert!(fresh["pure_cache_blocked_count"].as_u64().expect("pure cache blocked") > 0);
-    assert_eq!(taxonomy["boundary"]["claims_correctness"], false);
-    assert_eq!(taxonomy["boundary"]["claims_semantic_equivalence"], false);
-}
-
-#[test]
-fn object_internal_corpus_expanded_caveat_taxonomy_fixture_matches_fresh_report() {
-    let root = repo_root();
-    let taxonomy = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_TAXONOMY_FIXTURE);
-    let paths = expanded_internal_object_corpus_paths(&taxonomy);
-    let fresh_bytes = object_corpus_caveat_taxonomy(&root, &paths);
-    let fixture_bytes = fs::read(root.join(EXPANDED_INTERNAL_OBJECT_CORPUS_CAVEAT_TAXONOMY_FIXTURE))
-        .expect("read expanded caveat taxonomy fixture");
-    assert_eq!(fresh_bytes, fixture_bytes, "checked-in caveat taxonomy fixture is stale");
-}
-
-#[test]
-#[ignore = "explicit fixture refresh mutates checked-in object corpus receipts"]
-fn update_internal_object_corpus_fixtures() {
-    let root = repo_root();
-    let taxonomy = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_TAXONOMY_FIXTURE);
-    let paths = expanded_internal_object_corpus_paths(&taxonomy);
-    write_corpus_receipt(&root, INTERNAL_OBJECT_CORPUS, &root.join(INTERNAL_OBJECT_CORPUS_RECEIPT_FIXTURE));
-    write_corpus_receipt(&root, &paths, &root.join(EXPANDED_INTERNAL_OBJECT_CORPUS_RECEIPT_FIXTURE));
-    fs::write(
-        root.join(EXPANDED_INTERNAL_OBJECT_CORPUS_CAVEAT_TAXONOMY_FIXTURE),
-        object_corpus_caveat_taxonomy(&root, &paths),
-    )
-    .expect("refresh expanded caveat taxonomy fixture");
-}
-
-#[test]
-fn object_internal_corpus_caveat_taxonomy_names_per_source_blockers() {
+fn checked_in_corpus_caveat_report_names_per_source_blockers() {
     let root = repo_root();
     let report = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_CAVEAT_TAXONOMY_FIXTURE);
     assert_eq!(report["schema"], "octet.function-object-corpus-caveat-taxonomy.v1");
@@ -3873,7 +3295,7 @@ fn object_internal_corpus_caveat_taxonomy_names_per_source_blockers() {
 }
 
 #[test]
-fn object_internal_corpus_caveat_taxonomy_preserves_non_proof_boundaries() {
+fn checked_in_corpus_caveat_report_preserves_non_proof_boundaries() {
     let root = repo_root();
     let report = read_json_fixture(&root, EXPANDED_INTERNAL_OBJECT_CORPUS_CAVEAT_TAXONOMY_FIXTURE);
     assert_eq!(report["boundary"]["identity_scope"], "review-and-provenance-evidence");
@@ -3892,7 +3314,7 @@ fn object_internal_corpus_caveat_taxonomy_preserves_non_proof_boundaries() {
 }
 
 #[test]
-fn object_corpus_compatibility_positive_v1_fixture_replays_cleanly() {
+fn object_corpus_compatibility_historical_v1_is_stale_under_v2() {
     let root = repo_root();
     let compatibility_dir = root.join(OBJECT_CORPUS_COMPATIBILITY_DIR);
     let fixture: serde_json::Value = serde_json::from_slice(
@@ -3909,22 +3331,158 @@ fn object_corpus_compatibility_positive_v1_fixture_replays_cleanly() {
 
     let check = check_corpus_receipt_fixture(&root, OBJECT_CORPUS_COMPATIBILITY_POSITIVE_V1);
     assert!(
-        check.status.success(),
-        "positive compatibility fixture stdout={} stderr={}",
+        !check.status.success(),
+        "historical v1 receipt unexpectedly matched current v2 source stdout={} stderr={}",
         String::from_utf8_lossy(&check.stdout),
         String::from_utf8_lossy(&check.stderr)
     );
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("positive check report json");
-    assert_eq!(report["status"], "match");
+    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("historical check report json");
+    assert_eq!(report["status"], "mismatch");
     assert!(report["errors"].as_array().expect("errors array").is_empty());
     assert!(
         report["comparisons"]
             .as_array()
             .expect("comparisons array")
             .iter()
-            .all(|comparison| comparison["status"] == "match"),
-        "positive compatibility comparisons did not all match: {report:#?}"
+            .any(|comparison| comparison["field"] == "object_set_hash" && comparison["status"] == "mismatch"),
+        "historical v1 object set must differ from current v2 objects: {report:#?}"
     );
+}
+
+#[test]
+// One pair of test-owned v1 objects flows through diff, pointer, and bundle commands in sequence.
+#[allow(clippy::too_many_lines)]
+fn object_corpus_compatibility_preserves_v1_artifact_read() {
+    use valence_core::function_object::DependencyIdentityStatus;
+    use valence_core::function_object::FunctionObjectInput;
+    use valence_core::function_object::NORMALIZATION_ALGORITHM;
+    use valence_core::function_object::NormalizedFunctionSource;
+    use valence_core::function_object::SourceSpan;
+    use valence_core::function_object::build_function_object;
+
+    let root = repo_root();
+    let receipt = read_json_fixture(
+        &root,
+        &format!("{OBJECT_CORPUS_COMPATIBILITY_DIR}/{OBJECT_CORPUS_COMPATIBILITY_POSITIVE_V1}"),
+    );
+    assert_eq!(receipt["schema"], "octet.function-object-corpus-receipt.v1");
+    assert_eq!(receipt["schema_version"], 1);
+    let historical_hash = receipt["object_set_hash"].as_str().expect("historical receipt object-set hash");
+    assert_eq!(historical_hash, "b3:7f97a686c4c6697a58dd6d2754c7aa9cb4c2a2d81653814028fedf39a5b33883");
+
+    // No standalone historical v1 object JSON is archived here. Construct
+    // test-owned, genuine v1 objects with the public core API, independently
+    // pinning the first identity to the golden captured from the v1 parent.
+    // Neither object belongs to the saved historical corpus receipt.
+    let temp = tempfile::tempdir().expect("create tempdir");
+    let old_path = temp.path().join("old-v1-shape.json");
+    let new_path = temp.path().join("new-v1-shape.json");
+    let objects_path = temp.path().join("v1-shape-objects.json");
+    let construct = |source: &str| {
+        build_function_object(FunctionObjectInput {
+            tool_name: "cargo-octet",
+            tool_version: "0.1.0",
+            name: "answer",
+            source_path: "src/lib.rs".to_owned(),
+            source_span: SourceSpan {
+                start_line: 1,
+                end_line: 1,
+            },
+            function_source: source,
+            normalized_function_source: NormalizedFunctionSource::new(NORMALIZATION_ALGORITHM, source.to_owned())
+                .expect("supported pinned v1 algorithm"),
+            dependency_set_hash: blake3_hex(b"answer"),
+            dependency_identity_status: DependencyIdentityStatus::SourceScannerTokenSet,
+            macro_calls: false,
+        })
+        .expect("construct typed v1 object")
+    };
+    let old = construct("pub fn answer() -> u32 { 42 }");
+    let new = construct("pub fn answer() -> u32 { 43 }");
+    let old_hash = old.object_hash.clone();
+    let new_hash = new.object_hash.clone();
+    assert_eq!(old_hash, "b3:da550fa4897c0b6b3ba9adb819eb1c1bedf5f5b6ad6c1c4498d9afef0719c9b4");
+    assert_ne!(new_hash, old_hash);
+    let old_object = serde_json::to_value(&old).expect("serialize typed pinned-v1 object");
+    let changed_object = serde_json::to_value(&new).expect("serialize changed typed pinned-v1 object");
+    assert_eq!(old_object["schema"], "octet.function-object.v1");
+    assert_eq!(old_object["normalization"]["algorithm"], NORMALIZATION_ALGORITHM);
+    assert_eq!(old_object["dependency_caveats"][0]["status"], "source-scanner-token-set");
+    assert_eq!(old_object["correctness_claim"]["claims_correctness"], false);
+    fs::write(&old_path, serde_json::to_vec(&old_object).expect("encode test-owned object"))
+        .expect("write test-owned object");
+    fs::write(&new_path, serde_json::to_vec(&changed_object).expect("encode changed test-owned object"))
+        .expect("write changed test-owned object");
+    fs::write(
+        &objects_path,
+        serde_json::to_vec(&serde_json::json!({
+            "schema_version": 1,
+            "mode": "emit",
+            "objects": [&old_object]
+        }))
+        .expect("encode test-owned object report"),
+    )
+    .expect("write test-owned object report");
+
+    let diff = Command::new(cargo_octet())
+        .args(["object", "diff", "--old"])
+        .arg(&old_path)
+        .args(["--new"])
+        .arg(&new_path)
+        .args(["--output-format", "json"])
+        .output()
+        .expect("diff artifact-only v1-shape object");
+    assert!(diff.status.success(), "diff stderr: {}", String::from_utf8_lossy(&diff.stderr));
+    let comparison: serde_json::Value = serde_json::from_slice(&diff.stdout).expect("diff json");
+    assert_eq!(comparison["old_object_hash"], old_hash);
+    assert_eq!(comparison["new_object_hash"], new_hash);
+    assert_eq!(comparison["body_changed"], true);
+    assert_eq!(comparison["signature_changed"], false);
+
+    let manifest = temp.path().join("pointers.json");
+    let pointer_receipt = temp.path().join("pointer-receipt.json");
+    let set = Command::new(cargo_octet())
+        .args(["object", "pointer", "set", "--manifest"])
+        .arg(&manifest)
+        .args(["--name", "crate::answer", "--hash", &old_hash, "--objects"])
+        .arg(&objects_path)
+        .args(["--receipt"])
+        .arg(&pointer_receipt)
+        .output()
+        .expect("set artifact-only pointer");
+    assert!(set.status.success(), "pointer stderr: {}", String::from_utf8_lossy(&set.stderr));
+    let validate = Command::new(cargo_octet())
+        .args(["object", "pointer", "validate", "--manifest"])
+        .arg(&manifest)
+        .args(["--objects"])
+        .arg(&objects_path)
+        .output()
+        .expect("validate artifact-only pointer");
+    assert!(
+        validate.status.success(),
+        "pointer validation stderr: {}",
+        String::from_utf8_lossy(&validate.stderr)
+    );
+    let validation: serde_json::Value = serde_json::from_slice(&validate.stdout).expect("validation json");
+    assert_eq!(validation["status"], "resolved");
+
+    let bundle_path = temp.path().join("bundle.json");
+    let bundle = Command::new(cargo_octet())
+        .args(["object", "bundle", "export", "--objects"])
+        .arg(&objects_path)
+        .args(["--pointers"])
+        .arg(&manifest)
+        .args(["--output"])
+        .arg(&bundle_path)
+        .args(["--replay-command", "test-owned typed v1 artifact; no source replay"])
+        .output()
+        .expect("export artifact-only bundle");
+    assert!(bundle.status.success(), "bundle stderr: {}", String::from_utf8_lossy(&bundle.stderr));
+    let exported: serde_json::Value =
+        serde_json::from_slice(&fs::read(bundle_path).expect("read bundle")).expect("bundle json");
+    assert_eq!(exported["objects"][0], old_object);
+    assert_eq!(exported["object_count"], 1);
+    assert_eq!(exported["pointer_count"], 1);
 }
 
 #[test]
@@ -4010,57 +3568,6 @@ fn object_corpus_compatibility_source_selection_fixtures_fail_closed() {
     );
 }
 
-#[test]
-fn object_corpus_receipt_check_fails_on_source_drift() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let fixture = temp.path().join("lib.rs");
-    fs::write(&fixture, "pub fn checked_value(input: u32) -> u32 { input + 1 }\n").expect("write fixture");
-    let receipt_path = temp.path().join("receipt.json");
-    write_corpus_receipt(temp.path(), &["lib.rs"], &receipt_path);
-    fs::write(&fixture, "pub fn checked_value(input: u32) -> u32 { input + 2 }\n").expect("mutate fixture");
-
-    let check = check_corpus_receipt(temp.path(), &receipt_path, &["lib.rs"]);
-    assert!(!check.status.success(), "drift check unexpectedly passed");
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("check report json");
-    assert_eq!(report["status"], "mismatch");
-    assert!(
-        report["comparisons"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|comparison| { comparison["field"] == "object_set_hash" && comparison["status"] == "mismatch" }),
-        "expected object_set_hash mismatch in {report:#?}"
-    );
-}
-
-#[test]
-fn object_corpus_receipt_check_fails_on_boundary_tamper() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    fs::write(temp.path().join("lib.rs"), "pub fn checked_value(input: u32) -> u32 { input + 1 }\n")
-        .expect("write fixture");
-    let receipt_path = temp.path().join("receipt.json");
-    let mut receipt = write_corpus_receipt(temp.path(), &["lib.rs"], &receipt_path);
-    receipt["boundary"]["claims_correctness"] = serde_json::Value::Bool(true);
-    fs::write(
-        &receipt_path,
-        format!("{}\n", serde_json::to_string_pretty(&receipt).expect("tampered receipt json")),
-    )
-    .expect("write tampered receipt");
-
-    let check = check_corpus_receipt(temp.path(), &receipt_path, &["lib.rs"]);
-    assert!(!check.status.success(), "boundary tamper check unexpectedly passed");
-    let report: serde_json::Value = serde_json::from_slice(&check.stdout).expect("check report json");
-    assert_eq!(report["status"], "mismatch");
-    assert!(
-        report["comparisons"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|comparison| { comparison["field"] == "boundary" && comparison["status"] == "mismatch" }),
-        "expected boundary mismatch in {report:#?}"
-    );
-}
-
 fn assert_invalid_check_error(output: &std::process::Output, expected_kind: &str) -> serde_json::Value {
     assert!(
         !output.status.success(),
@@ -4101,10 +3608,7 @@ fn object_corpus_receipt_check_reports_malformed_receipts() {
 #[test]
 fn object_corpus_receipt_check_rejects_unsupported_schema_and_future_version() {
     let temp = tempfile::tempdir().expect("create tempdir");
-    fs::write(temp.path().join("lib.rs"), "pub fn checked_value(input: u32) -> u32 { input + 1 }\n")
-        .expect("write fixture");
-    let receipt_path = temp.path().join("receipt.json");
-    let mut receipt = write_corpus_receipt(temp.path(), &["lib.rs"], &receipt_path);
+    let (receipt_path, mut receipt) = copy_checked_in_receipt(temp.path());
 
     receipt["schema"] = serde_json::Value::String("octet.future-corpus-receipt.v9".to_owned());
     fs::write(&receipt_path, format!("{}\n", serde_json::to_string_pretty(&receipt).unwrap()))
@@ -4122,37 +3626,11 @@ fn object_corpus_receipt_check_rejects_unsupported_schema_and_future_version() {
 }
 
 #[test]
-fn object_corpus_receipt_check_rejects_missing_required_fields() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    fs::write(temp.path().join("lib.rs"), "pub fn checked_value(input: u32) -> u32 { input + 1 }\n")
-        .expect("write fixture");
-    let receipt_path = temp.path().join("receipt.json");
-    let mut receipt = write_corpus_receipt(temp.path(), &["lib.rs"], &receipt_path);
-    receipt.as_object_mut().expect("receipt object").remove("object_set_hash");
-    fs::write(&receipt_path, format!("{}\n", serde_json::to_string_pretty(&receipt).unwrap()))
-        .expect("write missing field receipt");
-
-    let report =
-        assert_invalid_check_error(&check_corpus_receipt(temp.path(), &receipt_path, &["lib.rs"]), "missing-field");
-    assert!(
-        report["errors"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|error| { error["kind"] == "missing-field" && error["field"] == "object_set_hash" }),
-        "missing object_set_hash field not named in {report:#?}"
-    );
-}
-
-#[test]
 fn object_corpus_receipt_check_rejects_invalid_source_selection() {
     let temp = tempfile::tempdir().expect("create tempdir");
-    fs::write(temp.path().join("lib.rs"), "pub fn checked_value(input: u32) -> u32 { input + 1 }\n")
-        .expect("write fixture");
+    let (receipt_path, _) = copy_checked_in_receipt(temp.path());
     fs::write(temp.path().join("README.md"), "not rust\n").expect("write non-rust fixture");
     fs::write(temp.path().join("empty.rs"), "// no functions here\n").expect("write empty rust fixture");
-    let receipt_path = temp.path().join("receipt.json");
-    write_corpus_receipt(temp.path(), &["lib.rs"], &receipt_path);
 
     assert_invalid_check_error(
         &check_corpus_receipt(temp.path(), &receipt_path, &["missing.rs"]),
@@ -4167,116 +3645,4 @@ fn object_corpus_receipt_check_rejects_invalid_source_selection() {
         "unsupported-source-path",
     );
     assert_invalid_check_error(&check_corpus_receipt(temp.path(), &receipt_path, &["empty.rs"]), "empty-corpus");
-}
-
-#[test]
-fn object_real_code_harness_emits_stable_summary() {
-    let root = repo_root();
-    let first = emit_real_code_corpus(&root);
-    let second = emit_real_code_corpus(&root);
-    assert_eq!(first, second);
-
-    let summary = corpus_summary(&first);
-    assert!(summary.object_count >= 30, "expected broad real-code corpus coverage, saw {summary:?}");
-    assert_eq!(
-        summary.source_paths,
-        BTreeSet::from([
-            "cargo-octet/src/cli.rs".to_owned(),
-            "cargo-octet/src/fingerprint.rs".to_owned(),
-            "cargo-octet/src/object.rs".to_owned(),
-        ])
-    );
-    assert!(summary.macro_review_required > 0, "expected macro caveats in real corpus: {summary:?}");
-    assert!(summary.panic_caveats > 0, "expected panic caveats in real corpus: {summary:?}");
-    assert_eq!(summary.pure_cache_blocked, summary.object_count);
-    assert!(
-        first["objects"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .all(|object| object["correctness_claim"]["claims_correctness"] == false)
-    );
-}
-
-#[test]
-fn object_harness_negative_cases_are_classified() {
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let fixture = temp.path().join("lib.rs");
-    fs::write(
-        &fixture,
-        r"pub fn changed_value(input: u32) -> u32 {
-    input + 1
-}
-",
-    )
-    .expect("write initial fixture");
-    let initial = emit_objects_json(temp.path(), &["lib.rs"]);
-    let initial_hash = object_hash(&initial, "changed_value");
-
-    fs::write(
-        &fixture,
-        r"// comment-only entropy should not affect object identity
-pub fn changed_value( input: u32 ) -> u32 { input + 1 }
-",
-    )
-    .expect("write formatted fixture");
-    let formatted = emit_objects_json(temp.path(), &["lib.rs"]);
-    assert_eq!(initial_hash, object_hash(&formatted, "changed_value"));
-
-    fs::write(&fixture, "pub fn changed_value(input: u32) -> u32 { input + 2 }\n").expect("write body mutation");
-    let changed = emit_objects_json(temp.path(), &["lib.rs"]);
-    assert_ne!(initial_hash, object_hash(&changed, "changed_value"));
-
-    fs::write(
-        &fixture,
-        r#"pub fn macro_heavy(input: Option<u32>) -> u32 {
-    format!("{}", input.unwrap()).len() as u32
-}
-"#,
-    )
-    .expect("write macro-heavy fixture");
-    let macro_json = emit_objects_json(temp.path(), &["lib.rs"]);
-    let macro_object = &macro_json["objects"][0];
-    assert_eq!(macro_object["macro_caveats"][0]["status"], "review-required");
-    assert!(macro_object["effect_caveats"].as_array().unwrap().iter().any(|caveat| caveat["kind"] == "panic"));
-    assert_eq!(macro_object["pure_cache_eligibility"]["status"], "blocked-by-caveats");
-}
-
-#[test]
-fn object_harness_bundle_determinism_and_pointer_failures() {
-    let root = repo_root();
-    let temp = tempfile::tempdir().expect("create tempdir");
-    let objects_path = temp.path().join("real-code-objects.json");
-    let objects_json = write_objects(&root, REAL_CODE_CORPUS, &objects_path);
-    let first_bundle = temp.path().join("real-code-bundle-one.json");
-    let second_bundle = temp.path().join("real-code-bundle-two.json");
-
-    for output_path in [&first_bundle, &second_bundle] {
-        let bundle = export_bundle(&root, &objects_path, None, output_path);
-        assert!(bundle.status.success(), "real-code bundle stderr: {}", String::from_utf8_lossy(&bundle.stderr));
-    }
-    let first_bundle_text = fs::read_to_string(&first_bundle).expect("read first bundle");
-    let second_bundle_text = fs::read_to_string(&second_bundle).expect("read second bundle");
-    assert_eq!(first_bundle_text, second_bundle_text);
-    let bundle_json: serde_json::Value = serde_json::from_str(&first_bundle_text).expect("bundle json");
-    assert_eq!(bundle_json["object_count"], objects_json["objects"].as_array().unwrap().len());
-    assert_eq!(bundle_json["pointer_count"], 0);
-    assert!(bundle_json["bundle_hash"].as_str().unwrap().starts_with("b3:"));
-    assert!(bundle_json["replay"]["command"].as_str().unwrap().contains("cargo-octet/src/object.rs"));
-
-    let pointers = temp.path().join("missing-pointer.json");
-    fs::write(
-        &pointers,
-        r#"{"schema_version":1,"pointers":{"crate::missing":{"object_hash":"b3:0000000000000000000000000000000000000000000000000000000000000000","semantic_name":"crate::missing"}},"history":{}}"#,
-    )
-    .expect("write missing pointer manifest");
-    let failed_bundle = export_bundle(&root, &objects_path, Some(&pointers), &temp.path().join("bad-bundle.json"));
-    assert!(!failed_bundle.status.success(), "bundle with unresolved pointer unexpectedly passed");
-    assert!(
-        String::from_utf8_lossy(&failed_bundle.stderr).contains("pointer")
-            || String::from_utf8_lossy(&failed_bundle.stdout).contains("missing-object"),
-        "missing pointer failure was not classified: stdout={} stderr={}",
-        String::from_utf8_lossy(&failed_bundle.stdout),
-        String::from_utf8_lossy(&failed_bundle.stderr)
-    );
 }

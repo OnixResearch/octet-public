@@ -33,6 +33,14 @@ Every saved dynamic evidence artifact must include:
 6. Link back to the OpenSpec scenario or review checklist row.
 7. For unsafe/FFI profiles, link the `UNSAFE-TRUST-BOUNDARY:` record and state the selected command, fixture, transcript or artifact, and acceptance signal.
 
+## Miri and Loom profiles
+
+`cargo octet evidence collect --rail dynamic-evidence` accepts the built-in `miri-unsafe-boundary` (alias `miri`) and `loom-concurrency` (alias `loom`) profiles, in both `--run` and `--input` modes. The allowed command (`cargo miri test` or `cargo test`) and the expected acceptance signal (`passed`) come from the built-in profile. The Loom profile runs `cargo test` with `RUSTFLAGS=--cfg loom` in the child environment, because Cargo takes `--cfg loom` from its rustflags environment, not from its own argv. Cargo reads `CARGO_ENCODED_RUSTFLAGS` before `RUSTFLAGS`, so the profile also sets `CARGO_ENCODED_RUSTFLAGS` to `--cfg loom` in its `0x1f`-separated form. Both values replace any inherited `RUSTFLAGS` or `CARGO_ENCODED_RUSTFLAGS`, so an inherited encoded value cannot drop the cfg and let Loom models go uncompiled. Octet ignores `known_profiles`, `allowed_commands`, and `expected_signal` fields in imported JSON.
+
+With `--run`, `--profile` and `--command` select the profile and must name its allowed command. Octet does not parse the test output: exit status 0 is the `passed` acceptance signal, and any other status records one `dynamic-finding` error. The receipt's `bounded_log_identity` binds the combined stdout and stderr transcript.
+
+With `--input`, the imported JSON must carry its own `profile` and `command` strings and a non-negative integer `finding_count`. `--profile` and `--command` are optional; when given, they must match the input's profile (aliases count as the same profile) and command rather than replace them. A missing or unknown profile, a missing or different command, a missing or mistyped `finding_count`, or any observed signal other than `passed` fails the receipt.
+
 ## Cargo-fuzz libFuzzer profile
 
 The `cargo-fuzz-libfuzzer` profile is optional. Starter `cargo octet check` does not resolve or run cargo-fuzz.
@@ -55,11 +63,21 @@ The reviewed run command is fixed:
 cargo fuzz run octet-profile-intake -- -max_total_time=60 -runs=100000 -seed=1
 ```
 
-Octet rejects `--command` for this profile. It binds the exact target, libFuzzer engine, nightly toolchain, address sanitizer, budgets, corpus roots, dictionary identity, crash input, minimized reproducer, replay command, and bounded log identity.
+Octet rejects `--command` for this profile. It binds the exact target, libFuzzer engine, nightly toolchain, observed compiler identity, address sanitizer, budgets, corpus roots, dictionary identity, crash input, minimized reproducer, replay command, and bounded log identity.
+
+With `--run`, Octet executes that command through Bounded Exec in a fresh process group. The child starts from a cleared environment and receives only these variables when they are set: `PATH`, `HOME`, `CARGO_HOME`, `RUSTUP_HOME`, `LD_LIBRARY_PATH`, `TMPDIR`, `CC`, `CXX`, `SSL_CERT_FILE`, and `NIX_SSL_CERT_FILE`. The ambient `RUSTUP_TOOLCHAIN` and `RUSTC` are withheld. Octet resolves `cargo` and `rustc` from the absolute entries of that `PATH`.
+
+Before the run, Octet runs that `rustc -vV` in the same cleared environment and working directory. It refuses to run unless the reported `commit-hash` equals the profile's `rustc_commit_hash`, the `nightly-2026-03-21` rustc commit. The receipt's `compiler_identity` is the BLAKE3 identity of that whole `rustc -vV` report.
+
+Octet then gives the cargo-fuzz child `RUSTC` set to the absolute path of the probed compiler, plus empty `RUSTC_WRAPPER` and `RUSTC_WORKSPACE_WRAPPER`. Cargo ranks these variables above `build.rustc`, `build.rustc-wrapper`, and `build.rustc-workspace-wrapper` in any `.cargo/config.toml`, and an empty wrapper variable disables a configured wrapper. A workspace or home Cargo config, a relative `PATH` entry, or a toolchain override cannot swap the compiler after Octet observes it.
+
+The run deadline is the 60-second libFuzzer budget plus a 14-minute build allowance. Stdout and stderr each retain at most half of the 1 MiB receipt log limit. A timeout or an output overflow stops the whole process group and fails the run without a receipt.
+
+The artifact directory `fuzz/artifacts/octet-profile-intake` must be empty or absent before a run. Octet rejects the run otherwise, because libFuzzer reuses content-hash file names and earlier `crash-*`, `leak-*`, `oom-*`, `timeout-*`, or `minimized-*` files would decide the outcome. Move earlier artifacts aside before you rerun.
 
 Corpus rows use safe relative paths, lengths, and BLAKE3 identities. The canonical root sorts rows and uses the `octet-cargo-fuzz-corpus-v1` framing domain. Hash-only rows reduce disclosure, but hashes can still reveal known sensitive inputs. Do not put credentials, production records, or personal data in a corpus.
 
-A clean receipt means only that one target found no crash under the selected seed and budget. A crash receipt remains failed evidence. It must retain both the original crash input and minimized reproducer identity. Reviewers must reproduce the crash with the recorded replay argv before they use it in a decision.
+A clean receipt means only that one target found no crash under the selected seed and budget. libFuzzer `crash-*`, `leak-*`, `oom-*`, and `timeout-*` artifacts are all findings: a failed run that leaves one gets a `crash` outcome with that artifact bound as the crash input. A crash receipt remains failed evidence. It must retain both the original crash input and minimized reproducer identity. Reviewers must reproduce the crash with the recorded replay argv before they use it in a decision.
 
 The rail rejects unsupported profiles, arbitrary command text, unsafe paths, duplicate artifacts, stale corpus roots, missing crash roles, excessive counts or bytes, malformed receipts, and non-transcript evidence tiers.
 

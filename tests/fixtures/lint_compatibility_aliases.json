@@ -116,6 +116,14 @@
     "canonical_lint_name": "tigerstyle::too_many_parameters"
   },
   {
+    "alias_name": "raw_bool_parameter",
+    "canonical_lint_name": "tigerstyle::raw_bool_parameter"
+  },
+  {
+    "alias_name": "raw_bool_parameter_suppression",
+    "canonical_lint_name": "tigerstyle::raw_bool_parameter_suppression"
+  },
+  {
     "alias_name": "fat_trait",
     "canonical_lint_name": "tigerstyle::fat_trait"
   },
@@ -286,5 +294,17 @@
   {
     "alias_name": "no_recursion",
     "canonical_lint_name": "tigerstyle::no_recursion"
+  },
+  {
+    "alias_name": "discarded_sync_result",
+    "canonical_lint_name": "tigerstyle::discarded_sync_result"
+  },
+  {
+    "alias_name": "flush_only_durability",
+    "canonical_lint_name": "tigerstyle::flush_only_durability"
+  },
+  {
+    "alias_name": "retry_sync_after_error",
+    "canonical_lint_name": "tigerstyle::retry_sync_after_error"
   }
 ]

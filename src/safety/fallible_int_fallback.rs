@@ -38,13 +38,14 @@ fn is_integer_ty(ty: ty::Ty<'_>) -> bool {
 }
 
 fn is_try_from_int_error(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
+    const TRY_FROM_INT_ERROR_DEF_PATH: [&str; 4] = ["core", "num", "error", "TryFromIntError"];
+
     let ty::Adt(adt, _) = ty.kind() else {
         return false;
     };
-    matches!(
-        cx.tcx.def_path_str(adt.did()).as_str(),
-        "core::num::error::TryFromIntError" | "std::num::TryFromIntError"
-    )
+    // Match the definition path: the printed path follows the visible re-export
+    // (`std::num::...` or, without std, `core::num::...`).
+    cx.get_def_path(adt.did()).iter().map(rustc_span::Symbol::as_str).eq(TRY_FROM_INT_ERROR_DEF_PATH)
 }
 
 fn is_zero_literal(expr: &hir::Expr<'_>) -> bool {

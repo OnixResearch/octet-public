@@ -1,0 +1,18 @@
+{
+  "policy": {
+    "default_algorithm": "BLAKE3",
+    "exceptions": [],
+    "non_claims": [
+      "hash policy validation does not prove artifact truth"
+    ]
+  },
+  "fields": [
+    {
+      "schema": "chaoscontrol.snapshot.v1",
+      "field_path": "snapshots.parent_snapshot_ref",
+      "algorithm": "SHA256",
+      "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "stack_owned_identity": true
+    }
+  ]
+}

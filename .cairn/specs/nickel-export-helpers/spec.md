@@ -48,6 +48,7 @@ r[octet.nickel_export_helpers.manifest.stale]
 - GIVEN a Nickel source, dependency, or generated artifact changes without refreshing the export manifest
 - WHEN export freshness verification runs
 - THEN verification MUST fail with a diagnostic naming the stale source, dependency, or generated artifact.
+- AND verification MUST fail when the evaluator identity, generator, or any entry's family, contract, selector, format, command, or source, dependency, or output path differs from the manifest rebuilt from current inputs, or when an output path appears more than once.
 
 ### Requirement: Nickel export boundaries
 

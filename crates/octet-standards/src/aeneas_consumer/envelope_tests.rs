@@ -9,7 +9,7 @@ const CHECKED_RECEIPT: &str = include_str!(
     "../../../../standards/proof-rails/aeneas-lean/fixtures/external-consumer/expected/formal-proof-receipt.json"
 );
 const DIFFERENT_IDENTITY: &str = "b3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-const EXPECTED_TIMEOUT_MS: u64 = 900_000;
+const EXPECTED_TIMEOUT_MS: u64 = 2_700_000;
 
 #[test]
 fn checked_consumer_receipt_preserves_exact_stage_resource_and_policy_links() {
@@ -58,6 +58,21 @@ fn consumer_receipt_tampering_cannot_survive_formal_or_valence_validation() {
             "tamper must fail with `{expected}`: {diagnostics:?}"
         );
     }
+}
+
+#[test]
+fn consumer_receipt_missing_stage_artifact_roles_cannot_survive_validation() {
+    let mut llbc_only = checked_envelope();
+    let consumer = llbc_only.consumer.as_mut().expect("consumer");
+    consumer.stage_artifacts.retain(|artifact| artifact.role == "llbc");
+    refresh_consumer_identity(&mut llbc_only);
+
+    let diagnostics = validate_formal_proof_envelope(&llbc_only);
+
+    assert!(
+        diagnostics.iter().any(|diagnostic| diagnostic.contains("stage artifacts")),
+        "receipt missing required stage roles must fail: {diagnostics:?}"
+    );
 }
 
 #[test]

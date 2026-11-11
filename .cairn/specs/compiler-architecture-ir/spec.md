@@ -167,3 +167,86 @@ The implementation MUST include positive and negative fixtures for compiler sema
 - WHEN focused collector validation runs
 - THEN positive fixtures MUST emit expected canonical facts
 - AND negative fixtures MUST fail with their declared diagnostic class
+
+### Requirement: Normalized facts retain compilation-unit membership
+r[octet.architecture.unit_membership]
+
+Normalized Architecture IR MUST retain every validated unit's fact and unknown memberships before deduplication.
+Membership MUST be canonical, required, covered by the IR identity, and checked against all declared units, facts, and unknowns.
+Missing or noncanonical unit rows, duplicate or unsorted member IDs, orphan IDs, and subjects without any membership MUST fail verification.
+Recomputing the enclosing identity MUST NOT change that rejection.
+A change to any shared membership edge MUST change that identity. Structural verification MUST NOT claim to authenticate a structurally possible resealed relation.
+A v1 IR without memberships MUST NOT acquire invented ownership.
+
+#### Scenario: Shared facts retain both observing units
+
+- GIVEN two complete validated shards that share facts and unknowns
+- WHEN normalization deduplicates those values
+- THEN both unit memberships MUST remain and output MUST be invariant under shard ordering
+
+#### Scenario: Malformed membership is resealed
+
+- GIVEN a normalized IR with a missing unit row, noncanonical row or member order, duplicate or orphan IDs, or an unreferenced subject
+- WHEN its enclosing identity is recomputed and verification runs
+- THEN verification MUST reject the malformed relation
+
+#### Scenario: Legacy or incomplete evidence is supplied
+
+- GIVEN legacy IR without memberships or a missing selected compiler shard
+- WHEN decoding or normalization runs
+- THEN the input MUST remain unsupported or incomplete without ownership fallback
+
+### Requirement: Caller identities preserve compiler body kinds
+
+r[octet.compiler_architecture_ir.body_owner_kinds]
+
+The collector MUST preserve the compiler definition kind when it discovers a call's body owner.
+It MUST request a function signature only for a function kind.
+Inline and anonymous constant owners MUST retain constant item identities and their observations, without function signatures.
+Lazy discovery MUST use the same item classification as existing local identity calculation.
+Expression body owners MUST retain private visibility without a named-item visibility query.
+
+#### Scenario: Constant and static bodies contain calls
+
+- GIVEN named, associated, inline, anonymous, or macro-generated constants and static initializers contain resolved calls
+- WHEN the selected compiler collects those calls
+- THEN every call MUST reference an item with the matching compiler kind
+- AND non-function owners MUST NOT acquire function signatures or disappear from the observation set
+
+#### Scenario: Functions and closures coexist with constants
+
+- GIVEN functions, methods, closures, and constant bodies share selected production units
+- WHEN collection and normalization run
+- THEN ordinary function signatures and existing closure handling MUST remain intact
+- AND item references, unit memberships, and coverage MUST remain valid
+
+#### Scenario: Expanded state contains a forbidden production effect
+
+- GIVEN a thread-local initializer contains an inline constant and a nested production body contains a filesystem operation
+- WHEN the compiler collector and project gate run
+- THEN collection MUST NOT crash on a function-signature query for the constant
+- AND the production effect MUST remain visible and rejected in each observing production unit
+- AND omitted compiler shards MUST still reject complete-coverage claims
+
+### Requirement: Compiler-resolved getrandom effects
+r[octet.compiler_architecture_ir.randomness_effects]
+
+The collector MUST classify compiler-resolved `getrandom::fill`, `getrandom::fill_uninit`, `getrandom::u32`, and `getrandom::u64` calls as randomness effects.
+Classification MUST use the compiler's defining crate and root-function shape, not the consumer alias in a diagnostic path.
+Each effect MUST preserve the call's recorded definition path, caller and source span, stable fact identity, and every observing compilation unit.
+Library-test configurations MUST retain production obligations.
+Local same-named helpers, prefix near matches, and unrelated getrandom definitions MUST NOT acquire this classification solely from name resemblance.
+The repair MUST NOT suppress calls, change source ownership, relax coverage, or fabricate execution evidence.
+
+#### Scenario: Real registry randomness calls
+
+- GIVEN a configured library that calls the four published getrandom entry points through an import alias
+- WHEN the compiler collector observes both production library configurations
+- THEN all four calls and matching randomness effects retain their caller, span, and unit memberships
+- THEN the gate retains each production observer's forbidden randomness findings
+
+#### Scenario: Similar names are not randomness primitives
+
+- GIVEN local same-named helpers, unrelated getrandom definitions, or prefix near matches
+- WHEN the classifier evaluates their resolved definitions
+- THEN these definitions do not become randomness effects solely through a prefix match

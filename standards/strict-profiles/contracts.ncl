@@ -12,6 +12,21 @@ let FunctionAddressMode = OneOf ["off", "observe", "warn", "deny"] in
 let FunctionAddressScope = OneOf ["workspace", "core"] in
 let ClaimScope = OneOf ["direct-source-shape-policy"] in
 let EffectFamily = OneOf ["concurrency", "failure", "resource", "time", "unknown"] in
+let BooleanApiPolicy = {
+  public_scope | Array (OneOf ["free-function", "inherent-method", "crate-owned-trait"]),
+  private_min_direct_bool_parameters | Number,
+  parameter_type | OneOf ["direct-bool"],
+  skip_expansions | Bool,
+  skip_external_trait_impls | Bool,
+  exception_attribute | OneOf ["local-expect"],
+  exception_reason_required | Bool,
+  exception_owner_required | Bool,
+  broad_suppression | OneOf ["deny"],
+  finding_baseline | OneOf ["deny"],
+  warning_budget | OneOf ["deny"],
+  unknown_scope | OneOf ["deny"],
+  non_claims | NonEmptyArray | Array NonEmptyString,
+} in
 let StrictProfileContract = {
   profile_id | NonEmptyString,
   summary | NonEmptyString,
@@ -27,6 +42,7 @@ let StrictProfileContract = {
   StrictProfile = StrictProfileContract,
   Catalog = {
     schema_version | SchemaVersion,
+    boolean_api_policy | BooleanApiPolicy,
     profiles | NonEmptyArray | Array StrictProfileContract,
   },
 }

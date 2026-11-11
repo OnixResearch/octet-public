@@ -123,6 +123,7 @@ r[octet.type_driven_domain_modeling.raw_domain_value.core]
 - GIVEN a declared `SourceId` domain uses `String` as its wire representation
 - WHEN a checked core API exposes `source_id: String`
 - THEN `raw_domain_value` MUST report the raw core boundary.
+- AND a parameter or result that borrows the raw representation (`&String`, `str`, or `&str` for `String` storage; `Path` or `&Path` for `PathBuf` storage) MUST count as that representation.
 
 #### Scenario: Compatibility DTO remains accepted
 
@@ -142,6 +143,7 @@ r[octet.type_driven_domain_modeling.wrapper_contract.bypass]
 - GIVEN a refined digest, path, token, secret, or bounded identifier has a public inner field or unrestricted primitive `From` conversion
 - WHEN `newtype_invariant_bypass` checks the wrapper
 - THEN Octet MUST report the unchecked construction path.
+- AND a `From` input or `Deref` target that borrows the raw representation (`&String`, `str`, or `&str` for `String` storage; `Path` or `&Path` for `PathBuf` storage) MUST count as that representation.
 
 #### Scenario: Explicit checked wrapper passes
 
@@ -208,3 +210,31 @@ r[octet.type_driven_domain_modeling.final_checks]
 - GIVEN nominal checks pass for a selected scope
 - WHEN Octet reports the result
 - THEN it MUST NOT claim runtime correctness, authority, secrecy, evidence truth, compiler correctness, or release eligibility.
+
+### Requirement: Quantity words are complete identifier components
+
+r[octet.type_driven_domain_modeling.quantity_words] `numeric_units` MUST recognize its quantity vocabulary as complete underscore-delimited ASCII-case-insensitive identifier components. Unrelated words containing the same substrings MUST NOT become quantities. Existing raw-numeric type, nominal-type, skip-name, unit-suffix and severity behavior MUST remain unchanged.
+
+#### Scenario: Real quantities retain diagnostics
+
+- GIVEN a raw numeric `request_timeout` or `buffer_size` without an admitted unit suffix
+- WHEN the actual compiler lint inspects the declaration
+- THEN it MUST report the existing numeric-units diagnostic.
+
+#### Scenario: Counter and transport names do not imply ports
+
+- GIVEN raw numeric import/export counts, transport/support names, or port identifiers in fields, parameters, or local bindings
+- WHEN the actual compiler lint inspects the declaration
+- THEN a `port` component MUST NOT produce a numeric-units diagnostic because it names an identifier, not a unit-bearing quantity.
+
+#### Scenario: Explicit units and nominal types retain admission
+
+- GIVEN a declared time quantity with a recognized suffix or a resolved nominal unit type
+- WHEN the lint inspects the declaration
+- THEN it MUST retain the existing acceptance without requiring a duplicate suffix.
+
+#### Scenario: Correction does not weaken downstream policy
+
+- GIVEN HWR's unchanged deny-all policy and original count fields
+- WHEN the corrected actual owning library runs
+- THEN import/export substrings MUST NOT produce numeric-units findings; every independent lint and admission obligation MUST remain enabled.

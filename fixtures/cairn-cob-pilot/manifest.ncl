@@ -42,66 +42,48 @@ let PilotManifest = {
   change = "adopt-cairn-cob-collaboration",
   workspace_id = "workspace:octet",
   backend = "radicle-cob.v1",
-  cairn_commit = "6b7e19531554714b6760e8cacc2a980e576d36af",
-  base_git_oid = "51bd1ec2dd218f068d1d55d01781e38c877dd063",
-  actor = "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
-  object_id = "5be37f1c60fcebd2db91101c38203b18eb32f877",
-  import_operation_id = "5be37f1c60fcebd2db91101c38203b18eb32f877",
-  update_operation_id = "649fa8cd227ad657a0a802c2826477bf28aef984",
-  final_content_root = "96c9e5994bdd94a57f7d4dc58b1b91783fa5f3b516dfeb579741e929a4e66b11",
-  final_state_hash = "07e6254b3e33f730ae29a68214226fe00721fdf03b84fdd2098eecbad7731007",
-  namespace_ref = "refs/namespaces/z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5/refs/cobs/xyz.onixresearch.cairn-change/5be37f1c60fcebd2db91101c38203b18eb32f877",
+  cairn_commit = "70db8fe114910feb5d162fea5db8ad4ffdb6f176",
+  base_git_oid = "28ffbe8cfb01879a241cad248008b75252a8b7f5",
+  actor = "z6MkjPAjbbnXWtKTuUarEF3CbhnPjFzU9ify9Xuz7qdTv4Dn",
+  object_id = "8d4cf943a20d666c16cea0190db2541767ef8603",
+  import_operation_id = "8d4cf943a20d666c16cea0190db2541767ef8603",
+  update_operation_id = "35e76bfd1dc9755f936c53762c9af999b8a666dd",
+  final_content_root = "2a54f7e9216fd71d7e23ba11114ce6bf3eb3df7a4e5b7e064dee1c25cf66c183",
+  final_state_hash = "70baef24a418d18478cfdc5169b1dbfa3e093f2da05c8bd3beba5e8fbd46814d",
+  namespace_ref = "refs/namespaces/z6MkjPAjbbnXWtKTuUarEF3CbhnPjFzU9ify9Xuz7qdTv4Dn/refs/cobs/xyz.onixresearch.cairn-change/8d4cf943a20d666c16cea0190db2541767ef8603",
   bundle = {
     path = "octet-cob.bundle",
-    blake3_hex = "e1e155b791cb7d75ee93d13d6716823812ab5ae3643cb429ca95a54df7102e4d",
-    heads = [{
-      target = "51bd1ec2dd218f068d1d55d01781e38c877dd063",
-      ref_name = "refs/heads/main",
-    }, {
-      target = "649fa8cd227ad657a0a802c2826477bf28aef984",
-      ref_name = "refs/namespaces/z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5/refs/cobs/xyz.onixresearch.cairn-change/5be37f1c60fcebd2db91101c38203b18eb32f877",
-    }],
+    blake3_hex = "f79e2c3bde695876e9e9b62168f5de50b3446662664bc24eff6803d28c0d9b5a",
+    heads = [
+      { ref_name = "refs/heads/main", target = "28ffbe8cfb01879a241cad248008b75252a8b7f5" },
+      { ref_name = "refs/namespaces/z6MkjPAjbbnXWtKTuUarEF3CbhnPjFzU9ify9Xuz7qdTv4Dn/refs/cobs/xyz.onixresearch.cairn-change/8d4cf943a20d666c16cea0190db2541767ef8603", target = "35e76bfd1dc9755f936c53762c9af999b8a666dd" },
+    ],
   },
   transport = {
-    source_ref_target = "649fa8cd227ad657a0a802c2826477bf28aef984",
-    destination_ref_target = "649fa8cd227ad657a0a802c2826477bf28aef984",
+    source_ref_target = "35e76bfd1dc9755f936c53762c9af999b8a666dd",
+    destination_ref_target = "35e76bfd1dc9755f936c53762c9af999b8a666dd",
     source_remotes = [],
     destination_remotes = [],
-    artifact_tree_blake3 = "blake3-QR+83p3e6U5jBNjE2R2cHA2Uepfdzpy3ugeEK9lFH3M=",
+    artifact_tree_blake3 = "blake3-+nSMyo4rJmdEBytxIOC0enxjQIHLWXpR2MjkD0Rkexo=",
   },
-  receipts = [{
-    name = "bundle-reload.json",
-    blake3_hex = "d65aef56a3a6a1581641858f30117c4b2d2caaa9c457ec5a93c993079a8cd0c0",
-  }, {
-    name = "checkout-execute.json",
-    blake3_hex = "0928cb389884b06583b68e5b3e85d3b4e34992a4a85ba0992c0e92ddd06c0379",
-  }, {
-    name = "checkout-missing-changes-negative.json",
-    blake3_hex = "fb2bd94ef86e00fc8af3716cb8089f75d1879bb95d036488e9e5fcb2e753e48b",
-  }, {
-    name = "checkout-preview.json",
-    blake3_hex = "f0aa5078e4e827bb40446a1e90e212d53afb9b067a6b2f345c67e00e1dafc1e8",
-  }, {
-    name = "conflicts-secondary.json",
-    blake3_hex = "b26b7f5352cccc746295e6d6d756b2d98989cddd15f7c7e6139cbe17e1f6444e",
-  }, {
-    name = "import-execute.json",
-    blake3_hex = "feafb5fbbad14f21e5202d523faabad91f7810151d989b4798e172ec98945c89",
-  }, {
-    name = "import-preview.json",
-    blake3_hex = "fd0d2d2dfc60e046389bfa86d53450fed2cee7af6c4bf9fb4afdf5da86e8f41c",
-  }, {
-    name = "status-secondary.json",
-    blake3_hex = "323c2bf38ef244d32a3444a91c87de033119e493444938ab7766297f528bf9a1",
-  }, {
-    name = "transport.json",
-    blake3_hex = "821902826fbe82e6d5bd0498af328d357f3358a46faa03ff36e55482478c6572",
-  }, {
-    name = "update-execute.json",
-    blake3_hex = "00ad34dc3d4a6dcfce4326141985e59382411bdf5f7193e1c4f5e3a55bae572a",
-  }, {
-    name = "update-preview.json",
-    blake3_hex = "fae645144cb1642e8e957537d71ac0c40ba5a5ee396e12f6433db8f4a9da43f8",
-  }],
-  required_non_claim_fragments = ["node participation", "synchronization", "convergence", "durability", "release eligibility"],
+  receipts = [
+    { name = "bundle-reload.json", blake3_hex = "090241b2338a9afb2dd12c9d974135610b0c3862295ec68d3049cc2f4d660b92" },
+    { name = "checkout-execute.json", blake3_hex = "25f540774434b27c6708d027a4f94b55269a1fd75f6ab9a60bbe8379c9f9a4f1" },
+    { name = "checkout-missing-changes-negative.json", blake3_hex = "c716f2540fb41fce4ab9cba6cd40dfbb3feb23acf04337e3605e7868f702abba" },
+    { name = "checkout-preview.json", blake3_hex = "9bbf1c077497bf770bf2bcb860cf1e4526bc1aa38208001897ab786f3e5a85af" },
+    { name = "conflicts-secondary.json", blake3_hex = "89b3d8325a38f617475cffc04191846b85f72e13ba18da6aa07ccc78fc4d47b7" },
+    { name = "import-execute.json", blake3_hex = "0ae774df27989babb1f8792aff97938c680dc50abf19b6986ca09ffbe7a0918c" },
+    { name = "import-preview.json", blake3_hex = "8c463ec5fcf6bc2c0fa35d53cfd48ef9c392f7aa442861368610775c177c55ee" },
+    { name = "status-secondary.json", blake3_hex = "4ae0a83e99a09f0f5056a249e8df772fe232cd09de7f843e2f41c5b75cca5f06" },
+    { name = "transport.json", blake3_hex = "baf4aef855f84069a670cf10f0b46bc0c40a6bfc2dec5801f19b58bcf7d1251a" },
+    { name = "update-execute.json", blake3_hex = "37033dd38fb2e232a13ae8f7d1a62b85270afba4cc598462c5956282ec2140ec" },
+    { name = "update-preview.json", blake3_hex = "a5e0f58083a33bea420421d96f878434ca8d9e29286f7f7cc30705aa322958cf" },
+  ],
+  required_non_claim_fragments = [
+    "node participation",
+    "synchronization",
+    "convergence",
+    "durability",
+    "release eligibility",
+  ],
 } | PilotManifest

@@ -1,4 +1,4 @@
-warning: function `long_function` is 74 lines (limit: 70)
+warning: function `long_function` is 72 lines (limit: 70)
   --> $DIR/function_length.rs:1:27
    |
 LL |   fn long_function() -> u32 {
@@ -15,5 +15,37 @@ LL | | }
    = note: see Tiger Style guide: Function Length
    = note: `#[warn(tigerstyle::function_length)]` on by default
 
-warning: 1 warning emitted
+warning: function `long_method` is 72 lines (limit: 70)
+  --> $DIR/function_length.rs:242:34
+   |
+LL |       fn long_method(&self) -> u32 {
+   |  __________________________________^
+LL | |         let a = 1;
+LL | |         let b = 2;
+LL | |         let c = 3;
+...  |
+LL | |         71
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Function Length): split long functions into named helpers at invariant or phase boundaries
+   = note: see Tiger Style guide: Function Length
+
+warning: function `long_default_method` is 72 lines (limit: 70)
+  --> $DIR/function_length.rs:327:42
+   |
+LL |       fn long_default_method(&self) -> u32 {
+   |  __________________________________________^
+LL | |         let a = 1;
+LL | |         let b = 2;
+LL | |         let c = 3;
+...  |
+LL | |         71
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Function Length): split long functions into named helpers at invariant or phase boundaries
+   = note: see Tiger Style guide: Function Length
+
+warning: 3 warnings emitted
 

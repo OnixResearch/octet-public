@@ -1,0 +1,38 @@
+error: `#[allow(...)]` without justification comment
+  --> $DIR/zero_alloc_attr_contract_silent_allow.rs:8:1
+   |
+LL | #[allow(tigerstyle::zero_alloc_attr_contract)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+note: the lint level is defined here
+  --> $DIR/zero_alloc_attr_contract_silent_allow.rs:6:9
+   |
+LL | #![deny(unjustified_allow)]
+   |         ^^^^^^^^^^^^^^^^^
+   = note: `#[deny(tigerstyle::unjustified_allow)]` implied by `#[deny(unjustified_allow)]`
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+error: `#[allow(...)]` without justification comment
+  --> $DIR/zero_alloc_attr_contract_silent_allow.rs:13:1
+   |
+LL | #[allow(zero_alloc_attr_contract)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+error: aborting due to 2 previous errors
+

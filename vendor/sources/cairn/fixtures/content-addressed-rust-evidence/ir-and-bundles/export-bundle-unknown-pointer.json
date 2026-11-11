@@ -1,0 +1,58 @@
+{
+  "schema": "octet.export-bundle.v1",
+  "bundle_hash": "486584f301d41562282b74194eb006a78866f8857e8848fd4a163a089376c989",
+  "objects": [
+    {
+      "object_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "path": "objects/1111111111111111111111111111111111111111111111111111111111111111.json",
+      "schema": "octet.function-object.v1"
+    }
+  ],
+  "name_pointers": [
+    {
+      "name": "demo::math::add_one",
+      "object_hash": "9999999999999999999999999999999999999999999999999999999999999999",
+      "pointer_hash": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  ],
+  "replay": {
+    "args": [
+      "--crate",
+      "demo",
+      "--format",
+      "json"
+    ],
+    "command": "octet export-bundle",
+    "toolchain": {
+      "octet_extractor": "octet 0.1.0",
+      "rustc": "rustc 1.87.0"
+    }
+  },
+  "mutation_manifest": {
+    "manifest_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+    "touched_files": [
+      {
+        "after_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+        "before_hash": "5555555555555555555555555555555555555555555555555555555555555555",
+        "path": "octet/export-bundle.json"
+      }
+    ]
+  },
+  "caveats": {
+    "compiler_ir_status": "toolchain-coupled",
+    "correctness_claim": "none"
+  },
+  "compiler_ir": {
+    "hir": {
+      "dependency_status": "hir-resolved-toolchain-scoped",
+      "extractor": "octet-hir 0.1.0",
+      "rustc": "rustc 1.87.0"
+    },
+    "mir": {
+      "extractor": "octet-mir 0.1.0",
+      "rustc": "rustc 1.87.0",
+      "stability_claim": "toolchain-coupled",
+      "summary_status": "panic-drop-async-unsafe-summary"
+    }
+  }
+}

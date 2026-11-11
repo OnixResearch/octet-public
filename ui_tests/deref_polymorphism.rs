@@ -85,6 +85,48 @@ impl ExplicitHandle {
     }
 }
 
+pub struct Guard<'a, T> {
+    value: &'a T,
+}
+
+impl<T> Deref for Guard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.value
+    }
+}
+
+pub type EngineAlias = Engine;
+
+pub struct AliasHandle {
+    inner: Engine,
+}
+
+impl Deref for AliasHandle {
+    type Target = EngineAlias;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+mod private_mod {
+    use std::ops::Deref;
+
+    pub struct HiddenHandle {
+        pub(super) inner: super::Engine,
+    }
+
+    impl Deref for HiddenHandle {
+        type Target = super::Engine;
+
+        fn deref(&self) -> &Self::Target {
+            &self.inner
+        }
+    }
+}
+
 fn main() {
     let handle = EngineHandle {
         inner: Engine { value: 1 },

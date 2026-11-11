@@ -1,0 +1,31 @@
+{
+  "schema_version": "octet-storage-fault-assurance/v1",
+  "profile_id": "storage-fault-missing-case",
+  "source_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "candidate_blake3": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "required_cases": [
+    {
+      "case_id": "clean-write-sync",
+      "kind": "positive"
+    },
+    {
+      "case_id": "flush-error",
+      "kind": "negative"
+    },
+    {
+      "case_id": "uncertain-commit",
+      "kind": "negative"
+    }
+  ],
+  "producer_receipt": {
+    "path": "fixtures/evidence/missing_case/producer.json",
+    "blake3": "3ec85293df7b5b28505b2f7be291de23eadc429dd6a01d01ff9925f5b6c3521e"
+  },
+  "cairn_receipt": {
+    "path": "fixtures/evidence/missing_case/cairn.json",
+    "blake3": "94863b3cd0e8e54c22b1fd8ff5858b93f0b1825f2e245e817972963412453811"
+  },
+  "non_claims": [
+    "This profile links saved producer and Cairn receipts only; it does not execute a producer or prove durability."
+  ]
+}

@@ -1,0 +1,120 @@
+warning: public callable `deploy` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:4:24
+   |
+LL | pub fn deploy(enabled: bool, mode: bool) {
+   |                        ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+   = note: `#[warn(tigerstyle::raw_bool_parameter)]` on by default
+
+warning: public callable `deploy` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:4:36
+   |
+LL | pub fn deploy(enabled: bool, mode: bool) {
+   |                                    ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: public callable `via_private_module` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:9:40
+   |
+LL |     pub fn via_private_module(enabled: bool) {
+   |                                        ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: public callable `co_report` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:15:25
+   |
+LL | pub fn co_report(first: bool, second: bool, third: bool, fourth: bool) {
+   |                         ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: public callable `co_report` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:15:39
+   |
+LL | pub fn co_report(first: bool, second: bool, third: bool, fourth: bool) {
+   |                                       ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: public callable `co_report` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:15:52
+   |
+LL | pub fn co_report(first: bool, second: bool, third: bool, fourth: bool) {
+   |                                                    ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: public callable `co_report` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:15:66
+   |
+LL | pub fn co_report(first: bool, second: bool, third: bool, fourth: bool) {
+   |                                                                  ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: public callable `set_mode` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:22:37
+   |
+LL |     pub fn set_mode(&self, enabled: bool) {
+   |                                     ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: private callable `configure` has 2 direct `bool` parameters; positional flags are ambiguous
+  --> $DIR/raw_bool_parameter.rs:26:34
+   |
+LL |     fn configure(&self, enabled: bool, audit: bool) {
+   |                                  ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: public callable `toggle` has a direct `bool` parameter; callers cannot see its domain meaning
+  --> $DIR/raw_bool_parameter.rs:32:31
+   |
+LL |     fn toggle(&self, enabled: bool);
+   |                               ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: private callable `configure` has 2 direct `bool` parameters; positional flags are ambiguous
+  --> $DIR/raw_bool_parameter.rs:36:34
+   |
+LL |     fn configure(&self, enabled: bool, audit: bool);
+   |                                  ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: private callable `private_flags` has 2 direct `bool` parameters; positional flags are ambiguous
+  --> $DIR/raw_bool_parameter.rs:39:27
+   |
+LL | fn private_flags(enabled: bool, audit: bool) {
+   |                           ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: private callable `closure` has 2 direct `bool` parameters; positional flags are ambiguous
+  --> $DIR/raw_bool_parameter.rs:48:31
+   |
+LL |     let configure = |enabled: bool, audit: bool| {
+   |                               ^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid Example: pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: 13 warnings emitted
+

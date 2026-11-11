@@ -10,8 +10,8 @@ LL |         _ => false,
    = note: `#[warn(tigerstyle::catch_all_on_enum)]` on by default
 help: expand wildcard into explicit variant arms
    |
-LL ~         LocalState::Ready => todo!("handle Ready"),
-LL ~         LocalState::Closed => todo!("handle Closed"),
+LL -         _ => false,
+LL +         LocalState::Closed => todo!("handle Closed"),
    |
 
 warning: 1 warning emitted

@@ -1,0 +1,66 @@
+warning: `raw_bool_parameter` does not permit `#[allow]`; use a local, owned `#[expect]` for an unavoidable compatibility API
+  --> $DIR/raw_bool_parameter_suppression.rs:4:1
+   |
+LL | #[allow(tigerstyle::raw_bool_parameter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+   = note: `#[warn(tigerstyle::raw_bool_parameter_suppression)]` on by default
+
+warning: `raw_bool_parameter` expectation requires `reason = "external compatibility contract: <specific contract>; owner: <named owner>"`
+  --> $DIR/raw_bool_parameter_suppression.rs:9:1
+   |
+LL | #[expect(tigerstyle::raw_bool_parameter, reason = "temporary")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: `raw_bool_parameter` expectation requires `reason = "external compatibility contract: <specific contract>; owner: <named owner>"`
+  --> $DIR/raw_bool_parameter_suppression.rs:14:1
+   |
+LL | #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: legacy callback ABI")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: `raw_bool_parameter` does not permit `#[allow]`; use a local, owned `#[expect]` for an unavoidable compatibility API
+  --> $DIR/raw_bool_parameter_suppression.rs:19:19
+   |
+LL | #[cfg_attr(all(), allow(tigerstyle::raw_bool_parameter))]
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: `raw_bool_parameter` does not permit `#[allow]`; use a local, owned `#[expect]` for an unavoidable compatibility API
+  --> $DIR/raw_bool_parameter_suppression.rs:24:1
+   |
+LL | #[allow(tigerstyle::raw_bool_parameter /* comment is not part of the lint path */)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: `raw_bool_parameter` does not permit `#[allow]`; use a local, owned `#[expect]` for an unavoidable compatibility API
+  --> $DIR/raw_bool_parameter_suppression.rs:30:5
+   |
+LL |     #[allow(tigerstyle::raw_bool_parameter)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: `raw_bool_parameter` expectations must attach to one exact callable, not a crate, module, or enclosing item
+  --> $DIR/raw_bool_parameter_suppression.rs:36:1
+   |
+LL | #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: old ABI; owner: api-team")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+
+warning: 7 warnings emitted
+

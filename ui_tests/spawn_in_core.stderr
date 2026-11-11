@@ -35,5 +35,23 @@ LL |     let _async_std_handle = async_std::task::spawn(async {});
    = help: Tiger Style (Functional Core): return work descriptions or use injected executor ports instead of spawning threads or tasks in core scopes Example: fn schedule(input: Input) -> WorkCommand
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
-warning: 4 warnings emitted
+warning: core scope starts work with `std::thread::spawn(`; return a command or use an injected executor port
+  --> $DIR/spawn_in_core/spawn_in_core.rs:36:32
+   |
+LL |     let _wrapped_handle = Some(std::thread::spawn(|| {}));
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): return work descriptions or use injected executor ports instead of spawning threads or tasks in core scopes Example: fn schedule(input: Input) -> WorkCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope starts work with `tokio::spawn(`; return a command or use an injected executor port
+  --> $DIR/spawn_in_core/spawn_in_core.rs:37:38
+   |
+LL |     let _wrapped_tokio = Ok::<_, ()>(tokio::spawn(async {}));
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): return work descriptions or use injected executor ports instead of spawning threads or tasks in core scopes Example: fn schedule(input: Input) -> WorkCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 6 warnings emitted
 

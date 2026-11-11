@@ -1,0 +1,32 @@
+{
+  "cairn_receipt": {
+    "blake3": "3333333333333333333333333333333333333333333333333333333333333333",
+    "path": "evidence/storage-fault/cairn-receipt.json"
+  },
+  "candidate_blake3": "1111111111111111111111111111111111111111111111111111111111111111",
+  "non_claims": [
+    "This profile declares required saved evidence identities; it does not report that any receipt exists, matches, or passes.",
+    "Passing this validation links saved producer and Cairn receipts only; it does not prove filesystem, device, hardware, or release durability."
+  ],
+  "producer_receipt": {
+    "blake3": "2222222222222222222222222222222222222222222222222222222222222222",
+    "path": "evidence/storage-fault/producer-receipt.json"
+  },
+  "profile_id": "octet-storage-fault-example",
+  "required_cases": [
+    {
+      "case_id": "clean-write-sync",
+      "kind": "positive"
+    },
+    {
+      "case_id": "flush-error",
+      "kind": "negative"
+    },
+    {
+      "case_id": "uncertain-commit",
+      "kind": "negative"
+    }
+  ],
+  "schema_version": "octet-storage-fault-assurance/v1",
+  "source_blake3": "0000000000000000000000000000000000000000000000000000000000000000"
+}

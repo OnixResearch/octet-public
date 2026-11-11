@@ -1,0 +1,6 @@
+error: strict profile `robust` requires its lints at `deny`, but `--cap-lints warn` caps them lower; remove the flag
+
+error: strict profile `robust` requires `no_unwrap` at `deny`, but `--force-warn no_unwrap` keeps it a warning; remove the flag
+
+error: aborting due to 2 previous errors
+

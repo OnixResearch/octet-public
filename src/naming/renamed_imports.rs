@@ -11,17 +11,10 @@ use rustc_span::Ident;
 use crate::config::IndexableLintExceptions;
 use crate::diagnostics::emit_tiger_style_lint;
 use crate::naming::indexable_exceptions::is_canonical_rustc_private_alias;
+use crate::naming::indexable_exceptions::is_generated_source_span;
 
-const GENERATED_SEGMENTS: &[&str] = &[
-    "target",
-    "generated",
-    "OUT_DIR",
-    "rustlib",
-    "registry",
-    ".cargo",
-    "vendor-cargo-deps",
-];
-const COMPATIBILITY_WORD: &str = "compat";
+/// Whole words that document a compatibility alias; `incompatible` does not count.
+const COMPATIBILITY_WORDS: &[&str] = &["compat", "compatibility"];
 const PRELUDE_SEGMENT: &str = "prelude";
 const UNDERSCORE_IMPORT: &str = "_";
 
@@ -36,11 +29,15 @@ declare_tool_lint! {
 
 pub struct RenamedImports {
     exceptions: IndexableLintExceptions,
+    workspace_root: std::path::PathBuf,
 }
 
 impl RenamedImports {
     pub fn new(exceptions: IndexableLintExceptions) -> Self {
-        Self { exceptions }
+        Self {
+            exceptions,
+            workspace_root: crate::source::workspace_root(),
+        }
     }
 }
 
@@ -58,10 +55,8 @@ fn source_name(path: &hir::UsePath<'_>, ident: Ident) -> String {
     path_segments(path).last().cloned().unwrap_or_else(|| ident.name.as_str().to_owned())
 }
 
-fn is_generated_or_prelude(path: &hir::UsePath<'_>) -> bool {
-    let segments = path_segments(path);
-    segments.iter().any(|segment| GENERATED_SEGMENTS.contains(&segment.as_str()))
-        || segments.iter().any(|segment| segment == PRELUDE_SEGMENT)
+fn is_prelude(path: &hir::UsePath<'_>) -> bool {
+    path_segments(path).iter().any(|segment| segment == PRELUDE_SEGMENT)
 }
 
 fn is_trait_res(res: Option<Res>) -> bool {
@@ -72,43 +67,16 @@ fn imports_only_trait(path: &hir::UsePath<'_>) -> bool {
     is_trait_res(path.res.type_ns) && path.res.value_ns.is_none() && path.res.macro_ns.is_none()
 }
 
-fn is_unrelated_ui_fixture(cx: &LateContext<'_>, item: &hir::Item<'_>) -> bool {
-    let filename = cx.sess().source_map().span_to_filename(item.span);
-    let path = filename.prefer_local_unconditionally().to_string();
-    path.contains("ui_tests/") && !path.contains("renamed_imports")
-}
-
-fn has_compatibility_documentation(cx: &LateContext<'_>, item: &hir::Item<'_>) -> bool {
-    let source_map = cx.sess().source_map();
-
-    if source_map
-        .span_to_snippet(item.span)
-        .is_ok_and(|snippet| snippet.to_ascii_lowercase().contains(COMPATIBILITY_WORD))
-    {
-        return true;
-    }
-
-    let Ok(lines) = source_map.span_to_lines(item.span) else {
-        return false;
-    };
-
-    lines.lines.first().is_some_and(|first_line| {
-        let line_idx = first_line.line_index;
-        line_idx > 0
-            && lines.file.get_line(line_idx - 1).is_some_and(|line| {
-                let lower = line.trim().to_ascii_lowercase();
-                lower.starts_with("//") && lower.contains(COMPATIBILITY_WORD)
-            })
-    })
-}
-
 impl<'tcx> LateLintPass<'tcx> for RenamedImports {
     fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx hir::Item<'tcx>) {
         let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = item.kind else {
             return;
         };
 
-        if item.span.from_expansion() || is_generated_or_prelude(path) || is_unrelated_ui_fixture(cx, item) {
+        if item.span.from_expansion()
+            || is_prelude(path)
+            || is_generated_source_span(cx.sess().source_map(), item.span, &self.workspace_root, self.exceptions)
+        {
             return;
         }
 
@@ -126,7 +94,9 @@ impl<'tcx> LateLintPass<'tcx> for RenamedImports {
             return;
         }
 
-        if cx.tcx.visibility(item.owner_id.def_id).is_public() && has_compatibility_documentation(cx, item) {
+        if cx.tcx.visibility(item.owner_id.def_id).is_public()
+            && crate::naming::indexable_exceptions::item_documentation_mentions(cx, item, COMPATIBILITY_WORDS)
+        {
             return;
         }
 

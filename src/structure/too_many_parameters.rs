@@ -42,6 +42,14 @@ impl TooManyParameters {
 
 impl_lint_pass!(TooManyParameters => [TOO_MANY_PARAMETERS]);
 
+/// Counts inputs excluding the receiver. `hir::ImplicitSelfKind::None` also
+/// covers explicit `self: Box<Self>`/`self: Pin<&mut Self>` receivers, so ask
+/// the associated item whether it is a method instead.
+fn counted_parameters(cx: &LateContext<'_>, def_id: hir::def_id::LocalDefId, sig: &hir::FnSig<'_>) -> usize {
+    let has_self = cx.tcx.associated_item(def_id).is_method();
+    sig.decl.inputs.len().saturating_sub(usize::from(has_self))
+}
+
 impl<'tcx> LateLintPass<'tcx> for TooManyParameters {
     fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx hir::Item<'tcx>) {
         let hir::ItemKind::Fn { sig, .. } = &item.kind else {
@@ -65,12 +73,11 @@ impl<'tcx> LateLintPass<'tcx> for TooManyParameters {
             return;
         }
 
-        let has_self = sig.decl.implicit_self != hir::ImplicitSelfKind::None;
         self.lint_if_needed(
             cx,
             impl_item.hir_id(),
             impl_item.span,
-            sig.decl.inputs.len().saturating_sub(usize::from(has_self)),
+            counted_parameters(cx, impl_item.owner_id.def_id, sig),
         );
     }
 
@@ -78,12 +85,11 @@ impl<'tcx> LateLintPass<'tcx> for TooManyParameters {
         let hir::TraitItemKind::Fn(sig, _) = &trait_item.kind else {
             return;
         };
-        let has_self = sig.decl.implicit_self != hir::ImplicitSelfKind::None;
         self.lint_if_needed(
             cx,
             trait_item.hir_id(),
             trait_item.span,
-            sig.decl.inputs.len().saturating_sub(usize::from(has_self)),
+            counted_parameters(cx, trait_item.owner_id.def_id, sig),
         );
     }
 }

@@ -10,5 +10,64 @@ LL | |                 }
    = note: see Tiger Style guide: Simple Control Flow
    = note: `#[warn(tigerstyle::nested_conditionals)]` on by default
 
-warning: 1 warning emitted
+warning: conditional nesting is 4 levels deep (limit: 3)
+  --> $DIR/nested_conditionals.rs:41:17
+   |
+LL | /                 if value > 4 {
+LL | |                     return true;
+LL | |                 }
+   | |_________________^
+   |
+   = help: Tiger Style (Simple Control Flow): flatten control flow with guards, early returns, or helper predicates Example: if !is_ready { return; }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: conditional nesting is 4 levels deep (limit: 3)
+  --> $DIR/nested_conditionals.rs:60:21
+   |
+LL | /                     if value > 3 {
+LL | |                         return true;
+LL | |                     }
+   | |_____________________^
+   |
+   = help: Tiger Style (Simple Control Flow): flatten control flow with guards, early returns, or helper predicates Example: if !is_ready { return; }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: conditional nesting is 4 levels deep (limit: 3)
+  --> $DIR/nested_conditionals.rs:80:21
+   |
+LL | /                     if value > 3 {
+LL | |                         return true;
+LL | |                     }
+   | |_____________________^
+   |
+   = help: Tiger Style (Simple Control Flow): flatten control flow with guards, early returns, or helper predicates Example: if !is_ready { return; }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: conditional nesting is 4 levels deep (limit: 3)
+  --> $DIR/nested_conditionals.rs:104:17
+   |
+LL | /                 if value > 3 {
+LL | |                     return true;
+LL | |                 }
+   | |_________________^
+   |
+   = help: Tiger Style (Simple Control Flow): flatten control flow with guards, early returns, or helper predicates Example: if !is_ready { return; }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: conditional nesting is 4 levels deep (limit: 3)
+  --> $DIR/nested_conditionals.rs:127:9
+   |
+LL |           if $condition $body
+   |           ^^^^^^^^^^^^^^^^^^^
+...
+LL | /                 when!(value > 3, {
+LL | |                     return true;
+LL | |                 });
+   | |__________________- in this macro invocation
+   |
+   = help: Tiger Style (Simple Control Flow): flatten control flow with guards, early returns, or helper predicates Example: if !is_ready { return; }
+   = note: see Tiger Style guide: Simple Control Flow
+   = note: this warning originates in the macro `when` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 6 warnings emitted
 

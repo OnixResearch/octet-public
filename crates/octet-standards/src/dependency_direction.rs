@@ -127,6 +127,60 @@ pub struct DependencyDirectionViolation {
     pub edge: Option<DependencyEdgeClassification>,
 }
 
+/// Declared crate set in the crate-boundary mechanism.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DeclaredCrateRole {
+    /// Declared through `core_crates`.
+    Core,
+    /// Declared through `shell_crates`.
+    Shell,
+    /// Declared through `adapter_crates`.
+    Adapter,
+}
+
+impl DeclaredCrateRole {
+    /// Returns the crate-boundary config field that declares this crate set.
+    #[must_use]
+    pub fn config_field(self) -> &'static str {
+        match self {
+            Self::Core => "core_crates",
+            Self::Shell => "shell_crates",
+            Self::Adapter => "adapter_crates",
+        }
+    }
+
+    /// Returns the crate-set label used in diagnostics.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Core => "core",
+            Self::Shell => "shell",
+            Self::Adapter => "adapter",
+        }
+    }
+}
+
+/// Part of the declared crate graph the dependency-direction classifier cannot inspect.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum CrateGraphGap {
+    /// Metadata has no `resolve` graph, as from `cargo metadata --no-deps` or an empty document.
+    MissingResolve,
+    /// A declared crate path matches no package manifest in the metadata.
+    UnmatchedDeclaredPath {
+        /// Crate set that declares the path.
+        role: DeclaredCrateRole,
+        /// Declared crate path.
+        declared_path: String,
+    },
+    /// A declared package has no resolve node among the workspace members.
+    UnresolvedDeclaredPackage {
+        /// Crate set that declares the package.
+        role: DeclaredCrateRole,
+        /// Package name matched by the declared path.
+        package: String,
+    },
+}
+
 /// Cargo metadata JSON subset consumed by the dependency-direction shell.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub struct CargoMetadata {
@@ -216,6 +270,51 @@ pub fn dependency_input_from_metadata(
         adapter_packages: packages_matching_declared_paths(metadata, adapter_crates),
         included_edge_kinds,
     }
+}
+
+/// Purely lists the declared crates that `input` cannot classify because `metadata` lacks them.
+///
+/// An empty result means every declared crate path matched a package with a resolve node, so the
+/// classifier saw the whole declared graph.
+#[must_use]
+pub fn crate_graph_gaps(
+    metadata: &CargoMetadata,
+    core_crates: &[String],
+    shell_crates: &[String],
+    adapter_crates: &[String],
+    input: &DependencyDirectionInput,
+) -> Vec<CrateGraphGap> {
+    if metadata.resolve.is_none() {
+        return vec![CrateGraphGap::MissingResolve];
+    }
+    let mut gaps = Vec::new();
+    for (role, declared_paths, packages) in [
+        (DeclaredCrateRole::Core, core_crates, &input.core_packages),
+        (DeclaredCrateRole::Shell, shell_crates, &input.shell_packages),
+        (DeclaredCrateRole::Adapter, adapter_crates, &input.adapter_packages),
+    ] {
+        gaps.extend(
+            declared_paths
+                .iter()
+                .filter(|declared_path| {
+                    !metadata
+                        .packages
+                        .iter()
+                        .any(|package| declared_path_matches_manifest(declared_path, &package.manifest_path))
+                })
+                .map(|declared_path| CrateGraphGap::UnmatchedDeclaredPath {
+                    role,
+                    declared_path: declared_path.clone(),
+                }),
+        );
+        gaps.extend(packages.iter().filter(|package| !input.graph.nodes.contains_key(*package)).map(|package| {
+            CrateGraphGap::UnresolvedDeclaredPackage {
+                role,
+                package: package.clone(),
+            }
+        }));
+    }
+    gaps
 }
 
 fn append_core_violations(input: &DependencyDirectionInput, violations: &mut Vec<DependencyDirectionViolation>) {
@@ -409,13 +508,21 @@ fn packages_matching_declared_paths(metadata: &CargoMetadata, declared_paths: &[
 fn declared_path_matches_manifest(declared_path: &str, manifest_path: &str) -> bool {
     let normalized_declared = declared_path.replace('\\', "/");
     let normalized_manifest = manifest_path.replace('\\', "/");
-    if normalized_manifest.ends_with(&normalized_declared) {
+    if path_ends_with_components(&normalized_manifest, &normalized_declared) {
         return true;
     }
     let Some(crate_root) = normalized_declared.strip_suffix(RUST_LIB_SUFFIX) else {
         return false;
     };
-    normalized_manifest.ends_with(&format!("{crate_root}{CARGO_MANIFEST_SUFFIX}"))
+    path_ends_with_components(&normalized_manifest, &format!("{crate_root}{CARGO_MANIFEST_SUFFIX}"))
+}
+
+/// Returns true when `suffix` equals `path` or matches its trailing whole path components.
+pub(crate) fn path_ends_with_components(path: &str, suffix: &str) -> bool {
+    let Some(prefix) = path.strip_suffix(suffix) else {
+        return false;
+    };
+    prefix.is_empty() || prefix.ends_with('/') || suffix.starts_with('/')
 }
 
 #[cfg(test)]
@@ -542,6 +649,22 @@ mod tests {
 
         assert_eq!(violations.len(), EXPECTED_ONE_VIOLATION);
         assert_eq!(violations[0].kind, DependencyDirectionViolationKind::CoreToAdapter);
+    }
+
+    #[test]
+    fn declared_manifest_path_matches_whole_components() {
+        assert!(declared_path_matches_manifest("core/Cargo.toml", "/repo/crates/core/Cargo.toml"));
+        assert!(declared_path_matches_manifest("crates/core/Cargo.toml", "crates/core/Cargo.toml"));
+        assert!(declared_path_matches_manifest("crates\\core\\Cargo.toml", "C:\\repo\\crates\\core\\Cargo.toml"));
+        assert!(!declared_path_matches_manifest("core/Cargo.toml", "/repo/crates/hardcore/Cargo.toml"));
+        assert!(!declared_path_matches_manifest("Cargo.toml", "/repo/crates/core/MyCargo.toml"));
+    }
+
+    #[test]
+    fn declared_lib_path_matches_manifest_whole_components() {
+        assert!(declared_path_matches_manifest("core/src/lib.rs", "/repo/crates/core/Cargo.toml"));
+        assert!(declared_path_matches_manifest("crates/core/src/lib.rs", "crates/core/Cargo.toml"));
+        assert!(!declared_path_matches_manifest("core/src/lib.rs", "/repo/crates/hardcore/Cargo.toml"));
     }
 
     fn input_with_edges<const N: usize>(

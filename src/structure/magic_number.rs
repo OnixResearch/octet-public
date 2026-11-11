@@ -19,10 +19,6 @@ declare_tool_lint! {
 
 declare_lint_pass!(MagicNumber => [MAGIC_NUMBER]);
 
-const UNIT_SUFFIXES: &[&str] = &[
-    "_ms", "_millis", "_secs", "_sec", "_us", "_micros", "_ns", "_nanos", "_bytes", "_kb", "_mb", "_gb",
-];
-
 const DOMAIN_WORDS: &[&str] = &[
     "timeout",
     "deadline",
@@ -76,12 +72,11 @@ fn classify_magic_number(facts: MagicNumberFacts) -> bool {
 
 fn has_unit_suffix(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
-    UNIT_SUFFIXES.iter().any(|suffix| lower.ends_with(suffix))
+    crate::naming::numeric_units::UNIT_SUFFIXES.iter().any(|suffix| lower.ends_with(suffix))
 }
 
 fn has_domain_word(name: &str) -> bool {
-    let lower = name.to_ascii_lowercase();
-    DOMAIN_WORDS.iter().any(|word| lower.contains(word))
+    crate::naming::identifier_words::identifier_has_word(name, DOMAIN_WORDS)
 }
 
 fn is_conventional_literal(lit: &hir::Lit) -> bool {
@@ -92,33 +87,43 @@ fn is_conventional_literal(lit: &hir::Lit) -> bool {
     }
 }
 
+fn binding_documents_value(local: &hir::LetStmt<'_>) -> bool {
+    let hir::PatKind::Binding(_, _, ident, _) = local.pat.kind else {
+        return false;
+    };
+    let name = ident.name.as_str();
+    has_unit_suffix(name) || has_domain_word(name)
+}
+
+/// Whether a parent names the literal itself: a unit-bearing or domain-named
+/// `let` whose initializer is the literal (possibly cast or negated), a
+/// constructor or method argument, or a `const`/`static` item. The scan stops
+/// at the first statement, block, or closure, so a binding never documents a
+/// literal nested deeper in its initializer.
 fn literal_is_documented_by_parent(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> bool {
-    for (_, node) in cx.tcx.hir_parent_iter(expr.hir_id) {
+    let mut value_id = expr.hir_id;
+    for (parent_id, node) in cx.tcx.hir_parent_iter(expr.hir_id) {
         match node {
             hir::Node::LetStmt(local) => {
-                if let hir::PatKind::Binding(_, _, ident, _) = local.pat.kind {
-                    let name = ident.name.as_str();
-                    if has_unit_suffix(name) || has_domain_word(name) {
-                        return true;
-                    }
-                }
+                return local.init.is_some_and(|init| init.hir_id == value_id) && binding_documents_value(local);
             }
             hir::Node::Expr(parent) => match parent.kind {
-                ExprKind::Call(_, args) if args.iter().any(|arg| arg.hir_id == expr.hir_id) => return true,
+                ExprKind::Cast(operand, _) | ExprKind::Unary(hir::UnOp::Neg, operand) if operand.hir_id == value_id => {
+                    value_id = parent_id;
+                }
+                ExprKind::Call(_, args) if args.iter().any(|arg| arg.hir_id == value_id) => return true,
                 ExprKind::MethodCall(_, receiver, args, _)
-                    if receiver.hir_id == expr.hir_id || args.iter().any(|arg| arg.hir_id == expr.hir_id) =>
+                    if receiver.hir_id == value_id || args.iter().any(|arg| arg.hir_id == value_id) =>
                 {
                     return true;
                 }
+                ExprKind::Block(..) | ExprKind::Closure(..) => return false,
                 _ => {}
             },
-            hir::Node::Item(item) => {
-                if matches!(item.kind, hir::ItemKind::Const(..) | hir::ItemKind::Static(..)) {
-                    return true;
-                }
-                break;
+            hir::Node::Item(item) => return matches!(item.kind, hir::ItemKind::Const(..) | hir::ItemKind::Static(..)),
+            hir::Node::Stmt(_) | hir::Node::Block(_) | hir::Node::ImplItem(_) | hir::Node::TraitItem(_) => {
+                return false;
             }
-            hir::Node::ImplItem(_) | hir::Node::TraitItem(_) => break,
             _ => {}
         }
     }
@@ -126,14 +131,22 @@ fn literal_is_documented_by_parent(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -
     false
 }
 
-fn other_expr_has_domain_name(expr: &hir::Expr<'_>) -> bool {
+/// The identifier that names `expr` as an operand: a local or path, a field
+/// (`self.elapsed_ms`), or a method call (`cfg.retry_limit()`).
+fn operand_name(expr: &hir::Expr<'_>) -> Option<rustc_span::Symbol> {
     match expr.kind {
-        ExprKind::Path(hir::QPath::Resolved(_, path)) => path.segments.last().is_some_and(|segment| {
-            let name = segment.ident.name.as_str();
-            has_unit_suffix(name) || has_domain_word(name)
-        }),
-        _ => false,
+        ExprKind::Path(hir::QPath::Resolved(_, path)) => path.segments.last().map(|segment| segment.ident.name),
+        ExprKind::Field(_, ident) => Some(ident.name),
+        ExprKind::MethodCall(segment, ..) => Some(segment.ident.name),
+        _ => None,
     }
+}
+
+fn other_expr_has_domain_name(expr: &hir::Expr<'_>) -> bool {
+    operand_name(expr).is_some_and(|name| {
+        let name = name.as_str();
+        has_unit_suffix(name) || has_domain_word(name)
+    })
 }
 
 fn literal_is_policy_threshold_comparison(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> bool {
@@ -269,5 +282,8 @@ mod tests {
         assert!(has_domain_word("connection_threshold"));
         assert!(!has_unit_suffix("attempt"));
         assert!(!has_domain_word("value"));
+        assert!(has_domain_word("RETRY_LIMIT"));
+        assert!(!has_domain_word("report_lines"));
+        assert!(!has_domain_word("transport_count"));
     }
 }

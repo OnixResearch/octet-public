@@ -50,23 +50,39 @@ pub fn strict_profile_policy_hash(profile: &StrictProfile) -> Result<String, Str
     Ok(crate::determinism::full_hash(&canonical))
 }
 
+/// Applies the selected profile's function-address floor and default scope to the requested check.
+/// A profile floor is never `off`, so an explicit scope or baseline left with an `off` effective
+/// mode means no profile was selected (by `--profile` or an architecture admission binding) and no
+/// mode was requested; that would silently ignore the option, so it fails before Cargo runs.
 pub fn effective_function_address_check(
     selected: Option<&SelectedStrictProfile>,
     requested: &FunctionAddressCheck,
-) -> FunctionAddressCheck {
-    let Some(selected) = selected else {
-        return requested.clone();
-    };
-
+) -> Result<FunctionAddressCheck, String> {
     let mut effective = requested.clone();
-    let minimum_mode = function_address_mode(selected.policy.minimum_function_address_mode);
-    if effective.mode < minimum_mode {
-        effective.mode = minimum_mode;
+    if let Some(selected) = selected {
+        let minimum_mode = function_address_mode(selected.policy.minimum_function_address_mode);
+        if effective.mode < minimum_mode {
+            effective.mode = minimum_mode;
+        }
+        if effective.paths.is_empty() && selected.policy.function_address_scope == FunctionAddressScope::Core {
+            effective.paths.clone_from(&selected.core_source_scopes);
+        }
     }
-    if effective.paths.is_empty() && selected.policy.function_address_scope == FunctionAddressScope::Core {
-        effective.paths.clone_from(&selected.core_source_scopes);
+
+    if !effective.mode.is_enabled() {
+        for (flag, given) in [
+            ("--function-address-path", !requested.paths.is_empty()),
+            ("--function-address-baseline", requested.baseline.is_some()),
+        ] {
+            if given {
+                return Err(format!(
+                    "`{flag}` requires `--function-addresses observe|warn|deny` or a strict profile (`--profile` or \
+                     an architecture admission binding); function-address checks are off"
+                ));
+            }
+        }
     }
-    effective
+    Ok(effective)
 }
 
 fn load_core_source_scopes(workspace_root: &Path, profile: &StrictProfile) -> Result<Vec<PathBuf>, String> {
@@ -76,7 +92,13 @@ fn load_core_source_scopes(workspace_root: &Path, profile: &StrictProfile) -> Re
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
         Err(error) => return Err(format!("read {}: {error}", config_path.display())),
     };
-    core_source_scopes_from_toml(&source, profile)
+    let scopes = core_source_scopes_from_toml(&source, profile)?;
+    crate::function_address::reject_workspace_escaping_scopes(
+        workspace_root,
+        &scopes,
+        crate::function_address::ScopeOrigin::CoreSourceScopes,
+    )?;
+    Ok(scopes)
 }
 
 fn core_source_scopes_from_toml(source: &str, profile: &StrictProfile) -> Result<Vec<PathBuf>, String> {
@@ -222,7 +244,7 @@ core_source_scopes = ["crates/domain/src", "./crates/domain/src", "crates/model/
         };
         let requested = FunctionAddressCheck::off();
 
-        let effective = effective_function_address_check(Some(&selected), &requested);
+        let effective = effective_function_address_check(Some(&selected), &requested).expect("profile floor applies");
 
         assert_eq!(effective.mode, FunctionAddressMode::Deny);
         assert_eq!(effective.paths, selected.core_source_scopes);
@@ -242,7 +264,7 @@ core_source_scopes = ["crates/domain/src", "./crates/domain/src", "crates/model/
             baseline: Some(PathBuf::from("artifacts/functions.json")),
         };
 
-        let effective = effective_function_address_check(Some(&selected), &requested);
+        let effective = effective_function_address_check(Some(&selected), &requested).expect("explicit mode is kept");
 
         assert_eq!(effective, requested);
     }
@@ -255,6 +277,37 @@ core_source_scopes = ["crates/domain/src", "./crates/domain/src", "crates/model/
             baseline: None,
         };
 
-        assert_eq!(effective_function_address_check(None, &requested), requested);
+        assert_eq!(effective_function_address_check(None, &requested), Ok(requested));
+    }
+
+    #[test]
+    fn function_address_options_need_an_enabled_effective_mode() {
+        let off_with = |paths: Vec<PathBuf>, baseline: Option<PathBuf>| FunctionAddressCheck {
+            mode: FunctionAddressMode::Off,
+            paths,
+            baseline,
+        };
+        for (flag, requested) in [
+            ("--function-address-path", off_with(vec![PathBuf::from("src")], None)),
+            ("--function-address-baseline", off_with(Vec::new(), Some(PathBuf::from("missing.json")))),
+        ] {
+            let error = effective_function_address_check(None, &requested).expect_err("inert option must fail");
+            assert!(error.contains(flag) && error.contains("--function-addresses"), "{error}");
+        }
+        assert_eq!(
+            effective_function_address_check(None, &FunctionAddressCheck::off()),
+            Ok(FunctionAddressCheck::off())
+        );
+
+        let selected = SelectedStrictProfile {
+            policy: octet_lint_metadata::strict_profile::strict_profile("robust").expect("robust profile"),
+            policy_hash: "b3:profile".to_owned(),
+            core_source_scopes: Vec::new(),
+        };
+        let requested = off_with(vec![PathBuf::from("src")], Some(PathBuf::from("baseline.json")));
+        let effective =
+            effective_function_address_check(Some(&selected), &requested).expect("profile floor enables the options");
+        assert!(effective.mode.is_enabled());
+        assert_eq!(effective.paths, requested.paths);
     }
 }

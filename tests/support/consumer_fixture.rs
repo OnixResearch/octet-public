@@ -19,6 +19,15 @@ const COMPILED_CARGO_OCTET_BIN: Option<&str> = option_env!("CARGO_OCTET_BIN");
 static BASH_PATH: OnceLock<Result<PathBuf, String>> = OnceLock::new();
 static BUILT_CARGO_OCTET_BIN: OnceLock<Result<PathBuf, String>> = OnceLock::new();
 
+/// Canonical runner names; the fixture's env knobs drive the `TIGERSTYLE_*` aliases, so ambient
+/// canonical values must not outrank them. Tests opt into canonical names through `extra_env`.
+const OCTET_RUNNER_ENV: [&str; 4] = [
+    "OCTET_TOOLCHAIN",
+    "OCTET_DRIVER_PATH",
+    "OCTET_LINT_LIB",
+    "OCTET_DYLINT_REV",
+];
+
 pub(crate) struct TempDir {
     path: PathBuf,
 }
@@ -57,7 +66,8 @@ pub(crate) fn write_executable(path: &Path, contents: &str) {
 }
 
 fn copy_path(from: &Path, to: &Path) {
-    let metadata = fs::symlink_metadata(from).expect("symlink metadata");
+    let metadata =
+        fs::symlink_metadata(from).unwrap_or_else(|error| panic!("symlink metadata {}: {error}", from.display()));
     if metadata.is_dir() {
         fs::create_dir_all(to).expect("create copied dir");
         for entry in fs::read_dir(from).expect("read copied dir") {
@@ -73,7 +83,7 @@ fn copy_path(from: &Path, to: &Path) {
 }
 
 pub(crate) struct ConsumerFixture {
-    _tmp: TempDir,
+    tmp: TempDir,
     pub(crate) repo: PathBuf,
     pub(crate) fakebin: PathBuf,
     pub(crate) log_path: PathBuf,
@@ -81,6 +91,14 @@ pub(crate) struct ConsumerFixture {
     pub(crate) driver_path: PathBuf,
     pub(crate) lint_lib_path: PathBuf,
     pub(crate) target_dir: PathBuf,
+}
+
+/// Mutually exclusive lockfile-mutation modes for a fixture run.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LockfileMutation {
+    None,
+    DuringCheck,
+    DuringBootstrapBuild,
 }
 
 impl ConsumerFixture {
@@ -114,75 +132,14 @@ edition = "2024"
         write_file(&repo.join("src/lib.rs"), "pub fn noop() {}\n");
         write_file(&repo.join("dylint.toml"), "[octet]\n");
         write_file(&repo.join("Cargo.lock"), "# original lockfile\n");
-        write_executable(
-            &fakebin.join("cargo"),
-            &format!(
-                r#"#!{bash}
-set -euo pipefail
-printf 'ARGS:%s\n' "$*" >> "$TS_LOG"
-printf 'RUSTC_WORKSPACE_WRAPPER=%s\n' "${{RUSTC_WORKSPACE_WRAPPER:-}}" >> "$TS_LOG"
-printf 'DYLINT_LIBS=%s\n' "${{DYLINT_LIBS:-}}" >> "$TS_LOG"
-printf 'DYLINT_NO_DEPS=%s\n' "${{DYLINT_NO_DEPS:-}}" >> "$TS_LOG"
-printf 'OCTET_STRICT_PROFILE=%s\n' "${{OCTET_STRICT_PROFILE:-}}" >> "$TS_LOG"
-printf 'OCTET_COMPILER_ARCHITECTURE_CONTEXT=%s\n' "${{OCTET_COMPILER_ARCHITECTURE_CONTEXT:-}}" >> "$TS_LOG"
-printf 'RUSTUP_TOOLCHAIN=%s\n' "${{RUSTUP_TOOLCHAIN:-}}" >> "$TS_LOG"
-case "${{1:-}}" in
-  build)
-    out_dir="${{CARGO_TARGET_DIR:?}}/release"
-    mkdir -p "$out_dir"
-    if [[ "${{TS_MUTATE_LOCKFILE_ON_BUILD:-0}}" == "1" ]]; then
-      cat >> "${{TS_CONSUMER_LOCKFILE:?}}" <<'EOF'
-# mutated by fake cargo build
-EOF
-    fi
-    if [[ " $* " == *" -p octet "* ]]; then
-      cat > "$out_dir/liboctet.so" <<'EOF'
-fake built Octet dylint library
-EOF
-      toolchain="${{RUSTUP_TOOLCHAIN:?}}"
-      ln -sf "$out_dir/liboctet.so" "$out_dir/liboctet@${{toolchain}}.so"
-    else
-      cat > "$out_dir/tigerstyle-dylint-driver" <<'EOF'
-#!{bash}
-echo bootstrapped fake dylint driver
-EOF
-      chmod +x "$out_dir/tigerstyle-dylint-driver"
-    fi
-    exit 0
-    ;;
-  check)
-    if [[ "${{TS_MUTATE_LOCKFILE:-0}}" == "1" ]]; then
-      cat >> Cargo.lock <<'EOF'
-# mutated by fake cargo
-EOF
-    fi
-    if [[ -n "${{TS_STDOUT_FILE:-}}" ]]; then
-      cat "$TS_STDOUT_FILE"
-    fi
-    if [[ -n "${{TS_STDERR:-}}" ]]; then
-      printf '%s\n' "$TS_STDERR" >&2
-    fi
-    if [[ "${{TS_KILL_SELF:-0}}" == "1" ]]; then
-      kill -9 $$
-    fi
-    exit "${{TS_CARGO_EXIT_STATUS:-0}}"
-    ;;
-  *)
-    echo "unexpected cargo invocation: $*" >&2
-    exit 97
-    ;;
-esac
-"#,
-                bash = bash.display(),
-            ),
-        );
+        write_executable(&fakebin.join("cargo"), &fake_cargo_script(&bash));
         write_executable(&driver_path, &format!("#!{}\necho fake dylint driver\n", bash.display()));
         write_file(&lint_lib_path, "fake Octet dylint library\n");
 
         let original_lockfile = fs::read_to_string(repo.join("Cargo.lock")).expect("read original lockfile");
 
         Self {
-            _tmp: tmp,
+            tmp,
             repo,
             fakebin,
             log_path,
@@ -209,8 +166,11 @@ esac
             &[],
             args,
             cargo_exit_status,
-            mutate_lockfile,
-            false,
+            if mutate_lockfile {
+                LockfileMutation::DuringCheck
+            } else {
+                LockfileMutation::None
+            },
             toolchain_env,
             driver_env,
             lint_lib_env,
@@ -246,10 +206,17 @@ esac
             .env("TS_MUTATE_LOCKFILE", if mutate_lockfile { "1" } else { "0" })
             .env("TS_MUTATE_LOCKFILE_ON_BUILD", "0")
             .env("TS_CONSUMER_LOCKFILE", self.repo.join("Cargo.lock"))
-            .env("CARGO_TARGET_DIR", &self.target_dir);
+            .env("TS_REAL_CARGO", env::var_os("CARGO").expect("Cargo runner path"))
+            .env("CARGO_TARGET_DIR", &self.target_dir)
+            // The embedded-source cache would otherwise land in the developer's `~/.cache`.
+            .env("XDG_CACHE_HOME", self.tmp.path().join("xdg-cache"));
 
         fs::write(&self.log_path, format!("LAUNCHER:{}\nPATH:{}\n", command.get_program().to_string_lossy(), path))
             .expect("seed cargo log");
+
+        for name in OCTET_RUNNER_ENV {
+            command.env_remove(name);
+        }
 
         match lint_lib_env {
             Some(value) => {
@@ -332,8 +299,11 @@ esac
             extra_env,
             args,
             cargo_exit_status,
-            mutate_lockfile,
-            false,
+            if mutate_lockfile {
+                LockfileMutation::DuringCheck
+            } else {
+                LockfileMutation::None
+            },
             toolchain_env,
             driver_env,
             lint_lib_env,
@@ -364,8 +334,11 @@ esac
             extra_env,
             args,
             cargo_exit_status,
-            mutate_lockfile,
-            false,
+            if mutate_lockfile {
+                LockfileMutation::DuringCheck
+            } else {
+                LockfileMutation::None
+            },
             toolchain_env,
             driver_env,
             lint_lib_env,
@@ -388,8 +361,7 @@ esac
             &[],
             args,
             cargo_exit_status,
-            false,
-            true,
+            LockfileMutation::DuringBootstrapBuild,
             toolchain_env,
             driver_env,
             lint_lib_env,
@@ -408,8 +380,7 @@ esac
         extra_env: &[(&str, &str)],
         args: &[&str],
         cargo_exit_status: i32,
-        mutate_lockfile: bool,
-        mutate_lockfile_on_build: bool,
+        lockfile_mutation: LockfileMutation,
         toolchain_env: Option<&str>,
         driver_env: Option<&Path>,
         lint_lib_env: Option<&Path>,
@@ -434,13 +405,35 @@ esac
             .env("PATH", &path)
             .env("TS_LOG", &self.log_path)
             .env("TS_CARGO_EXIT_STATUS", cargo_exit_status.to_string())
-            .env("TS_MUTATE_LOCKFILE", if mutate_lockfile { "1" } else { "0" })
-            .env("TS_MUTATE_LOCKFILE_ON_BUILD", if mutate_lockfile_on_build { "1" } else { "0" })
+            .env(
+                "TS_MUTATE_LOCKFILE",
+                if lockfile_mutation == LockfileMutation::DuringCheck {
+                    "1"
+                } else {
+                    "0"
+                },
+            )
+            .env(
+                "TS_MUTATE_LOCKFILE_ON_BUILD",
+                if lockfile_mutation == LockfileMutation::DuringBootstrapBuild {
+                    "1"
+                } else {
+                    "0"
+                },
+            )
             .env("TS_CONSUMER_LOCKFILE", self.repo.join("Cargo.lock"))
-            .env("CARGO_TARGET_DIR", &self.target_dir);
+            .env("TS_REAL_CARGO", env::var_os("CARGO").expect("Cargo runner path"))
+            .env("CARGO_TARGET_DIR", &self.target_dir)
+            // The embedded-source cache would otherwise land in the developer's `~/.cache`;
+            // tests of the cache itself override this through `extra_env`.
+            .env("XDG_CACHE_HOME", self.tmp.path().join("xdg-cache"));
 
         fs::write(&self.log_path, format!("LAUNCHER:{}\nPATH:{}\n", command.get_program().to_string_lossy(), path))
             .expect("seed cargo log");
+
+        for name in OCTET_RUNNER_ENV {
+            command.env_remove(name);
+        }
 
         match lint_lib_env {
             Some(value) => {
@@ -494,6 +487,73 @@ esac
     }
 }
 
+fn fake_cargo_script(bash: &Path) -> String {
+    format!(
+        r#"#!{bash}
+set -euo pipefail
+printf 'ARGS:%s\n' "$*" >> "$TS_LOG"
+printf 'RUSTC_WORKSPACE_WRAPPER=%s\n' "${{RUSTC_WORKSPACE_WRAPPER:-}}" >> "$TS_LOG"
+printf 'DYLINT_LIBS=%s\n' "${{DYLINT_LIBS:-}}" >> "$TS_LOG"
+printf 'DYLINT_NO_DEPS=%s\n' "${{DYLINT_NO_DEPS:-}}" >> "$TS_LOG"
+printf 'OCTET_STRICT_PROFILE=%s\n' "${{OCTET_STRICT_PROFILE:-}}" >> "$TS_LOG"
+printf 'OCTET_COMPILER_ARCHITECTURE_CONTEXT=%s\n' "${{OCTET_COMPILER_ARCHITECTURE_CONTEXT:-}}" >> "$TS_LOG"
+printf 'RUSTUP_TOOLCHAIN=%s\n' "${{RUSTUP_TOOLCHAIN:-}}" >> "$TS_LOG"
+case "${{1:-}}" in
+  metadata)
+    # Use Cargo's actual manifest/workspace resolver, without fetching dependencies
+    # or changing the fixture lockfile used by the check-path tests.
+    exec "${{TS_REAL_CARGO:?}}" "$@" --no-deps --offline
+    ;;
+  build)
+    out_dir="${{CARGO_TARGET_DIR:?}}/release"
+    mkdir -p "$out_dir"
+    if [[ "${{TS_MUTATE_LOCKFILE_ON_BUILD:-0}}" == "1" ]]; then
+      cat >> "${{TS_CONSUMER_LOCKFILE:?}}" <<'EOF'
+# mutated by fake cargo build
+EOF
+    fi
+    if [[ " $* " == *" -p octet "* ]]; then
+      cat > "$out_dir/liboctet.so" <<'EOF'
+fake built Octet dylint library
+EOF
+      toolchain="${{RUSTUP_TOOLCHAIN:?}}"
+      ln -sf "$out_dir/liboctet.so" "$out_dir/liboctet@${{toolchain}}.so"
+    else
+      cat > "$out_dir/tigerstyle-dylint-driver" <<'EOF'
+#!{bash}
+echo bootstrapped fake dylint driver
+EOF
+      chmod +x "$out_dir/tigerstyle-dylint-driver"
+    fi
+    exit 0
+    ;;
+  check)
+    if [[ "${{TS_MUTATE_LOCKFILE:-0}}" == "1" ]]; then
+      cat >> Cargo.lock <<'EOF'
+# mutated by fake cargo
+EOF
+    fi
+    if [[ -n "${{TS_STDOUT_FILE:-}}" ]]; then
+      cat "$TS_STDOUT_FILE"
+    fi
+    if [[ -n "${{TS_STDERR:-}}" ]]; then
+      printf '%s\n' "$TS_STDERR" >&2
+    fi
+    if [[ "${{TS_KILL_SELF:-0}}" == "1" ]]; then
+      kill -9 $$
+    fi
+    exit "${{TS_CARGO_EXIT_STATUS:-0}}"
+    ;;
+  *)
+    echo "unexpected cargo invocation: $*" >&2
+    exit 97
+    ;;
+esac
+"#,
+        bash = bash.display(),
+    )
+}
+
 pub(crate) fn metadata(default_scope: &str, cargo_check_args: &str) -> String {
     format!(
         r"[workspace.metadata.octet]
@@ -524,7 +584,9 @@ pub(crate) fn built_cargo_octet_bin() -> Result<PathBuf, String> {
         .get_or_init(|| {
             let cargo = env::var("CARGO").map_err(|_| "missing `CARGO` env var".to_owned())?;
             let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("cargo-octet/Cargo.toml");
-            let target_dir = env::temp_dir().join("octet-consumer-integration-cli-target");
+            // A per-checkout directory: a shared temp path let concurrent checkouts overwrite one
+            // another's binary while their tests were still executing it.
+            let target_dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("octet-consumer-integration-cli-target");
 
             let status = Command::new(cargo)
                 .arg("build")
@@ -566,17 +628,19 @@ pub(crate) fn build_standalone_cargo_octet() -> StandaloneCargoOctet {
         "cargo-octet",
         "crates/octet-architecture-ir",
         "crates/octet-lint-metadata",
+        "crates/octet-merge-rail",
         "crates/octet-standards",
-        "standards/charon-semantic/generated",
-        "standards/clippy-restrictions/generated",
-        "standards/compiler-architecture-ir/contracts",
-        "standards/effect-closure/generated",
-        "standards/nominal-domains/generated",
-        "standards/proof-imports/generated",
-        "standards/proof-rails/aeneas-lean/generated",
-        "standards/strict-profiles/generated",
+        "standards",
     ] {
         copy_path(&repo_root.join(relative), &source_root.join(relative));
+    }
+    // Filtered Nix sources may omit optional legal/readme files; the build
+    // script tolerates their absence and the full package source includes them.
+    for relative in ["LICENSE", "LICENSES", "NOTICE", "README.md", "THIRD_PARTY_NOTICES.md"] {
+        let from = repo_root.join(relative);
+        if from.exists() {
+            copy_path(&from, &source_root.join(relative));
+        }
     }
 
     let cargo = env::var("CARGO").expect("CARGO env var");

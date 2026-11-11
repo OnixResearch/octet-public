@@ -1,0 +1,17 @@
+fn widen_byte(byte: u8) -> usize {
+    usize::from(byte)
+}
+
+fn widen_half(half: u16) -> usize {
+    usize::from(half)
+}
+
+fn widen_signed(delta: i16, byte: u8) -> (isize, isize) {
+    (isize::from(delta), isize::from(byte))
+}
+
+fn main() {
+    let _ = widen_byte(1);
+    let _ = widen_half(2);
+    let _ = widen_signed(-3, 4);
+}

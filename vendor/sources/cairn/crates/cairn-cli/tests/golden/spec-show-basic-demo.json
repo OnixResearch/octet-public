@@ -1,0 +1,23 @@
+{
+  "layout": "cairn",
+  "root": "fixtures/basic",
+  "resolution": {
+    "diagnostics": [],
+    "locator_consulted": false,
+    "registry_lookup": "local_locator_only",
+    "selected": {
+      "project_identity": null,
+      "root": "fixtures/basic",
+      "source": "explicit_root",
+      "store_id": null,
+      "store_identity": null
+    },
+    "valid": true
+  },
+  "spec": {
+    "id": "demo",
+    "markdown": "# demo Specification\n\n## Purpose\nFixture spec.\n\n## Requirements\n\n### Requirement: Existing behavior\nr[demo.existing] The system MUST have a fixture requirement.\n\n#### Scenario: Existing scenario\nr[demo.existing.scenario]\n- GIVEN a fixture repository\n- WHEN cairn scans it\n- THEN it finds the main spec\n",
+    "path": "fixtures/basic/.cairn/specs/demo/spec.md",
+    "title": "demo Specification"
+  }
+}

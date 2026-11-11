@@ -96,6 +96,7 @@ struct RawFunction {
     body: Option<Value>,
     signature: Value,
     local_calls: Vec<u64>,
+    unresolved_calls: Vec<&'static str>,
     unknown_statement_kinds: Vec<String>,
 }
 
@@ -334,7 +335,7 @@ pub(crate) fn analyze_snapshot(
         ));
     }
     let (items, edges, mut unknowns, mut candidates) = normalize_functions(&raw_functions, &mut diagnostics);
-    let trait_rows = project_trait_rows(translated, &raw_functions, &mut diagnostics);
+    let trait_rows = project_trait_rows(translated, &raw_functions, &mut unknowns, &mut diagnostics);
     if edges.len() > profile.limits.edge_max_count {
         diagnostics.push(format!(
             "Charon edge count exceeds configured limit: {} > {}",
@@ -452,8 +453,13 @@ fn project_sources(translated: &Value, diagnostics: &mut Vec<String>) -> Vec<Sou
             })
         })
         .collect::<Vec<_>>();
+    let mut paths = BTreeSet::new();
+    for source in &sources {
+        if !paths.insert(source.path.as_str()) {
+            diagnostics.push(format!("Charon snapshot contains duplicate source path `{}`", source.path));
+        }
+    }
     sources.sort_by(|left, right| left.path.cmp(&right.path));
-    sources.dedup();
     sources
 }
 
@@ -541,11 +547,14 @@ fn project_raw_functions(
         });
         let statement_count = body.as_ref().map_or(0, statement_count);
         let mut local_calls = Vec::new();
+        let mut unresolved_calls = Vec::new();
         if let Some(body) = &body {
-            collect_local_calls(body, &mut local_calls);
+            collect_calls(body, &mut local_calls, &mut unresolved_calls);
         }
         local_calls.sort_unstable();
         local_calls.dedup();
+        unresolved_calls.sort_unstable();
+        unresolved_calls.dedup();
         let mut unknown_statement_kinds = Vec::new();
         if let Some(body) = &body {
             collect_unknown_statement_kinds(body, &mut unknown_statement_kinds);
@@ -577,6 +586,7 @@ fn project_raw_functions(
             body,
             signature: function.get("signature").cloned().unwrap_or(Value::Null),
             local_calls,
+            unresolved_calls,
             unknown_statement_kinds,
         });
     }
@@ -645,6 +655,9 @@ fn validate_selected_items(profile: &CharonSemanticProfile, functions: &[RawFunc
     }
 }
 
+// One walk over Charon functions emits items, edges, unknowns, and effect candidates from the same
+// per-function state.
+#[allow(clippy::too_many_lines)]
 fn normalize_functions(
     functions: &[RawFunction],
     diagnostics: &mut Vec<String>,
@@ -718,6 +731,18 @@ fn normalize_functions(
                 kind: "item-dependency".to_owned(),
             });
         }
+        for callee in &function.unresolved_calls {
+            candidates.push(EffectCandidate {
+                item: function.qualified_name.clone(),
+                candidate: "unknown-call".to_owned(),
+                evidence: format!("unresolved call through {callee}"),
+            });
+            unknowns.push(UnknownFact {
+                item: function.qualified_name.clone(),
+                fact: "local-call".to_owned(),
+                reason: format!("call through {callee} does not resolve to a local function"),
+            });
+        }
         if function.signature.pointer("/is_unsafe").and_then(Value::as_bool) == Some(true) {
             candidates.push(EffectCandidate {
                 item: function.qualified_name.clone(),
@@ -777,26 +802,41 @@ fn statement_count(value: &Value) -> u64 {
     }
 }
 
-fn collect_local_calls(value: &Value, calls: &mut Vec<u64>) {
+fn collect_calls(value: &Value, local_calls: &mut Vec<u64>, unresolved_calls: &mut Vec<&'static str>) {
     match value {
         Value::Array(values) => {
             for value in values {
-                collect_local_calls(value, calls);
+                collect_calls(value, local_calls, unresolved_calls);
             }
         }
         Value::Object(values) => {
-            let call_id = values
-                .get("Call")
-                .and_then(|call| call.pointer("/call/func/Regular/kind/Fun/Regular"))
-                .and_then(Value::as_u64);
-            if let Some(id) = call_id {
-                calls.push(id);
+            if let Some(call) = values.get("Call") {
+                let func = call.pointer("/call/func");
+                match func.and_then(|func| func.pointer("/Regular/kind/Fun/Regular")).and_then(Value::as_u64) {
+                    Some(id) => local_calls.push(id),
+                    None => unresolved_calls.push(unresolved_callee(func)),
+                }
             }
             for value in values.values() {
-                collect_local_calls(value, calls);
+                collect_calls(value, local_calls, unresolved_calls);
             }
         }
         _ => {}
+    }
+}
+
+fn unresolved_callee(func: Option<&Value>) -> &'static str {
+    let Some(func) = func else {
+        return "an unrecognized callee";
+    };
+    if func.get("Dynamic").is_some() {
+        "a function pointer"
+    } else if func.pointer("/Regular/kind/Trait").is_some() {
+        "a trait method"
+    } else if func.pointer("/Regular/kind/Fun/Builtin").is_some() {
+        "a builtin function"
+    } else {
+        "an unrecognized callee"
     }
 }
 
@@ -848,6 +888,7 @@ fn contains_object_key(value: &Value, needle: &str) -> bool {
 fn project_trait_rows(
     translated: &Value,
     functions: &[RawFunction],
+    unknowns: &mut Vec<UnknownFact>,
     diagnostics: &mut Vec<String>,
 ) -> Vec<TraitResolutionRow> {
     let trait_names = translated
@@ -879,14 +920,24 @@ fn project_trait_rows(
             continue;
         };
         let implementation_name = qualified_name(implementation.pointer("/item_meta/name").and_then(Value::as_array));
-        let mut method_items = implementation
-            .get("methods")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .filter_map(|method| method.pointer("/skip_binder/id").and_then(Value::as_u64))
-            .filter_map(|id| function_names.get(&id).cloned())
-            .collect::<Vec<_>>();
+        let mut method_items = Vec::new();
+        let methods = implementation.get("methods").and_then(Value::as_array).into_iter().flatten();
+        for method in methods.filter(|method| !method.is_null()) {
+            let id = method.pointer("/skip_binder/id").and_then(Value::as_u64);
+            match id.map(|id| (id, function_names.get(&id))) {
+                Some((_, Some(name))) => method_items.push(name.clone()),
+                Some((id, None)) => unknowns.push(UnknownFact {
+                    item: implementation_name.clone(),
+                    fact: "trait-resolution".to_owned(),
+                    reason: format!("trait method def_id `{id}` does not resolve to a local function"),
+                }),
+                None => unknowns.push(UnknownFact {
+                    item: implementation_name.clone(),
+                    fact: "trait-resolution".to_owned(),
+                    reason: "trait method entry is missing a def_id".to_owned(),
+                }),
+            }
+        }
         method_items.sort();
         method_items.dedup();
         rows.push(TraitResolutionRow {
@@ -1028,13 +1079,15 @@ mod tests {
     }
 
     fn add_call(snapshot: &mut Value, target_id: u64) {
+        add_call_through(snapshot, &serde_json::json!({ "Regular": { "kind": { "Fun": { "Regular": target_id } } } }));
+    }
+
+    fn add_call_through(snapshot: &mut Value, func: &Value) {
         snapshot["translated"]["fun_decls"][0]["body"]["Structured"]["body"]["statements"] = serde_json::json!([{
             "id": 0,
             "kind": {
                 "Call": {
-                    "call": {
-                        "func": { "Regular": { "kind": { "Fun": { "Regular": target_id } } } }
-                    }
+                    "call": { "func": func }
                 }
             }
         }]);
@@ -1068,12 +1121,105 @@ mod tests {
     }
 
     #[test]
+    fn rejects_duplicate_source_paths_in_either_order() {
+        let profile = profile();
+        let original = snapshot()["translated"]["files"][0].clone();
+        let mut drifted = original.clone();
+        drifted["id"] = Value::from(1_u64);
+        drifted["contents"] = Value::String("// drift\n// drift\n// drift\n".to_owned());
+        for files in [vec![drifted.clone(), original.clone()], vec![original, drifted]] {
+            let mut value = snapshot();
+            value["translated"]["files"] = Value::Array(files);
+            let diagnostics =
+                analyze_snapshot(&profile, &rendered(&value)).expect_err("duplicate source path must fail");
+            assert!(
+                diagnostics.iter().any(|diagnostic| diagnostic.contains("duplicate source path `src/lib.rs`")),
+                "{diagnostics:?}"
+            );
+        }
+    }
+
+    #[test]
     fn rejects_missing_call_endpoint() {
         let profile = profile();
         let mut value = snapshot();
         add_call(&mut value, MISSING_CALL_ID);
         let diagnostics = analyze_snapshot(&profile, &rendered(&value)).expect_err("missing call endpoint must fail");
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("missing function def_id")));
+    }
+
+    #[test]
+    fn records_unresolved_calls_as_unknown() {
+        let profile = profile();
+        let callees = [
+            (serde_json::json!({ "Dynamic": { "Move": { "kind": { "Local": 1 } } } }), "function pointer"),
+            (
+                serde_json::json!({ "Regular": { "kind": { "Trait": [{ "kind": { "Clause": 0 } }, "method"] } } }),
+                "trait method",
+            ),
+            (serde_json::json!({ "Regular": { "kind": { "Fun": { "Builtin": "BoxNew" } } } }), "builtin function"),
+        ];
+        for (func, label) in callees {
+            let mut value = snapshot();
+            add_call_through(&mut value, &func);
+            let output = analyze_snapshot(&profile, &rendered(&value)).expect("unresolved call remains recorded");
+            assert_eq!(output.analysis.status, "unknown", "{label}");
+            assert!(output.projection.edges.is_empty(), "{label}");
+            assert!(
+                output
+                    .analysis
+                    .effect_candidates
+                    .iter()
+                    .any(|candidate| candidate.candidate == "unknown-call" && candidate.evidence.contains(label)),
+                "{label}: {:?}",
+                output.analysis.effect_candidates
+            );
+            assert!(
+                output
+                    .analysis
+                    .unknowns
+                    .iter()
+                    .any(|unknown| unknown.fact == "local-call" && unknown.reason.contains(label)),
+                "{label}: {:?}",
+                output.analysis.unknowns
+            );
+        }
+    }
+
+    #[test]
+    fn records_unresolved_trait_methods_as_unknown() {
+        let profile = profile();
+        let mut value = snapshot();
+        value["translated"]["trait_decls"] = serde_json::json!([{
+            "def_id": 0,
+            "item_meta": { "name": [{ "Ident": ["real_fixture", 0] }, { "Ident": ["Marker", 0] }] }
+        }]);
+        value["translated"]["trait_impls"] = serde_json::json!([{
+            "def_id": 0,
+            "item_meta": { "name": [{ "Ident": ["real_fixture", 0] }, { "Impl": {} }], "is_local": true },
+            "impl_trait": { "id": 0 },
+            "methods": [
+                { "skip_binder": { "id": SELF_CALL_ID } },
+                { "skip_binder": { "id": MISSING_CALL_ID } },
+                { "skip_binder": {} },
+                null
+            ]
+        }]);
+        let output = analyze_snapshot(&profile, &rendered(&value)).expect("unresolved trait method remains recorded");
+        assert_eq!(output.projection.trait_rows.len(), 1);
+        assert_eq!(output.projection.trait_rows[0].method_items, vec!["real_fixture::safe_add"]);
+        assert_eq!(output.analysis.status, "unknown");
+        let trait_unknowns = output
+            .analysis
+            .unknowns
+            .iter()
+            .filter(|unknown| unknown.fact == "trait-resolution" && unknown.item == "real_fixture::{impl}")
+            .map(|unknown| unknown.reason.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(trait_unknowns, vec![
+            "trait method def_id `99` does not resolve to a local function",
+            "trait method entry is missing a def_id",
+        ]);
     }
 
     #[test]

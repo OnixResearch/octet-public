@@ -5,13 +5,13 @@ LL |     x as u32
    |     ^^^^^^^^
    |
    = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
-   = note: structured suggestion applicability: MaybeIncorrect
+   = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Safe Narrowing / Conversions
    = note: `#[warn(tigerstyle::unchecked_narrowing)]` on by default
 help: replace with `u32::try_from(...)`
    |
 LL -     x as u32
-LL +     u32::try_from(x)?
+LL +     u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
    |
 
 warning: narrowing cast from `u64` to `u32` without bounds check
@@ -21,12 +21,12 @@ LL |         x as u32
    |         ^^^^^^^^
    |
    = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
-   = note: structured suggestion applicability: MaybeIncorrect
+   = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Safe Narrowing / Conversions
 help: replace with `u32::try_from(...)`
    |
 LL -         x as u32
-LL +         u32::try_from(x)?
+LL +         u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
    |
 
 warning: narrowing cast from `u64` to `u32` without bounds check
@@ -36,12 +36,12 @@ LL |         x as u32
    |         ^^^^^^^^
    |
    = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
-   = note: structured suggestion applicability: MaybeIncorrect
+   = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Safe Narrowing / Conversions
 help: replace with `u32::try_from(...)`
    |
 LL -         x as u32
-LL +         u32::try_from(x)?
+LL +         u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
    |
 
 warning: narrowing cast from `u64` to `u32` without bounds check
@@ -51,12 +51,12 @@ LL |         x as u32
    |         ^^^^^^^^
    |
    = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
-   = note: structured suggestion applicability: MaybeIncorrect
+   = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Safe Narrowing / Conversions
 help: replace with `u32::try_from(...)`
    |
 LL -         x as u32
-LL +         u32::try_from(x)?
+LL +         u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
    |
 
 warning: narrowing cast from `u64` to `u32` without bounds check
@@ -66,13 +66,187 @@ LL |         x as u32
    |         ^^^^^^^^
    |
    = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
-   = note: structured suggestion applicability: MaybeIncorrect
+   = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Safe Narrowing / Conversions
 help: replace with `u32::try_from(...)`
    |
 LL -         x as u32
-LL +         u32::try_from(x)?
+LL +         u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
    |
 
-warning: 5 warnings emitted
+warning: narrowing cast from `i64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:80:9
+   |
+LL |         x as u32
+   |         ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -         x as u32
+LL +         u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
+   |
+
+warning: narrowing cast from `i64` to `i32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:91:9
+   |
+LL |         x as i32
+   |         ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `i32::try_from(...)`
+   |
+LL -         x as i32
+LL +         i32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
+   |
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:136:5
+   |
+LL |     x as u32
+   |     ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     x as u32
+LL +     u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
+   |
+
+warning: narrowing cast from `usize` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:141:5
+   |
+LL |     values.len() as u32
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     values.len() as u32
+LL +     u32::try_from(values.len()).unwrap_or_else(|_| /* handle out-of-range value */)
+   |
+
+warning: narrowing cast from `isize` to `i8` without bounds check
+  --> $DIR/unchecked_narrowing.rs:146:5
+   |
+LL |     x as i8
+   |     ^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `i8::try_from(...)`
+   |
+LL -     x as i8
+LL +     i8::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
+   |
+
+warning: narrowing cast from `usize` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:193:5
+   |
+LL |     values.len() as u32
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     values.len() as u32
+LL +     u32::try_from(values.len()).unwrap_or_else(|_| /* handle out-of-range value */)
+   |
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:198:10
+   |
+LL |     Some(x as u32)
+   |          ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     Some(x as u32)
+LL +     Some(u32::try_from(x).ok()?)
+   |
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:203:8
+   |
+LL |     Ok(x as u32)
+   |        ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     Ok(x as u32)
+LL +     Ok(u32::try_from(x)?)
+   |
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:208:8
+   |
+LL |     Ok(x as u32)
+   |        ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     Ok(x as u32)
+LL +     Ok(u32::try_from(x).map_err(|_| /* error */)?)
+   |
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:213:32
+   |
+LL |     values.iter().map(|x| Some(*x as u32)).collect()
+   |                                ^^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     values.iter().map(|x| Some(*x as u32)).collect()
+LL +     values.iter().map(|x| Some(u32::try_from(*x).ok()?)).collect()
+   |
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:218:10
+   |
+LL |     Some(x as u32)
+   |          ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     Some(x as u32)
+LL +     Some(u32::try_from(x).ok()?)
+   |
+
+warning: narrowing cast from `u64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing.rs:223:5
+   |
+LL |     x as u32
+   |     ^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+
+warning: 17 warnings emitted
 

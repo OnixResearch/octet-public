@@ -48,7 +48,7 @@ $ nix run .#cairn -- change list --root .
 
 ## Focused command sweep
 
-Commands run from `/home/brittonr/git/octet`:
+Commands run from `~/git/octet`:
 
 ```bash
 TMPDIR=/tmp nix develop -c bash -c 'cargo fmt --check'

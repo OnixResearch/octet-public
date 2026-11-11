@@ -1,0 +1,14 @@
+{
+  "schema_version": "cairn.steel-action-envelope.v1",
+  "profile_id": "comparison.lifecycle.closeout",
+  "script_hash": "reviewed-allowed-fixture",
+  "actions": [
+    {
+      "id": "validate",
+      "host_function": "cairn.validate",
+      "args": {
+        "root": "."
+      }
+    }
+  ]
+}

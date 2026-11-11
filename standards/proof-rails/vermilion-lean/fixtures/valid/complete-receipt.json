@@ -1,0 +1,149 @@
+{
+  "schema_version": "octet-vermilion-proof-receipt/v1",
+  "receipt_identity": "b3:e4c3a30e72bf2407f303d24159f33e0ffa2ffb0cbd78ef326057feaa55254da4",
+  "origin": "synthetic_contract_fixture",
+  "provider": {
+    "provider_id": "vermilion-lean",
+    "profile_id": "octet-vermilion-lean-7c83bbc",
+    "profile_identity": "b3:a95f705436b12445d3d3cb6b7f794cf37f1e610349c1cb24725e5fd0abf65fab",
+    "compatibility_matrix_identity": "b3:285ca956a570428c2b748003c145868a20ccf33df645c66ab02200ccd942a9b7"
+  },
+  "semantic_spec": {
+    "contract_id": "octet.bounded_increment.checked/v1",
+    "revision": "2026-11-09",
+    "statement_blake3": "b3:af259da355a01524f6030f09ee196f20cb675991e4421204b63093fd017d38c4",
+    "width_bits": 64,
+    "overflow_behavior": "checked",
+    "precondition": "value < u64::MAX",
+    "postcondition": "result == Some(value + 1)"
+  },
+  "source_tree": [
+    {
+      "path": "standards/proof-rails/vermilion-lean/pilot/src/lib.rs",
+      "item": "increment_checked",
+      "begin_line": 16,
+      "end_line": 18,
+      "blake3": "b3:dc2836fb70d645fb0d518a05f3c245756f58cb82989c33570b73283cd0ff1098"
+    }
+  ],
+  "toolchain": {
+    "backend": "lean4",
+    "verus_frontend_revision": "48600836424a79420589c56d86e720236a029811",
+    "vstd_revision": "48600836424a79420589c56d86e720236a029811",
+    "translator_revision": "7c83bbca96940538eb282a67ca923893e5aa0e06",
+    "lean_toolchain": "leanprover/lean4:v4.33.0",
+    "mathlib_revision": "db584cd6d46c92f209a44c0f1c829460d327499d",
+    "solver_revision": "7e3365990661b697ccb30e92d6912f4cc6589322",
+    "lake_manifest_blake3": "b3:a18fdfb10b7b53cc0368b088cd5d505ef811293ce639112a57db3f9b93a79479"
+  },
+  "command": {
+    "argv": ["vrml_check", "<generated.json>", "--twin-check", "--skip-identical"],
+    "environment_allowlist": [
+      "PATH",
+      "HOME",
+      "CARGO_HOME",
+      "RUSTUP_HOME",
+      "LEAN_PATH",
+      "VERUS_VIR_EXPORT",
+      "MATHLIB_NO_CACHE_ON_UPDATE"
+    ],
+    "limits": {
+      "timeout_ms": 900000,
+      "stdout_max_bytes": 1048576,
+      "stderr_max_bytes": 1048576
+    }
+  },
+  "generated_artifacts": [
+    {
+      "role": "generated-lean",
+      "path": "standards/proof-rails/vermilion-lean/fixtures/valid/generated/lib.lean",
+      "blake3": "b3:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "role": "obligation-manifest",
+      "path": "standards/proof-rails/vermilion-lean/fixtures/valid/generated/lib.json",
+      "blake3": "b3:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "role": "proof-twin:pilot.increment.overflow-check",
+      "path": "standards/proof-rails/vermilion-lean/fixtures/valid/proofs/overflow.lean",
+      "blake3": "b3:3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "role": "proof-twin:pilot.increment.value",
+      "path": "standards/proof-rails/vermilion-lean/fixtures/valid/proofs/value.lean",
+      "blake3": "b3:4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "obligations": [
+    {
+      "obligation_id": "pilot.increment.overflow-check",
+      "kind": "overflow",
+      "generated_artifact_role": "generated-lean",
+      "generated_artifact_blake3": "b3:1111111111111111111111111111111111111111111111111111111111111111",
+      "proof_twin_role": "proof-twin:pilot.increment.overflow-check",
+      "proof_twin_blake3": "b3:3333333333333333333333333333333333333333333333333333333333333333",
+      "theorem": "pilot.increment_overflow_free",
+      "assumptions": ["propext", "Quot.sound"],
+      "status": "checked"
+    },
+    {
+      "obligation_id": "pilot.increment.value",
+      "kind": "logical-vc",
+      "generated_artifact_role": "generated-lean",
+      "generated_artifact_blake3": "b3:1111111111111111111111111111111111111111111111111111111111111111",
+      "proof_twin_role": "proof-twin:pilot.increment.value",
+      "proof_twin_blake3": "b3:4444444444444444444444444444444444444444444444444444444444444444",
+      "theorem": "pilot.increment_matches_spec",
+      "assumptions": ["propext"],
+      "status": "checked"
+    }
+  ],
+  "refinement_bridges": [
+    {
+      "bridge_id": "pilot.increment.refinement-to-spec",
+      "status": "open",
+      "statement": "open: the embedding maps u64 to Lean Int with range facts; the bridge from the generated obligation to this contract statement is not yet checked"
+    }
+  ],
+  "checker": {
+    "checker_id": "vrml_check",
+    "status": "passed",
+    "exit_code": 0,
+    "complete": true,
+    "output_empty": false,
+    "required_obligations": 2,
+    "checked_obligations": 2,
+    "diagnostic_identity": null
+  },
+  "proof_inventory": {
+    "theorems": [
+      {
+        "obligation_id": "pilot.increment.overflow-check",
+        "theorem": "pilot.increment_overflow_free",
+        "assumptions": ["propext", "Quot.sound"]
+      },
+      {
+        "obligation_id": "pilot.increment.value",
+        "theorem": "pilot.increment_matches_spec",
+        "assumptions": ["propext"]
+      }
+    ],
+    "axioms": ["propext", "Quot.sound"]
+  },
+  "outcome": "supported",
+  "evidence_disposition": "recorded_only",
+  "comparison": {
+    "category": "incomparable_claims",
+    "participants": ["vermilion-lean", "verus", "aeneas-lean"],
+    "evidence_merge": false,
+    "open_obligations": ["pilot.increment.refinement-to-spec"]
+  },
+  "non_claims": [
+    "does not prove Vermilion, Verus, or Lean soundness",
+    "does not prove that any route refines the executable Rust function",
+    "does not prove whole-program correctness",
+    "does not prove semantic equivalence",
+    "does not establish release eligibility"
+  ]
+}

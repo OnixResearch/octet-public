@@ -25,6 +25,8 @@ The shell rejects `--command`. It uses Bounded Exec through the pinned Octet run
 
 The profile selects deterministic cargo-mutants output with `--no-times`. Octet reads `outcomes.json` and `mutants.json` instead of terminal text.
 
+cargo-mutants exit codes 0 (all caught), 2 (missed mutants), 3 (timeouts), and 4 (failed baseline) all complete the run and write `outcomes.json`. Octet records the exit code and derives the gate status from the native outcomes. Other exit codes, timeouts, and output overflow fail the run without a receipt.
+
 ## Import
 
 Use the checked native outcomes path for a compatible import:
@@ -40,7 +42,7 @@ cargo octet evidence collect \
   --artifact-dir artifacts/mutation
 ```
 
-Without the hardened profile, existing normalized v1 inputs remain lower-authority transcript evidence.
+Without the hardened profile, existing normalized v1 inputs remain lower-authority transcript evidence. That unprofiled import also reads cargo-mutants' native `outcomes.json` shape: a `MissedMutant` or `Timeout` outcome `summary`, or a nonzero top-level `missed` or `timeout` count, keeps the receipt out of `passed` and requires manual review.
 
 ## Outcomes
 

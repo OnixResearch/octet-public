@@ -46,7 +46,7 @@ let CutoverNonClaim = "standalone Valence cutover proves dependency/source owner
 {
   schema_version = "octet-valence-core-cutover-manifest/v2",
   standalone_source = {
-    coordinate = "github:OnixResearch/valence-public?dir=crates/valence-core",
+    coordinate = "github:OnixResearch/valence?dir=crates/valence-core",
     cargo_git_url = "https://github.com/OnixResearch/valence-public.git",
     crate_target = "valence-core",
     revision = ValenceRevision,
@@ -58,7 +58,7 @@ let CutoverNonClaim = "standalone Valence cutover proves dependency/source owner
     {
       module_or_schema = "function_object",
       standalone_path = "crates/valence-core/src/function_object.rs",
-      standalone_source_b3 = "b3:90165fa493397aa7fbd620d191ebb5990b355b42a71f5310b306f8b0d32c435c",
+      standalone_source_b3 = "b3:11f0f4233aaf3153966f6aa37de570c2dcd0e75335591934461ae2b25ab3ecb1",
       legacy_fixture_path = "crates/valence-core/src/function_object.rs",
       compatibility_disposition = "legacy-fixture",
       fixture_refs = ["function-object-v1-compatible"],
@@ -67,7 +67,7 @@ let CutoverNonClaim = "standalone Valence cutover proves dependency/source owner
     {
       module_or_schema = "evidence_index",
       standalone_path = "crates/valence-core/src/evidence_index.rs",
-      standalone_source_b3 = "b3:e71dffafd2bbc6c1bb49ec2ffebf4b8a5b2821b39f71c717762a9abf41b6d147",
+      standalone_source_b3 = "b3:75320ed218e1a726745ad166b394c2a640159ec08863fa7e231e2f221d780c4e",
       legacy_fixture_path = "crates/valence-core/src/evidence_index.rs",
       compatibility_disposition = "legacy-fixture",
       fixture_refs = ["evidence-index-compatible"],
@@ -87,8 +87,8 @@ let CutoverNonClaim = "standalone Valence cutover proves dependency/source owner
     {
       fixture_id = "function-object-v1-compatible",
       module_or_schema = "function_object",
-      expected_behavior = "Function Object v1 DTO and object hash behavior remains byte-compatible for checked fixtures",
-      compatibility_command = "cargo test -p cargo-octet object -- --nocapture",
+      expected_behavior = "Historical v1 artifact-only reads and the saved v1 receipt remain stable; default source-token-v2 replay of the saved v1 corpus receipt reports object_set_hash mismatch, while reviewed v2 source/receipt replays against its own versioned identity. The upstream pinned-v1 core golden test remains separately runnable in Valence",
+      compatibility_command = "cargo test -p cargo-octet --test fingerprint_consumer object_corpus_compatibility -- --nocapture",
       non_claims = [CutoverNonClaim],
     },
     {

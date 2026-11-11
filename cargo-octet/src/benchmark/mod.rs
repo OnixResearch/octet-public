@@ -37,6 +37,8 @@ pub struct EnvironmentObservation {
     pub peak_memory_supported: bool,
 }
 
+// `sample_index` is a serialized JSON key; renaming the field would change the wire format.
+#[allow(clippy::struct_field_names)]
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Sample {
     pub sample_index: usize,
@@ -191,6 +193,14 @@ pub fn validate(details: &ReceiptDetails) -> Vec<String> {
     validation::validate_details(details)
 }
 
+/// Remeasure a published benchmark bundle and reproduce its receipt from the raw artifacts.
+pub fn validate_bundle(
+    details: &ReceiptDetails,
+    artifacts: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> Vec<String> {
+    bundle::validate(details, artifacts)
+}
+
 pub fn projection_bytes(projection: &BenchmarkProjection) -> Result<Vec<u8>, String> {
     pretty_bytes(projection, "benchmark projection")
 }
@@ -205,7 +215,9 @@ pub fn prefixed_identity(bytes: &[u8]) -> String {
     format!("b3:{}", blake3::hash(bytes).to_hex())
 }
 
+mod bundle;
 mod comparison;
+pub mod experiment;
 mod profile;
 mod profile_validation;
 pub(crate) mod request;

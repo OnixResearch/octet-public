@@ -1,0 +1,31 @@
+{
+  "conclusion": "fail (violation)",
+  "violations": {
+    "itoa:1.0.18": [
+      {
+        "AuditConflict": {
+          "violation_source": null,
+          "violation": {
+            "who": "Demo <demo@example.com>",
+            "criteria": "safe-to-deploy",
+            "version": null,
+            "delta": null,
+            "violation": "=1.0.18",
+            "importable": null,
+            "notes": null
+          },
+          "audit_source": null,
+          "audit": {
+            "who": "Demo <demo@example.com>",
+            "criteria": "safe-to-deploy",
+            "version": "1.0.18",
+            "delta": null,
+            "violation": null,
+            "importable": null,
+            "notes": null
+          }
+        }
+      }
+    ]
+  }
+}

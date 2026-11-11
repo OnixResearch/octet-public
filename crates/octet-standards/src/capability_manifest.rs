@@ -3,6 +3,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::dependency_direction::path_ends_with_components;
 use crate::diagnostic::Diagnostic;
 use crate::diagnostic::DiagnosticInput;
 use crate::model::FamilySelection;
@@ -289,6 +290,12 @@ struct SourceScopeMatch {
     class: &'static str,
 }
 
+/// Returns true when the capability-manifest checker evaluates `policy`.
+#[must_use]
+pub fn capability_manifest_checker_applies(policy: &PolicyEntry) -> bool {
+    capability_mechanism(policy).is_some()
+}
+
 /// Evaluates capability manifest diagnostics and report data for one checker run.
 // r[impl octet.capability_manifest_checker.manifest]
 // r[impl octet.capability_manifest_checker.scope_resolution]
@@ -500,34 +507,41 @@ fn ambiguous_scope_diagnostics(
         .collect()
 }
 
+// r[impl octet.capability_manifest_checker.handlers.missing]
 fn handler_validation_diagnostics(
     policy: &PolicyEntry,
     manifest: &CapabilityManifest,
     sources: &[SourceFile],
 ) -> Vec<Diagnostic> {
-    if !manifest.is_strict() || manifest.deterministic_handlers.is_empty() {
+    if !manifest.is_strict() {
         return Vec::new();
     }
     let mut diagnostics = Vec::new();
-    if manifest.handler_artifacts.is_empty() {
-        diagnostics.push(policy_level_diagnostic(
-            policy,
-            "strict capability manifest declares deterministic handlers without handler artifacts",
-            "declare capability_handler_artifacts for each required deterministic handler",
-        ));
-    }
-    if manifest.handler_replay_commands.is_empty() {
-        diagnostics.push(policy_level_diagnostic(
-            policy,
-            "strict capability manifest declares deterministic handlers without replay commands",
-            "declare capability_handler_replay_commands that replay success and failure paths",
-        ));
-    }
-    for evidence in handler_evidence(manifest, sources) {
+    for (index, handler) in manifest.deterministic_handlers.iter().enumerate() {
+        if manifest.handler_replay_commands.get(index).is_none() {
+            diagnostics.push(policy_level_diagnostic(
+                policy,
+                &format!(
+                    "strict capability manifest declares deterministic handler `{handler}` without a replay command"
+                ),
+                "declare one capability_handler_replay_commands entry per deterministic handler, in handler order",
+            ));
+        }
+        if manifest.handler_artifacts.get(index).is_none() {
+            diagnostics.push(policy_level_diagnostic(
+                policy,
+                &format!(
+                    "strict capability manifest declares deterministic handler `{handler}` without a handler artifact"
+                ),
+                "declare one capability_handler_artifacts entry per deterministic handler, in handler order",
+            ));
+            continue;
+        }
+        let evidence = handler_evidence_record(manifest, sources, index, handler);
         if evidence.blake3.is_empty() {
             diagnostics.push(policy_level_diagnostic(
                 policy,
-                &format!("deterministic handler artifact `{}` is missing", evidence.artifact),
+                &format!("deterministic handler `{handler}` artifact `{}` is missing", evidence.artifact),
                 "check in the handler artifact or correct the manifest path",
             ));
             continue;
@@ -535,7 +549,7 @@ fn handler_validation_diagnostics(
         if !evidence.success_path_coverage || !evidence.failure_path_coverage {
             diagnostics.push(policy_level_diagnostic(
                 policy,
-                &format!("deterministic handler `{}` must cover success and failure paths", evidence.handler),
+                &format!("deterministic handler `{handler}` must cover success and failure paths"),
                 "record explicit success and failure markers in the handler artifact",
             ));
         }
@@ -662,7 +676,6 @@ fn handler_evidence_record(
     let replay_command = manifest
         .handler_replay_commands
         .get(index)
-        .or_else(|| manifest.handler_replay_commands.first())
         .cloned()
         .unwrap_or_else(|| DEFAULT_REPLAY_COMMAND.to_owned());
     let checked_scope = manifest.core_source_scopes.first().cloned().unwrap_or_else(|| SCOPE_CORE.to_owned());
@@ -685,18 +698,33 @@ fn handler_evidence_record(
     }
 }
 
+/// Finds the checked source for a declared handler artifact.
+///
+/// Paths match exactly or on whole trailing components in either direction, so a checked source
+/// rooted elsewhere still matches, but `legacy_tests/fs-handler.txt` never satisfies
+/// `tests/fs-handler.txt`.
 fn source_for_artifact<'a>(sources: &'a [SourceFile], artifact: &str) -> Option<&'a SourceFile> {
     if artifact.is_empty() {
         return None;
     }
-    sources
-        .iter()
-        .find(|source| source.path == artifact || source.path.ends_with(artifact) || artifact.ends_with(&source.path))
+    sources.iter().find(|source| {
+        path_ends_with_components(&source.path, artifact) || path_ends_with_components(artifact, &source.path)
+    })
 }
 
+/// Returns true when any marker appears as a whole word or phrase, ignoring ASCII case.
 fn contains_any_marker(text: &str, markers: &[&str]) -> bool {
     let lowercase = text.to_ascii_lowercase();
-    markers.iter().any(|marker| lowercase.contains(marker))
+    markers.iter().any(|marker| {
+        lowercase.match_indices(marker).any(|(start, matched)| {
+            !lowercase[..start].chars().next_back().is_some_and(is_marker_word_character)
+                && !lowercase[start + matched.len()..].chars().next().is_some_and(is_marker_word_character)
+        })
+    })
+}
+
+fn is_marker_word_character(character: char) -> bool {
+    character.is_alphanumeric() || character == '_'
 }
 
 fn capability_name_family(name: &str, manifest: &CapabilityManifest) -> String {

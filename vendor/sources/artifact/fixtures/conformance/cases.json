@@ -1,0 +1,82 @@
+{
+  "schema": "artifact-auth.conformance-corpus.v1",
+  "cases": [
+    {
+      "id": "same-label-distinct-full-keys",
+      "mutation": "none",
+      "expected_passed": true,
+      "expected_issue": null,
+      "expected_statement_blake3": "f51f201e9efbb629def2941fb820540d53c847d347e5182da21a448e735903c5"
+    },
+    {
+      "id": "parent-order-independent",
+      "mutation": "reverse_parents",
+      "expected_passed": true,
+      "expected_issue": null,
+      "expected_statement_blake3": "f51f201e9efbb629def2941fb820540d53c847d347e5182da21a448e735903c5"
+    },
+    {
+      "id": "wrong-domain",
+      "mutation": "wrong_domain",
+      "expected_passed": false,
+      "expected_issue": "auth.statement_scope_mismatch",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "wrong-profile",
+      "mutation": "wrong_profile",
+      "expected_passed": false,
+      "expected_issue": "auth.policy_profile_mismatch",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "revoked-key",
+      "mutation": "revoked_key",
+      "expected_passed": false,
+      "expected_issue": "auth.key_not_current",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "stale-generation",
+      "mutation": "stale_generation",
+      "expected_passed": false,
+      "expected_issue": "auth.key_generation_stale",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "wrong-purpose",
+      "mutation": "wrong_purpose",
+      "expected_passed": false,
+      "expected_issue": "auth.purpose_unauthorized",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "duplicate-key-threshold-inflation",
+      "mutation": "duplicate_key",
+      "expected_passed": false,
+      "expected_issue": "auth.distinct_key_threshold_unsatisfied",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "unknown-digest-algorithm",
+      "mutation": "unknown_digest",
+      "expected_passed": false,
+      "expected_issue": "auth.digest_algorithm_unsupported",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "cryptographic-failure",
+      "mutation": "crypto_failure",
+      "expected_passed": false,
+      "expected_issue": "auth.signature_unverified",
+      "expected_statement_blake3": null
+    },
+    {
+      "id": "missing-currentness",
+      "mutation": "unknown_currentness",
+      "expected_passed": false,
+      "expected_issue": "auth.key_not_current",
+      "expected_statement_blake3": null
+    }
+  ]
+}

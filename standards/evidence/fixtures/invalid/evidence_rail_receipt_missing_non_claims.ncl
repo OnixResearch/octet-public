@@ -8,6 +8,8 @@ let contracts = import "../../contracts/generated.ncl" in
   workspace_scope = "fixture-workspace",
   checked_rule_families = ["harness-identity"],
   status = "passed",
+  finding_counts = {},
   bounded_log_identity = "b3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   imported_input_identity = "b3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  findings = [],
 } | contracts.EvidenceRailReceiptV1

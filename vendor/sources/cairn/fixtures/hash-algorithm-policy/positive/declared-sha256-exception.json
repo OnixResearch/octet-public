@@ -1,0 +1,30 @@
+{
+  "policy": {
+    "default_algorithm": "BLAKE3",
+    "exceptions": [
+      {
+        "algorithm": "SHA256",
+        "owner": "chaoscontrol",
+        "scope": "snapshots.parent_snapshot_ref",
+        "reason": "legacy snapshot references are SHA256-addressed at the protocol boundary",
+        "allowed_consumers": ["chaoscontrol"],
+        "migration_status": "interop-exception",
+        "non_claims": [
+          "scope-bound identity compatibility only"
+        ]
+      }
+    ],
+    "non_claims": [
+      "hash policy validation does not prove artifact truth"
+    ]
+  },
+  "fields": [
+    {
+      "schema": "chaoscontrol.snapshot.v1",
+      "field_path": "snapshots.parent_snapshot_ref",
+      "algorithm": "SHA256",
+      "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "stack_owned_identity": true
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[octet]
+max_parameters = 6
+
+# Shadowed by `[octet]`: never parsed, so the malformed value is harmless.
+[slotcar]
+max_parameters = "seven"
+
+[tigerstyle]
+max_parameters = 9

@@ -1,0 +1,44 @@
+{
+  "changes": [
+    {
+      "delta_specs": [
+        "fixtures/basic/.cairn/changes/demo/specs/demo/spec.md"
+      ],
+      "has_design": true,
+      "has_proposal": true,
+      "has_tasks": true,
+      "metadata": {
+        "groups": [],
+        "status": null,
+        "target_date": null
+      },
+      "name": "demo",
+      "path": "fixtures/basic/.cairn/changes/demo",
+      "task_counts": {
+        "done": 0,
+        "in_progress": 0,
+        "todo": 2,
+        "total": 2,
+        "unmarked": 0
+      }
+    }
+  ],
+  "layout": "cairn",
+  "root": "fixtures/basic",
+  "resolution": {
+    "diagnostics": [],
+    "locator_consulted": false,
+    "registry_lookup": "local_locator_only",
+    "selected": {
+      "project_identity": null,
+      "root": "fixtures/basic",
+      "source": "explicit_root",
+      "store_id": null,
+      "store_identity": null
+    },
+    "valid": true
+  },
+  "specs": [
+    "fixtures/basic/.cairn/specs/demo/spec.md"
+  ]
+}

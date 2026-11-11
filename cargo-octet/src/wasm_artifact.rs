@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use wasmparser::CanonicalFunction;
 use wasmparser::Encoding;
 use wasmparser::Operator;
 use wasmparser::Parser;
@@ -23,7 +24,12 @@ const BLAKE3_PREFIX: &str = "b3:";
 const BLAKE3_HEX_LENGTH: usize = 64;
 const GIT_REVISION_HEX_LENGTH: usize = 40;
 const COHORT_IDENTITY_DOMAIN: &[u8] = b"octet-wasm-tools-cohort/v1\0";
-const INTERFACE_IDENTITY_DOMAIN: &[u8] = b"octet-wasm-interface/v1\0";
+/// wasm-tools cohort members this build links, pinned with `=` in `cargo-octet/Cargo.toml`:
+/// `wasmparser` validates and extracts artifact facts; `wasm-encoder` builds the conformance
+/// fixtures. A registry cohort must claim exactly these versions.
+/// `linked_cohort_versions_match_cargo_lock` keeps them in sync.
+const LINKED_COHORT_MEMBERS: [(&str, &str); 2] = [("wasmparser", "0.253.0"), ("wasm-encoder", "0.253.0")];
+const INTERFACE_IDENTITY_DOMAIN: &[u8] = b"octet-wasm-interface/v2\0";
 const RUNTIME_COHORT_IDENTITY_DOMAIN: &[u8] = b"octet-wasm-runtime-cohort/v1\0";
 const MALFORMED_ISSUE: &str = "malformed-artifact";
 const DISALLOWED_KIND_ISSUE: &str = "disallowed-artifact-kind";
@@ -49,6 +55,9 @@ const WASM1_PROPOSAL: &str = "wasm1";
 const WASM2_PROPOSAL: &str = "wasm2";
 const WASM3_PROPOSAL: &str = "wasm3";
 const COMPONENT_MODEL_PROPOSAL: &str = "component-model";
+const BULK_MEMORY_PROPOSAL: &str = "bulk-memory";
+const CALL_INDIRECT_OVERLONG_PROPOSAL: &str = "call-indirect-overlong";
+const MUTABLE_GLOBALS_PROPOSAL: &str = "mutable-globals";
 const PRODUCERS_SECTION: &str = "producers";
 const COMPONENT_WORLD_SEPARATOR: char = '/';
 const STANDALONE_HANDOFF: &str = "standalone";
@@ -65,6 +74,7 @@ const WIDE_VALUE_WORDS: u64 = 2;
 const SIMD_VALUE_WORDS: u64 = 4;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct WasmProfileRegistry {
     pub(crate) schema_version: String,
     pub(crate) cohort: WasmToolsCohort,
@@ -72,6 +82,7 @@ pub(crate) struct WasmProfileRegistry {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct WasmToolsCohort {
     pub(crate) cohort_id: String,
     pub(crate) identity: String,
@@ -79,6 +90,7 @@ pub(crate) struct WasmToolsCohort {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct WasmToolsCohortMember {
     pub(crate) crate_name: String,
     pub(crate) version: String,
@@ -86,6 +98,7 @@ pub(crate) struct WasmToolsCohortMember {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct WasmArtifactProfile {
     pub(crate) profile_id: String,
     pub(crate) summary: String,
@@ -95,6 +108,10 @@ pub(crate) struct WasmArtifactProfile {
     pub(crate) allowed_imports: Vec<String>,
     pub(crate) allowed_exports: Vec<String>,
     pub(crate) required_exports: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) required_imports: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) component_interface: Option<String>,
     pub(crate) allow_any_exports: bool,
     pub(crate) resource_limits: WasmResourceLimits,
     pub(crate) allow_memory_grow: bool,
@@ -109,12 +126,14 @@ pub(crate) struct WasmArtifactProfile {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct TargetRuntimeCohort {
     pub(crate) cohort_identity: String,
     pub(crate) support_projection: RuntimeSupportProjection,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct RuntimeSupportProjection {
     pub(crate) schema_version: String,
     pub(crate) runtime_id: String,
@@ -136,22 +155,36 @@ pub(crate) struct RuntimeSupportProjection {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct WasmResourceLimits {
-    pub(crate) max_artifact_bytes: u64,
-    pub(crate) max_imports: u64,
-    pub(crate) max_exports: u64,
-    pub(crate) max_memories: u64,
-    pub(crate) max_tables: u64,
-    pub(crate) max_functions: u64,
-    pub(crate) max_memory_initial_pages: u64,
-    pub(crate) max_memory_maximum_pages: u64,
-    pub(crate) max_table_initial_elements: u64,
-    pub(crate) max_table_maximum_elements: u64,
-    pub(crate) max_function_parameter_words: u64,
-    pub(crate) max_local_words_per_function: u64,
+    #[serde(rename = "max_artifact_bytes")]
+    pub(crate) artifact_bytes: u64,
+    #[serde(rename = "max_imports")]
+    pub(crate) imports: u64,
+    #[serde(rename = "max_exports")]
+    pub(crate) exports: u64,
+    #[serde(rename = "max_memories")]
+    pub(crate) memories: u64,
+    #[serde(rename = "max_tables")]
+    pub(crate) tables: u64,
+    #[serde(rename = "max_functions")]
+    pub(crate) functions: u64,
+    #[serde(rename = "max_memory_initial_pages")]
+    pub(crate) memory_initial_pages: u64,
+    #[serde(rename = "max_memory_maximum_pages")]
+    pub(crate) memory_maximum_pages: u64,
+    #[serde(rename = "max_table_initial_elements")]
+    pub(crate) table_initial_elements: u64,
+    #[serde(rename = "max_table_maximum_elements")]
+    pub(crate) table_maximum_elements: u64,
+    #[serde(rename = "max_function_parameter_words")]
+    pub(crate) function_parameter_words: u64,
+    #[serde(rename = "max_local_words_per_function")]
+    pub(crate) local_words_per_function: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct WasmFindingSeverities {
     pub(crate) malformed: String,
     pub(crate) disallowed_kind: String,
@@ -163,7 +196,6 @@ pub(crate) struct WasmFindingSeverities {
     pub(crate) duplicate_metadata: String,
     pub(crate) abi_mismatch: String,
     pub(crate) external_evidence: String,
-    pub(crate) cohort_drift: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Ord, PartialOrd, Serialize)]
@@ -196,6 +228,8 @@ pub(crate) struct WasmArtifactFacts {
     pub(crate) artifact_kind: String,
     pub(crate) proposals: Vec<String>,
     pub(crate) imports: Vec<WasmInterfaceItem>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) bound_imports: Vec<WasmInterfaceItem>,
     pub(crate) exports: Vec<WasmInterfaceItem>,
     pub(crate) worlds: Vec<String>,
     pub(crate) memory_count: u64,
@@ -209,6 +243,8 @@ pub(crate) struct WasmArtifactFacts {
     pub(crate) has_start: bool,
     pub(crate) custom_sections: Vec<String>,
     pub(crate) producer_sections: u64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) function_abis: Vec<crate::spacewasm::FunctionAbi>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -307,6 +343,21 @@ pub(crate) struct WasmEnvelopeEvaluation {
 struct FactExtraction {
     facts: WasmArtifactFacts,
     parse_diagnostics: Vec<ParseDiagnostic>,
+    imported_functions: u64,
+    imported_memories: usize,
+    imported_tables: usize,
+}
+
+// A binary scope is not an instance. Keep its declarations until all local
+// instantiations are known, then count definitions per instance, not aliases.
+#[derive(Default)]
+struct BinaryScope {
+    extraction: FactExtraction,
+    modules: Vec<Option<usize>>,
+    components: Vec<Option<usize>>,
+    instances: u64,
+    escapes: bool,
+    parent: Option<usize>,
 }
 
 struct ParseDiagnostic {
@@ -338,6 +389,7 @@ pub(crate) fn validate_registry(registry: &WasmProfileRegistry) -> Vec<String> {
         diagnostics.push("wasm-tools cohort_id must not be empty".to_owned());
     }
     validate_cohort_members(&registry.cohort.members, &mut diagnostics);
+    validate_linked_cohort_members(&registry.cohort.members, &mut diagnostics);
     validate_profiles(&registry.profiles, &mut diagnostics);
     diagnostics.sort();
     diagnostics.dedup();
@@ -427,11 +479,7 @@ pub(crate) fn analyze_bytes_with_external(
         .into_iter()
         .map(|diagnostic| WasmArtifactFinding {
             issue_code: diagnostic.issue_code.to_owned(),
-            severity: if diagnostic.issue_code == DISALLOWED_PROPOSAL_ISSUE {
-                profile.severity.disallowed_kind.clone()
-            } else {
-                profile.severity.malformed.clone()
-            },
+            severity: parse_issue_severity(&profile.severity, diagnostic.issue_code).to_owned(),
             message: diagnostic.message,
             byte_offset: diagnostic.byte_offset,
         })
@@ -482,6 +530,17 @@ pub(crate) fn analyze_bytes_with_external(
     })
 }
 
+// Parse-stage diagnostics share issue codes with policy findings, so each takes
+// the severity the profile declares for its issue class.
+fn parse_issue_severity<'a>(severities: &'a WasmFindingSeverities, issue_code: &str) -> &'a str {
+    match issue_code {
+        DISALLOWED_PROPOSAL_ISSUE => &severities.disallowed_kind,
+        RESOURCE_LIMIT_ISSUE => &severities.resource_limit,
+        ABI_MISMATCH_ISSUE => &severities.abi_mismatch,
+        _ => &severities.malformed,
+    }
+}
+
 pub(crate) fn render_envelope(envelope: &WasmArtifactEnvelope) -> Result<String, String> {
     serde_json::to_string(envelope).map_err(|error| format!("serialize Wasm artifact envelope: {error}"))
 }
@@ -506,15 +565,7 @@ pub(crate) fn evaluate_envelope(text: &str) -> WasmEnvelopeEvaluation {
         ));
     }
     validate_receipt_details(&envelope.details, &envelope.non_claims, &mut diagnostics);
-    let status = if !diagnostics.is_empty()
-        || envelope.details.findings.iter().any(|finding| finding.severity == ERROR_SEVERITY)
-    {
-        WasmEvaluationStatus::Failed
-    } else if envelope.details.findings.is_empty() {
-        WasmEvaluationStatus::Passed
-    } else {
-        WasmEvaluationStatus::ManualReview
-    };
+    let status = evaluation_status(!diagnostics.is_empty(), &envelope.details.findings);
     diagnostics.sort();
     diagnostics.dedup();
     WasmEnvelopeEvaluation {
@@ -522,6 +573,19 @@ pub(crate) fn evaluate_envelope(text: &str) -> WasmEnvelopeEvaluation {
         non_claims: envelope.non_claims,
         diagnostics,
         status,
+    }
+}
+
+/// The status an analysis earns: diagnostics or any error finding fail it,
+/// other findings need review, and no findings pass. Receipt verification
+/// recomputes it from the recorded findings.
+pub(crate) fn evaluation_status(has_diagnostics: bool, findings: &[WasmArtifactFinding]) -> WasmEvaluationStatus {
+    if has_diagnostics || findings.iter().any(|finding| finding.severity == ERROR_SEVERITY) {
+        WasmEvaluationStatus::Failed
+    } else if findings.is_empty() {
+        WasmEvaluationStatus::Passed
+    } else {
+        WasmEvaluationStatus::ManualReview
     }
 }
 
@@ -550,24 +614,36 @@ fn evaluate_external_reports(
 ) -> (Vec<ExternalRuntimeReport>, Vec<WasmArtifactFinding>) {
     let mut reports = Vec::new();
     let mut findings = Vec::new();
-    for text in report_texts {
+    // Rejected reports are not recorded, so each finding names the report it
+    // came from: its 1-based `--external-report` position and, once parsed,
+    // its claimed producer and report identity.
+    for (position, text) in (1_usize..).zip(report_texts) {
         let report: ExternalRuntimeReport = match serde_json::from_str(text) {
             Ok(report) => report,
             Err(error) => {
                 findings.push(finding(
                     EXTERNAL_EVIDENCE_ISSUE,
                     severity,
-                    format!("parse external runtime report: {error}"),
+                    format!("external runtime report #{position}: parse external runtime report: {error}"),
                 ));
                 continue;
             }
         };
         let diagnostics =
             external_report_diagnostics(&report, exact_artifact_identity, profile_identity, target_runtime);
-        for diagnostic in diagnostics {
-            findings.push(finding(EXTERNAL_EVIDENCE_ISSUE, severity, diagnostic));
+        let source = format!(
+            "external runtime report #{position} (producer `{}`, report_identity `{}`)",
+            report.producer, report.report_identity
+        );
+        for diagnostic in &diagnostics {
+            findings.push(finding(EXTERNAL_EVIDENCE_ISSUE, severity, format!("{source}: {diagnostic}")));
         }
-        reports.push(report);
+        // Only verified reports are recorded evidence. A rejected report stays a
+        // finding at the declared severity; recording it would make receipt
+        // validation re-reject it and fail the receipt regardless of severity.
+        if diagnostics.is_empty() {
+            reports.push(report);
+        }
     }
     reports.sort_by(|left, right| left.report_identity.cmp(&right.report_identity));
     (reports, findings)
@@ -634,6 +710,11 @@ pub(crate) fn validate_receipt_details(
             diagnostics.push(format!("Wasm artifact {field} must be a BLAKE3 identity"));
         }
     }
+    if is_blake3_identity(&details.interface_identity)
+        && details.interface_identity != interface_identity(&details.facts)
+    {
+        diagnostics.push("Wasm artifact interface_identity does not match its recorded interface facts".to_owned());
+    }
     if details.input_artifact != INPUT_ARTIFACT_NAME {
         diagnostics.push(format!("Wasm artifact input must be `{INPUT_ARTIFACT_NAME}`"));
     }
@@ -646,16 +727,14 @@ pub(crate) fn validate_receipt_details(
     if !matches!(details.verification_role.as_str(), RECORDED_ONLY_ROLE | "boundary") {
         diagnostics.push("Wasm artifact verification role must remain recorded_only or boundary".to_owned());
     }
+    let expected_handoff_role = handoff_role(&details.handoff_parent_identities);
     if !matches!(details.handoff_role.as_str(), STANDALONE_HANDOFF | MANTLE_HANDOFF | EXTERNAL_HANDOFF) {
         diagnostics.push(format!("unsupported Wasm artifact handoff role `{}`", details.handoff_role));
-    }
-    if details.handoff_role == STANDALONE_HANDOFF && !details.handoff_parent_identities.is_empty() {
-        diagnostics.push("standalone Wasm handoff must not claim external parent identities".to_owned());
-    }
-    if details.handoff_role == MANTLE_HANDOFF
-        && !details.handoff_parent_identities.iter().any(|identity| identity.starts_with(MANTLE_PARENT_PREFIX))
-    {
-        diagnostics.push("Mantle Wasm handoff requires a mantle: parent identity".to_owned());
+    } else if details.handoff_role != expected_handoff_role {
+        diagnostics.push(format!(
+            "Wasm artifact handoff role `{}` does not match its parent identities; expected `{expected_handoff_role}`",
+            details.handoff_role
+        ));
     }
     if details.handoff_parent_identities.iter().any(|identity| !is_external_handoff_identity(identity)) {
         diagnostics.push("Wasm handoff contains an unsupported external parent identity".to_owned());
@@ -689,20 +768,31 @@ pub(crate) fn validate_receipt_details(
 
 fn extract_facts(bytes: &[u8], profile: &WasmArtifactProfile) -> FactExtraction {
     let mut extraction = FactExtraction::default();
-    extraction.facts.artifact_kind = UNKNOWN_KIND.to_owned();
-    let mut validator = Validator::new_with_features(validation_features(profile));
-    if let Err(error) = validator.validate_all(bytes) {
-        let issue_code = if error.missing_wasm_feature().is_some() {
-            DISALLOWED_PROPOSAL_ISSUE
-        } else {
-            MALFORMED_ISSUE
-        };
-        extraction.parse_diagnostics.push(ParseDiagnostic {
-            issue_code,
-            message: format!("wasmparser validation failed: {error}"),
-            byte_offset: u64::try_from(error.offset()).ok(),
-        });
+    UNKNOWN_KIND.clone_into(&mut extraction.facts.artifact_kind);
+    if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > profile.resource_limits.artifact_bytes {
+        return extraction;
     }
+    let mut validator = Validator::new_with_features(validation_features(profile));
+    let validated = match validator.validate_all(bytes) {
+        Ok(types) => Some(types),
+        Err(error) => {
+            extraction.parse_diagnostics.push(ParseDiagnostic {
+                issue_code: if error.missing_wasm_feature().is_some() {
+                    DISALLOWED_PROPOSAL_ISSUE
+                } else {
+                    MALFORMED_ISSUE
+                },
+                message: format!("wasmparser validation failed: {error}"),
+                byte_offset: u64::try_from(error.offset()).ok(),
+            });
+            None
+        }
+    };
+    let mut scopes = Vec::<BinaryScope>::new();
+    let mut stack = Vec::<usize>::new();
+    // Set once an unresolved exported alias is seen: it may refer back to any
+    // local definition, so no scope's imports can be proven bound.
+    let mut all_escape = false;
     for payload in Parser::new(0).parse_all(bytes) {
         let payload = match payload {
             Ok(payload) => payload,
@@ -711,10 +801,317 @@ fn extract_facts(bytes: &[u8], profile: &WasmArtifactProfile) -> FactExtraction 
                 break;
             }
         };
-        extract_payload(payload, &mut extraction);
+        if let Payload::Version { encoding, .. } = &payload {
+            let id = scopes.len();
+            let parent = stack.last().copied();
+            if let Some(parent) = parent {
+                match encoding {
+                    Encoding::Module => scopes[parent].modules.push(Some(id)),
+                    Encoding::Component => scopes[parent].components.push(Some(id)),
+                }
+            }
+            let mut scope = BinaryScope {
+                parent,
+                ..BinaryScope::default()
+            };
+            UNKNOWN_KIND.clone_into(&mut scope.extraction.facts.artifact_kind);
+            scopes.push(scope);
+            stack.push(id);
+        }
+        let Some(&id) = stack.last() else { continue };
+        record_scope_links(&payload, id, &mut scopes, &mut all_escape, &mut extraction);
+        let ended = matches!(payload, Payload::End(_));
+        extract_payload(payload, &mut scopes[id].extraction);
+        if ended {
+            stack.pop();
+        }
+    }
+    if scopes.is_empty() {
+        return extraction;
+    }
+    extraction.facts.artifact_kind.clone_from(&scopes[0].extraction.facts.artifact_kind);
+    let mut multipliers = vec![1_u64; scopes.len()];
+    for id in 0..scopes.len() {
+        scopes[id].escapes |= all_escape;
+        if let Some(parent) = scopes[id].parent {
+            multipliers[id] = multipliers[parent].saturating_mul(scopes[id].instances.max(1));
+            let parent_escapes = scopes[parent].escapes;
+            scopes[id].escapes |= parent_escapes;
+        }
+    }
+    for (id, scope) in scopes.into_iter().enumerate() {
+        let bound = id != 0 && scope.instances > 0 && !scope.escapes && validated.is_some();
+        merge_scope(&mut extraction, scope.extraction, id, multipliers[id], bound);
+    }
+    if profile.component_interface.as_deref() == Some("structural-v1")
+        && extraction.facts.artifact_kind == COMPONENT_KIND
+        && let Some(types) = validated.as_ref()
+    {
+        canonicalize_component_boundary(&mut extraction.facts, types);
     }
     normalize_facts(&mut extraction.facts);
+    if profile.target_runtime.is_some() && extraction.facts.artifact_kind == MODULE_KIND {
+        match crate::spacewasm::function_abis(bytes) {
+            Ok(abis) => extraction.facts.function_abis = abis,
+            Err(message) => extraction.parse_diagnostics.push(ParseDiagnostic {
+                issue_code: ABI_MISMATCH_ISSUE,
+                message,
+                byte_offset: None,
+            }),
+        }
+    }
     extraction
+}
+
+fn record_scope_links(
+    payload: &Payload<'_>,
+    id: usize,
+    scopes: &mut [BinaryScope],
+    all_escape: &mut bool,
+    extraction: &mut FactExtraction,
+) {
+    use wasmparser::ComponentAlias;
+    use wasmparser::ComponentExternalKind;
+    use wasmparser::ComponentOuterAliasKind;
+    use wasmparser::ComponentTypeRef;
+    match payload {
+        Payload::ComponentImportSection(reader) => {
+            for import in reader.clone().into_iter().flatten() {
+                match import.ty {
+                    ComponentTypeRef::Module(_) => scopes[id].modules.push(None),
+                    ComponentTypeRef::Component(_) => scopes[id].components.push(None),
+                    _ => {}
+                }
+            }
+        }
+        Payload::ComponentAliasSection(reader) => {
+            for alias in reader.clone().into_iter().flatten() {
+                match alias {
+                    ComponentAlias::Outer {
+                        kind: ComponentOuterAliasKind::CoreModule,
+                        ..
+                    }
+                    | ComponentAlias::InstanceExport {
+                        kind: ComponentExternalKind::Module,
+                        ..
+                    } => {
+                        scopes[id].modules.push(None);
+                    }
+                    ComponentAlias::Outer {
+                        kind: ComponentOuterAliasKind::Component,
+                        ..
+                    }
+                    | ComponentAlias::InstanceExport {
+                        kind: ComponentExternalKind::Component,
+                        ..
+                    } => {
+                        scopes[id].components.push(None);
+                    }
+                    _ => {}
+                }
+            }
+        }
+        Payload::InstanceSection(reader) => {
+            for instance in reader.clone().into_iter().flatten() {
+                if let wasmparser::Instance::Instantiate { module_index, .. } = instance {
+                    let child = scopes[id].modules.get(module_index as usize).copied().flatten();
+                    record_instantiation(child, scopes, extraction);
+                }
+            }
+        }
+        Payload::ComponentInstanceSection(reader) => {
+            for instance in reader.clone().into_iter().flatten() {
+                match instance {
+                    wasmparser::ComponentInstance::Instantiate { component_index, .. } => {
+                        let child = scopes[id].components.get(component_index as usize).copied().flatten();
+                        record_instantiation(child, scopes, extraction);
+                    }
+                    wasmparser::ComponentInstance::FromExports(exports) => {
+                        for export in &exports {
+                            record_scope_export(export, id, scopes, all_escape);
+                        }
+                    }
+                }
+            }
+        }
+        Payload::ComponentExportSection(reader) => {
+            for export in reader.clone().into_iter().flatten() {
+                record_scope_export(&export, id, scopes, all_escape);
+                // Component exports append aliases to their entity index
+                // spaces, unlike exports used only to construct an instance.
+                // Keep the local definition identity so later numeric indices
+                // and repeated instantiations refer to the actual supplier.
+                let entities = match export.kind {
+                    ComponentExternalKind::Module => &mut scopes[id].modules,
+                    ComponentExternalKind::Component => &mut scopes[id].components,
+                    _ => continue,
+                };
+                let child = entities.get(export.index as usize).copied().flatten();
+                entities.push(child);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn record_scope_export(
+    export: &wasmparser::ComponentExport<'_>,
+    id: usize,
+    scopes: &mut [BinaryScope],
+    all_escape: &mut bool,
+) {
+    let child = match export.kind {
+        wasmparser::ComponentExternalKind::Module => scopes[id].modules.get(export.index as usize),
+        wasmparser::ComponentExternalKind::Component => scopes[id].components.get(export.index as usize),
+        _ => return,
+    }
+    .copied()
+    .flatten();
+    if let Some(child) = child {
+        scopes[child].escapes = true;
+    } else {
+        // An exported generative alias may refer back to any local definition.
+        // Without an exact link, retain every potentially unresolved import.
+        // Set one flag instead of marking every scope per export, which is
+        // quadratic for crafted inputs with many scopes and such exports.
+        *all_escape = true;
+    }
+}
+
+fn record_instantiation(child: Option<usize>, scopes: &mut [BinaryScope], extraction: &mut FactExtraction) {
+    if let Some(child) = child {
+        scopes[child].instances = scopes[child].instances.saturating_add(1);
+    } else {
+        // Imported/aliased generative entities have no locally bounded resource
+        // implementation. Never silently assign them zero resources.
+        extraction.parse_diagnostics.push(ParseDiagnostic {
+            issue_code: RESOURCE_LIMIT_ISSUE,
+            message: "cannot bound resources of an imported or aliased module/component instantiation".to_owned(),
+            byte_offset: None,
+        });
+    }
+}
+
+fn merge_scope(target: &mut FactExtraction, scope: FactExtraction, id: usize, instances: u64, bound: bool) {
+    let mut facts = scope.facts;
+    if bound {
+        // Valid component instantiation supplies these imports. Their resource
+        // identities belong to the supplying instance, not this import alias.
+        facts.function_count = facts.function_count.saturating_sub(scope.imported_functions);
+        facts.memories.drain(..scope.imported_memories);
+        facts.tables.drain(..scope.imported_tables);
+        facts.memory_count = facts.memory_count.saturating_sub(scope.imported_memories as u64);
+        facts.table_count = facts.table_count.saturating_sub(scope.imported_tables as u64);
+        for import in &mut facts.imports {
+            import.namespace = format!("scope[{id}]::{}", import.namespace);
+        }
+        target.facts.bound_imports.append(&mut facts.imports);
+    } else {
+        // Nested component imports are not the root boundary; retain unresolved
+        // authority without letting a root allowlist accidentally authorize it.
+        if id != 0 && facts.artifact_kind == COMPONENT_KIND {
+            for import in &mut facts.imports {
+                import.namespace = format!("component@{id}");
+            }
+        }
+        target.facts.imports.append(&mut facts.imports);
+    }
+    if id == 0 {
+        target.facts.exports.append(&mut facts.exports);
+    }
+    target.facts.memory_count = target.facts.memory_count.saturating_add(facts.memory_count.saturating_mul(instances));
+    target.facts.table_count = target.facts.table_count.saturating_add(facts.table_count.saturating_mul(instances));
+    target.facts.function_count =
+        target.facts.function_count.saturating_add(facts.function_count.saturating_mul(instances));
+    target.facts.memories.append(&mut facts.memories);
+    target.facts.tables.append(&mut facts.tables);
+    target.facts.max_function_parameter_words =
+        target.facts.max_function_parameter_words.max(facts.max_function_parameter_words);
+    target.facts.max_local_words_per_function =
+        target.facts.max_local_words_per_function.max(facts.max_local_words_per_function);
+    target.facts.memory_grow_count =
+        target.facts.memory_grow_count.saturating_add(facts.memory_grow_count.saturating_mul(instances));
+    target.facts.has_start |= facts.has_start;
+    target.facts.producer_sections = target.facts.producer_sections.saturating_add(facts.producer_sections);
+    target
+        .facts
+        .custom_sections
+        .extend(facts.custom_sections.into_iter().map(|name| format!("scope[{id}]::{name}")));
+    target.parse_diagnostics.extend(scope.parse_diagnostics);
+}
+
+fn canonicalize_component_boundary(facts: &mut WasmArtifactFacts, types: &wasmparser::types::Types) {
+    for (items, imports) in [(&mut facts.imports, true), (&mut facts.exports, false)] {
+        for item in items {
+            if item.namespace != COMPONENT_KIND {
+                continue;
+            }
+            let entity = if imports {
+                types.as_ref().component_item_for_import(&item.name)
+            } else {
+                types.as_ref().component_item_for_export(&item.name)
+            };
+            if let Some(entity) = entity {
+                item.kind = structural_component_kind(entity.ty, types);
+            }
+        }
+    }
+}
+
+fn structural_component_kind(
+    entity: wasmparser::component_types::ComponentEntityType,
+    types: &wasmparser::types::Types,
+) -> String {
+    use wasmparser::component_types::ComponentAnyTypeId;
+    use wasmparser::component_types::ComponentEntityType;
+    match entity {
+        ComponentEntityType::Func(id) => {
+            let function = &types[id];
+            let params =
+                function.params.iter().map(|(_, ty)| structural_value(*ty, types, 0)).collect::<Vec<_>>().join(",");
+            let result = function.result.map_or_else(|| "unit".to_owned(), |ty| structural_value(ty, types, 0));
+            format!("{}Func({params})->{result}", if function.async_ { "Async" } else { "" })
+        }
+        ComponentEntityType::Type {
+            referenced: ComponentAnyTypeId::Defined(id),
+            ..
+        } => {
+            format!("Type({})", structural_value(wasmparser::component_types::ComponentValType::Type(id), types, 0))
+        }
+        _ => format!("{entity:?}"),
+    }
+}
+
+fn structural_value(
+    ty: wasmparser::component_types::ComponentValType,
+    types: &wasmparser::types::Types,
+    depth: usize,
+) -> String {
+    use wasmparser::PrimitiveValType;
+    use wasmparser::component_types::ComponentDefinedType;
+    use wasmparser::component_types::ComponentValType;
+    // Only the reviewed structural vocabulary is admitted. Other types remain
+    // distinguishable as unsupported, never rendered as the admitted signature.
+    if depth > 16 {
+        return "unsupported".to_owned();
+    }
+    match ty {
+        ComponentValType::Primitive(PrimitiveValType::U8) => "u8".to_owned(),
+        ComponentValType::Primitive(PrimitiveValType::String) => "string".to_owned(),
+        ComponentValType::Type(id) => match &types[id] {
+            ComponentDefinedType::Primitive(primitive) => {
+                structural_value(ComponentValType::Primitive(*primitive), types, depth + 1)
+            }
+            ComponentDefinedType::List(element) => format!("list<{}>", structural_value(*element, types, depth + 1)),
+            ComponentDefinedType::Result { ok, err } => format!(
+                "result<{},{}>",
+                ok.map_or_else(|| "unit".to_owned(), |ty| structural_value(ty, types, depth + 1)),
+                err.map_or_else(|| "unit".to_owned(), |ty| structural_value(ty, types, depth + 1))
+            ),
+            _ => "unsupported".to_owned(),
+        },
+        ComponentValType::Primitive(_) => "unsupported".to_owned(),
+    }
 }
 
 fn validation_features(profile: &WasmArtifactProfile) -> WasmFeatures {
@@ -725,6 +1122,9 @@ fn validation_features(profile: &WasmArtifactProfile) -> WasmFeatures {
             WASM2_PROPOSAL => WasmFeatures::WASM2,
             WASM3_PROPOSAL => WasmFeatures::WASM3,
             COMPONENT_MODEL_PROPOSAL => WasmFeatures::COMPONENT_MODEL,
+            BULK_MEMORY_PROPOSAL => WasmFeatures::BULK_MEMORY,
+            CALL_INDIRECT_OVERLONG_PROPOSAL => WasmFeatures::CALL_INDIRECT_OVERLONG,
+            MUTABLE_GLOBALS_PROPOSAL => WasmFeatures::MUTABLE_GLOBAL,
             _ => WasmFeatures::empty(),
         };
     }
@@ -742,38 +1142,13 @@ fn push_parse_error(extraction: &mut FactExtraction, context: &str, error: &wasm
 fn extract_payload(payload: Payload<'_>, extraction: &mut FactExtraction) {
     match payload {
         Payload::Version { encoding, .. } if extraction.facts.artifact_kind == UNKNOWN_KIND => {
-            extraction.facts.artifact_kind = match encoding {
+            match encoding {
                 Encoding::Module => MODULE_KIND,
                 Encoding::Component => COMPONENT_KIND,
             }
-            .to_owned();
+            .clone_into(&mut extraction.facts.artifact_kind);
         }
-        Payload::ImportSection(reader) => {
-            for import in reader.into_imports() {
-                match import {
-                    Ok(import) => {
-                        match import.ty {
-                            TypeRef::Func(_) => extraction.facts.function_count += 1,
-                            TypeRef::Memory(memory) => {
-                                extraction.facts.memory_count += 1;
-                                extraction.facts.memories.push(memory_declaration(memory));
-                            }
-                            TypeRef::Table(table) => {
-                                extraction.facts.table_count += 1;
-                                extraction.facts.tables.push(table_declaration(table));
-                            }
-                            _ => {}
-                        }
-                        extraction.facts.imports.push(WasmInterfaceItem {
-                            namespace: import.module.to_owned(),
-                            name: import.name.to_owned(),
-                            kind: format!("{:?}", import.ty),
-                        });
-                    }
-                    Err(error) => push_parse_error(extraction, "parse core import", &error),
-                }
-            }
-        }
+        Payload::ImportSection(reader) => extract_core_imports(reader, extraction),
         Payload::ExportSection(reader) => {
             for export in reader {
                 match export {
@@ -814,7 +1189,7 @@ fn extract_payload(payload: Payload<'_>, extraction: &mut FactExtraction) {
             for function_type in reader.into_iter_err_on_gc_types() {
                 match function_type {
                     Ok(function_type) => {
-                        let words = function_type.params().iter().map(value_type_words).sum::<u64>();
+                        let words = function_type.params().iter().copied().map(value_type_words).sum::<u64>();
                         extraction.facts.max_function_parameter_words =
                             extraction.facts.max_function_parameter_words.max(words);
                     }
@@ -825,6 +1200,7 @@ fn extract_payload(payload: Payload<'_>, extraction: &mut FactExtraction) {
         Payload::FunctionSection(reader) => {
             extraction.facts.function_count += u64::from(reader.count());
         }
+        Payload::ComponentCanonicalSection(reader) => extract_canonical_functions(reader, extraction),
         Payload::MemorySection(reader) => {
             extraction.facts.memory_count += u64::from(reader.count());
             for memory in reader {
@@ -846,40 +1222,7 @@ fn extract_payload(payload: Payload<'_>, extraction: &mut FactExtraction) {
         Payload::StartSection { .. } | Payload::ComponentStartSection { .. } => {
             extraction.facts.has_start = true;
         }
-        Payload::CodeSectionEntry(body) => {
-            match body.get_locals_reader() {
-                Ok(locals) => {
-                    let mut local_words = 0_u64;
-                    for local in locals {
-                        match local {
-                            Ok((count, value_type)) => {
-                                local_words = local_words
-                                    .saturating_add(u64::from(count).saturating_mul(value_type_words(&value_type)));
-                            }
-                            Err(error) => push_parse_error(extraction, "parse Wasm locals", &error),
-                        }
-                    }
-                    extraction.facts.max_local_words_per_function =
-                        extraction.facts.max_local_words_per_function.max(local_words);
-                }
-                Err(error) => push_parse_error(extraction, "read Wasm locals", &error),
-            }
-            match body.get_operators_reader() {
-                Ok(mut operators) => {
-                    while !operators.eof() {
-                        match operators.read() {
-                            Ok(Operator::MemoryGrow { .. }) => extraction.facts.memory_grow_count += 1,
-                            Ok(_) => {}
-                            Err(error) => {
-                                push_parse_error(extraction, "parse Wasm operator", &error);
-                                break;
-                            }
-                        }
-                    }
-                }
-                Err(error) => push_parse_error(extraction, "read Wasm operators", &error),
-            }
-        }
+        Payload::CodeSectionEntry(body) => extract_code_entry(&body, extraction),
         Payload::CustomSection(section) => {
             let name = section.name().to_owned();
             if name == PRODUCERS_SECTION {
@@ -888,6 +1231,137 @@ fn extract_payload(payload: Payload<'_>, extraction: &mut FactExtraction) {
             extraction.facts.custom_sections.push(name);
         }
         _ => {}
+    }
+}
+
+fn extract_core_imports(reader: wasmparser::ImportSectionReader<'_>, extraction: &mut FactExtraction) {
+    for import in reader.into_imports() {
+        match import {
+            Ok(import) => {
+                match import.ty {
+                    TypeRef::Func(_) => {
+                        extraction.facts.function_count += 1;
+                        extraction.imported_functions += 1;
+                    }
+                    TypeRef::Memory(memory) => {
+                        extraction.imported_memories += 1;
+                        extraction.facts.memory_count += 1;
+                        extraction.facts.memories.push(memory_declaration(memory));
+                    }
+                    TypeRef::Table(table) => {
+                        extraction.imported_tables += 1;
+                        extraction.facts.table_count += 1;
+                        extraction.facts.tables.push(table_declaration(table));
+                    }
+                    _ => {}
+                }
+                extraction.facts.imports.push(WasmInterfaceItem {
+                    namespace: import.module.to_owned(),
+                    name: import.name.to_owned(),
+                    kind: format!("{:?}", import.ty),
+                });
+            }
+            Err(error) => push_parse_error(extraction, "parse core import", &error),
+        }
+    }
+}
+
+fn extract_canonical_functions(
+    reader: wasmparser::ComponentCanonicalSectionReader<'_>,
+    extraction: &mut FactExtraction,
+) {
+    for function in reader {
+        match function {
+            // Lifts expose an existing core function; every other
+            // canonical operation in pinned wasmparser 0.253.0 defines
+            // one core function in this binary scope. Scope merging
+            // applies enclosing instance multiplicity exactly once.
+            Ok(CanonicalFunction::Lift { .. }) => {}
+            Ok(
+                CanonicalFunction::Lower { .. }
+                | CanonicalFunction::ResourceNew { .. }
+                | CanonicalFunction::ResourceDrop { .. }
+                | CanonicalFunction::ResourceRep { .. }
+                | CanonicalFunction::ThreadSpawnRef { .. }
+                | CanonicalFunction::ThreadSpawnIndirect { .. }
+                | CanonicalFunction::ThreadAvailableParallelism
+                | CanonicalFunction::BackpressureInc
+                | CanonicalFunction::BackpressureDec
+                | CanonicalFunction::TaskReturn { .. }
+                | CanonicalFunction::TaskCancel
+                | CanonicalFunction::ContextGet { .. }
+                | CanonicalFunction::ContextSet { .. }
+                | CanonicalFunction::ThreadYield { .. }
+                | CanonicalFunction::SubtaskDrop
+                | CanonicalFunction::SubtaskCancel { .. }
+                | CanonicalFunction::StreamNew { .. }
+                | CanonicalFunction::StreamRead { .. }
+                | CanonicalFunction::StreamWrite { .. }
+                | CanonicalFunction::StreamCancelRead { .. }
+                | CanonicalFunction::StreamCancelWrite { .. }
+                | CanonicalFunction::StreamDropReadable { .. }
+                | CanonicalFunction::StreamDropWritable { .. }
+                | CanonicalFunction::FutureNew { .. }
+                | CanonicalFunction::FutureRead { .. }
+                | CanonicalFunction::FutureWrite { .. }
+                | CanonicalFunction::FutureCancelRead { .. }
+                | CanonicalFunction::FutureCancelWrite { .. }
+                | CanonicalFunction::FutureDropReadable { .. }
+                | CanonicalFunction::FutureDropWritable { .. }
+                | CanonicalFunction::ErrorContextNew { .. }
+                | CanonicalFunction::ErrorContextDebugMessage { .. }
+                | CanonicalFunction::ErrorContextDrop
+                | CanonicalFunction::WaitableSetNew
+                | CanonicalFunction::WaitableSetWait { .. }
+                | CanonicalFunction::WaitableSetPoll { .. }
+                | CanonicalFunction::WaitableSetDrop
+                | CanonicalFunction::WaitableJoin
+                | CanonicalFunction::ThreadIndex
+                | CanonicalFunction::ThreadNewIndirect { .. }
+                | CanonicalFunction::ThreadResumeLater
+                | CanonicalFunction::ThreadSuspend { .. }
+                | CanonicalFunction::ThreadSuspendThenResume { .. }
+                | CanonicalFunction::ThreadYieldThenResume { .. }
+                | CanonicalFunction::ThreadSuspendThenPromote { .. }
+                | CanonicalFunction::ThreadYieldThenPromote { .. },
+            ) => extraction.facts.function_count = extraction.facts.function_count.saturating_add(1),
+            Err(error) => push_parse_error(extraction, "parse canonical function", &error),
+        }
+    }
+}
+
+fn extract_code_entry(body: &wasmparser::FunctionBody<'_>, extraction: &mut FactExtraction) {
+    match body.get_locals_reader() {
+        Ok(locals) => {
+            let mut local_words = 0_u64;
+            for local in locals {
+                match local {
+                    Ok((count, value_type)) => {
+                        local_words =
+                            local_words.saturating_add(u64::from(count).saturating_mul(value_type_words(value_type)));
+                    }
+                    Err(error) => push_parse_error(extraction, "parse Wasm locals", &error),
+                }
+            }
+            extraction.facts.max_local_words_per_function =
+                extraction.facts.max_local_words_per_function.max(local_words);
+        }
+        Err(error) => push_parse_error(extraction, "read Wasm locals", &error),
+    }
+    match body.get_operators_reader() {
+        Ok(mut operators) => {
+            while !operators.eof() {
+                match operators.read() {
+                    Ok(Operator::MemoryGrow { .. }) => extraction.facts.memory_grow_count += 1,
+                    Ok(_) => {}
+                    Err(error) => {
+                        push_parse_error(extraction, "parse Wasm operator", &error);
+                        break;
+                    }
+                }
+            }
+        }
+        Err(error) => push_parse_error(extraction, "read Wasm operators", &error),
     }
 }
 
@@ -911,7 +1385,7 @@ fn table_declaration(table: wasmparser::TableType) -> WasmTableDeclaration {
     }
 }
 
-fn value_type_words(value_type: &ValType) -> u64 {
+fn value_type_words(value_type: ValType) -> u64 {
     match value_type {
         ValType::I64 | ValType::F64 => WIDE_VALUE_WORDS,
         ValType::V128 => SIMD_VALUE_WORDS,
@@ -921,6 +1395,7 @@ fn value_type_words(value_type: &ValType) -> u64 {
 
 fn normalize_facts(facts: &mut WasmArtifactFacts) {
     facts.imports.sort();
+    facts.bound_imports.sort();
     facts.exports.sort();
     facts.custom_sections.sort();
     facts.memories.sort();
@@ -959,8 +1434,39 @@ fn evaluate_policy(bytes: &[u8], facts: &WasmArtifactFacts, profile: &WasmArtifa
             ));
         }
     }
+    push_interface_findings(facts, profile, &mut findings);
+    push_spacewasm_abi_findings(bytes, facts, profile, &mut findings);
+    if !profile.allowed_worlds.is_empty() {
+        for world in &facts.worlds {
+            if !profile.allowed_worlds.iter().any(|allowed| allowed == world) {
+                findings.push(finding(
+                    DISALLOWED_WORLD_ISSUE,
+                    &profile.severity.disallowed_world,
+                    format!("component world `{world}` is not allowed by profile `{}`", profile.profile_id),
+                ));
+            }
+        }
+    }
+    push_resource_findings(bytes, facts, profile, &mut findings);
+    push_metadata_findings(facts, profile, &mut findings);
+    findings
+}
+
+fn push_interface_findings(
+    facts: &WasmArtifactFacts,
+    profile: &WasmArtifactProfile,
+    findings: &mut Vec<WasmArtifactFinding>,
+) {
+    // SpaceWasm pilot profiles admit function imports by resolved signature
+    // (`push_spacewasm_abi_findings`), so the core type index is immaterial.
+    let signature_checked_imports =
+        matches!(profile.profile_id.as_str(), "spacewasm-mvp-host-pilot" | "spacewasm-molten-abi-pilot");
     for import in &facts.imports {
-        let identity = import_identity(import);
+        let identity = if signature_checked_imports && import.kind.starts_with("Func(") {
+            format!("{}::{}::Func", import.namespace, import.name)
+        } else {
+            import_identity(import)
+        };
         if !profile.allowed_imports.iter().any(|allowed| allowed == &identity) {
             findings.push(finding(
                 DISALLOWED_IMPORT_ISSUE,
@@ -981,6 +1487,15 @@ fn evaluate_policy(bytes: &[u8], facts: &WasmArtifactFacts, profile: &WasmArtifa
             }
         }
     }
+    for required_import in &profile.required_imports {
+        if !facts.imports.iter().any(|import| import_identity(import) == *required_import) {
+            findings.push(finding(
+                ABI_MISMATCH_ISSUE,
+                &profile.severity.abi_mismatch,
+                format!("required import `{required_import}` is missing for profile `{}`", profile.profile_id),
+            ));
+        }
+    }
     for required_export in &profile.required_exports {
         if !facts.exports.iter().any(|export| import_identity(export) == *required_export) {
             findings.push(finding(
@@ -990,116 +1505,148 @@ fn evaluate_policy(bytes: &[u8], facts: &WasmArtifactFacts, profile: &WasmArtifa
             ));
         }
     }
-    if !profile.allowed_worlds.is_empty() {
-        for world in &facts.worlds {
-            if !profile.allowed_worlds.iter().any(|allowed| allowed == world) {
-                findings.push(finding(
-                    DISALLOWED_WORLD_ISSUE,
-                    &profile.severity.disallowed_world,
-                    format!("component world `{world}` is not allowed by profile `{}`", profile.profile_id),
-                ));
-            }
+}
+
+fn push_spacewasm_abi_findings(
+    bytes: &[u8],
+    facts: &WasmArtifactFacts,
+    profile: &WasmArtifactProfile,
+    findings: &mut Vec<WasmArtifactFinding>,
+) {
+    if profile.profile_id == "spacewasm-mvp" {
+        let run = facts.function_abis.iter().find(|abi| abi.direction == "export" && abi.name == "run");
+        if !run.is_some_and(|abi| abi.parameters.is_empty() && abi.results.is_empty()) {
+            findings.push(finding(
+                ABI_MISMATCH_ISSUE,
+                &profile.severity.abi_mismatch,
+                "SpaceWasm hostless run ABI requires () -> ()".to_owned(),
+            ));
         }
     }
+    if profile.profile_id == "spacewasm-mvp-host-pilot" {
+        for message in crate::spacewasm::host_abi_errors(bytes, &facts.function_abis) {
+            findings.push(finding(ABI_MISMATCH_ISSUE, &profile.severity.abi_mismatch, message));
+        }
+    }
+    if profile.profile_id == "spacewasm-molten-abi-pilot" {
+        for message in crate::spacewasm::molten_abi_errors(&facts.function_abis, &facts.memories) {
+            findings.push(finding(ABI_MISMATCH_ISSUE, &profile.severity.abi_mismatch, message));
+        }
+    }
+}
+
+fn push_resource_findings(
+    bytes: &[u8],
+    facts: &WasmArtifactFacts,
+    profile: &WasmArtifactProfile,
+    findings: &mut Vec<WasmArtifactFinding>,
+) {
     let artifact_bytes = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
     push_limit_finding(
-        &mut findings,
+        findings,
         "artifact bytes",
         artifact_bytes,
-        profile.resource_limits.max_artifact_bytes,
+        profile.resource_limits.artifact_bytes,
         &profile.severity.resource_limit,
     );
     push_limit_finding(
-        &mut findings,
+        findings,
         "imports",
         count(&facts.imports),
-        profile.resource_limits.max_imports,
+        profile.resource_limits.imports,
         &profile.severity.resource_limit,
     );
     push_limit_finding(
-        &mut findings,
+        findings,
         "exports",
         count(&facts.exports),
-        profile.resource_limits.max_exports,
+        profile.resource_limits.exports,
         &profile.severity.resource_limit,
     );
     push_limit_finding(
-        &mut findings,
+        findings,
         "memories",
         facts.memory_count,
-        profile.resource_limits.max_memories,
+        profile.resource_limits.memories,
         &profile.severity.resource_limit,
     );
     push_limit_finding(
-        &mut findings,
+        findings,
         "tables",
         facts.table_count,
-        profile.resource_limits.max_tables,
+        profile.resource_limits.tables,
         &profile.severity.resource_limit,
     );
     push_limit_finding(
-        &mut findings,
+        findings,
         "functions",
         facts.function_count,
-        profile.resource_limits.max_functions,
+        profile.resource_limits.functions,
         &profile.severity.resource_limit,
     );
     for memory in &facts.memories {
         push_typed_limit_finding(
-            &mut findings,
+            findings,
             MEMORY_LIMIT_ISSUE,
             "memory initial pages",
             memory.initial_pages,
-            profile.resource_limits.max_memory_initial_pages,
+            profile.resource_limits.memory_initial_pages,
             &profile.severity.resource_limit,
         );
         if let Some(maximum) = memory.maximum_pages {
             push_typed_limit_finding(
-                &mut findings,
+                findings,
                 MEMORY_LIMIT_ISSUE,
                 "memory maximum pages",
                 maximum,
-                profile.resource_limits.max_memory_maximum_pages,
+                profile.resource_limits.memory_maximum_pages,
                 &profile.severity.resource_limit,
             );
         }
     }
     for table in &facts.tables {
         push_typed_limit_finding(
-            &mut findings,
+            findings,
             TABLE_LIMIT_ISSUE,
             "table initial elements",
             table.initial_elements,
-            profile.resource_limits.max_table_initial_elements,
+            profile.resource_limits.table_initial_elements,
             &profile.severity.resource_limit,
         );
         if let Some(maximum) = table.maximum_elements {
             push_typed_limit_finding(
-                &mut findings,
+                findings,
                 TABLE_LIMIT_ISSUE,
                 "table maximum elements",
                 maximum,
-                profile.resource_limits.max_table_maximum_elements,
+                profile.resource_limits.table_maximum_elements,
                 &profile.severity.resource_limit,
             );
         }
     }
     push_typed_limit_finding(
-        &mut findings,
+        findings,
         STRUCTURAL_LIMIT_ISSUE,
         "function parameter words",
         facts.max_function_parameter_words,
-        profile.resource_limits.max_function_parameter_words,
+        profile.resource_limits.function_parameter_words,
         &profile.severity.resource_limit,
     );
     push_typed_limit_finding(
-        &mut findings,
+        findings,
         STRUCTURAL_LIMIT_ISSUE,
         "local words per function",
         facts.max_local_words_per_function,
-        profile.resource_limits.max_local_words_per_function,
+        profile.resource_limits.local_words_per_function,
         &profile.severity.resource_limit,
     );
+}
+
+fn push_metadata_findings(
+    facts: &WasmArtifactFacts,
+    profile: &WasmArtifactProfile,
+    findings: &mut Vec<WasmArtifactFinding>,
+) {
     if !profile.allow_memory_grow && facts.memory_grow_count > 0 {
         findings.push(finding(
             MEMORY_GROWTH_ISSUE,
@@ -1137,7 +1684,6 @@ fn evaluate_policy(bytes: &[u8], facts: &WasmArtifactFacts, profile: &WasmArtifa
             ));
         }
     }
-    findings
 }
 
 fn validate_cohort_members(members: &[WasmToolsCohortMember], diagnostics: &mut Vec<String>) {
@@ -1152,6 +1698,20 @@ fn validate_cohort_members(members: &[WasmToolsCohortMember], diagnostics: &mut 
         }
         if !names.insert(member.crate_name.as_str()) {
             diagnostics.push(format!("duplicate wasm-tools cohort member `{}`", member.crate_name));
+        }
+    }
+}
+
+fn validate_linked_cohort_members(members: &[WasmToolsCohortMember], diagnostics: &mut Vec<String>) {
+    for (crate_name, linked_version) in LINKED_COHORT_MEMBERS {
+        match members.iter().find(|member| member.crate_name == crate_name) {
+            Some(member) if member.version == linked_version => {}
+            Some(member) => diagnostics.push(format!(
+                "wasm-tools cohort member `{crate_name}` claims version `{}`; this build links `{linked_version}`",
+                member.version
+            )),
+            None => diagnostics
+                .push(format!("wasm-tools cohort must pin linked member `{crate_name}` at `{linked_version}`")),
         }
     }
 }
@@ -1171,8 +1731,16 @@ fn validate_profiles(profiles: &[WasmArtifactProfile], diagnostics: &mut Vec<Str
                 .push(format!("Wasm artifact profile `{}` has empty kind or proposal policy", profile.profile_id));
         }
         for proposal in &profile.allowed_proposals {
-            if !matches!(proposal.as_str(), WASM1_PROPOSAL | WASM2_PROPOSAL | WASM3_PROPOSAL | COMPONENT_MODEL_PROPOSAL)
-            {
+            if !matches!(
+                proposal.as_str(),
+                WASM1_PROPOSAL
+                    | WASM2_PROPOSAL
+                    | WASM3_PROPOSAL
+                    | COMPONENT_MODEL_PROPOSAL
+                    | BULK_MEMORY_PROPOSAL
+                    | CALL_INDIRECT_OVERLONG_PROPOSAL
+                    | MUTABLE_GLOBALS_PROPOSAL
+            ) {
                 diagnostics.push(format!(
                     "Wasm artifact profile `{}` names unknown proposal `{proposal}`",
                     profile.profile_id
@@ -1188,6 +1756,25 @@ fn validate_profiles(profiles: &[WasmArtifactProfile], diagnostics: &mut Vec<Str
                 "Wasm artifact profile `{}` has unsupported producer metadata posture `{}`",
                 profile.profile_id, profile.producer_metadata
             ));
+        }
+        if !matches!(profile.duplicate_custom_sections.as_str(), "allow" | "reject") {
+            diagnostics.push(format!(
+                "Wasm artifact profile `{}` has unsupported duplicate custom section posture `{}`",
+                profile.profile_id, profile.duplicate_custom_sections
+            ));
+        }
+        validate_severities(profile, diagnostics);
+        if profile.component_interface.as_deref().is_some_and(|format| format != "structural-v1") {
+            diagnostics
+                .push(format!("Wasm artifact profile `{}` has unknown component interface format", profile.profile_id));
+        }
+        for required_import in &profile.required_imports {
+            if !profile.allowed_imports.contains(required_import) {
+                diagnostics.push(format!(
+                    "Wasm artifact profile `{}` requires an import without allowing it",
+                    profile.profile_id
+                ));
+            }
         }
         for required_export in &profile.required_exports {
             if profile.allow_any_exports {
@@ -1211,6 +1798,110 @@ fn validate_profiles(profiles: &[WasmArtifactProfile], diagnostics: &mut Vec<Str
                 profile.profile_id
             ));
         }
+        validate_profile_rules(profile, diagnostics);
+    }
+}
+
+fn validate_profile_rules(profile: &WasmArtifactProfile, diagnostics: &mut Vec<String>) {
+    for (field, entries) in [
+        ("allowed_artifact_kinds", &profile.allowed_artifact_kinds),
+        ("allowed_proposals", &profile.allowed_proposals),
+        ("allowed_worlds", &profile.allowed_worlds),
+        ("allowed_imports", &profile.allowed_imports),
+        ("allowed_exports", &profile.allowed_exports),
+        ("required_imports", &profile.required_imports),
+        ("required_exports", &profile.required_exports),
+    ] {
+        let mut seen = BTreeSet::new();
+        for entry in entries {
+            if !seen.insert(entry.as_str()) {
+                diagnostics
+                    .push(format!("Wasm artifact profile `{}` repeats {field} entry `{entry}`", profile.profile_id));
+            }
+        }
+    }
+    for world in &profile.allowed_worlds {
+        if !is_wit_world_name(world) {
+            diagnostics.push(format!("Wasm artifact profile `{}` names invalid world `{world}`", profile.profile_id));
+        }
+    }
+}
+
+// A world is `namespace:package/name` with an optional `@semver` suffix; each
+// part is a component-model kebab-case label.
+fn is_wit_world_name(value: &str) -> bool {
+    let (name, version) = match value.split_once('@') {
+        Some((name, version)) => (name, Some(version)),
+        None => (value, None),
+    };
+    let Some((package, world)) = name.split_once(COMPONENT_WORLD_SEPARATOR) else {
+        return false;
+    };
+    let Some((namespace, package)) = package.split_once(':') else {
+        return false;
+    };
+    [namespace, package, world].into_iter().all(is_wit_label) && version.is_none_or(is_semver)
+}
+
+fn is_wit_label(label: &str) -> bool {
+    !label.is_empty()
+        && label.split('-').all(|fragment| {
+            let mut bytes = fragment.bytes();
+            match bytes.next() {
+                Some(first) if first.is_ascii_lowercase() => {
+                    bytes.all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+                }
+                Some(first) if first.is_ascii_uppercase() => {
+                    bytes.all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit())
+                }
+                _ => false,
+            }
+        })
+}
+
+fn is_semver(version: &str) -> bool {
+    let (version, build) = match version.split_once('+') {
+        Some((version, build)) => (version, Some(build)),
+        None => (version, None),
+    };
+    let (core, prerelease) = match version.split_once('-') {
+        Some((core, prerelease)) => (core, Some(prerelease)),
+        None => (version, None),
+    };
+    let numeric = |part: &str| {
+        !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()) && (part == "0" || !part.starts_with('0'))
+    };
+    let identifiers = |text: &str| {
+        text.split('.')
+            .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-'))
+    };
+    let mut parts = core.split('.');
+    parts.by_ref().take(3).filter(|part| numeric(part)).count() == 3
+        && parts.next().is_none()
+        && prerelease.is_none_or(identifiers)
+        && build.is_none_or(identifiers)
+}
+
+fn validate_severities(profile: &WasmArtifactProfile, diagnostics: &mut Vec<String>) {
+    let severity = &profile.severity;
+    for (field, value) in [
+        ("malformed", &severity.malformed),
+        ("disallowed_kind", &severity.disallowed_kind),
+        ("disallowed_import", &severity.disallowed_import),
+        ("disallowed_world", &severity.disallowed_world),
+        ("resource_limit", &severity.resource_limit),
+        ("growth", &severity.growth),
+        ("start", &severity.start),
+        ("duplicate_metadata", &severity.duplicate_metadata),
+        ("abi_mismatch", &severity.abi_mismatch),
+        ("external_evidence", &severity.external_evidence),
+    ] {
+        if !matches!(value.as_str(), "advisory" | "warning" | ERROR_SEVERITY) {
+            diagnostics.push(format!(
+                "Wasm artifact profile `{}` has unsupported {field} severity `{value}`",
+                profile.profile_id
+            ));
+        }
     }
 }
 
@@ -1221,6 +1912,13 @@ fn validate_target_runtime(profile: &WasmArtifactProfile, target: &TargetRuntime
     }
     if support.runtime_id != SPACEWASM_RUNTIME_ID {
         diagnostics.push(format!("unsupported target runtime `{}`", support.runtime_id));
+    }
+    for proposal in &profile.allowed_proposals {
+        if !support.supported_proposals.contains(proposal)
+            || support.denied_or_unimplemented_proposals.contains(proposal)
+        {
+            diagnostics.push(format!("profile proposal `{proposal}` is outside reviewed runtime support"));
+        }
     }
     let valid_revision = support.source_revision.len() == GIT_REVISION_HEX_LENGTH
         && support.source_revision.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase());
@@ -1245,22 +1943,18 @@ fn validate_target_runtime(profile: &WasmArtifactProfile, target: &TargetRuntime
         diagnostics.push("target runtime memory.grow posture differs from profile policy".to_owned());
     }
     for (label, observed, configured) in [
-        (
-            "memory pages",
-            support.maximum_linear_memory_pages,
-            profile.resource_limits.max_memory_maximum_pages,
-        ),
+        ("memory pages", support.maximum_linear_memory_pages, profile.resource_limits.memory_maximum_pages),
         (
             "function parameter words",
             support.maximum_function_parameter_words,
-            profile.resource_limits.max_function_parameter_words,
+            profile.resource_limits.function_parameter_words,
         ),
         (
             "local words per function",
             support.maximum_local_words_per_function,
-            profile.resource_limits.max_local_words_per_function,
+            profile.resource_limits.local_words_per_function,
         ),
-        ("function index", support.maximum_function_index, profile.resource_limits.max_functions),
+        ("function index", support.maximum_function_index, profile.resource_limits.functions),
     ] {
         if configured > observed {
             diagnostics
@@ -1287,6 +1981,18 @@ fn interface_identity(facts: &WasmArtifactFacts) -> String {
     }
     for item in &facts.exports {
         update_interface_item(&mut hasher, b"export", item);
+    }
+    for abi in &facts.function_abis {
+        update_hash_field(&mut hasher, abi.direction.as_bytes());
+        update_hash_field(&mut hasher, abi.namespace.as_bytes());
+        update_hash_field(&mut hasher, abi.name.as_bytes());
+        for parameter in &abi.parameters {
+            update_hash_field(&mut hasher, parameter.as_bytes());
+        }
+        update_hash_field(&mut hasher, b"results");
+        for result in &abi.results {
+            update_hash_field(&mut hasher, result.as_bytes());
+        }
     }
     format!("{BLAKE3_PREFIX}{}", hasher.finalize().to_hex())
 }
@@ -1374,14 +2080,15 @@ fn render_sarif(findings: &[WasmArtifactFinding]) -> Value {
     let results = findings
         .iter()
         .map(|finding| {
+            let mut physical_location = serde_json::json!({"artifactLocation": {"uri": INPUT_ARTIFACT_NAME}});
+            if let Some(offset) = finding.byte_offset {
+                physical_location["region"] = serde_json::json!({"byteOffset": offset});
+            }
             serde_json::json!({
                 "ruleId": finding.issue_code,
-                "level": finding.severity,
+                "level": sarif_level(&finding.severity),
                 "message": {"text": finding.message},
-                "locations": [{"physicalLocation": {
-                    "artifactLocation": {"uri": INPUT_ARTIFACT_NAME},
-                    "region": finding.byte_offset.map(|offset| serde_json::json!({"byteOffset": offset})).unwrap_or_else(|| serde_json::json!({}))
-                }}]
+                "locations": [{"physicalLocation": physical_location}]
             })
         })
         .collect::<Vec<_>>();
@@ -1392,6 +2099,12 @@ fn render_sarif(findings: &[WasmArtifactFinding]) -> Value {
             "results": results
         }]
     })
+}
+
+// SARIF 2.1.0 levels are `none`, `note`, `warning`, and `error`; the profile's
+// `advisory` severity is informational.
+fn sarif_level(severity: &str) -> &str {
+    if severity == "advisory" { "note" } else { severity }
 }
 
 fn is_blake3_identity(value: &str) -> bool {
@@ -1407,13 +2120,14 @@ pub(crate) fn is_external_handoff_identity(value: &str) -> bool {
 }
 
 fn handoff_role(parent_artifacts: &[String]) -> &'static str {
-    if parent_artifacts.is_empty() {
-        STANDALONE_HANDOFF
-    } else if parent_artifacts.iter().any(|parent| parent.starts_with(MANTLE_PARENT_PREFIX)) {
-        MANTLE_HANDOFF
-    } else {
-        EXTERNAL_HANDOFF
+    let mut role = STANDALONE_HANDOFF;
+    for parent in parent_artifacts.iter().filter(|parent| is_external_handoff_identity(parent)) {
+        if parent.starts_with(MANTLE_PARENT_PREFIX) {
+            return MANTLE_HANDOFF;
+        }
+        role = EXTERNAL_HANDOFF;
     }
+    role
 }
 
 #[cfg(test)]
@@ -1428,6 +2142,522 @@ mod tests {
     const PROFILE_JSON: &str = include_str!("../../standards/wasm-artifact/generated/profiles.json");
     const PROFILE_ID: &str = "portable-component-baseline";
     const SPACEWASM_PROFILE_ID: &str = "spacewasm-mvp";
+    const EFFECTS_PROFILE_ID: &str = "molten-component-effects-v1";
+    const EFFECTS_SEED: &str = include_str!("../../standards/wasm-artifact/fixtures/positive/component-effects.wat");
+
+    #[test]
+    fn custom_metadata_duplicates_are_local_to_each_binary_scope() {
+        let mut component = wasm_encoder::Component::new();
+        let named = module_with_custom("name", &[]);
+        let mut module = Module::new();
+        module.section(&CustomSection {
+            name: Cow::Borrowed("name"),
+            data: Cow::Borrowed(&[]),
+        });
+        component.section(&wasm_encoder::RawSection { id: 1, data: &named });
+        component.section(&wasm_encoder::ModuleSection(&module));
+        component.section(&CustomSection {
+            name: Cow::Borrowed("name"),
+            data: Cow::Borrowed(&[]),
+        });
+        let mut nested = wasm_encoder::Component::new();
+        nested.section(&CustomSection {
+            name: Cow::Borrowed("name"),
+            data: Cow::Borrowed(&[]),
+        });
+        component.section(&wasm_encoder::NestedComponentSection(&nested));
+        let registry = valid_registry();
+        let report = analyze(&component.finish(), &registry, &[]);
+        assert!(report.details.findings.is_empty(), "{:?}", report.details.findings);
+
+        let duplicate = module_with_duplicate_custom("name");
+        let mut component = wasm_encoder::Component::new();
+        component.section(&wasm_encoder::RawSection {
+            id: 1,
+            data: &duplicate,
+        });
+        let report = analyze(&component.finish(), &registry, &[]);
+        assert!(report.details.findings.iter().any(|finding| finding.issue_code == DUPLICATE_METADATA_ISSUE));
+    }
+
+    #[test]
+    fn bound_adapters_are_not_external_imports_or_extra_resources() {
+        let registry = valid_registry();
+        let source = r#"(component
+            (core module $provider
+                (table (export "table") 1 1 funcref)
+                (func (export "f")))
+            (core instance $provider-instance (instantiate $provider))
+            (core module $adapter
+                (import "env" "f" (func))
+                (import "env" "table" (table 1 1 funcref)))
+            (core instance (instantiate $adapter (with "env" (instance $provider-instance))))
+        )"#;
+        let bytes = wat::parse_str(source).expect("bound adapter fixture");
+        let report = analyze(&bytes, &registry, &[]);
+        assert!(report.details.findings.is_empty(), "{:?}", report.details.findings);
+        assert_eq!(report.details.facts.table_count, 1);
+        assert_eq!(report.details.facts.tables.len(), 1);
+
+        let unresolved =
+            source.replace("(core instance (instantiate $adapter (with \"env\" (instance $provider-instance))))", "");
+        let report = analyze(&wat::parse_str(unresolved).expect("unresolved adapter"), &registry, &[]);
+        assert!(report.details.findings.iter().any(|finding| finding.issue_code == DISALLOWED_IMPORT_ISSUE));
+
+        // Export after its definition: a reusable module still carries ambient imports.
+        let escaped = format!(
+            "{} (export \"adapter\" (core module $adapter)))",
+            &source[..source.rfind(')').expect("component close")]
+        );
+        let report = analyze(&wat::parse_str(escaped).expect("exported adapter"), &registry, &[]);
+        assert!(report.details.findings.iter().any(|finding| finding.issue_code == DISALLOWED_IMPORT_ISSUE));
+
+        let repeated =
+            source.replace("(core module $adapter", "(core instance (instantiate $provider)) (core module $adapter");
+        let report = analyze(&wat::parse_str(repeated).expect("repeated instantiation"), &registry, &[]);
+        assert_eq!(report.details.facts.table_count, 2);
+        assert!(report.details.findings.iter().any(|finding| finding.issue_code == RESOURCE_LIMIT_ISSUE));
+    }
+
+    #[test]
+    fn unresolved_exports_retain_authority_of_every_definition() {
+        let registry = valid_registry();
+        let adapter = r#"
+            (core module $provider
+                (table (export "table") 1 1 funcref)
+                (func (export "f")))
+            (core instance $provider-instance (instantiate $provider))
+            (core module $adapter
+                (import "env" "f" (func))
+                (import "env" "table" (table 1 1 funcref)))
+            (core instance (instantiate $adapter (with "env" (instance $provider-instance))))"#;
+        let reexport = r#"(export "reexported" (core module $imported))"#;
+        let adapter_import_is_unbound = |source: String| {
+            let report = analyze(&wat::parse_str(source).expect("re-exported imported module"), &registry, &[]);
+            let unbound = report.details.facts.imports.iter().any(|item| item.namespace == "env" && item.name == "f");
+            let bound = report.details.facts.bound_imports.iter().any(|item| item.name == "f");
+            assert_ne!(unbound, bound, "{:?}", report.details.facts);
+            unbound
+        };
+
+        let unexported = format!(r#"(component (import "m" (core module $imported)) {adapter})"#);
+        assert!(!adapter_import_is_unbound(unexported));
+        // An export without a local link may alias any definition, wherever it appears.
+        for source in [
+            format!(r#"(component (import "m" (core module $imported)) {adapter} {reexport})"#),
+            format!(r#"(component (import "m" (core module $imported)) {reexport} {adapter})"#),
+        ] {
+            assert!(adapter_import_is_unbound(source));
+        }
+    }
+
+    #[test]
+    fn unresolved_exports_mark_escaping_scopes_in_constant_work() {
+        const SCOPES: usize = 4096;
+        const EXPORTS: u32 = 8192;
+        let mut scopes = std::iter::repeat_with(BinaryScope::default).take(SCOPES).collect::<Vec<_>>();
+        // Index 0 is an imported module; every other index is out of range.
+        scopes[0].modules.push(None);
+        let mut all_escape = false;
+        for index in 0..EXPORTS {
+            let export = wasmparser::ComponentExport {
+                name: wasmparser::ComponentExternName {
+                    name: "reexported",
+                    implements: None,
+                    version_suffix: None,
+                    external_id: None,
+                },
+                kind: wasmparser::ComponentExternalKind::Module,
+                index: index % 2,
+                ty: None,
+            };
+            record_scope_export(&export, 0, &mut scopes, &mut all_escape);
+        }
+        // Unresolved exports set one flag instead of writing every scope per
+        // export; the multiplier pass applies it once per scope.
+        assert!(all_escape);
+        assert!(scopes.iter().all(|scope| !scope.escapes));
+    }
+
+    #[test]
+    fn effects_profile_requires_exact_structural_boundary_and_keeps_baselines_closed() {
+        let registry = valid_registry();
+        let bytes = wat::parse_str(EFFECTS_SEED).expect("effect seed");
+        let report = analyze_profile(&bytes, &registry, EFFECTS_PROFILE_ID, &[]);
+        assert!(report.details.findings.is_empty(), "{:?}", report.details.findings);
+        assert_eq!(report.details.exact_artifact_identity, identity(&bytes));
+        assert_eq!(report.details.verification_role, RECORDED_ONLY_ROLE);
+        assert_eq!(report.details.facts.imports.len(), 2);
+        let reindexed = EFFECTS_SEED.replace("(type $bytes", "(type (list string)) (type $bytes");
+        let reindexed = analyze_profile(
+            &wat::parse_str(reindexed).expect("reindexed effect types"),
+            &registry,
+            EFFECTS_PROFILE_ID,
+            &[],
+        );
+        assert!(reindexed.details.findings.is_empty(), "{:?}", reindexed.details.findings);
+        assert_eq!(report.details.interface_identity, reindexed.details.interface_identity);
+        assert_ne!(report.details.exact_artifact_identity, reindexed.details.exact_artifact_identity);
+        for baseline in [PROFILE_ID, "molten-component-baseline"] {
+            let denied = analyze_profile(&bytes, &registry, baseline, &[]);
+            assert!(denied.details.findings.iter().any(|finding| finding.issue_code == DISALLOWED_IMPORT_ISSUE));
+        }
+        let cases = [
+            (EFFECTS_SEED.replace("effect-request", "other-product-effect"), DISALLOWED_IMPORT_ISSUE),
+            (EFFECTS_SEED.replace("effect-request", "wasi:random/random@0.2.0"), DISALLOWED_IMPORT_ISSUE),
+            (
+                EFFECTS_SEED.replace("(param \"request\" $payload)", "(param \"request\" string)"),
+                DISALLOWED_IMPORT_ISSUE,
+            ),
+            (EFFECTS_SEED.replace("(list u8)", "(list u16)"), DISALLOWED_IMPORT_ISSUE),
+            (EFFECTS_SEED.replace("(result $outcome)", "(result string)"), ABI_MISMATCH_ISSUE),
+            (EFFECTS_SEED.replace("\"invoke\"", "\"other\""), ABI_MISMATCH_ISSUE),
+            (EFFECTS_SEED.replace("(export \"invoke\" (func $effect))", ""), ABI_MISMATCH_ISSUE),
+            (
+                EFFECTS_SEED
+                    .replace("(export \"invoke\"", "(import \"extra\" (func (type $request))) (export \"invoke\""),
+                DISALLOWED_IMPORT_ISSUE,
+            ),
+        ];
+        for (source, issue) in cases {
+            let report = analyze_profile(
+                &wat::parse_str(source).expect("negative effect surface"),
+                &registry,
+                EFFECTS_PROFILE_ID,
+                &[],
+            );
+            assert!(
+                report.details.findings.iter().any(|finding| finding.issue_code == issue),
+                "missing {issue}: {:?}",
+                report.details.findings
+            );
+        }
+        let missing = "(component (core module (func)))";
+        let report = analyze_profile(
+            &wat::parse_str(missing).expect("missing effect boundary"),
+            &registry,
+            EFFECTS_PROFILE_ID,
+            &[],
+        );
+        assert!(report.details.findings.iter().any(|finding| finding.message.contains("required import")));
+    }
+
+    #[test]
+    fn effects_admits_overlong_zero_table_encoding_without_reference_types() {
+        use wasm_encoder::Encode;
+        let registry = valid_registry();
+        let module = |table_index: &[u8]| {
+            let mut module = Module::new();
+            module.section(&wasm_encoder::RawSection {
+                id: 1,
+                data: &[1, 0x60, 0, 0],
+            });
+            module.section(&wasm_encoder::RawSection { id: 3, data: &[1, 0] });
+            module.section(&wasm_encoder::RawSection {
+                id: 4,
+                data: &[1, 0x70, 1, 1, 1],
+            });
+            let mut body = vec![0, 0x41, 0, 0x11, 0];
+            body.extend_from_slice(table_index);
+            body.push(0x0b);
+            let mut code = vec![1, u8::try_from(body.len()).expect("small call-indirect body")];
+            code.extend(body);
+            module.section(&wasm_encoder::RawSection { id: 10, data: &code });
+            module
+        };
+        for (table_index, denied) in [(&[0][..], false), (&[0x80, 0][..], false), (&[1][..], true)] {
+            let mut bytes = wat::parse_str(EFFECTS_SEED).expect("effect surface");
+            bytes.push(1);
+            wasm_encoder::ModuleSection(&module(table_index)).encode(&mut bytes);
+            let report = analyze_profile(&bytes, &registry, EFFECTS_PROFILE_ID, &[]);
+            if denied {
+                assert!(
+                    report.details.findings.iter().any(|finding| matches!(
+                        finding.issue_code.as_str(),
+                        MALFORMED_ISSUE | DISALLOWED_PROPOSAL_ISSUE
+                    )),
+                    "{:?}",
+                    report.details.findings
+                );
+            } else {
+                assert!(report.details.findings.is_empty(), "{:?}", report.details.findings);
+            }
+        }
+        let portable =
+            registry.profiles.iter().find(|profile| profile.profile_id == PROFILE_ID).expect("portable profile");
+        assert!(extract_facts(&module(&[0]).finish(), portable).parse_diagnostics.is_empty());
+        assert!(
+            extract_facts(&module(&[0x80, 0]).finish(), portable)
+                .parse_diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.issue_code == MALFORMED_ISSUE)
+        );
+        let effects = registry
+            .profiles
+            .iter()
+            .find(|profile| profile.profile_id == EFFECTS_PROFILE_ID)
+            .expect("effect profile");
+        assert!(!validation_features(effects).contains(WasmFeatures::REFERENCE_TYPES));
+        let source = format!(
+            "{} (core module (func (drop (ref.null func)))))",
+            &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")]
+        );
+        let report = analyze_profile(
+            &wat::parse_str(source).expect("reference-types negative"),
+            &registry,
+            EFFECTS_PROFILE_ID,
+            &[],
+        );
+        assert!(report.details.findings.iter().any(|finding| finding.issue_code == DISALLOWED_PROPOSAL_ISSUE));
+    }
+
+    #[test]
+    fn effects_function_budget_counts_canonical_lower_definitions() {
+        let registry = valid_registry();
+        for (lowers, denied) in [(127, false), (128, true)] {
+            let source = format!(
+                r#"{}
+                (core module $allocator
+                    (memory (export "memory") 1 1)
+                    (func (export "realloc") (param i32 i32 i32 i32) (result i32) i32.const 0))
+                (core instance $allocator-instance (instantiate $allocator))
+                (alias core export $allocator-instance "memory" (core memory $memory))
+                (alias core export $allocator-instance "realloc" (core func $realloc))
+                {})"#,
+                &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")],
+                "(core func (canon lower (func $effect) (memory $memory) (realloc $realloc)))".repeat(lowers)
+            );
+            let bytes = wat::parse_str(source).expect("canonical lower function boundary");
+            let report = analyze_profile(&bytes, &registry, EFFECTS_PROFILE_ID, &[]);
+            assert_eq!(report.details.facts.function_count, lowers as u64 + 1);
+            if denied {
+                assert_eq!(report.details.findings.len(), 1, "{:?}", report.details.findings);
+                assert_eq!(report.details.findings[0].issue_code, RESOURCE_LIMIT_ISSUE);
+            } else {
+                assert!(report.details.findings.is_empty(), "{:?}", report.details.findings);
+            }
+        }
+    }
+
+    #[test]
+    fn effects_function_budget_counts_resource_intrinsics_but_not_aliases_or_lifts() {
+        let registry = valid_registry();
+        for operation in ["resource.new", "resource.drop", "resource.rep"] {
+            for (definitions, denied) in [(127, false), (128, true)] {
+                let source = format!(
+                    r#"{}
+                    (type $resource (resource (rep i32)))
+                    (core module $implementation (func (export "noop")))
+                    (core instance $implementation-instance (instantiate $implementation))
+                    (alias core export $implementation-instance "noop" (core func $noop))
+                    (type $noop-type (func))
+                    {} {} {})"#,
+                    &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")],
+                    format!("(core func (canon {operation} $resource))").repeat(definitions),
+                    "(alias core export $implementation-instance \"noop\" (core func))".repeat(128),
+                    "(func (type $noop-type) (canon lift (core func $noop)))".repeat(128),
+                );
+                let report = analyze_profile(
+                    &wat::parse_str(source).expect("canonical resource function boundary"),
+                    &registry,
+                    EFFECTS_PROFILE_ID,
+                    &[],
+                );
+                assert_eq!(report.details.facts.function_count, definitions as u64 + 1, "{operation}");
+                if denied {
+                    assert_eq!(report.details.findings.len(), 1, "{operation}: {:?}", report.details.findings);
+                    assert_eq!(report.details.findings[0].issue_code, RESOURCE_LIMIT_ISSUE);
+                } else {
+                    assert!(report.details.findings.is_empty(), "{operation}: {:?}", report.details.findings);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn effects_function_budget_multiplies_canonical_definitions_by_enclosing_instances() {
+        let registry = valid_registry();
+        for (definitions, denied) in [(64, false), (65, true)] {
+            let source = format!(
+                r"{}
+                (component $inner
+                    (type $resource (resource (rep i32)))
+                    {})
+                (instance (instantiate $inner))
+                (instance (instantiate $inner)))",
+                &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")],
+                "(core func (canon resource.new $resource))".repeat(definitions),
+            );
+            let report = analyze_profile(
+                &wat::parse_str(source).expect("canonical enclosing instance function boundary"),
+                &registry,
+                EFFECTS_PROFILE_ID,
+                &[],
+            );
+            assert_eq!(report.details.facts.function_count, definitions as u64 * 2);
+            if denied {
+                assert_eq!(report.details.findings.len(), 1, "{:?}", report.details.findings);
+                assert_eq!(report.details.findings[0].issue_code, RESOURCE_LIMIT_ISSUE);
+            } else {
+                assert!(report.details.findings.is_empty(), "{:?}", report.details.findings);
+            }
+        }
+    }
+
+    #[test]
+    fn effects_resource_limits_preserve_exported_module_and_component_indices() {
+        let registry = valid_registry();
+        let cases = [
+            (
+                "(core module (table 1 1 funcref))",
+                "(export \"supplier\" (core module 0))",
+                "(core module)",
+                "(core instance (instantiate 1))",
+            ),
+            (
+                "(component (core module $m (table 1 1 funcref)) (core instance (instantiate $m)))",
+                "(export \"supplier\" (component 0))",
+                "(component)",
+                "(instance (instantiate 1))",
+            ),
+        ];
+        for (supplier, export, empty, instantiate) in cases {
+            for (instances, containers, denied) in [(2, 1, false), (3, 1, true), (1, 2, false), (2, 2, true)] {
+                let source = format!(
+                    "{} (component $container {supplier} {export} {empty} {}) {})",
+                    &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")],
+                    instantiate.repeat(instances),
+                    "(instance (instantiate $container))".repeat(containers),
+                );
+                let report = analyze_profile(
+                    &wat::parse_str(source).expect("exported generative alias resource boundary"),
+                    &registry,
+                    EFFECTS_PROFILE_ID,
+                    &[],
+                );
+                assert_eq!(report.details.facts.table_count, (instances * containers) as u64, "{export}");
+                if denied {
+                    assert_eq!(report.details.findings.len(), 1, "{export}: {:?}", report.details.findings);
+                    assert_eq!(report.details.findings[0].issue_code, RESOURCE_LIMIT_ISSUE);
+                } else {
+                    assert!(report.details.findings.is_empty(), "{export}: {:?}", report.details.findings);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn effects_instance_from_exports_does_not_append_generative_indices() {
+        let registry = valid_registry();
+        let cases = [
+            (
+                "(core module (table 1 1 funcref))",
+                "(instance (export \"supplier\" (core module 0)))",
+                "(core module)",
+                "(core instance (instantiate 1))",
+            ),
+            (
+                "(component (core module $m (table 1 1 funcref)) (core instance (instantiate $m)))",
+                "(instance (export \"supplier\" (component 0)))",
+                "(component)",
+                "(instance (instantiate 1))",
+            ),
+        ];
+        for (supplier, exported_instance, empty, instantiate) in cases {
+            let source = format!(
+                "{} (component $container {supplier} {exported_instance} {empty} {}) (instance (instantiate $container)))",
+                &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")],
+                instantiate.repeat(3),
+            );
+            let report = analyze_profile(
+                &wat::parse_str(source).expect("instance export entity index separation"),
+                &registry,
+                EFFECTS_PROFILE_ID,
+                &[],
+            );
+            // Index 1 is the empty definition, not an alias of the supplier.
+            assert_eq!(report.details.facts.table_count, 1, "{exported_instance}");
+            assert!(report.details.findings.is_empty(), "{exported_instance}: {:?}", report.details.findings);
+        }
+    }
+
+    #[test]
+    fn effects_resource_limits_count_independent_instantiations_and_check_declarations() {
+        let registry = valid_registry();
+        for (tables, expected) in [(2, false), (3, true)] {
+            let source = format!(
+                "{} {})",
+                &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")],
+                "(core module (table 1 1 funcref))".repeat(tables)
+            );
+            let report = analyze_profile(
+                &wat::parse_str(source).expect("table count boundary"),
+                &registry,
+                EFFECTS_PROFILE_ID,
+                &[],
+            );
+            assert_eq!(report.details.facts.table_count, tables as u64);
+            assert_eq!(
+                report.details.findings.iter().any(|finding| finding.issue_code == RESOURCE_LIMIT_ISSUE),
+                expected
+            );
+        }
+        for (elements, expected) in [(65535, false), (65536, true)] {
+            let source = format!(
+                "{} (core module (table {elements} {elements} funcref)))",
+                &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")]
+            );
+            let report = analyze_profile(
+                &wat::parse_str(source).expect("table elements boundary"),
+                &registry,
+                EFFECTS_PROFILE_ID,
+                &[],
+            );
+            assert_eq!(report.details.findings.iter().any(|finding| finding.issue_code == TABLE_LIMIT_ISSUE), expected);
+        }
+        for (instances, expected) in [(2, false), (3, true)] {
+            let source = format!(
+                "{} (component $inner (core module $m (table 1 1 funcref)) (core instance (instantiate $m))) {})",
+                &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")],
+                "(instance (instantiate $inner))".repeat(instances)
+            );
+            let report = analyze_profile(
+                &wat::parse_str(source).expect("enclosing component multiplicity"),
+                &registry,
+                EFFECTS_PROFILE_ID,
+                &[],
+            );
+            assert_eq!(report.details.facts.table_count, instances as u64);
+            assert_eq!(
+                report.details.findings.iter().any(|finding| finding.issue_code == RESOURCE_LIMIT_ISSUE),
+                expected
+            );
+        }
+        let mut bounded_memory_registry = registry.clone();
+        let profile = bounded_memory_registry
+            .profiles
+            .iter_mut()
+            .find(|profile| profile.profile_id == EFFECTS_PROFILE_ID)
+            .expect("effects profile");
+        profile.resource_limits.memory_initial_pages = 1;
+        profile.resource_limits.memory_maximum_pages = 1;
+        for (maximum, expected) in [(1, false), (2, true)] {
+            let source = format!(
+                "{} (core module (memory 1 {maximum})))",
+                &EFFECTS_SEED[..EFFECTS_SEED.rfind(')').expect("seed close")]
+            );
+            let report = analyze_profile(
+                &wat::parse_str(source).expect("memory maximum boundary"),
+                &bounded_memory_registry,
+                EFFECTS_PROFILE_ID,
+                &[],
+            );
+            assert_eq!(
+                report.details.findings.iter().any(|finding| finding.issue_code == MEMORY_LIMIT_ISSUE),
+                expected
+            );
+        }
+    }
     const MANTLE_PARENT: &str = "mantle:fixture-materialization";
 
     #[test]
@@ -1612,6 +2842,88 @@ mod tests {
     }
 
     #[test]
+    fn rejected_external_report_findings_identify_the_failing_report() {
+        let bytes =
+            wat::parse_str(include_str!("../../standards/wasm-artifact/spacewasm/fixtures/positive/mvp-module.wat"))
+                .expect("SpaceWasm fixture");
+        let mut registry = valid_registry();
+        let profile = registry
+            .profiles
+            .iter_mut()
+            .find(|profile| profile.profile_id == SPACEWASM_PROFILE_ID)
+            .expect("SpaceWasm profile");
+        "advisory".clone_into(&mut profile.severity.external_evidence);
+        let static_report = analyze_profile(&bytes, &registry, SPACEWASM_PROFILE_ID, &[]);
+        let verified = external_report_for(&static_report.details, "chaoscontrol", "executed-successfully");
+        let mut mismatched = external_report_for(&static_report.details, "mantle", "executed-successfully");
+        mismatched.artifact_identity = format!("{BLAKE3_PREFIX}{}", "0".repeat(BLAKE3_HEX_LENGTH));
+        mismatched.report_identity = external_report_identity(&mismatched).expect("mismatched identity");
+        let texts =
+            [&verified, &mismatched].map(|report| serde_json::to_string(report).expect("serialize external report"));
+
+        let report = analyze_profile_with_external(&bytes, &registry, SPACEWASM_PROFILE_ID, &[], &texts);
+
+        assert_eq!(report.details.external_evidence, vec![verified.clone()]);
+        let findings = &report.details.findings;
+        assert!(!findings.is_empty());
+        for finding in findings {
+            assert_eq!(finding.issue_code, EXTERNAL_EVIDENCE_ISSUE);
+            assert!(finding.message.contains(&mismatched.report_identity), "{}", finding.message);
+            assert!(finding.message.contains("mantle"), "{}", finding.message);
+            assert!(finding.message.contains("#2"), "{}", finding.message);
+            assert!(!finding.message.contains(&verified.report_identity), "{}", finding.message);
+        }
+
+        let unparsable = analyze_profile_with_external(&bytes, &registry, SPACEWASM_PROFILE_ID, &[], &[
+            texts[0].clone(),
+            "{".to_owned(),
+        ]);
+        assert!(unparsable.details.findings.iter().all(|finding| finding.message.contains("#2")));
+    }
+
+    #[test]
+    fn rejected_external_reports_take_the_declared_external_evidence_severity() {
+        let bytes =
+            wat::parse_str(include_str!("../../standards/wasm-artifact/spacewasm/fixtures/positive/mvp-module.wat"))
+                .expect("SpaceWasm fixture");
+        for (severity, expected_status) in [
+            ("advisory", WasmEvaluationStatus::ManualReview),
+            ("warning", WasmEvaluationStatus::ManualReview),
+            (ERROR_SEVERITY, WasmEvaluationStatus::Failed),
+        ] {
+            let mut registry = valid_registry();
+            let profile = registry
+                .profiles
+                .iter_mut()
+                .find(|profile| profile.profile_id == SPACEWASM_PROFILE_ID)
+                .expect("SpaceWasm profile");
+            severity.clone_into(&mut profile.severity.external_evidence);
+            let static_report = analyze_profile(&bytes, &registry, SPACEWASM_PROFILE_ID, &[]);
+            assert!(static_report.details.findings.is_empty(), "{:?}", static_report.details.findings);
+            let mut mismatched = external_report_for(&static_report.details, "chaoscontrol", "executed-successfully");
+            mismatched.artifact_identity = format!("{BLAKE3_PREFIX}{}", "0".repeat(BLAKE3_HEX_LENGTH));
+            mismatched.report_identity = external_report_identity(&mismatched).expect("mismatched identity");
+            let mismatched_text = serde_json::to_string(&mismatched).expect("serialize mismatched report");
+
+            let report =
+                analyze_profile_with_external(&bytes, &registry, SPACEWASM_PROFILE_ID, &[], &[mismatched_text]);
+
+            assert!(report.details.external_evidence.is_empty(), "{severity}: rejected report must not be recorded");
+            let findings = &report.details.findings;
+            assert!(!findings.is_empty());
+            assert!(
+                findings
+                    .iter()
+                    .all(|finding| finding.issue_code == EXTERNAL_EVIDENCE_ISSUE && finding.severity == severity),
+                "{findings:?}"
+            );
+            let evaluation = evaluate_envelope(&render_envelope(&report).expect("render envelope"));
+            assert!(evaluation.diagnostics.is_empty(), "{severity}: {:?}", evaluation.diagnostics);
+            assert_eq!(evaluation.status, expected_status, "{severity}");
+        }
+    }
+
+    #[test]
     fn checked_in_spacewasm_external_reports_bind_current_profile_and_reject_overclaims() {
         let registry = valid_registry();
         let bytes =
@@ -1694,7 +3006,7 @@ mod tests {
     #[test]
     fn malformed_import_growth_start_and_resource_cases_fail_closed() {
         let registry = valid_registry();
-        let function_limit = registry.profiles[0].resource_limits.max_functions;
+        let function_limit = registry.profiles[0].resource_limits.functions;
         let over_function_limit = usize::try_from(function_limit.saturating_add(1)).expect("fixture function count");
         let resource_fixture = format!("(module {})", "(func)".repeat(over_function_limit));
         let cases = [
@@ -1840,6 +3152,347 @@ mod tests {
         assert!(evaluation.diagnostics.iter().any(|diagnostic| diagnostic.contains("recorded_only or boundary")));
     }
 
+    #[test]
+    fn non_handoff_parent_artifacts_keep_standalone_role() {
+        let registry = valid_registry();
+        let module = wat::parse_str("(module)").expect("module fixture");
+        let parents = [
+            "b3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+            "artifacts/octet/status.json".to_owned(),
+        ];
+
+        let report = analyze(&module, &registry, &parents);
+
+        assert_eq!(report.details.handoff_role, STANDALONE_HANDOFF);
+        assert!(report.details.handoff_parent_identities.is_empty());
+        let evaluation = evaluate_envelope(&render_envelope(&report).expect("render envelope"));
+        assert!(evaluation.diagnostics.is_empty(), "{:?}", evaluation.diagnostics);
+    }
+
+    #[test]
+    fn external_orchestrator_handoff_binds_valid_external_identities() {
+        let registry = valid_registry();
+        let module = wat::parse_str("(module)").expect("module fixture");
+        let parents = [
+            "chaoscontrol:fixture-run".to_owned(),
+            "b3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+        ];
+
+        let report = analyze(&module, &registry, &parents);
+
+        assert_eq!(report.details.handoff_role, EXTERNAL_HANDOFF);
+        assert_eq!(report.details.handoff_parent_identities, vec!["chaoscontrol:fixture-run".to_owned()]);
+        let evaluation = evaluate_envelope(&render_envelope(&report).expect("render envelope"));
+        assert!(evaluation.diagnostics.is_empty(), "{:?}", evaluation.diagnostics);
+    }
+
+    #[test]
+    fn receipt_validation_rejects_handoff_role_identity_mismatches() {
+        let registry = valid_registry();
+        let module = wat::parse_str("(module)").expect("module fixture");
+        let cases: [(&str, &[&str]); 5] = [
+            (EXTERNAL_HANDOFF, &[]),
+            (EXTERNAL_HANDOFF, &[MANTLE_PARENT]),
+            (STANDALONE_HANDOFF, &["molten:fixture-run"]),
+            (MANTLE_HANDOFF, &["chaoscontrol:fixture-run"]),
+            (MANTLE_HANDOFF, &[]),
+        ];
+        for (role, identities) in cases {
+            let mut report = analyze(&module, &registry, &[]);
+            role.clone_into(&mut report.details.handoff_role);
+            report.details.handoff_parent_identities = identities.iter().map(|&identity| identity.to_owned()).collect();
+
+            let evaluation = evaluate_envelope(&render_envelope(&report).expect("render envelope"));
+
+            assert_eq!(evaluation.status, WasmEvaluationStatus::Failed, "{role} {identities:?}");
+            assert!(
+                evaluation
+                    .diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.contains("does not match its parent identities")),
+                "{role} {identities:?}: {:?}",
+                evaluation.diagnostics
+            );
+        }
+    }
+
+    #[test]
+    fn receipt_validation_recomputes_interface_identity_from_facts() {
+        let registry = valid_registry();
+        let module = wat::parse_str("(module)").expect("module fixture");
+        let mut report = analyze(&module, &registry, &[]);
+        report.details.facts.imports.push(WasmInterfaceItem {
+            namespace: "env".to_owned(),
+            name: "injected".to_owned(),
+            kind: "func".to_owned(),
+        });
+
+        let evaluation = evaluate_envelope(&render_envelope(&report).expect("render envelope"));
+
+        assert_eq!(evaluation.status, WasmEvaluationStatus::Failed);
+        assert!(
+            evaluation
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.contains("interface_identity does not match"))
+        );
+
+        let module =
+            wat::parse_str(include_str!("../../standards/wasm-artifact/spacewasm/fixtures/positive/mvp-module.wat"))
+                .expect("SpaceWasm module fixture");
+        let mut report = analyze_profile(&module, &registry, SPACEWASM_PROFILE_ID, &[]);
+        let untampered = evaluate_envelope(&render_envelope(&report).expect("render envelope"));
+        assert!(untampered.diagnostics.is_empty(), "{:?}", untampered.diagnostics);
+        report
+            .details
+            .facts
+            .function_abis
+            .first_mut()
+            .expect("SpaceWasm function ABI")
+            .results
+            .push("i64".to_owned());
+
+        let evaluation = evaluate_envelope(&render_envelope(&report).expect("render envelope"));
+
+        assert_eq!(evaluation.status, WasmEvaluationStatus::Failed);
+        assert!(
+            evaluation
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.contains("interface_identity does not match"))
+        );
+    }
+
+    #[test]
+    fn registry_rejects_unknown_severity_and_duplicate_section_postures() {
+        let mut registry = valid_registry();
+        "Error".clone_into(&mut registry.profiles[0].severity.malformed);
+        "fatal".clone_into(&mut registry.profiles[0].severity.external_evidence);
+        "Reject".clone_into(&mut registry.profiles[0].duplicate_custom_sections);
+
+        let diagnostics = validate_registry(&registry);
+
+        for expected in [
+            "unsupported malformed severity `Error`",
+            "unsupported external_evidence severity `fatal`",
+            "unsupported duplicate custom section posture `Reject`",
+        ] {
+            assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains(expected)), "{expected}: {diagnostics:?}");
+        }
+    }
+
+    #[test]
+    fn cohort_drift_fails_registry_validation_without_a_severity_knob() {
+        let mut value: Value = serde_json::from_str(PROFILE_JSON).expect("profile registry JSON");
+        value["profiles"][0]["severity"]["cohort_drift"] = Value::String("advisory".to_owned());
+        let error = parse_registry(&value.to_string()).expect_err("cohort_drift is not a severity");
+        assert!(error.contains("unknown field `cohort_drift`"), "{error}");
+
+        let mut registry = valid_registry();
+        registry.cohort.members[0].version = "0.254.0".to_owned();
+        for profile in &mut registry.profiles {
+            for severity in [
+                &mut profile.severity.malformed,
+                &mut profile.severity.disallowed_kind,
+                &mut profile.severity.disallowed_import,
+                &mut profile.severity.disallowed_world,
+                &mut profile.severity.resource_limit,
+                &mut profile.severity.growth,
+                &mut profile.severity.start,
+                &mut profile.severity.duplicate_metadata,
+                &mut profile.severity.abi_mismatch,
+                &mut profile.severity.external_evidence,
+            ] {
+                "advisory".clone_into(severity);
+            }
+        }
+        let module = wat::parse_str("(module)").expect("module fixture");
+        let diagnostics =
+            analyze_bytes(&module, &registry, PROFILE_ID, identity(PROFILE_JSON.as_bytes()), &[]).expect_err("drift");
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("stale wasm-tools cohort identity")));
+    }
+
+    #[test]
+    fn registry_cohort_must_claim_the_linked_wasm_tools_versions() {
+        let module = wat::parse_str("(module)").expect("module fixture");
+        let registry = valid_registry();
+        assert!(validate_registry(&registry).is_empty());
+        analyze_bytes(&module, &registry, PROFILE_ID, identity(PROFILE_JSON.as_bytes()), &[]).expect("linked cohort");
+
+        for (crate_name, _) in LINKED_COHORT_MEMBERS {
+            // A self-consistent registry whose identity matches its own claimed members.
+            let mut claimed = valid_registry();
+            claimed
+                .cohort
+                .members
+                .iter_mut()
+                .find(|member| member.crate_name == crate_name)
+                .expect("linked cohort member")
+                .version = "0.300.0".to_owned();
+            claimed.cohort.identity = cohort_identity(&claimed.cohort.members);
+            let diagnostics = analyze_bytes(&module, &claimed, PROFILE_ID, identity(PROFILE_JSON.as_bytes()), &[])
+                .expect_err("claimed cohort differs from the linked build");
+            assert!(
+                diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.contains(crate_name) && diagnostic.contains("0.300.0")),
+                "{crate_name}: {diagnostics:?}"
+            );
+
+            let mut missing = valid_registry();
+            missing.cohort.members.retain(|member| member.crate_name != crate_name);
+            missing.cohort.identity = cohort_identity(&missing.cohort.members);
+            let diagnostics = validate_registry(&missing);
+            assert!(
+                diagnostics.iter().any(|diagnostic| diagnostic.contains(crate_name)),
+                "{crate_name}: {diagnostics:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn linked_cohort_versions_match_cargo_lock() {
+        let lock: toml::Table = toml::from_str(include_str!("../../Cargo.lock")).expect("parse Cargo.lock");
+        let locked_versions = |crate_name: &str| {
+            lock["package"]
+                .as_array()
+                .expect("Cargo.lock packages")
+                .iter()
+                .filter(|package| package["name"].as_str() == Some(crate_name))
+                .map(|package| package["version"].as_str().expect("locked version").to_owned())
+                .collect::<Vec<_>>()
+        };
+        for (crate_name, version) in LINKED_COHORT_MEMBERS {
+            assert_eq!(locked_versions(crate_name), [version], "{crate_name}");
+        }
+        // `wat` builds the text fixtures; its `1.N.P` release ships with wasm-tools `0.N.P`.
+        let (_, wasmparser_version) = LINKED_COHORT_MEMBERS
+            .into_iter()
+            .find(|(crate_name, _)| *crate_name == "wasmparser")
+            .expect("wasmparser is linked");
+        let release = wasmparser_version.strip_prefix("0.").expect("wasm-tools 0.N.P version");
+        assert_eq!(locked_versions("wat"), [format!("1.{release}")]);
+    }
+
+    #[test]
+    fn registry_rejects_unknown_fields_duplicate_rules_and_invalid_worlds() {
+        let checked: Value = serde_json::from_str(PROFILE_JSON).expect("profile registry JSON");
+        let spacewasm = valid_registry()
+            .profiles
+            .iter()
+            .position(|profile| profile.profile_id == SPACEWASM_PROFILE_ID)
+            .expect("SpaceWasm profile");
+        let target = format!("/profiles/{spacewasm}/target_runtime");
+        let projection = format!("{target}/support_projection");
+        for pointer in [
+            "",
+            "/cohort",
+            "/cohort/members/0",
+            "/profiles/0",
+            "/profiles/0/resource_limits",
+            "/profiles/0/severity",
+            &target,
+            &projection,
+        ] {
+            let mut value = checked.clone();
+            value
+                .pointer_mut(pointer)
+                .and_then(Value::as_object_mut)
+                .expect("registry object")
+                .insert("unreviewed".to_owned(), Value::Bool(true));
+            let error = parse_registry(&value.to_string()).expect_err(pointer);
+            assert!(error.contains("unknown field `unreviewed`"), "{pointer}: {error}");
+        }
+
+        let mut registry = valid_registry();
+        let profile = &mut registry.profiles[0];
+        profile.allowed_proposals.push(WASM1_PROPOSAL.to_owned());
+        profile.allowed_imports = vec!["env::f::Func(0)".to_owned(), "env::f::Func(0)".to_owned()];
+        profile.required_imports = vec!["env::f::Func(0)".to_owned(), "env::f::Func(0)".to_owned()];
+        profile.required_exports = vec!["module::run::Func".to_owned(), "module::run::Func".to_owned()];
+        profile.allowed_worlds = vec![
+            "example:allowed/world".to_owned(),
+            "wasi:cli/command@0.2.0-rc.1+build.7".to_owned(),
+            "example:allowed/world".to_owned(),
+            "not a world".to_owned(),
+            "Example:mixedCase/world".to_owned(),
+            "example:pkg/world@1.0".to_owned(),
+            "example:pkg/nested/world".to_owned(),
+        ];
+        let diagnostics = validate_registry(&registry);
+        for expected in [
+            "repeats allowed_proposals entry `wasm1`",
+            "repeats allowed_imports entry `env::f::Func(0)`",
+            "repeats required_imports entry `env::f::Func(0)`",
+            "repeats required_exports entry `module::run::Func`",
+            "repeats allowed_worlds entry `example:allowed/world`",
+            "names invalid world `not a world`",
+            "names invalid world `Example:mixedCase/world`",
+            "names invalid world `example:pkg/world@1.0`",
+            "names invalid world `example:pkg/nested/world`",
+        ] {
+            assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains(expected)), "{expected}: {diagnostics:?}");
+        }
+        for valid in ["`example:allowed/world`", "`wasi:cli/command@0.2.0-rc.1+build.7`"] {
+            assert!(
+                !diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.contains("invalid world") && diagnostic.contains(valid)),
+                "{valid}: {diagnostics:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_stage_findings_use_their_issue_severity() {
+        let mut registry = valid_registry();
+        for profile in &mut registry.profiles {
+            "advisory".clone_into(&mut profile.severity.malformed);
+            "warning".clone_into(&mut profile.severity.resource_limit);
+            "warning".clone_into(&mut profile.severity.abi_mismatch);
+        }
+        let severity_of = |report: &WasmArtifactEnvelope, issue_code: &str| {
+            report
+                .details
+                .findings
+                .iter()
+                .find(|finding| finding.issue_code == issue_code)
+                .map(|finding| finding.severity.clone())
+        };
+
+        // Instantiating an imported core module cannot be resource-bounded.
+        let unbounded = wat::parse_str("(component (import \"m\" (core module $m)) (core instance (instantiate $m)))")
+            .expect("unbounded instantiation fixture");
+        let report = analyze(&unbounded, &registry, &[]);
+        assert_eq!(severity_of(&report, RESOURCE_LIMIT_ISSUE).as_deref(), Some("warning"), "{report:?}");
+
+        // Exporting a missing function fails validation and ABI resolution.
+        let mut missing_export = b"\0asm\x01\0\0\0".to_vec();
+        missing_export.extend_from_slice(&[7, 7, 1, 3, b'r', b'u', b'n', 0, 0]);
+        let report = analyze_profile(&missing_export, &registry, SPACEWASM_PROFILE_ID, &[]);
+        assert_eq!(severity_of(&report, ABI_MISMATCH_ISSUE).as_deref(), Some("warning"), "{report:?}");
+        assert_eq!(severity_of(&report, MALFORMED_ISSUE).as_deref(), Some("advisory"), "{report:?}");
+    }
+
+    #[test]
+    fn sarif_projection_uses_sarif_levels_and_omits_unknown_regions() {
+        let mut located = finding(MALFORMED_ISSUE, ERROR_SEVERITY, "located".to_owned());
+        located.byte_offset = Some(8);
+        let findings = [
+            finding(MEMORY_GROWTH_ISSUE, "advisory", "advisory".to_owned()),
+            finding(START_FUNCTION_ISSUE, "warning", "warning".to_owned()),
+            located,
+        ];
+        let sarif = render_sarif(&findings);
+        let results = sarif["runs"][0]["results"].as_array().expect("SARIF results");
+        let levels = results.iter().map(|result| result["level"].as_str()).collect::<Vec<_>>();
+        assert_eq!(levels, [Some("note"), Some("warning"), Some("error")]);
+        let location = |index: usize| &results[index]["locations"][0]["physicalLocation"];
+        assert!(location(0).get("region").is_none(), "{sarif}");
+        assert_eq!(location(0)["artifactLocation"]["uri"], INPUT_ARTIFACT_NAME);
+        assert_eq!(location(2)["region"]["byteOffset"], 8);
+    }
+
     fn analyze(bytes: &[u8], registry: &WasmProfileRegistry, parents: &[String]) -> WasmArtifactEnvelope {
         analyze_profile(bytes, registry, PROFILE_ID, parents)
     }
@@ -1961,6 +3614,45 @@ mod tests {
             data: Cow::Owned(data.to_vec()),
         });
         module.finish()
+    }
+
+    #[test]
+    fn molten_profile_validates_bulk_memory_and_padded_indirect_calls_without_reference_types() {
+        let registry = valid_registry();
+        assert!(validate_registry(&registry).is_empty());
+        let profile = registry
+            .profiles
+            .iter()
+            .find(|profile| profile.profile_id == "molten-component-baseline")
+            .expect("molten profile");
+        let features = validation_features(profile);
+        let bulk_memory = wat::parse_str("(module (memory 1) (func i32.const 0 i32.const 0 i32.const 0 memory.copy))")
+            .expect("bulk-memory fixture");
+        Validator::new_with_features(features).validate_all(&bulk_memory).expect("declared bulk memory");
+        // One () -> () function and funcref table; call_indirect uses a padded
+        // LEB-encoded zero table index, as emitted by the reviewed LLVM linker.
+        let padded_call = b"\0asm\x01\0\0\0\x01\x04\x01\x60\0\0\x03\x02\x01\0\x04\x04\x01\x70\0\x01\x0a\x0a\x01\x08\0\x41\0\x11\0\x80\0\x0b";
+        Validator::new_with_features(features)
+            .validate_all(padded_call)
+            .expect("declared padded table immediate");
+        let without_encoding = features & !WasmFeatures::CALL_INDIRECT_OVERLONG;
+        assert!(Validator::new_with_features(without_encoding).validate_all(padded_call).is_err());
+        let references =
+            wat::parse_str("(module (func (result externref) ref.null extern))").expect("reference fixture");
+        assert!(Validator::new_with_features(features).validate_all(&references).is_err());
+        let simd = wat::parse_str("(module (func (result v128) v128.const i32x4 0 0 0 0))").expect("SIMD fixture");
+        assert!(Validator::new_with_features(features).validate_all(&simd).is_err());
+        let baseline = registry.profiles.iter().find(|profile| profile.profile_id == PROFILE_ID).expect("baseline");
+        assert!(Validator::new_with_features(validation_features(baseline)).validate_all(&bulk_memory).is_err());
+        assert!(Validator::new_with_features(validation_features(baseline)).validate_all(padded_call).is_err());
+        let mut unknown = profile.clone();
+        unknown.allowed_proposals = vec![String::from("call-indirect-overlong-unknown")];
+        let mut diagnostics = Vec::new();
+        validate_profiles(&[unknown], &mut diagnostics);
+        assert!(
+            diagnostics.iter().any(|diagnostic| diagnostic.contains("names unknown proposal")),
+            "{diagnostics:?}"
+        );
     }
 
     fn module_with_duplicate_custom(name: &str) -> Vec<u8> {

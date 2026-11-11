@@ -1,0 +1,65 @@
+{
+  "schema_version": "octet-requirement-evidence/v1",
+  "contract_id": "octet.requirements.example",
+  "source_snapshot": [
+    {
+      "locator": "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/src/lib.rs",
+      "blake3": "fc70d39d863627bf99ab6a2c13a0b798aac059dc2520d9d2e48f7ac599fb4502"
+    },
+    {
+      "locator": "standards/proof-rails/aeneas-lean/fixtures/valid/real_fixture/Theorem.lean",
+      "blake3": "08e7c2d1fb1e21b2e7a174340a9f5b87c3acc634c591c6102624cd3a231f1125"
+    },
+    {
+      "locator": "standards/proof-rails/aeneas-lean/fixtures/valid/artifacts/proofs/aeneas/lean-toolchain",
+      "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa"
+    }
+  ],
+  "proof_decks": [
+    {
+      "evidence_id": "aeneas.fixture.safe_add",
+      "deck": "standards/requirements/fixtures/example/proof-cards.json",
+      "artifact_root": "standards/proof-rails/aeneas-lean/fixtures/valid/artifacts"
+    }
+  ],
+  "empirical_checks": [
+    {
+      "evidence_id": "check.lean_toolchain",
+      "evidence_class": "empirical_check",
+      "status": "passed",
+      "checker_id": "b3sum-fixture-check",
+      "command_argv": [
+        "b3sum",
+        "standards/proof-rails/aeneas-lean/fixtures/valid/artifacts/proofs/aeneas/lean-toolchain"
+      ],
+      "checked_scope": ["fixture:lean-toolchain"],
+      "source_bindings": [
+        {
+          "locator": "standards/proof-rails/aeneas-lean/fixtures/valid/artifacts/proofs/aeneas/lean-toolchain",
+          "blake3": "4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa"
+        }
+      ],
+      "artifact": "standards/requirements/fixtures/example/checks/lean-toolchain.txt",
+      "artifact_blake3": "20954127e1abb0aac0737350e0fedf1e4a61cb0d21f7d64958d7ac4ac5942e08",
+      "diagnostics": [],
+      "non_claims": [
+        "hash equality verifies the bytes only; it does not prove Lean soundness"
+      ]
+    }
+  ],
+  "assumption_records": [
+    {
+      "assumption_id": "assumption.lean_toolchain",
+      "identity": "lean-toolchain:4ff9ff39f3ec4e1015d318f317230c2a568a3aded1b49c07a9ab814af2cdbefa",
+      "trusted_boundary_identity": "aeneas-lean-provider-pin:bc2eb6f941369fa3c695e30598b5758b11e4f0de",
+      "status": "accepted",
+      "supporting_evidence_ids": ["check.lean_toolchain"],
+      "diagnostics": []
+    }
+  ],
+  "non_claims": [
+    "fixture evidence only",
+    "does not prove whole-program correctness",
+    "does not establish release eligibility"
+  ]
+}

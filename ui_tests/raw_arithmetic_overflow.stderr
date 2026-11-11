@@ -34,5 +34,74 @@ LL -     a * b
 LL +     (a).saturating_mul(b)
    |
 
-warning: 2 warnings emitted
+warning: unprotected unsigned multiplication may overflow
+  --> $DIR/raw_arithmetic_overflow.rs:31:5
+   |
+LL |     2 * n
+   |     ^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating multiplication
+   |
+LL -     2 * n
+LL +     u64::saturating_mul(2, n)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow.rs:37:5
+   |
+LL |     t += *x;
+   |     ^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     t += *x;
+LL +     t = (t).saturating_add(*x);
+   |
+
+warning: unprotected unsigned subtraction may overflow
+  --> $DIR/raw_arithmetic_overflow.rs:43:5
+   |
+LL |     *a -= b;
+   |     ^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating subtraction
+   |
+LL -     *a -= b;
+LL +     *a = (*a).saturating_sub(b);
+   |
+
+warning: unprotected unsigned multiplication may overflow
+  --> $DIR/raw_arithmetic_overflow.rs:52:5
+   |
+LL |     counter.count *= factor;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating multiplication
+   |
+LL -     counter.count *= factor;
+LL +     counter.count = (counter.count).saturating_mul(factor);
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow.rs:57:5
+   |
+LL |     values[0] += b;
+   |     ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: see Tiger Style guide: Overflow Protection
+
+warning: 7 warnings emitted
 

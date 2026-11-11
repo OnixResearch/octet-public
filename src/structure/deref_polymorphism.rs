@@ -44,7 +44,7 @@ fn self_type_is_public_local(cx: &LateContext<'_>, self_ty: &hir::Ty<'_>) -> boo
         return false;
     };
 
-    cx.tcx.visibility(local_def_id).is_public()
+    cx.effective_visibilities.is_exported(local_def_id)
 }
 
 fn target_type<'tcx>(cx: &LateContext<'tcx>, impl_block: &hir::Impl<'tcx>) -> Option<&'tcx hir::Ty<'tcx>> {
@@ -70,7 +70,16 @@ fn target_is_accepted_borrowed_view(ty: &hir::Ty<'_>) -> bool {
 }
 
 fn target_is_nominal(ty: &hir::Ty<'_>) -> bool {
-    matches!(ty.kind, hir::TyKind::Path(hir::QPath::Resolved(_, _)))
+    let hir::TyKind::Path(hir::QPath::Resolved(_, path)) = &ty.kind else {
+        return false;
+    };
+    matches!(
+        path.res,
+        hir::def::Res::Def(
+            hir::def::DefKind::Struct | hir::def::DefKind::Enum | hir::def::DefKind::Union | hir::def::DefKind::TyAlias,
+            _
+        )
+    )
 }
 
 fn target_name(cx: &LateContext<'_>, ty: &hir::Ty<'_>) -> String {

@@ -16,6 +16,8 @@ pub enum AcceptanceStatus {
     Failed,
     /// Stage or command was blocked before execution.
     Blocked,
+    /// Command was recorded for replay but not executed by the emitting run.
+    Recorded,
 }
 
 /// Digest of a config, input, artifact, or evidence item.

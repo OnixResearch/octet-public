@@ -66,6 +66,8 @@ pub struct Limits {
     pub teardown_timeout_ms: u64,
 }
 
+// `profile_id` is a serialized profile JSON key; renaming the field would change the wire format.
+#[allow(clippy::struct_field_names)]
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Profile {
     pub profile_id: String,

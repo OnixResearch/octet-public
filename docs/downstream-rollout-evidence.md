@@ -60,10 +60,12 @@ What it proves:
 - The selected Aspen production roots (`aspen-core`, `aspen-coordination`, and
   `aspen-rpc-handlers`) report zero `embedded` diagnostics while still exposing
   structural policy-evaluation metadata for
-  `octet.embedded.bounded-queues`.
+  `tigerstyle.embedded.bounded-queues`.
 - The same artifact-backed seam is now packaged for downstream flakes as
   `lib.mkPolicyArtifactConsumerCheck` and regression-covered by
-  `checks.x86_64-linux.policy-artifact-consumer-fixture`.
+  `checks.x86_64-linux.policy-artifact-consumer-fixture` (clean source) and
+  `checks.x86_64-linux.policy-artifact-consumer-noncompliant-fixture` (expected
+  blocking diagnostics).
 - The bounded-queue structural policy is enforced from the generated artifact
   fields. A downstream scratch mutation that introduces a configured unbounded
   constructor is expected to fail the focused policy-artifact consumer check.

@@ -1,4 +1,21 @@
-use super::*;
+use super::Comparison;
+use super::Evaluation;
+use super::NATIVE_SCHEMA;
+use super::NativeEnvelope;
+use super::NativeReport;
+use super::PROFILE_ID;
+use super::PROFILE_IDENTITY;
+use super::Profile;
+use super::RECEIPT_SCHEMA;
+use super::REQUIRED_NON_CLAIM;
+use super::ReceiptDetails;
+use super::comparison;
+use super::envelope_bytes;
+use super::native;
+use super::prefixed_identity;
+use super::pretty_bytes;
+use super::projection_bytes;
+use super::selected_profile;
 
 const REQUIRED_METRIC_COUNT: usize = 4;
 const REQUIRED_METRICS: [&str; REQUIRED_METRIC_COUNT] = ["lines", "branches", "functions", "regions"];

@@ -1,12 +1,14 @@
 // r[impl octet.dynamic_evidence.cargo_fuzz_profile]
 // r[impl octet.dynamic_evidence.cargo_fuzz_receipt]
 pub const PROFILE_ID: &str = "cargo-fuzz-libfuzzer";
-pub const EXPECTED_PROFILE_IDENTITY: &str = "b3:7ad698ddebaaac2640a51e5f58871ac026b4b32653fb95bf971ec491560b48d6";
+pub const EXPECTED_PROFILE_IDENTITY: &str = "b3:94d07e6644dea19538edd16be8f84d89267512c6fc6239e458b52c2eb95e1c4b";
 pub const RECEIPT_SCHEMA_VERSION: &str = "octet-cargo-fuzz-receipt/v1";
 pub const EVIDENCE_TIER: &str = "transcript_assertion";
 pub const ENGINE: &str = "libfuzzer";
 pub const TARGET: &str = "octet-profile-intake";
 pub const TOOLCHAIN: &str = "nightly-2026-03-21";
+/// `commit-hash` that `rustc -vV` reports for [`TOOLCHAIN`]; run mode refuses any other compiler.
+pub const RUSTC_COMMIT_HASH: &str = "ac7f9ec7da74d37fd28667c86bf117a39ba5b02a";
 pub const SANITIZER: &str = "address";
 pub const MAX_TOTAL_TIME_SECONDS: u64 = 60;
 pub const MAX_RUNS: u64 = 100_000;
@@ -17,6 +19,18 @@ pub const MAX_PATH_BYTES: usize = 240;
 pub const MAX_RECEIPT_BYTES: u64 = 1_048_576;
 pub const CORPUS_DOMAIN: &[u8] = b"octet-cargo-fuzz-corpus-v1\0";
 pub const REQUIRED_NON_CLAIM: &str = "Cargo-fuzz evidence covers one target, seed, corpus, sanitizer, and bounded run; it is not exhaustive coverage, memory-safety proof, panic-freedom proof, or release eligibility.";
+
+/// libFuzzer artifact name prefixes that record a finding: a crash or deadly signal, a leak, an
+/// out-of-memory input, or a timeout. Each one fails the run, so the receipt binds it as the crash
+/// input.
+pub const FINDING_ARTIFACT_PREFIXES: [&str; 4] = ["crash-", "leak-", "oom-", "timeout-"];
+
+/// Reports whether an artifact path names a libFuzzer finding.
+pub fn is_finding_artifact(path: &str) -> bool {
+    path.rsplit('/')
+        .next()
+        .is_some_and(|name| FINDING_ARTIFACT_PREFIXES.iter().any(|prefix| name.starts_with(prefix)))
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Budget {
@@ -108,6 +122,7 @@ pub fn evaluate_envelope(text: &str) -> Evaluation {
 
 pub(crate) mod shell;
 mod validation;
+pub use validation::compiler_identity;
 pub use validation::corpus_root;
 pub use validation::validate;
 

@@ -12,6 +12,8 @@ pub mod nested_conditionals;
 pub mod newtype_invariant_bypass;
 pub mod platform_dependent_cast;
 pub mod primitive_domain_alias;
+pub mod raw_bool_parameter;
+pub mod raw_bool_parameter_suppression;
 pub mod raw_domain_value;
 pub mod too_many_parameters;
 pub mod type_accumulation;
@@ -30,6 +32,9 @@ mod raw_value_tests {
         assert_eq!(container_kind("core::option::Option"), ContainerKind::Optional);
         assert_eq!(container_kind("core::result::Result"), ContainerKind::Result);
         assert_eq!(container_kind("alloc::collections::btree::map::BTreeMap"), ContainerKind::Map);
+        assert_eq!(container_kind("std::collections::HashMap"), ContainerKind::Map);
+        assert_eq!(container_kind("std::collections::hash::map::HashMap"), ContainerKind::Map);
+        assert_eq!(container_kind("indexmap::IndexMap"), ContainerKind::Map);
         assert_eq!(container_kind("fixture::DomainId"), ContainerKind::Other);
     }
 

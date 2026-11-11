@@ -17,8 +17,8 @@
       },
       "generated_contract": {
         "path": "standards/external-schemas/contracts/generated.ncl",
-        "blake3": "e4726c1024dcac155699bace3ed8943502cb7c13980cac57da7bcdd3534611cc",
-        "bytes": 2278
+        "blake3": "0dd4919c6dbefb13ffb824f1d9c426cd9d4ecd07f7707c65205f4e920d5b77fc",
+        "bytes": 2524
       }
     },
     {
@@ -35,16 +35,16 @@
       },
       "generated_contract": {
         "path": "standards/external-schemas/contracts/generated.ncl",
-        "blake3": "e4726c1024dcac155699bace3ed8943502cb7c13980cac57da7bcdd3534611cc",
-        "bytes": 2278
+        "blake3": "0dd4919c6dbefb13ffb824f1d9c426cd9d4ecd07f7707c65205f4e920d5b77fc",
+        "bytes": 2524
       }
     }
   ],
   "generated_artifacts": [
     {
       "path": "standards/external-schemas/contracts/generated.ncl",
-      "blake3": "e4726c1024dcac155699bace3ed8943502cb7c13980cac57da7bcdd3534611cc",
-      "bytes": 2278
+      "blake3": "0dd4919c6dbefb13ffb824f1d9c426cd9d4ecd07f7707c65205f4e920d5b77fc",
+      "bytes": 2524
     },
     {
       "path": "standards/external-schemas/index.ncl",

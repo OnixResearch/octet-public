@@ -11,16 +11,7 @@ use rustc_span::Ident;
 use crate::config::IndexableLintExceptions;
 use crate::diagnostics::emit_tiger_style_lint;
 use crate::naming::indexable_exceptions::is_canonical_rustc_private_alias;
-
-const GENERATED_SEGMENTS: &[&str] = &[
-    "target",
-    "generated",
-    "OUT_DIR",
-    "rustlib",
-    "registry",
-    ".cargo",
-    "vendor-cargo-deps",
-];
+use crate::naming::indexable_exceptions::is_generated_source_span;
 
 const PRELUDE_SEGMENT: &str = "prelude";
 
@@ -35,11 +26,15 @@ declare_tool_lint! {
 
 pub struct NonTraitImports {
     exceptions: IndexableLintExceptions,
+    workspace_root: std::path::PathBuf,
 }
 
 impl NonTraitImports {
     pub fn new(exceptions: IndexableLintExceptions) -> Self {
-        Self { exceptions }
+        Self {
+            exceptions,
+            workspace_root: crate::source::workspace_root(),
+        }
     }
 }
 
@@ -53,24 +48,27 @@ fn path_segments(path: &hir::UsePath<'_>) -> Vec<String> {
         .collect()
 }
 
-fn is_generated_or_prelude(path: &hir::UsePath<'_>) -> bool {
-    let segments = path_segments(path);
-    segments.iter().any(|segment| GENERATED_SEGMENTS.contains(&segment.as_str()))
-        || segments.iter().any(|segment| segment == PRELUDE_SEGMENT)
+fn is_prelude(path: &hir::UsePath<'_>) -> bool {
+    path_segments(path).iter().any(|segment| segment == PRELUDE_SEGMENT)
 }
 
 fn is_trait_res(res: Option<Res>) -> bool {
     matches!(res, Some(Res::Def(DefKind::Trait | DefKind::TraitAlias, _)))
 }
 
-fn imports_only_trait(path: &hir::UsePath<'_>) -> bool {
-    is_trait_res(path.res.type_ns) && path.res.value_ns.is_none() && path.res.macro_ns.is_none()
+fn is_derive_macro_res(res: Option<Res>) -> bool {
+    matches!(
+        res,
+        Some(Res::Def(DefKind::Macro(kinds), _)) if kinds == rustc_hir::def::MacroKinds::DERIVE
+    )
 }
 
-fn is_unrelated_ui_fixture(cx: &LateContext<'_>, item: &hir::Item<'_>) -> bool {
-    let filename = cx.sess().source_map().span_to_filename(item.span);
-    let path = filename.prefer_local_unconditionally().to_string();
-    path.contains("ui_tests/") && !path.contains("non_trait_imports")
+/// A trait import may also bring in the same-named derive macro (`std::hash::Hash`,
+/// `serde::Serialize`); it still imports the trait for method resolution.
+fn imports_trait(path: &hir::UsePath<'_>) -> bool {
+    is_trait_res(path.res.type_ns)
+        && path.res.value_ns.is_none()
+        && (path.res.macro_ns.is_none() || is_derive_macro_res(path.res.macro_ns))
 }
 
 fn imported_name(path: &hir::UsePath<'_>, ident: Ident) -> String {
@@ -90,10 +88,10 @@ impl<'tcx> LateLintPass<'tcx> for NonTraitImports {
         };
 
         if item.span.from_expansion()
-            || is_generated_or_prelude(path)
-            || is_unrelated_ui_fixture(cx, item)
+            || is_prelude(path)
+            || is_generated_source_span(cx.sess().source_map(), item.span, &self.workspace_root, self.exceptions)
             || cx.tcx.visibility(item.owner_id.def_id).is_public()
-            || imports_only_trait(path)
+            || imports_trait(path)
             || is_canonical_rustc_private_alias(&path_segments(path), ident.name.as_str(), self.exceptions)
         {
             return;

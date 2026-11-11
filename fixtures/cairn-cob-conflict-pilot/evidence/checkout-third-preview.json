@@ -1,44 +1,44 @@
 {
   "already_current": false,
   "authority": {
-    "creator": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
+    "creator": "z6MkrYePae54PSMayuv3YJJcPV65GE6Mhvuq2537cmJybFCW",
     "delegates": [
-      "z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU"
+      "z6Mkgvh5Qq4bjh8BZUDwPB9ZPNoQvHGMu1wvPX2KRyPNUDtq"
     ],
     "source": "signed_root_embedded_authority"
   },
   "backend": "radicle-cob.v1",
-  "base_git_oid": "git_oid:b91fdcff9139492e55a7e64a142de6d0684ddb03",
+  "base_git_oid": "git_oid:22722030cd734900c565840997a62b36055aa85d",
   "blocked": false,
   "blockers": [],
   "change": "exercise-cairn-cob-conflict-recovery",
   "command": "collaboration checkout",
   "compatibility_command": "cob checkout",
   "content_conflicts": [],
-  "content_root": "45b5026f17e748f810599399b88556c01df8fec4311bf5dc4692e6691d0b827f",
+  "content_root": "7dd70c82ceeba898e794cbb0e7f964e2ee70914c1858ea0dee111f9183d83ac6",
   "current_evidence_count": 0,
   "dry_run": true,
   "evidence_count": 0,
   "file_count": 4,
   "files": [
     {
-      "blake3": "e6d533180fec7a298c497210f53d79cb9a89f75f500427ab804fab58fe8227cf",
-      "bytes": 88,
+      "blake3": "b2fefc1fe50c2455b3e7ef91fef179783d3d768a5a4915e5c8bc1061697a9547",
+      "bytes": 6563,
       "path": "design.md"
     },
     {
-      "blake3": "a7c4d54776fcb179f048728766a52d75dc450cc2a5072b7e2c238aa9b2cff3b6",
-      "bytes": 3,
-      "path": "metadata.json"
-    },
-    {
-      "blake3": "0f316ae17b663329300af28aac6e7b1604ff83ff357039399a1667ef88e1b6cc",
-      "bytes": 88,
+      "blake3": "e0a6e530f25a68fb0e7ff26cccc15445c85215aee2405b7e2cc200b053e4de7d",
+      "bytes": 1843,
       "path": "proposal.md"
     },
     {
-      "blake3": "8f3e024e6456bd60b64831bac8808eab13f9006341eb5ffcb00d3a787fe7827c",
-      "bytes": 60,
+      "blake3": "71b0d96379281cef2750c502fc64b4574fa200125cbd45d8e0106767a7c4dccb",
+      "bytes": 6545,
+      "path": "specs/cob-collaboration-conflict-recovery/spec.md"
+    },
+    {
+      "blake3": "7f8eca743500d0d33ded2ec7f0a17e0d45821359630933250943fa2571d305bc",
+      "bytes": 2200,
       "path": "tasks.md"
     }
   ],
@@ -51,11 +51,11 @@
   },
   "lifecycle": {
     "condition": "stale",
-    "current_content_root": "45b5026f17e748f810599399b88556c01df8fec4311bf5dc4692e6691d0b827f",
+    "current_content_root": "7dd70c82ceeba898e794cbb0e7f964e2ee70914c1858ea0dee111f9183d83ac6",
     "record": {
       "evidence": [],
       "status": "open",
-      "subject_root": "7c4dedd4299257992f0ac8dad67237b86f3b0cfd262568626ca866540b3291ef"
+      "subject_root": "d2e4dd8f05a298db41c6f601db7f37274ffe0094e917f93db4d657bd10f44cbe"
     }
   },
   "local_destination": "absent",
@@ -67,19 +67,19 @@
     "status and checkout do not prove node participation, publication, peer availability, synchronization, convergence, or remote trust",
     "the cooperative checkout lock is not a sandbox against unrelated processes with equivalent host filesystem authority"
   ],
-  "object_id": "030a0e27d379e6e5ff67f6eac940e2369a8169b1",
-  "object_policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
-  "observed_policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
-  "plan_hash": "7561f8319444011b7409cd77da4aec51a39057d1a77fd07da4b0a86a5067f160",
-  "policy": "cairn-default",
+  "object_id": "0702d3bd89a7be698cd24ec343323d7786a99d6d",
+  "object_policy_hash": "0d5e71092b45e2a8cfbaed4edffe6b01cd6cd0e4dc71f9c86fc1d0bf82cc70fc",
+  "observed_policy_hash": "0d5e71092b45e2a8cfbaed4edffe6b01cd6cd0e4dc71f9c86fc1d0bf82cc70fc",
+  "plan_hash": "1366e149828b3012bc9adbb9df466edd83ec1e5899cc031bdc0ae79d6de4ab78",
+  "policy": "octet-default",
   "policy_current": true,
   "post_checkout_destination": null,
-  "receipt_hash": "cd8dacc574ffceb23d1973e8d9423d187fdc4addd3d5e52042e30e2d0d7cada8",
-  "repository_head_oid": "b91fdcff9139492e55a7e64a142de6d0684ddb03",
-  "root": "reload-workspace",
-  "state_hash": "675181463713e9277193a3c9f081b5276992a31234ffc353a7d0187e8858279e",
+  "receipt_hash": "2211c28439f00dcca4c372bd48f77363d54f4fe265cec816bfee3add5eeb1424",
+  "repository_head_oid": "22722030cd734900c565840997a62b36055aa85d",
+  "root": "target/cairn-cob-conflict-work/third-root",
+  "state_hash": "0b843293c31ed26eb4e1572915b1701e05a5ed9af61efe6c7db8c614346135a8",
   "type_name": "xyz.onixresearch.cairn-change",
   "valid": true,
   "verdict": "PASS",
-  "workspace_id": "workspace:synthetic-cob-conflict"
+  "workspace_id": "workspace:octet"
 }

@@ -1,4 +1,17 @@
-use super::*;
+use super::BaselineRecord;
+use super::Evaluation;
+use super::MutantRecord;
+use super::PROFILE_ID;
+use super::PROFILE_IDENTITY;
+use super::Profile;
+use super::RECEIPT_SCHEMA;
+use super::REQUIRED_NON_CLAIM;
+use super::ReceiptDetails;
+use super::prefixed_identity;
+use super::projection_bytes;
+use super::records;
+use super::request;
+use super::selected_profile;
 
 const SOURCE_MANIFEST_SCHEMA: &str = "octet-source-manifest/v1";
 const NATIVE_BASELINE_SCENARIO: &str = "Baseline";
@@ -82,9 +95,8 @@ pub(super) fn evaluate(input: &request::ProfiledInput, profile: &Profile) -> Eva
     }
     let mut mutants = Vec::with_capacity(inventory.len());
     for native in inventory {
-        let outcome = match by_name.get(&native.name) {
-            Some(value) => value,
-            None => return failed(vec![format!("mutation outcome is missing for `{}`", native.name)]),
+        let Some(outcome) = by_name.get(&native.name) else {
+            return failed(vec![format!("mutation outcome is missing for `{}`", native.name)]);
         };
         let source_identity = match source_files.get(&native.file) {
             Some(value) => value.clone(),

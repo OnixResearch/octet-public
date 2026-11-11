@@ -33,37 +33,56 @@ fn is_time_param_name(name: &str) -> bool {
     TIME_NAMES.contains(&name) || TIME_SUFFIXES.iter().any(|s| name.ends_with(s))
 }
 
-/// Visitor that checks if a function body contains `Instant::now()` or
-/// `SystemTime::now()` calls.
-struct TimeCallFinder {
+/// Def paths of the system-clock reads this lint recognizes.
+const SYSTEM_CLOCK_NOW_PATHS: &[&[&str]] = &[&["std", "time", "Instant", "now"], &[
+    "std",
+    "time",
+    "SystemTime",
+    "now",
+]];
+
+/// Visitor that checks if a function body, including closures and `async`
+/// bodies nested in it, contains `Instant::now()` or `SystemTime::now()` calls.
+struct TimeCallFinder<'a, 'tcx> {
+    cx: &'a LateContext<'tcx>,
+    /// Typeck results of the typeck root, which also cover every nested body.
+    typeck: &'tcx rustc_middle::ty::TypeckResults<'tcx>,
     found: Option<Span>,
 }
 
-fn qpath_calls_now(qpath: &hir::QPath<'_>) -> bool {
-    match qpath {
-        hir::QPath::Resolved(_, path) => {
-            path.segments.last().is_some_and(|segment| segment.ident.name.as_str() == "now")
-        }
-        hir::QPath::TypeRelative(_, segment) => segment.ident.name.as_str() == "now",
-    }
+fn calls_system_clock_now(
+    cx: &LateContext<'_>,
+    typeck: &rustc_middle::ty::TypeckResults<'_>,
+    callee: &hir::Expr<'_>,
+) -> bool {
+    let ExprKind::Path(qpath) = &callee.kind else {
+        return false;
+    };
+    let hir::def::Res::Def(_, did) = typeck.qpath_res(qpath, callee.hir_id) else {
+        return false;
+    };
+    let def_path = cx.get_def_path(did);
+    SYSTEM_CLOCK_NOW_PATHS
+        .iter()
+        .any(|path| def_path.iter().copied().eq(path.iter().map(|segment| rustc_span::Symbol::intern(segment))))
 }
 
-impl<'tcx> Visitor<'tcx> for TimeCallFinder {
+impl<'tcx> Visitor<'tcx> for TimeCallFinder<'_, 'tcx> {
+    // `async fn` bodies lower to nested coroutine bodies and closures are
+    // nested bodies too; a clock read in either is still this function's.
+    type NestedFilter = rustc_middle::hir::nested_filter::OnlyBodies;
+
+    fn maybe_tcx(&mut self) -> Self::MaybeTyCtxt {
+        self.cx.tcx
+    }
+
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
         if self.found.is_some() {
             return;
         }
 
         if let ExprKind::Call(func, _) = &expr.kind
-            && let ExprKind::Path(qpath) = &func.kind
-            && qpath_calls_now(qpath)
-        {
-            self.found = Some(expr.span);
-            return;
-        }
-
-        if let ExprKind::MethodCall(segment, _, _, _) = &expr.kind
-            && segment.ident.name.as_str() == "now"
+            && calls_system_clock_now(self.cx, self.typeck, func)
         {
             self.found = Some(expr.span);
             return;
@@ -73,48 +92,52 @@ impl<'tcx> Visitor<'tcx> for TimeCallFinder {
     }
 }
 
+/// Names of the parameters of `body` that carry a time value.
+fn temporal_param_names<'a>(body: &'a hir::Body<'_>) -> impl Iterator<Item = &'a str> {
+    body.params.iter().filter_map(|param| {
+        if let hir::PatKind::Binding(_, _, ident, _) = &param.pat.kind
+            && is_time_param_name(ident.name.as_str())
+        {
+            return Some(ident.name.as_str());
+        }
+        None
+    })
+}
+
 impl<'tcx> LateLintPass<'tcx> for ContradictoryTime {
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
-        _kind: hir::intravisit::FnKind<'tcx>,
+        kind: hir::intravisit::FnKind<'tcx>,
         _decl: &'tcx hir::FnDecl<'tcx>,
         body: &'tcx hir::Body<'tcx>,
         _span: Span,
-        _def_id: rustc_hir::def_id::LocalDefId,
+        def_id: rustc_hir::def_id::LocalDefId,
     ) {
-        // Check if any parameter has a time-related name
-        let has_time_param = body.params.iter().any(|param| {
-            if let hir::PatKind::Binding(_, _, ident, _) = &param.pat.kind {
-                is_time_param_name(ident.name.as_str())
-            } else {
-                false
-            }
-        });
-
-        if !has_time_param {
+        let time_params: Vec<&str> = temporal_param_names(body).collect();
+        if time_params.is_empty() {
             return;
         }
 
-        // Walk the body looking for .now() calls
-        let mut finder = TimeCallFinder { found: None };
+        // An enclosing function that takes a time parameter already searches
+        // this closure's body; reporting here too would duplicate the finding.
+        let root = cx.tcx.typeck_root_def_id(def_id.to_def_id()).expect_local();
+        if matches!(kind, hir::intravisit::FnKind::Closure)
+            && root != def_id
+            && temporal_param_names(cx.tcx.hir_body_owned_by(root)).next().is_some()
+        {
+            return;
+        }
+
+        // Walk the body looking for `Instant::now()` / `SystemTime::now()` calls
+        let mut finder = TimeCallFinder {
+            cx,
+            typeck: cx.tcx.typeck(root),
+            found: None,
+        };
         finder.visit_expr(body.value);
 
         if let Some(call_span) = finder.found {
-            let time_params: Vec<&str> = body
-                .params
-                .iter()
-                .filter_map(|p| {
-                    if let hir::PatKind::Binding(_, _, ident, _) = &p.pat.kind {
-                        let name = ident.name.as_str();
-                        if is_time_param_name(name) {
-                            return Some(name);
-                        }
-                    }
-                    None
-                })
-                .collect();
-
             let param_list = time_params.join("`, `");
             let message = format!("function takes time parameter `{param_list}` but also reads system time");
 

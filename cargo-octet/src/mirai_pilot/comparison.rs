@@ -9,6 +9,7 @@ const OUTCOME_CHARON_ONLY: &str = "charon-only";
 const OUTCOME_SOURCE_ONLY: &str = "source-token-only";
 const OUTCOME_UNKNOWN: &str = "unknown";
 
+#[must_use]
 pub fn compare(
     fixture: &CorpusFixture,
     mirai: Option<&AnalyzerFact>,
@@ -18,9 +19,7 @@ pub fn compare(
     let facts = [mirai, charon, source_token];
     let aligned = facts.iter().flatten().all(|fact| fact.source_identity == fixture.source_identity);
     let present = facts.iter().filter(|fact| fact.is_some()).count();
-    let outcome = if !aligned {
-        OUTCOME_UNKNOWN
-    } else {
+    let outcome = if aligned {
         match (mirai, charon, source_token) {
             (Some(left), Some(middle), Some(right)) if left.value == middle.value && middle.value == right.value => {
                 OUTCOME_AGREE
@@ -32,6 +31,8 @@ pub fn compare(
             _ if present == 0 => OUTCOME_UNKNOWN,
             _ => OUTCOME_UNKNOWN,
         }
+    } else {
+        OUTCOME_UNKNOWN
     };
     let mut parent_identities = facts.iter().flatten().map(|fact| fact.parent_identity.clone()).collect::<Vec<_>>();
     parent_identities.sort();

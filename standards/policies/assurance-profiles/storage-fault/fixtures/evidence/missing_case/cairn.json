@@ -1,0 +1,14 @@
+{
+  "schema_version": "octet-storage-fault-cairn-receipt/v1",
+  "candidate_blake3": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "producer_receipt_blake3": "3ec85293df7b5b28505b2f7be291de23eadc429dd6a01d01ff9925f5b6c3521e",
+  "claim_scope": "bounded-observation",
+  "cases": [
+    "clean-write-sync",
+    "flush-error",
+    "uncertain-commit"
+  ],
+  "non_claims": [
+    "Saved producer evidence covers only the declared cases and recorded outcomes; it does not prove filesystem, device, or hardware durability."
+  ]
+}

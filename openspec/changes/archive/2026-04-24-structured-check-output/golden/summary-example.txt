@@ -1,0 +1,17 @@
+--- tigerstyle summary ---
+Findings: 3 (0 autofixable)
+
+By crate:
+  aspen-core        2
+  aspen-dns         1
+
+By lint:
+  no_unwrap         1
+  function_length   1
+  unbounded_channel 1
+
+Index:
+  F1  no_unwrap         aspen-core  src/connection.rs:42
+  F2  function_length   aspen-core  src/router.rs:15
+  F3  unbounded_channel aspen-dns   src/resolver.rs:28
+---

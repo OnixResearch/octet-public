@@ -5,6 +5,37 @@ fn multiple_uses() {
     let _c = is_active;
 }
 
+fn closure_use() -> usize {
+    let is_enabled = true;
+    let values = [1, 2, 3];
+    values.iter().filter(|_| is_enabled).count()
+}
+
+fn async_block_use() {
+    let is_ready = true;
+    let _future = async move { is_ready };
+}
+
+struct Flags {
+    visible: bool,
+}
+
+fn shorthand_field_use() -> bool {
+    let is_visible = true;
+    let flags = Flags { visible: is_visible };
+    flags.visible
+}
+
+// Should NOT warn: async fn parameters are not `let` bindings, even though
+// rustc lowers them into `let` statements inside the async body.
+async fn async_parameter(verbose: bool) -> bool {
+    verbose
+}
+
 fn main() {
     multiple_uses();
+    let _ = closure_use();
+    async_block_use();
+    let _ = shorthand_field_use();
+    let _future = async_parameter(true);
 }

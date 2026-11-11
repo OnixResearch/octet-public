@@ -63,6 +63,25 @@ fn refined_core_policy<'a>(
     })
 }
 
+/// Raw representation owned by the ADT at `def_path`.
+fn owned_storage_representation(def_path: &str) -> Option<octet_lint_metadata::nominal_domain::RawRepresentation> {
+    match def_path {
+        "alloc::string::String" | "std::string::String" => {
+            Some(octet_lint_metadata::nominal_domain::RawRepresentation::String)
+        }
+        "std::path::PathBuf" => Some(octet_lint_metadata::nominal_domain::RawRepresentation::Path),
+        _ => None,
+    }
+}
+
+/// Raw representation whose unsized borrowed view is the ADT at `def_path`.
+fn borrowed_view_representation(def_path: &str) -> Option<octet_lint_metadata::nominal_domain::RawRepresentation> {
+    match def_path {
+        "std::path::Path" => Some(octet_lint_metadata::nominal_domain::RawRepresentation::Path),
+        _ => None,
+    }
+}
+
 fn direct_raw_representation(
     cx: &rustc_lint::LateContext<'_>,
     resolved: rustc_middle::ty::Ty<'_>,
@@ -74,14 +93,26 @@ fn direct_raw_representation(
         rustc_middle::ty::Uint(rustc_middle::ty::UintTy::Usize) => {
             Some(octet_lint_metadata::nominal_domain::RawRepresentation::Usize)
         }
-        rustc_middle::ty::Adt(definition, _) => match cx.tcx.def_path_str(definition.did()).as_str() {
-            "alloc::string::String" | "std::string::String" => {
-                Some(octet_lint_metadata::nominal_domain::RawRepresentation::String)
-            }
-            "std::path::PathBuf" => Some(octet_lint_metadata::nominal_domain::RawRepresentation::Path),
-            _ => None,
-        },
+        rustc_middle::ty::Adt(definition, _) => owned_storage_representation(&cx.tcx.def_path_str(definition.did())),
         _ => None,
+    }
+}
+
+/// Raw representation that `resolved` stores or borrows: the owned storage
+/// itself, a reference to it (`&String`), or its borrowed view (`str`, `&str`,
+/// `Path`, `&Path`).
+pub(super) fn raw_representation_or_view(
+    cx: &rustc_lint::LateContext<'_>,
+    resolved: rustc_middle::ty::Ty<'_>,
+) -> Option<octet_lint_metadata::nominal_domain::RawRepresentation> {
+    let resolved = resolved.peel_refs();
+    match resolved.kind() {
+        rustc_middle::ty::Str => Some(octet_lint_metadata::nominal_domain::RawRepresentation::String),
+        rustc_middle::ty::Adt(definition, _) => {
+            let def_path = cx.tcx.def_path_str(definition.did());
+            owned_storage_representation(&def_path).or_else(|| borrowed_view_representation(&def_path))
+        }
+        _ => direct_raw_representation(cx, resolved),
     }
 }
 
@@ -111,7 +142,7 @@ fn from_input_representation(
     if trait_ref.args.len() < FROM_TRAIT_ARG_COUNT {
         return None;
     }
-    direct_raw_representation(cx, trait_ref.args.type_at(1))
+    raw_representation_or_view(cx, trait_ref.args.type_at(1))
 }
 
 fn deref_target_representation(
@@ -128,7 +159,7 @@ fn deref_target_representation(
             continue;
         }
         let resolved = cx.tcx.type_of(impl_item.owner_id.def_id).instantiate_identity();
-        return direct_raw_representation(cx, resolved);
+        return raw_representation_or_view(cx, resolved);
     }
     None
 }
@@ -296,5 +327,16 @@ mod tests {
         assert!(refined_core_policy(&catalog, "UnitId", "crates/crunch-build/src/dynamic_plan.rs").is_some());
         assert!(refined_core_policy(&catalog, "UnitId", "crates/other/src/lib.rs").is_none());
         assert!(refined_core_policy(&catalog, "UnknownId", "crates/crunch-build/src/dynamic_plan.rs").is_none());
+    }
+
+    #[test]
+    fn path_view_maps_to_path_storage_only_as_a_borrowed_view() {
+        // No registered UI domain is `PathBuf`-backed, so pin the `Path` view mapping here.
+        let path = Some(octet_lint_metadata::nominal_domain::RawRepresentation::Path);
+        assert_eq!(owned_storage_representation("std::path::PathBuf"), path);
+        assert_eq!(owned_storage_representation("std::path::Path"), None);
+        assert_eq!(borrowed_view_representation("std::path::Path"), path);
+        assert_eq!(borrowed_view_representation("std::path::PathBuf"), None);
+        assert_eq!(borrowed_view_representation("std::string::String"), None);
     }
 }

@@ -1,0 +1,4 @@
+warning: octet `core_source_scopes` entry `impure_call_in_core_sibling_scope` in `dylint.toml` names no file or directory under the workspace root; scopes are workspace-relative path prefixes, so a scope that used to match by substring must be rewritten as a path from the workspace root
+
+warning: 1 warning emitted
+

@@ -1,0 +1,72 @@
+{
+  "actions": [
+    {
+      "description": "merge delta spec into main specs: fixtures/basic/.cairn/changes/demo/specs/demo/spec.md",
+      "kind": "sync_delta_spec",
+      "path": "fixtures/basic/.cairn/changes/demo/specs/demo/spec.md"
+    }
+  ],
+  "blocked": false,
+  "change": "demo",
+  "cross_repo_dependencies": {
+    "blocked_count": 0,
+    "dependency_count": 0,
+    "input_hash": "ad8c76912fb619a4684a92541db836108c8862f8bd5d565c4aeba0aa59265aa3",
+    "non_claims": [
+      "dependency satisfaction proves presented receipt linkage only",
+      "dependency satisfaction does not prove upstream correctness or remote trust",
+      "dependency satisfaction does not prove downstream integration correctness or release eligibility"
+    ],
+    "policy_hash": "2c0b44345b9d2e2b3eff5fa7db7a14b9681c6bfcf7a4bb651f13bcadc1f91757",
+    "receipt_hash": "89de1e126b225e38bb63b8284de0de14534e5297194f3f993e02660d23f852a0",
+    "rows": [],
+    "satisfied_count": 0,
+    "schema": "cairn.cross-repo-dependency-receipt.v1",
+    "valid": true,
+    "verdict": "PASS"
+  },
+  "cross_repo_evidence_issues": [],
+  "delta_specs": [
+    "fixtures/basic/.cairn/changes/demo/specs/demo/spec.md"
+  ],
+  "dry_run": true,
+  "input_hash": "6a85d8c0dfe71966d4cb9e70a0f994501712f8471aea18c19aac1ab2aa4fa229",
+  "layout": "cairn",
+  "merge_preflight": {
+    "documents": [
+      {
+        "accepted_before_exists": true,
+        "accepted_before_hash": "89bbfc267aa6e363ab1a8eeef964ef628519557fbc874c9acaf3c46288b98600",
+        "blocked": false,
+        "changed": true,
+        "delta_hash": "0597e17429f8fff8a325226eae381542e2cc357a702e1e1ece9c768a9ef1a9db",
+        "destination": ".cairn/specs/demo/spec.md",
+        "diagnostics": [],
+        "expected_after_hash": "fdb7614934331d4cb17973fc0fee6b121d2e7d2695bf372ddc8bed0f933a7b3f",
+        "operations": [
+          {
+            "block_hash": "075ec81b5693c5d44734aee4a28e3fad8e0cd5a67c684430aa3d18ac465b0050",
+            "heading": "### Requirement: Demo behavior",
+            "kind": "added",
+            "requirement_id": "demo.behavior"
+          }
+        ],
+        "outcomes": [
+          {
+            "kind": "added",
+            "requirement_id": "demo.behavior",
+            "state": "applied"
+          }
+        ],
+        "source": ".cairn/changes/demo/specs/demo/spec.md"
+      }
+    ]
+  },
+  "mutated": false,
+  "mutation_manifest": null,
+  "plan_hash": "784ecc4409b3e282f1b3cdd8ab7c09a76f1ac84f85205a4d2ed7b6e9a8daceba",
+  "policy": "cairn-default",
+  "policy_hash": "2c0b44345b9d2e2b3eff5fa7db7a14b9681c6bfcf7a4bb651f13bcadc1f91757",
+  "reasons": [],
+  "receipt_hash": "31f74f63c49c0030b98f3d1258bece984880ff52265c4ec390d97d2d8df59c5c"
+}

@@ -29,9 +29,23 @@ evidence.
 - Policy IDs use the `octet.<pillar>.<rule>` namespace.
 - Suppressions use `octet-allow:` comments and MUST cite policy ID, source
   section, owner, rationale, review trigger, and safer default for hard rules.
+  A valid suppression covers only diagnostics of its policy at its own path and
+  line: `scope=line` (the default) covers the annotated line and
+  `scope=next-line` the line after it. Covered diagnostics no longer block;
+  the report records them under `suppressed_diagnostics` (markdown
+  `## Suppressed Findings`) next to `active_suppressions`. Diagnostics about
+  suppressions themselves are never suppressed.
 - Hard policies need positive and negative fixtures before becoming blocking.
 - Policies that target `structural` MUST export at least one mechanism contract
   such as crate-boundary, capability-api, bounded-primitive, or type-state.
+- Crate-boundary mechanisms that declare shell crates drive a
+  dependency-direction check over the `cargo metadata --format-version 1`
+  crate graph, taken from a `__octet/cargo-metadata.json` source or run from
+  the nearest `Cargo.toml` ancestor of a `--source` path. The check fails
+  closed with an error diagnostic when no source lies in a Cargo workspace,
+  cargo metadata fails, the metadata has no `resolve` graph (as with
+  `--no-deps`), or a declared `core_crates`, `shell_crates`, or
+  `adapter_crates` entry matches no package or no resolved workspace member.
 - Capability-api mechanisms export forbidden ambient authority APIs, declared
   scope classes, capability families, core scopes, shell constructor scopes,
   approved capability names, injected traits/tokens, shell interpreters, and
@@ -49,7 +63,10 @@ evidence.
   proof artifact pass signals, and receipt paths as hard artifact obligations:
   by default, a selected verified policy fails unless the declared source, proof,
   and receipt files are present in the checked source tree and the proof artifact
-  contains the exact configured pass signal. Rails with
+  contains the exact configured pass signal. A receipt that records an
+  `exit-status:` line, as `octet-standards check --execute-proof-rails` writes,
+  also fails unless the recorded status is `0`; spawn errors and signals fail.
+  Rails with
   `receipt_binding = "blake3-command-and-source"` also require command and source
   BLAKE3 bindings matching the configured argv and checked source contents.
   Rails with `receipt_provenance` configured also require matching
@@ -62,7 +79,14 @@ evidence.
   verifier, solver, and toolchain identity. If verifier build-closure, Nix
   closure, or Nix closure graph paths are configured, the corresponding digest is
   derived from checked manifest or graph file contents instead of trusting
-  ambient build state. `cargo octet prove` executes only configured rail argv,
+  ambient build state; structured Verus receipts record the derived digest, so a
+  manifest or graph that no longer hashes to the pinned digest fails receipt
+  validation. Before executing a production rail other than an `aeneas-lean`
+  rail, whatever its `backend` label, `cargo octet prove` runs the resolved
+  verifier with `--identity` and fails the rail as an `unpinned-verifier`
+  unless the reported `proof-verifier-binary-blake3`, `proof-solver-blake3`,
+  and `proof-toolchain-blake3` equal the pinned digests.
+  `cargo octet prove` executes only configured rail argv,
   captures bounded stdout/stderr artifacts, writes structured JSON receipts at
   configured receipt paths, and then emits `formal_proof` provenance only after
   the same pass-signal, binding, provenance, verifier/toolchain, binary, and

@@ -1,6 +1,7 @@
 use std::io::Read as _;
 
-use super::*;
+use super::Profile;
+use super::prefixed_identity;
 
 const COVERAGE_DIRECTORY: &str = ".octet/coverage";
 const CARGO_HOME_DIRECTORY: &str = ".octet/coverage/cargo-home";

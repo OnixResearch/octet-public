@@ -13,7 +13,7 @@ pub const RECEIPT_SCHEMA: &str = "octet-aeneas-consumer-receipt-binding/v1";
 /// Selected external-consumer fixture profile.
 pub const EXPECTED_PROFILE_ID: &str = "octet-external-aeneas-consumer-v1";
 /// BLAKE3 identity of the generated consumer profile.
-pub const PROFILE_IDENTITY: &str = "b3:62bb3c01a2037eef1410e35d3902d73fb5e7439e8856d721d0823e14c0af4879";
+pub const PROFILE_IDENTITY: &str = "b3:86351a1b7a93d5fbcacc20aa97ad8fff4c9d15b670f47f55988e5ac2deb66291";
 /// Reviewed provider backend.
 pub const EXPECTED_BACKEND: &str = "aeneas-lean";
 /// Reviewed provider profile identifier.
@@ -45,6 +45,20 @@ pub const REQUIRED_NON_CLAIMS: [&str; 5] = [
     "does not establish release eligibility",
 ];
 
+const STAGE_ROLE_RUST_SOURCE: &str = "rust-source";
+const STAGE_ROLE_LLBC: &str = "llbc";
+const STAGE_ROLE_TRANSLATION_MANIFEST: &str = "translation-manifest";
+const STAGE_ROLE_GENERATED_LEAN: &str = "generated-lean";
+const STAGE_ROLE_MAINTAINED_THEOREM: &str = "maintained-theorem";
+/// Exact stage-artifact roles every consumer receipt binds, in emission order.
+const STAGE_ARTIFACT_ROLES: [&str; 5] = [
+    STAGE_ROLE_RUST_SOURCE,
+    STAGE_ROLE_LLBC,
+    STAGE_ROLE_TRANSLATION_MANIFEST,
+    STAGE_ROLE_GENERATED_LEAN,
+    STAGE_ROLE_MAINTAINED_THEOREM,
+];
+
 const PROFILE_JSON: &str =
     include_str!("../../../../standards/proof-rails/aeneas-lean/generated/consumer-profile.json");
 const BLAKE3_HEX_LENGTH: usize = 64;
@@ -58,6 +72,7 @@ pub use model::StageObservation;
 pub use model::StageStatus;
 pub use observation::ObservationInput;
 pub use observation::build_binding;
+pub(crate) use observation::selected_line_range;
 pub use outcome::classify;
 
 /// Load and validate the checked consumer profile.

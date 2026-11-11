@@ -1,0 +1,20 @@
+[package]
+name = "nickel-export"
+description = "Thin file and evaluator shell for deterministic Nickel exports"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "nickel-export"
+path = "src/main.rs"
+
+[dependencies]
+nickel-export-core = { version = "=0.1.0", path = "../nickel-export-core", features = ["serde"] }
+serde = { workspace = true, features = ["std"] }
+serde_json = { workspace = true, features = ["std"] }
+
+[lints]
+workspace = true

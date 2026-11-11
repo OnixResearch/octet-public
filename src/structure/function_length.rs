@@ -1,4 +1,3 @@
-use rustc_ast::Attribute;
 use rustc_ast::Item;
 use rustc_ast::ItemKind;
 use rustc_lint::EarlyContext;
@@ -6,13 +5,12 @@ use rustc_lint::EarlyLintPass;
 use rustc_lint::LintContext;
 use rustc_session::declare_tool_lint;
 use rustc_session::impl_lint_pass;
-use rustc_span::sym;
 
 use crate::diagnostics::emit_tiger_style_lint;
 
 declare_tool_lint! {
-    /// Detects functions whose body exceeds a configurable number of
-    /// non-blank, non-comment lines (default: 70). Long functions are
+    /// Detects functions and methods whose body exceeds a configurable number
+    /// of non-blank, non-comment lines (default: 70). Long functions are
     /// hard to reason about and typically indicate missing decomposition.
     ///
     /// Configure in `dylint.toml`:
@@ -27,18 +25,25 @@ declare_tool_lint! {
 
 pub struct FunctionLength {
     max_lines: usize,
+    harness_test_fns: std::collections::HashSet<rustc_ast::NodeId>,
 }
 
 impl FunctionLength {
     pub fn new(max_lines: usize) -> Self {
-        Self { max_lines }
+        Self {
+            max_lines,
+            harness_test_fns: std::collections::HashSet::new(),
+        }
     }
 }
 
 impl_lint_pass!(FunctionLength => [FUNCTION_LENGTH]);
 
-fn is_test_function(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|attr| attr.has_name(sym::test))
+/// Counts the code lines between a body's delimiting braces; the brace lines
+/// themselves are not body lines.
+fn count_body_lines(body_source: &str) -> usize {
+    let inner = body_source.strip_prefix('{').and_then(|source| source.strip_suffix('}')).unwrap_or(body_source);
+    count_code_lines(inner)
 }
 
 fn count_code_lines(source: &str) -> usize {
@@ -80,13 +85,9 @@ fn count_code_lines(source: &str) -> usize {
     count
 }
 
-impl EarlyLintPass for FunctionLength {
-    fn check_item(&mut self, cx: &EarlyContext<'_>, item: &Item) {
-        let ItemKind::Fn(func) = &item.kind else {
-            return;
-        };
-
-        if is_test_function(&item.attrs) {
+impl FunctionLength {
+    fn check_function(&self, cx: &EarlyContext<'_>, id: rustc_ast::NodeId, func: &rustc_ast::Fn) {
+        if self.harness_test_fns.contains(&id) {
             return;
         }
 
@@ -99,7 +100,7 @@ impl EarlyLintPass for FunctionLength {
             return;
         };
 
-        let code_lines = count_code_lines(&snippet);
+        let code_lines = count_body_lines(&snippet);
         let max = self.max_lines;
 
         if code_lines > max {
@@ -112,5 +113,46 @@ impl EarlyLintPass for FunctionLength {
                 "function_length",
             );
         }
+    }
+}
+
+impl EarlyLintPass for FunctionLength {
+    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &rustc_ast::Crate) {
+        self.harness_test_fns = crate::test_context::ast_harness_test_fns(cx.sess(), krate);
+    }
+
+    fn check_item(&mut self, cx: &EarlyContext<'_>, item: &Item) {
+        if let ItemKind::Fn(func) = &item.kind {
+            self.check_function(cx, item.id, func);
+        }
+    }
+
+    fn check_impl_item(&mut self, cx: &EarlyContext<'_>, item: &rustc_ast::AssocItem) {
+        if let rustc_ast::AssocItemKind::Fn(func) = &item.kind {
+            self.check_function(cx, item.id, func);
+        }
+    }
+
+    fn check_trait_item(&mut self, cx: &EarlyContext<'_>, item: &rustc_ast::AssocItem) {
+        if let rustc_ast::AssocItemKind::Fn(func) = &item.kind {
+            self.check_function(cx, item.id, func);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::count_body_lines;
+
+    #[test]
+    fn body_line_count_excludes_delimiting_braces() {
+        assert_eq!(count_body_lines("{\n    let a = 1;\n    a\n}"), 2);
+        assert_eq!(count_body_lines("{}"), 0);
+    }
+
+    #[test]
+    fn body_line_count_keeps_code_sharing_a_brace_line() {
+        assert_eq!(count_body_lines("{ 1 }"), 1);
+        assert_eq!(count_body_lines("{ let a = 1;\n    a }"), 2);
     }
 }

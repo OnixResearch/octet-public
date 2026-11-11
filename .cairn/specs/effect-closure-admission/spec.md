@@ -73,7 +73,7 @@ r[octet.effect_closure.inference.direct]
 
 r[octet.effect_closure.inference.unknown]
 
-- GIVEN selected source contains any macro invocation, conditional compilation, async/await, ambiguous trait or method dispatch, unresolved call, unsupported syntax, or another shape outside the v1 resolver
+- GIVEN selected source contains any macro invocation (including an attribute on the function, its parameters, its body, or an enclosing impl, trait, module, or file, other than an inert built-in attribute such as `doc`, `inline`, or a lint level), conditional compilation, async/await, ambiguous trait or method dispatch, unresolved call, unsupported syntax, or another shape outside the v1 resolver
 - WHEN inference runs
 - THEN the caller MUST acquire `unknown` and admission MUST be denied.
 - AND an exact call-site summary MAY resolve only a call edge; it MUST NOT erase direct `unknown`, `unsafe`, `ffi`, `panic`, or another directly inferred effect.
@@ -100,7 +100,7 @@ r[octet.effect_closure.roles.invalid]
 
 ### Requirement: Exact dependency-call summaries
 
-r[octet.effect_closure.dependency_summaries] Every selected non-macro call not unambiguously resolved to a selected local function MUST require one exact call-site summary bound to its caller function address and resolved provider identity. V1 MUST NOT infer effect-free toolchain intrinsics from names such as `Ok`, `Some`, or `Vec`; macro calls remain directly `unknown` and cannot be summarized.
+r[octet.effect_closure.dependency_summaries] Every selected non-macro call not resolved to a selected local function by a call path that proves the target (a single-segment call to a free function in the caller's file and module, `Owner::name` to an inherent method of `Owner` in that scope, `self.name()` from an inherent method to the same inherent owner in that scope, or a path through `crate::`, `super::`, `self::`, module declarations, or local `use` bindings that reaches such a function as its only target, only through selected modules whose crate position is proven) MUST require one exact call-site summary bound to its caller function address, caller source path and module, every declaration the call path resolves through outside the caller (the `use` bindings of the blocks lexically enclosing the call, the enclosing header, and module, re-export, glob, and macro declarations reached; for a method call, every declaration that may bring its trait into scope), and resolved provider identity. Resolution MUST be bounded and deduplicated: each module and path is looked up once per referenced path, so glob cycles add nothing, and a path exceeding the lookup bound MUST be treated as unprovable. A call whose path goes through a module the selected sources cannot prove, through a name only a macro or attributed item could generate after a module path, or that sits in a module item declared in the function body MUST remain `unknown` and MUST NOT be summarized. V1 MUST NOT infer effect-free toolchain intrinsics from names such as `Ok`, `Some`, or `Vec`; macro calls remain directly `unknown` and cannot be summarized.
 
 #### Scenario: Exact summary resolves an external edge
 
@@ -115,7 +115,7 @@ r[octet.effect_closure.dependency_summaries.valid]
 
 r[octet.effect_closure.dependency_summaries.invalid]
 
-- GIVEN a call summary is missing, duplicated, unused, broad, declares `unknown`, lacks evidence, or mismatches package name, version, features, target, toolchain, workspace identity, or caller function address
+- GIVEN a call summary is missing, duplicated, unused, broad, declares `unknown`, lacks evidence, or mismatches package name, version, features, target, toolchain, workspace identity, caller function address, caller source path or module, or a declaration its call path resolves through (including a re-export in another selected module and, for a method call, the module's imports and traits)
 - WHEN admission runs
 - THEN Octet MUST deny admission with an `unknown` or unadmitted/stale dependency-edge diagnostic.
 
@@ -170,6 +170,7 @@ r[octet.effect_closure.evidence.tamper]
 - GIVEN a receipt, parent check artifact, source identity, workspace policy, dependency identity, status, summary, or provenance artifact is modified after admission
 - WHEN admission verification runs
 - THEN it MUST fail closed with a deterministic artifact or identity diagnostic.
+- AND a stored receipt whose `schema_version` is not the current receipt schema (`octet-effect-closure-receipt/v2`) MUST be reported as an unsupported receipt schema before its body is decoded.
 
 ### Requirement: Compatibility and claim boundaries
 
@@ -226,3 +227,141 @@ r[octet.effect_closure.verification.adversarial]
 - WHEN focused tests and saved dogfood replay run
 - THEN positive cases MUST pass deterministically.
 - AND negative cases MUST deny admission with the expected diagnostic class rather than panic, silently drop an edge, or weaken the profile.
+
+### Requirement: Kamacite semantic-emission profiles are explicit
+
+r[octet.effect_closure.kamacite_mapping]
+
+Octet MUST define an opt-in Nickel profile for one effect-closure profile and one canonical Kamacite closed effect summary.
+
+Each semantic-emission rule MUST bind one exact function address or call-site, provider identity, Kamacite operation identity, evidence reference, and non-claims.
+
+Ambient effect dispositions MUST remain a separate policy section.
+
+#### Scenario: Exact semantic emission is declared
+
+- GIVEN a reviewed emission site has one exact Kamacite operation identity and the closed row contains that identity
+- WHEN semantic-emission validation runs
+- THEN the rule MUST pass with the `semantic-emission` class.
+
+#### Scenario: Semantic emission is ambiguous
+
+- GIVEN one emission site matches multiple rules or one rule uses a broad unresolved scope
+- WHEN semantic-emission validation runs
+- THEN validation MUST fail with a deterministic ambiguous-semantic-emission diagnostic.
+
+### Requirement: Ambient effects cannot become semantic emissions
+
+r[octet.effect_closure.kamacite_dispositions]
+
+Existing strict-profile ambient effect results MUST remain authoritative for Octet admission.
+
+The integration MUST NOT discharge, rename, or convert a denied ambient effect into a Kamacite semantic operation.
+
+The V1 profile MAY classify only `alloc` as `profile-local`. All other ambient effect classes MUST remain denied under `deterministic-core`.
+
+#### Scenario: Allocation remains profile-local
+
+- GIVEN the selected strict profile permits allocation and the reviewed profile classifies it as profile-local
+- WHEN Octet compares closure and semantic-emission evidence with the Kamacite row
+- THEN allocation MUST remain visible without becoming a semantic operation or disappearing from evidence.
+
+#### Scenario: Ambient clock cannot become a semantic emission
+
+- GIVEN selected source reads an ambient clock and a mapping rule names a semantic time operation
+- WHEN direct closure and semantic-emission admission run
+- THEN direct closure MUST remain denied and the mapping MUST NOT discharge or rename the clock effect.
+
+#### Scenario: Unknown effect fails
+
+- GIVEN closure evidence contains `unknown` or an unsupported ambient disposition
+- WHEN comparison runs
+- THEN admission MUST fail with a deterministic unmapped-ambient-effect diagnostic.
+
+### Requirement: Comparison preserves ambient, emission, and declaration authority
+
+r[octet.effect_closure.kamacite_comparison]
+
+Octet MUST compare verified closure and semantic-emission evidence with the supplied Kamacite projection without rewriting any parent artifact.
+
+The comparison MUST classify rows as `emitted-and-declared`, `profile-local`, `declared-not-emitted`, `emitted-not-declared`, `stale-identity`, `ambiguous-emission`, or `unknown`.
+
+Only `emitted-and-declared`, `profile-local`, and `declared-not-emitted` MAY appear in an admitted result.
+
+#### Scenario: Emitted undeclared operation fails
+
+- GIVEN an exact semantic-emission site names an operation absent from the supplied closed effect row
+- WHEN comparison runs
+- THEN admission MUST fail with an `emitted-not-declared` result.
+
+#### Scenario: Declared operation is not emitted
+
+- GIVEN the Kamacite row contains an operation that selected Octet emission evidence does not include
+- WHEN comparison runs
+- THEN the result MUST record `declared-not-emitted` without claiming dead code, unreachable behavior, or complete coverage.
+
+### Requirement: Kamacite comparison is an optional admission extension
+
+r[octet.effect_closure.kamacite_cli]
+
+`cargo octet admit --profile deterministic-core --closure` MAY accept `--kamacite-effect-profile PATH` after direct checks and effect closure pass.
+
+The option MUST consume a projection bound to canonical Kamacite Preserves identities. It MUST NOT invoke Kamacite or change default admission behavior.
+
+#### Scenario: Optional profile emits a handoff
+
+- GIVEN direct checks, closure, semantic-emission admission, identity checks, and comparison all pass
+- WHEN the operator supplies the Kamacite effect profile
+- THEN Octet MUST emit the comparison and handoff artifacts with successful status.
+
+#### Scenario: Default admission remains unchanged
+
+- GIVEN the operator does not supply a Kamacite effect profile
+- WHEN Octet runs existing check, admission, and artifact verification commands
+- THEN arguments, behavior, receipts, exit status, and claim boundaries MUST remain compatible.
+
+### Requirement: Kamacite handoff is deterministic and non-authoritative
+
+r[octet.effect_closure.kamacite_handoff]
+
+A successful comparison MUST emit a BLAKE3-bound handoff projection with exact closure, emission, profile, effect-summary, and operation identities.
+
+The handoff MUST also bind function-address or provider scope, comparison class, diagnostics, producer role, and non-claims.
+
+#### Scenario: Verified handoff is stable
+
+- GIVEN identical closure, emission, profile, effect summary, and producer inputs
+- WHEN Octet emits the handoff twice
+- THEN canonical rows and the handoff identity MUST match.
+
+#### Scenario: Parent identity is tampered
+
+- GIVEN a handoff changes a closure, emission, profile, summary, operation, or producer identity after emission
+- WHEN artifact verification runs
+- THEN verification MUST fail with a deterministic parent-identity diagnostic.
+
+### Requirement: Kamacite comparison claims remain bounded
+
+r[octet.effect_closure.kamacite_boundary]
+
+A passing comparison MUST prove only bounded agreement between selected Octet evidence and supplied Kamacite declaration artifacts.
+
+It MUST NOT prove complete Rust effects, semantic determinism, runtime reachability, handler correctness, replay truth, property satisfaction, or release eligibility.
+
+#### Scenario: Semantic determinism claim fails
+
+- GIVEN a handoff, receipt, report, help text, or document claims that comparison proves semantic or runtime determinism
+- WHEN boundary validation runs
+- THEN validation MUST fail with a deterministic effect-comparison-overclaim diagnostic.
+
+### Requirement: Kamacite comparison has positive and negative fixtures
+
+r[octet.effect_closure.kamacite_fixtures]
+
+Octet MUST include positive, negative, property, compatibility, and frozen Kamacite fixtures for the emission and comparison path.
+
+#### Scenario: Frozen Kamacite cohort drifts
+
+- GIVEN a Kamacite schema, profile, effect-summary, operation identity, or non-claim field changes
+- WHEN Octet validates the frozen cohort
+- THEN validation MUST fail until an explicit reviewed cohort update binds the new identities.

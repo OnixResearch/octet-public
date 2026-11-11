@@ -11,12 +11,12 @@ Octet imports Rust idioms only when they make safety, explicitness, boundedness,
 | Contained unsafe module | Unsafe invariants stay in the smallest auditable boundary with a safe outer API | Advisory/hard depending on configured module allowlist and fixtures |
 | Borrowed argument type | APIs accept `&str`, `&[T]`, `Path`, or other borrowed forms when ownership is unnecessary | Shipped warning lint `borrowed_argument_types` with positive and negative fixtures |
 | Temporary mutability | Mutable setup ends before read-only use starts | Advisory; avoid hard gating without precise lifetime/use analysis |
-| Clone-avoidance | `mem::take`, `mem::replace`, `Option::take`, and narrower borrows replace clone-to-appease-borrow-checker patterns | Advisory until local false-positive rate is known |
+| Clone-avoidance | `mem::take`, `mem::replace`, `Option::take`, and narrower borrows replace clone-to-appease-borrow-checker patterns | Shipped warning lint `clone_then_borrow` for clone-then-borrow shapes; other clone-avoidance patterns stay human review |
 | Recoverable consumed argument errors | Fallible APIs that consume expensive/stateful input return it in the error for retry/recovery | Human API review; future lint only for named API families |
 | Constrained builder | Many options or same-type parameters get named setters, explicit required fields, and `build()` invariant checks | Already related to parameter/default lints; docs first |
 | Command/effects-as-data | Core returns commands/effects, shell executes them, rollback/replay is explicit | Architecture guidance and OpenSpec review |
 | FFI wrappers and errors | Foreign APIs see stable handles/codes while Rust keeps lifetimes and rich errors internally | Human checklist plus optional dynamic evidence profile |
-| Restrained `Deref` | `Deref` is for smart-pointer/guard ergonomics, not inheritance-like API smuggling | Advisory `deref_polymorphism` lint plus fixtures |
+| Restrained `Deref` | `Deref` is for smart-pointer/guard ergonomics, not inheritance-like API smuggling | Shipped warning lint `deref_polymorphism` plus fixtures |
 | Small crates | Crates enforce real boundaries such as core/shell, unsafe, FFI, policy, or verifier seams | Architecture guidance; hard only for declared repo roles |
 
 ## Review prompts

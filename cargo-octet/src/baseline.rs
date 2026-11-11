@@ -17,13 +17,17 @@ const BASELINE_SCHEMA_VERSION: u32 = 1;
 #[derive(Debug, Clone, Serialize)]
 pub struct BaselineEvaluation {
     pub baseline_hash: String,
+    /// Whether `cargo check` succeeded, so every selected crate was checked.
+    pub scan_complete: bool,
     pub accepted_total: usize,
     pub current_total: usize,
     pub accepted_current: usize,
     pub new_total: usize,
-    pub stale_total: usize,
+    /// `None` when the scan was incomplete: an accepted ID missing from a partial scan may come
+    /// from a crate Cargo never checked, so it is unknown rather than stale.
+    pub stale_total: Option<usize>,
     pub new_finding_ids: Vec<String>,
-    pub stale_finding_ids: Vec<String>,
+    pub stale_finding_ids: Option<Vec<String>>,
 }
 
 impl BaselineEvaluation {
@@ -114,7 +118,9 @@ pub fn write_baseline(path: &Path, findings: &[Finding], metadata: &RunMetadata)
     fs::write(path, rendered).map_err(|error| format!("write {}: {error}", path.display()))
 }
 
-pub fn evaluate_baseline(path: &Path, findings: &[Finding]) -> Result<BaselineEvaluation, String> {
+/// Compares the current findings with the accepted baseline at `path`. `scan_complete` is false
+/// when Cargo did not succeed; stale IDs are then withheld.
+pub fn evaluate_baseline(path: &Path, findings: &[Finding], scan_complete: bool) -> Result<BaselineEvaluation, String> {
     let contents = fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
     let stored: StoredBaselineFile =
         serde_json::from_str(&contents).map_err(|error| format!("parse {}: {error}", path.display()))?;
@@ -130,17 +136,19 @@ pub fn evaluate_baseline(path: &Path, findings: &[Finding]) -> Result<BaselineEv
     let current_ids: BTreeSet<String> = findings.iter().map(|finding| finding.stable_id.clone()).collect();
 
     let new_finding_ids: Vec<String> = current_ids.difference(&accepted_ids).cloned().collect();
-    let stale_finding_ids: Vec<String> = accepted_ids.difference(&current_ids).cloned().collect();
+    let stale_finding_ids: Option<Vec<String>> =
+        scan_complete.then(|| accepted_ids.difference(&current_ids).cloned().collect());
     let accepted_current = current_ids.intersection(&accepted_ids).count();
     let baseline_hash = baseline_hash(accepted_ids.iter().map(String::as_str));
 
     Ok(BaselineEvaluation {
         baseline_hash,
+        scan_complete,
         accepted_total: accepted_ids.len(),
         current_total: current_ids.len(),
         accepted_current,
         new_total: new_finding_ids.len(),
-        stale_total: stale_finding_ids.len(),
+        stale_total: stale_finding_ids.as_ref().map(Vec::len),
         new_finding_ids,
         stale_finding_ids,
     })

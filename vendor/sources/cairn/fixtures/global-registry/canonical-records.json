@@ -1,0 +1,65 @@
+{
+  "sources": [
+    {
+      "source_id": "source:fixture",
+      "family": "canonical-records",
+      "schema": "cairn.registry-source.v1",
+      "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "vocabulary_owner": "cairn",
+      "source_ref": "fixtures/global-registry/canonical-records.json",
+      "non_claims": ["fixture identity and linkage do not prove lifecycle readiness"],
+      "record_hash": ""
+    }
+  ],
+  "nodes": [
+    {
+      "stable_id": "change:alpha",
+      "kind": "change",
+      "schema": "cairn.change.v1",
+      "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "payload_ref": "changes/alpha",
+      "source_id": "source:fixture",
+      "vocabulary_owner": "cairn",
+      "non_claims": ["fixture identity and linkage do not prove lifecycle readiness"],
+      "record_hash": ""
+    },
+    {
+      "stable_id": "change:beta",
+      "kind": "change",
+      "schema": "cairn.change.v1",
+      "content_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "payload_ref": "changes/beta",
+      "source_id": "source:fixture",
+      "vocabulary_owner": "cairn",
+      "non_claims": ["fixture identity and linkage do not prove lifecycle readiness"],
+      "record_hash": ""
+    }
+  ],
+  "tags": [
+    {
+      "assignment_id": "tag:alpha:channel",
+      "subject_id": "change:alpha",
+      "subject_kind": "node",
+      "namespace": "operator",
+      "key": "channel",
+      "value": "dev",
+      "source_id": "source:fixture",
+      "non_claims": ["operator tags do not grant authority"],
+      "record_hash": ""
+    }
+  ],
+  "edges": [
+    {
+      "stable_id": "edge:alpha:beta",
+      "kind": "change_dependency",
+      "from_id": "change:alpha",
+      "to_id": "change:beta",
+      "vocabulary_owner": "cairn",
+      "source_id": "source:fixture",
+      "status": "declared",
+      "non_claims": ["declared dependency linkage does not prove satisfaction"],
+      "record_hash": ""
+    }
+  ],
+  "adapters": []
+}

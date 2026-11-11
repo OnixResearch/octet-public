@@ -1,5 +1,5 @@
 warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
-  --> $DIR/global_state_in_core/global_state_in_core.rs:3:1
+  --> $DIR/global_state_in_core/global_state_in_core.rs:9:1
    |
 LL | static mut CORE_COUNTER: u64 = 0;
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -9,7 +9,7 @@ LL | static mut CORE_COUNTER: u64 = 0;
    = note: `#[warn(tigerstyle::global_state_in_core)]` on by default
 
 warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
-  --> $DIR/global_state_in_core/global_state_in_core.rs:4:1
+  --> $DIR/global_state_in_core/global_state_in_core.rs:10:1
    |
 LL | static CORE_CACHE: OnceLock<String> = OnceLock::new();
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -17,5 +17,59 @@ LL | static CORE_CACHE: OnceLock<String> = OnceLock::new();
    = help: Tiger Style (Functional Core): thread state explicitly through core functions instead of declaring mutable, lazy, locked, or thread-local globals Example: fn step(state: State, input: Input) -> State
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
-warning: 2 warnings emitted
+warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
+  --> $DIR/global_state_in_core/global_state_in_core.rs:11:1
+   |
+LL | static CORE_LOCK: Mutex<u64> = Mutex::new(0);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): thread state explicitly through core functions instead of declaring mutable, lazy, locked, or thread-local globals Example: fn step(state: State, input: Input) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
+  --> $DIR/global_state_in_core/global_state_in_core.rs:12:1
+   |
+LL | static CORE_HITS: AtomicU64 = AtomicU64::new(0);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): thread state explicitly through core functions instead of declaring mutable, lazy, locked, or thread-local globals Example: fn step(state: State, input: Input) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
+  --> $DIR/global_state_in_core/global_state_in_core.rs:15:12
+   |
+LL |     static CORE_SCRATCH: Cell<u64> = const { Cell::new(0) };
+   |            ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): thread state explicitly through core functions instead of declaring mutable, lazy, locked, or thread-local globals Example: fn step(state: State, input: Input) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
+  --> $DIR/global_state_in_core/global_state_in_core.rs:16:12
+   |
+LL |     static CORE_BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
+   |            ^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): thread state explicitly through core functions instead of declaring mutable, lazy, locked, or thread-local globals Example: fn step(state: State, input: Input) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
+  --> $DIR/global_state_in_core/global_state_in_core.rs:22:5
+   |
+LL |     pub static mut NESTED_COUNTER: u64 = 0;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): thread state explicitly through core functions instead of declaring mutable, lazy, locked, or thread-local globals Example: fn step(state: State, input: Input) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead
+  --> $DIR/global_state_in_core/global_state_in_core.rs:26:5
+   |
+LL |     static mut LOCAL_COUNTER: u64 = 0;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): thread state explicitly through core functions instead of declaring mutable, lazy, locked, or thread-local globals Example: fn step(state: State, input: Input) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 8 warnings emitted
 

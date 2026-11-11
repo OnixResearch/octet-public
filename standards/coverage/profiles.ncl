@@ -79,6 +79,7 @@ let Profile = {
       command_argv = [
         "cargo",
         "llvm-cov",
+        "--branch",
         "--json",
         "--summary-only",
         "--remap-path-prefix",

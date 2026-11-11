@@ -1,0 +1,62 @@
+{
+  "agent_identity": {
+    "model": "captured-model",
+    "wrapper": "cairn-fixture"
+  },
+  "input_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+  "mutation_manifest": {
+    "files": [
+      "docs/agent-run-receipts.md"
+    ]
+  },
+  "nondeterminism_manifest": {
+    "captured": [
+      {
+        "class": "model_provider",
+        "metadata": {
+          "provider": "fixture"
+        }
+      }
+    ],
+    "forbidden_uncaptured": []
+  },
+  "plan_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+  "receipt_hash": "68040f15d65b079b893b5d389279cc672a95033a89d5b27f666d5e037fdd0826",
+  "replay_evidence": {
+    "replay_artifact_path": "/tmp/cairn-replay.json",
+    "replay_environment_attestation_hash": "8afc1ff8622ca0511b1f43b42d2c014f03cb2e7cb652edc23d11c23d29318b95",
+    "replay_policy_hash": "2c0b44345b9d2e2b3eff5fa7db7a14b9681c6bfcf7a4bb651f13bcadc1f91757",
+    "replay_receipt_hash": "90afdb2eb11fd9d8a062a8c48a835f5e122ce2854f5ed449b44d6418d1f0484d",
+    "replay_selected_cases": [
+      "agent_completion_validate",
+      "agent_receipt_validate",
+      "mcp_describe",
+      "status",
+      "validate"
+    ],
+    "replay_selected_groups": [
+      "agent"
+    ],
+    "replay_verdict": "pass"
+  },
+  "schema_version": "cairn.agent_run_receipt.v1",
+  "task_id": "fixture-agent-run-success",
+  "tool_manifest": {
+    "tools": [
+      {
+        "mode": "read",
+        "name": "terminal"
+      }
+    ]
+  },
+  "verdict": "success",
+  "verification_manifest": {
+    "checks": [
+      {
+        "evidence_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+        "name": "cargo test",
+        "verdict": "PASS"
+      }
+    ]
+  }
+}

@@ -1,2 +1,2 @@
 [octet]
-core_source_scopes = ["concrete_construction_in_core"]
+core_source_scopes = ["ui_tests/concrete_construction_in_core"]

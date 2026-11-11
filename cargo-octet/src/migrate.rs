@@ -122,7 +122,9 @@ fn session_apply(args: &MigrateArgs) -> Result<i32, String> {
         .operation_manifest
         .as_deref()
         .ok_or_else(|| "migrate session apply requires --operation-manifest PATH".to_owned())?;
-    write_json(manifest_path, &manifest)?;
+    if manifest.diagnostics.is_empty() {
+        write_json(manifest_path, &manifest)?;
+    }
     print_operation_manifest(&manifest, args.output_format)?;
     Ok(i32::from(!manifest.diagnostics.is_empty()))
 }

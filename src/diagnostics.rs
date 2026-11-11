@@ -127,6 +127,32 @@ pub(crate) fn emit_tiger_style_lint(
     );
 }
 
+/// Emits a Tiger Style lint diagnostic with additional claim-scope notes.
+pub(crate) fn emit_tiger_style_lint_with_notes(
+    cx: &impl LintContext,
+    lint: &'static Lint,
+    span: Span,
+    message: impl Into<String>,
+    lint_name: &'static str,
+    notes: &[String],
+) {
+    let meta = diagnostic_meta(lint_name);
+    let message = message.into();
+
+    cx.opt_span_lint(
+        lint,
+        Some(span),
+        DiagDecorator(|diag| {
+            diag.primary_message(message.clone());
+            diag.help(help_text(meta));
+            diag.note(format!("see Tiger Style guide: {}", meta.guide_section));
+            for note in notes {
+                diag.note(note.clone());
+            }
+        }),
+    );
+}
+
 pub(crate) fn emit_tiger_style_lint_with_suggestion(
     cx: &impl LintContext,
     lint: &'static Lint,

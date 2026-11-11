@@ -1,0 +1,12 @@
+{
+  "schema_version": "kamacite.function-address-receipt.v1",
+  "valid": true,
+  "receipt_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+  "canonical_preserves_receipt_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "evidence_role": "kamacite-function-address-receipt",
+  "claim_scope": "function_address.v1.lifecycle_policy_conformance",
+  "projection_authority": "non-authoritative",
+  "non_claims": [
+    "evidence-chain readiness does not prove evidence truth or release eligibility"
+  ]
+}

@@ -38,6 +38,19 @@
       "claim_scope": "clippy-restriction-diagnostics",
       "lint_level": "warn",
       "lints": [
+        "fn_params_excessive_bools"
+      ],
+      "non_claims": [
+        "Clippy restriction diagnostics are compiler lint evidence and do not prove behavioral correctness, panic freedom, memory safety, runtime determinism, compiler correctness, formal proof, whole-program correctness, or release eligibility.",
+        "The profile checks direct compiled targets under the recorded command and toolchain; it does not establish transitive dependency behavior or targets omitted from that command."
+      ],
+      "profile_id": "boolean-api-modeling",
+      "summary": "Co-report Clippy's excessive boolean-parameter finding independently of Octet's direct public API rule."
+    },
+    {
+      "claim_scope": "clippy-restriction-diagnostics",
+      "lint_level": "warn",
+      "lints": [
         "exit"
       ],
       "non_claims": [

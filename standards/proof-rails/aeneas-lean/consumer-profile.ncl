@@ -5,7 +5,7 @@ let reviewed_provider_profile_identity = "b3:cd11b49d1acede2c6a91fa26f0b7a6b4b28
 let reviewed_compatibility_matrix_identity = "b3:403656d75de41b955cd2493ef289ba17308da65a3d214babc1ea606aeae248f5" in
 let selected_source_identity = "b3:691e8de8b8f92665dd00b938b48b398b451c71a06c99dae10b38b38184d4dddd" in
 let selected_theorem_identity = "b3:776e9f85261080fbcfd75cb481c4f563cff50ffefaf8bdaae3d5fad010d8c77f" in
-let configured_timeout_ms = 900000 in
+let configured_timeout_ms = 2700000 in
 let configured_log_max_bytes = 1048576 in
 {
   schema_version = "octet-aeneas-consumer-profile/v1",

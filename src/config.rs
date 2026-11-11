@@ -15,6 +15,7 @@
 //! impl_blocks_max = 4
 //! module_pub_items_max = 12
 //! core_source_scopes = ["crates/domain-core/src/"]
+//! core_value_provider_types = ["reviewed_values::Value"]
 //! sealed_enum_marker = "octet::sealed_enum"
 //! state_machine_core_marker = "octet::state_machine_core"
 //! state_machine_enum_marker = "octet::state_machine_enum"
@@ -28,6 +29,7 @@
 //! no_unwrap = "deny"
 //! ```
 
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 
@@ -42,6 +44,9 @@ const DEFAULT_INDEXABLE_EXCEPTIONS: &[&str] = &[
     INDEXABLE_EXCEPTION_GENERATED_SEARCHABLE_NAMES,
 ];
 const NOMINAL_DOMAIN_LINTS: &[&str] = &["primitive_domain_alias", "raw_domain_value", "newtype_invariant_bypass"];
+
+/// Boolean API lints whose workspace-wide suppression is forbidden.
+const BOOLEAN_API_LINTS: &[&str] = &["raw_bool_parameter", "raw_bool_parameter_suppression"];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct IndexableLintExceptions {
@@ -71,22 +76,30 @@ impl LintLevel {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ConfigDiagnosticKind {
+    UnknownConfigKey,
     UnknownDisabledLint,
     UnknownIndexableExceptionClass,
     UnknownLintLevel,
     ConflictingDisabledLintLevel,
     InvalidLintLevel,
+    NominalInventoryLevelCapped,
+    EmptySourceScope,
+    UnmatchedSourceScope,
 }
 
 impl ConfigDiagnosticKind {
     #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::UnknownConfigKey => "unknown_config_key",
             Self::UnknownDisabledLint => "unknown_disabled_lint",
             Self::UnknownIndexableExceptionClass => "unknown_indexable_exception_class",
             Self::UnknownLintLevel => "unknown_lint_level",
             Self::ConflictingDisabledLintLevel => "conflicting_disabled_lint_level",
             Self::InvalidLintLevel => "invalid_lint_level",
+            Self::NominalInventoryLevelCapped => "nominal_inventory_level_capped",
+            Self::EmptySourceScope => "empty_source_scope",
+            Self::UnmatchedSourceScope => "unmatched_source_scope",
         }
     }
 }
@@ -162,6 +175,9 @@ pub struct Config {
     /// Source path scopes where concrete construction in core is checked.
     pub core_source_scopes: Vec<String>,
 
+    /// Exact compiler definition paths of project-reviewed pure value ADTs.
+    pub core_value_provider_types: Vec<String>,
+
     /// Attribute marker that suppresses fragile same-crate exhaustive enum match diagnostics.
     pub sealed_enum_marker: String,
 
@@ -177,6 +193,13 @@ pub struct Config {
 
     /// Source path scopes excluded as generated FSM adapters outside the pure transition core.
     pub state_machine_generated_adapter_scopes: Vec<String>,
+
+    /// Workspace-relative path to a generated durability-claims profile.
+    ///
+    /// Consumers author the profile in Nickel, export deterministic JSON, and
+    /// point this key at the generated file. Source checks analyze declared
+    /// boundary functions only.
+    pub durability_profile_path: Option<String>,
 
     /// Acronyms that should not trigger the `acronym_style` lint.
     /// Entries are case-sensitive and matched against the uppercase run
@@ -196,9 +219,32 @@ pub struct Config {
     /// Raw per-lint severity overrides loaded from `dylint.toml`.
     pub lint_levels: HashMap<String, String>,
 
+    /// Unrecognized keys in the config section, reported as warnings.
+    #[serde(flatten)]
+    // serde's flatten catch-all must be a map; `IgnoredAny` keeps only the key
+    // names without buffering the unknown values.
+    #[allow(clippy::zero_sized_map_values)]
+    unknown_keys: BTreeMap<String, serde::de::IgnoredAny>,
+
     /// Validated per-lint severity overrides used during registration.
     #[serde(skip)]
     validated_lint_levels: HashMap<String, LintLevel>,
+
+    /// Lints whose validated level is a selected strict-profile floor.
+    #[serde(skip)]
+    profile_floor_lints: BTreeSet<String>,
+
+    /// Identifier of the selected strict profile, if any.
+    #[serde(skip)]
+    strict_profile_id: Option<String>,
+
+    /// Validated durability profile loaded from `durability_profile_path`.
+    #[serde(skip)]
+    durability_profile: Option<octet_lint_metadata::durability::DurabilityProfile>,
+
+    /// Embedded durability vocabulary loaded once during registration.
+    #[serde(skip)]
+    durability_catalog: octet_lint_metadata::durability::DurabilityCatalog,
 }
 
 impl Default for Config {
@@ -215,17 +261,24 @@ impl Default for Config {
             impl_blocks_max: 4,
             module_pub_items_max: 12,
             core_source_scopes: Vec::new(),
+            core_value_provider_types: Vec::new(),
             sealed_enum_marker: "octet::sealed_enum".to_owned(),
             state_machine_core_marker: "octet::state_machine_core".to_owned(),
             state_machine_enum_marker: "octet::state_machine_enum".to_owned(),
             state_machine_core_scopes: Vec::new(),
             state_machine_generated_adapter_scopes: Vec::new(),
+            durability_profile_path: None,
             acronym_allowlist: Vec::new(),
             disabled_lints: Vec::new(),
             indexable_lint_exceptions: DEFAULT_INDEXABLE_EXCEPTIONS.iter().map(|class| (*class).to_owned()).collect(),
             nominal_domain_mode: None,
             lint_levels: HashMap::new(),
+            unknown_keys: BTreeMap::new(),
             validated_lint_levels: HashMap::new(),
+            profile_floor_lints: BTreeSet::new(),
+            strict_profile_id: None,
+            durability_profile: None,
+            durability_catalog: octet_lint_metadata::durability::DurabilityCatalog::default(),
         }
     }
 }
@@ -245,12 +298,59 @@ impl Config {
         self.validated_lint_levels.get(lint_name).copied()
     }
 
+    /// Merges config-owned lint levels into rustc's command-line lint options.
+    ///
+    /// rustc applies `lint_opts` in order and the last entry for a lint wins.
+    /// Consumer `lint_levels` and the nominal-domain mode go before the
+    /// existing options, so explicit command-line `-A`/`-W`/`-D` flags win over
+    /// `dylint.toml`. Selected strict-profile denies go after them, so the
+    /// profile floor stays authoritative over `-A`/`-W`. A `--force-warn` or
+    /// `--cap-lints` below `deny` would still beat a later deny in rustc, so
+    /// registration rejects those for floor lints instead.
+    pub(crate) fn merge_into_lint_opts(&self, lint_opts: &mut Vec<(String, rustc_lint::Level)>) {
+        let mut consumer_levels = Vec::new();
+        for lint in crate::LINT_INVENTORY {
+            let Some(level) = self.lint_level(lint.name) else {
+                continue;
+            };
+            let option = (lint.name.to_owned(), level.rustc_level());
+            if self.profile_floor_lints.contains(lint.name) {
+                lint_opts.push(option);
+            } else {
+                consumer_levels.push(option);
+            }
+        }
+        lint_opts.splice(0..0, consumer_levels);
+    }
+
+    /// Validated durability profile, when `durability_profile_path` is set.
+    #[must_use]
+    pub fn durability_profile(&self) -> Option<&octet_lint_metadata::durability::DurabilityProfile> {
+        self.durability_profile.as_ref()
+    }
+
+    /// Embedded durability vocabulary used by the durability lints.
+    #[must_use]
+    pub fn durability_catalog(&self) -> &octet_lint_metadata::durability::DurabilityCatalog {
+        &self.durability_catalog
+    }
+
+    /// Identifier of the strict profile applied to this config, if any.
+    pub(crate) fn strict_profile_id(&self) -> Option<&str> {
+        self.strict_profile_id.as_deref()
+    }
+
+    /// Lints the selected strict profile requires at `deny`.
+    pub(crate) fn profile_floor_lints(&self) -> impl Iterator<Item = &str> {
+        self.profile_floor_lints.iter().map(String::as_str)
+    }
+
     #[must_use]
     pub fn nominal_domain_mode(&self) -> octet_lint_metadata::nominal_domain::EnforcementMode {
         self.nominal_domain_mode.unwrap_or(octet_lint_metadata::nominal_domain::EnforcementMode::Warn)
     }
 
-    fn apply_nominal_domain_mode(&mut self) {
+    fn apply_nominal_domain_mode(&mut self, diagnostics: &mut Vec<ConfigDiagnostic>) {
         let Some(mode) = self.nominal_domain_mode else {
             return;
         };
@@ -264,13 +364,27 @@ impl Config {
                 octet_lint_metadata::nominal_domain::EnforcementMode::Deny => LintLevel::Deny,
             };
             let level = self.validated_lint_levels.entry((*lint_name).to_owned()).or_insert(selected);
-            if selected == LintLevel::Deny || *level == LintLevel::Allow {
+            // Inventory findings include suffix-only candidates, so inventory
+            // mode never lets a consumer level turn them into hard errors.
+            let capped =
+                mode == octet_lint_metadata::nominal_domain::EnforcementMode::Inventory && *level == LintLevel::Deny;
+            if capped {
+                diagnostics.push(ConfigDiagnostic::new(
+                    ConfigDiagnosticKind::NominalInventoryLevelCapped,
+                    "octet.lint_levels",
+                    *lint_name,
+                    format!(
+                        "octet `nominal_domain_mode = \"inventory\"` caps `{lint_name}` at `warn`; ignoring `deny` from `dylint.toml` lint_levels"
+                    ),
+                ));
+            }
+            if capped || selected == LintLevel::Deny || *level == LintLevel::Allow {
                 *level = selected;
             }
         }
     }
 
-    fn apply_strict_profile(
+    pub(crate) fn apply_strict_profile(
         &mut self,
         profile: &octet_lint_metadata::strict_profile::StrictProfile,
     ) -> Result<(), String> {
@@ -282,14 +396,95 @@ impl Config {
         }
 
         let required_lints = profile.required_lints.iter().map(String::as_str).collect::<BTreeSet<_>>();
+        for lint_name in BOOLEAN_API_LINTS {
+            if required_lints.contains(lint_name)
+                && (self.disabled_lints.iter().any(|disabled| disabled == lint_name)
+                    || self.lint_levels.get(*lint_name).is_some_and(|level| level != "deny"))
+            {
+                return Err(format!(
+                    "strict profile `{}` rejects workspace-wide suppression of `{lint_name}`; use a local owned compatibility expectation",
+                    profile.profile_id
+                ));
+            }
+        }
         self.disabled_lints.retain(|lint_name| !required_lints.contains(lint_name.as_str()));
-        if NOMINAL_DOMAIN_LINTS.iter().any(|lint_name| required_lints.contains(lint_name)) {
+        if profile_denies_nominal_domain(profile) {
             self.nominal_domain_mode = Some(octet_lint_metadata::nominal_domain::EnforcementMode::Deny);
         }
         for lint_name in &profile.required_lints {
             self.validated_lint_levels.insert(lint_name.clone(), LintLevel::Deny);
+            self.profile_floor_lints.insert(lint_name.clone());
+        }
+        self.strict_profile_id = Some(profile.profile_id.clone());
+        Ok(())
+    }
+
+    /// Rejects workspace-wide suppression of the Boolean API lints.
+    ///
+    /// A consumer may scope one compatibility expectation to one callable, but
+    /// a crate-wide `disabled_lints` entry or an `allow` level would hide the
+    /// strict migration.
+    fn reject_broad_boolean_suppression(&self) -> Result<(), String> {
+        for lint_name in BOOLEAN_API_LINTS {
+            if self.lint_is_disabled(lint_name)
+                || self.lint_levels.get(*lint_name).is_some_and(|level| level == "allow")
+            {
+                return Err(format!(
+                    "workspace-wide suppression of `{lint_name}` is forbidden; use a local owned compatibility expectation"
+                ));
+            }
         }
         Ok(())
+    }
+
+    /// Promotes the Boolean API suppression guard when the compiler command
+    /// line denies it, including the full deny-all catalog.
+    fn enforce_compiler_boolean_guard(&mut self, lint_opts: &[(String, rustc_lint::Level)]) {
+        let guard_denied = lint_opts.iter().any(|(name, level)| {
+            let name = name.strip_prefix("tigerstyle::").unwrap_or(name);
+            matches!(name, "raw_bool_parameter_suppression" | "raw-bool-parameter-suppression")
+                && matches!(level, rustc_lint::Level::Deny | rustc_lint::Level::Forbid)
+        });
+        if guard_denied {
+            self.validated_lint_levels.insert("raw_bool_parameter_suppression".to_owned(), LintLevel::Deny);
+        }
+    }
+
+    /// Validates the parsed config and applies the selected strict profile.
+    ///
+    /// A profile that denies the nominal-domain lints raises their mode before
+    /// validation, so the inventory-cap diagnostic never contradicts the
+    /// profile. Diagnostics are returned even when the profile cannot apply.
+    fn resolve(
+        &mut self,
+        profile: Option<&octet_lint_metadata::strict_profile::StrictProfile>,
+    ) -> (Vec<ConfigDiagnostic>, Result<(), String>) {
+        if profile.is_some_and(profile_denies_nominal_domain) {
+            self.nominal_domain_mode = Some(octet_lint_metadata::nominal_domain::EnforcementMode::Deny);
+        }
+        let diagnostics = self.validate_diagnostics();
+        let applied = profile.map_or(Ok(()), |profile| self.apply_strict_profile(profile));
+        (diagnostics, applied)
+    }
+
+    /// Resolves every source scope on disk and keeps what rustc's file names
+    /// can match: the normalized scope text, which rustc uses for files it
+    /// reaches through that path, and, when it differs, the canonical
+    /// workspace-relative path an in-root scope resolves to, so a symlinked
+    /// or `..` scope covers its target. Scopes that resolve to nothing, to the
+    /// workspace root itself, or outside it are reported.
+    fn resolve_source_scopes(
+        &mut self,
+        resolve: impl Fn(&str) -> crate::source::ScopeResolution,
+    ) -> Vec<ConfigDiagnostic> {
+        [
+            ("octet.core_source_scopes", &mut self.core_source_scopes),
+            ("octet.state_machine_core_scopes", &mut self.state_machine_core_scopes),
+            ("octet.state_machine_generated_adapter_scopes", &mut self.state_machine_generated_adapter_scopes),
+        ]
+        .into_iter()
+        .flat_map(|(field, scopes)| resolve_scope_list(field, scopes, &resolve))
+        .collect()
     }
 
     pub(crate) fn indexable_lint_exceptions(&self) -> IndexableLintExceptions {
@@ -301,14 +496,28 @@ impl Config {
         }
     }
 
-    fn validate(&mut self) -> Vec<String> {
-        self.validate_diagnostics().into_iter().map(|diagnostic| diagnostic.message).collect()
-    }
-
     fn validate_diagnostics(&mut self) -> Vec<ConfigDiagnostic> {
         let known_lints = canonical_lint_names();
         let disabled_lints = self.disabled_lints.iter().map(String::as_str).collect::<BTreeSet<_>>();
-        let mut diagnostics = Vec::new();
+        let mut diagnostics = self
+            .unknown_keys
+            .keys()
+            .map(|key| {
+                ConfigDiagnostic::new(
+                    ConfigDiagnosticKind::UnknownConfigKey,
+                    "octet",
+                    key,
+                    format!("unknown octet config key in `dylint.toml`: `{key}`"),
+                )
+            })
+            .collect::<Vec<_>>();
+        for (field, scopes) in [
+            ("octet.core_source_scopes", &mut self.core_source_scopes),
+            ("octet.state_machine_core_scopes", &mut self.state_machine_core_scopes),
+            ("octet.state_machine_generated_adapter_scopes", &mut self.state_machine_generated_adapter_scopes),
+        ] {
+            normalize_source_scopes(field, scopes, &mut diagnostics);
+        }
         let mut unknown_disabled_lints = BTreeSet::new();
 
         for lint_name in &self.disabled_lints {
@@ -377,71 +586,213 @@ impl Config {
 
             self.validated_lint_levels.insert(lint_name.clone(), level);
         }
-        self.apply_nominal_domain_mode();
+        self.apply_nominal_domain_mode(&mut diagnostics);
 
         diagnostics
     }
 }
 
-fn prefer_octet_or_legacy_config(octet: Option<Config>, slotcar: Option<Config>, tigerstyle: Option<Config>) -> Config {
-    octet.or(slotcar).or(tigerstyle).unwrap_or_default()
+/// `dylint.toml` config sections in precedence order: `[octet]`, then the
+/// legacy `[slotcar]` and `[tigerstyle]` sections.
+const DYLINT_TOML_SECTIONS: [&str; 3] = [env!("CARGO_PKG_NAME"), "slotcar", "tigerstyle"];
+
+fn profile_denies_nominal_domain(profile: &octet_lint_metadata::strict_profile::StrictProfile) -> bool {
+    profile.required_lints.iter().any(|lint_name| NOMINAL_DOMAIN_LINTS.contains(&lint_name.as_str()))
+}
+
+/// Normalizes configured source scopes the way `cargo octet` does and drops
+/// entries that normalize to an empty path.
+fn normalize_source_scopes(field: &'static str, scopes: &mut Vec<String>, diagnostics: &mut Vec<ConfigDiagnostic>) {
+    let (kept, empty): (Vec<_>, Vec<_>) = scopes
+        .drain(..)
+        .map(|raw| (crate::source::normalize_scope(&raw), raw))
+        .partition(|(scope, _raw)| !scope.is_empty());
+    diagnostics.extend(empty.into_iter().map(|(_scope, raw)| {
+        let message = format!("empty octet source scope in `dylint.toml` {field}: `{raw}`; ignoring it");
+        ConfigDiagnostic::new(ConfigDiagnosticKind::EmptySourceScope, field, raw, message)
+    }));
+    *scopes = kept.into_iter().map(|(scope, _raw)| scope).collect();
+}
+
+/// Selects the highest-precedence config section that is present. Every
+/// lower-precedence section is left unparsed and reported, because the
+/// selected section replaces it as a whole.
+fn prefer_octet_or_legacy_config<T>(
+    sections: impl IntoIterator<Item = (&'static str, Option<T>)>,
+) -> (Option<(&'static str, T)>, Vec<String>) {
+    let mut present = sections.into_iter().filter_map(|(name, section)| section.map(|section| (name, section)));
+    let selected = present.next();
+    let notices = selected.as_ref().map_or_else(Vec::new, |(winner, _section)| {
+        present
+            .map(|(name, _section)| {
+                format!(
+                    "ignoring legacy `[{name}]` section in `dylint.toml` because `[{winner}]` takes precedence; move its settings into `[octet]`"
+                )
+            })
+            .collect()
+    });
+    (selected, notices)
+}
+
+fn resolve_scope_list(
+    field: &'static str,
+    scopes: &mut Vec<String>,
+    resolve: &impl Fn(&str) -> crate::source::ScopeResolution,
+) -> Vec<ConfigDiagnostic> {
+    let resolved = std::mem::take(scopes)
+        .into_iter()
+        .map(|scope| {
+            let resolution = resolve(&scope);
+            (scope, resolution)
+        })
+        .collect::<Vec<_>>();
+    *scopes = resolved
+        .iter()
+        .flat_map(|(scope, resolution)| match resolution {
+            crate::source::ScopeResolution::Inside(canonical) if canonical != scope => {
+                vec![scope.clone(), canonical.clone()]
+            }
+            _ => vec![scope.clone()],
+        })
+        .collect();
+    let list = field.trim_start_matches("octet.");
+    resolved
+        .into_iter()
+        .filter_map(|(scope, resolution)| {
+            let reason = match resolution {
+                crate::source::ScopeResolution::Inside(_) => return None,
+                crate::source::ScopeResolution::Missing => {
+                    "names no file or directory under the workspace root; scopes are workspace-relative path prefixes, so a scope that used to match by substring must be rewritten as a path from the workspace root"
+                }
+                crate::source::ScopeResolution::Root => {
+                    "resolves to the workspace root itself, so it matches nothing; name a source directory or file below the root"
+                }
+                crate::source::ScopeResolution::Outside => {
+                    "resolves to a target outside the workspace root, so it matches only files rustc compiles through this in-root path, never the target's own location"
+                }
+            };
+            let message = format!("octet `{list}` entry `{scope}` in `dylint.toml` {reason}");
+            Some(ConfigDiagnostic::new(ConfigDiagnosticKind::UnmatchedSourceScope, field, scope, message))
+        })
+        .collect()
 }
 
 /// Load the project config from `dylint.toml`, falling back to defaults.
 ///
 /// # Panics
 ///
-/// Panics when Dylint returns malformed TOML for the Octet, Slotcar, or
-/// Tigerstyle config sections; invalid lint names and levels are reported as
-/// warnings instead of panics after parsing succeeds.
-pub fn load(sess: &rustc_session::Session) -> Config {
-    let mut cfg = prefer_octet_or_legacy_config(
-        dylint_linting::config::<Config>(env!("CARGO_PKG_NAME")).unwrap_or_else(|error| {
-            panic!("Could not parse config as `{}`: {}", std::any::type_name::<Config>(), error)
-        }),
-        dylint_linting::config::<Config>("slotcar").unwrap_or_else(|error| {
-            panic!("Could not parse config as `{}`: {}", std::any::type_name::<Config>(), error)
-        }),
-        dylint_linting::config::<Config>("tigerstyle").unwrap_or_else(|error| {
-            panic!("Could not parse config as `{}`: {}", std::any::type_name::<Config>(), error)
-        }),
-    );
-    for warning in cfg.validate() {
-        sess.dcx().warn(warning);
+/// Panics when Dylint cannot read `dylint.toml`, when the selected config
+/// section is malformed TOML, when the embedded Boolean API policy is invalid,
+/// when a workspace-wide Boolean API suppression is requested, or when the
+/// selected strict profile cannot apply. A shadowed legacy section is reported
+/// but never parsed; unknown config keys, invalid lint names, and invalid
+/// levels are reported as warnings instead of panics after parsing succeeds.
+pub fn load(
+    sess: &rustc_session::Session,
+    durability_catalog: &octet_lint_metadata::durability::DurabilityCatalog,
+) -> Config {
+    let sections = DYLINT_TOML_SECTIONS.map(|name| {
+        let section = dylint_linting::config_toml(name)
+            .unwrap_or_else(|error| panic!("Could not read config section `[{name}]`: {error}"));
+        (name, section)
+    });
+    let (selected, notices) = prefer_octet_or_legacy_config(sections);
+    for notice in notices {
+        sess.dcx().warn(notice);
     }
-    apply_selected_strict_profile(&mut cfg).unwrap_or_else(|error| panic!("{error}"));
+    let mut cfg = selected.map_or_else(Config::default, |(name, section)| {
+        section.try_into::<Config>().unwrap_or_else(|error| {
+            panic!("Could not parse config section `[{name}]` as `{}`: {error}", std::any::type_name::<Config>())
+        })
+    });
+    cfg.durability_catalog = durability_catalog.clone();
+    let profile = selected_strict_profile().unwrap_or_else(|error| panic!("{error}"));
+    octet_lint_metadata::strict_profile::boolean_api_policy().unwrap_or_else(|error| panic!("{error}"));
+    cfg.reject_broad_boolean_suppression().unwrap_or_else(|error| panic!("{error}"));
+    let (mut diagnostics, applied) = cfg.resolve(profile.as_ref());
+    // Scopes resolve against the same root as `source::span_in_scopes`, with
+    // symlinks and `..` followed as `cargo octet` does when it validates them.
+    if let Some(root) = sess.opts.working_dir.local_path().and_then(|root| root.canonicalize().ok()) {
+        diagnostics.extend(cfg.resolve_source_scopes(|scope| crate::source::resolve_scope(&root, scope)));
+    }
+    for diagnostic in diagnostics {
+        sess.dcx().warn(diagnostic.message);
+    }
+    applied.unwrap_or_else(|error| panic!("{error}"));
+    // An invalid profile fails closed: the error is reported and the durability
+    // lints stay inert instead of silently accepting an unanalyzed boundary.
+    if let Some(error) = cfg.resolve_durability_profile(sess, durability_catalog) {
+        sess.dcx().err(error);
+    }
+    cfg.enforce_compiler_boolean_guard(&sess.opts.lint_opts);
     cfg
 }
 
-fn apply_selected_strict_profile(cfg: &mut Config) -> Result<(), String> {
+impl Config {
+    /// Reads and validates the generated durability profile.
+    ///
+    /// Returns a deterministic error message when the configured path cannot be
+    /// read or the profile violates the catalog contract. No profile configured
+    /// means no durability boundary is declared.
+    fn resolve_durability_profile(
+        &mut self,
+        sess: &rustc_session::Session,
+        catalog: &octet_lint_metadata::durability::DurabilityCatalog,
+    ) -> Option<String> {
+        let configured = self.durability_profile_path.as_deref()?;
+        let trimmed = configured.trim();
+        if trimmed.is_empty() {
+            return Some("octet `durability_profile_path` in `dylint.toml` must not be empty".to_owned());
+        }
+        let path = std::path::Path::new(trimmed);
+        let resolved = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            let root = sess
+                .opts
+                .working_dir
+                .local_path()
+                .map(std::path::Path::to_path_buf)
+                .or_else(|| std::env::current_dir().ok())
+                .unwrap_or_default();
+            root.join(path)
+        };
+        let text = std::fs::read_to_string(&resolved).map_err(|error| {
+            format!("octet `durability_profile_path` in `dylint.toml` cannot read `{}`: {error}", resolved.display())
+        });
+        let profile = match text.and_then(|text| {
+            octet_lint_metadata::durability::parse_durability_profile(&text, catalog).map_err(|error| {
+                format!("octet `durability_profile_path` in `dylint.toml` rejected `{}`: {error}", resolved.display())
+            })
+        }) {
+            Ok(profile) => profile,
+            Err(error) => return Some(error),
+        };
+        self.durability_profile = Some(profile);
+        None
+    }
+}
+
+fn selected_strict_profile() -> Result<Option<octet_lint_metadata::strict_profile::StrictProfile>, String> {
     let profile_id = match std::env::var(octet_lint_metadata::strict_profile::STRICT_PROFILE_ENV) {
         Ok(profile_id) => profile_id,
-        Err(std::env::VarError::NotPresent) => return Ok(()),
+        Err(std::env::VarError::NotPresent) => return Ok(None),
         Err(error) => return Err(format!("read strict-profile selection: {error}")),
     };
-    let profile = octet_lint_metadata::strict_profile::strict_profile(&profile_id)?;
-    cfg.apply_strict_profile(&profile)
+    octet_lint_metadata::strict_profile::strict_profile(&profile_id).map(Some)
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
 
-    use serde::Deserialize;
-
     use super::Config;
     use super::ConfigDiagnostic;
     use super::ConfigDiagnosticKind;
+    use super::DYLINT_TOML_SECTIONS;
     use super::LintLevel;
     use super::NOMINAL_DOMAIN_LINTS;
     use super::prefer_octet_or_legacy_config;
-
-    #[derive(Deserialize)]
-    struct Wrapper {
-        octet: Option<Config>,
-        slotcar: Option<Config>,
-        tigerstyle: Option<Config>,
-    }
 
     const CONFIG_VALID_LEVEL_LAW: &str = "config valid lint-level overrides normalize deterministically";
     const CONFIG_DISABLED_PRECEDENCE_LAW: &str = "config disabled_lints wins over lint_levels";
@@ -458,14 +809,23 @@ mod tests {
     const CONFIG_DISABLED_PRECEDENCE_CASE_BUDGET: usize = 6;
     const CONFIG_NEGATIVE_LEVEL_CASE_BUDGET: usize = 6;
 
+    /// Selects and parses a config section the way `load` does, returning the
+    /// shadowed-section notices alongside it.
+    fn try_parse_config(doc: &str) -> Result<(Config, Vec<String>), toml::de::Error> {
+        let mut document = toml::from_str::<toml::Table>(doc).expect("parse test dylint.toml");
+        let (selected, notices) =
+            prefer_octet_or_legacy_config(DYLINT_TOML_SECTIONS.map(|name| (name, document.remove(name))));
+        let cfg = selected.map_or_else(|| Ok(Config::default()), |(_name, section)| section.try_into::<Config>())?;
+        Ok((cfg, notices))
+    }
+
     fn parse_config(doc: &str) -> Config {
-        let wrapper = toml::from_str::<Wrapper>(doc).expect("parse test dylint.toml");
-        prefer_octet_or_legacy_config(wrapper.octet, wrapper.slotcar, wrapper.tigerstyle)
+        try_parse_config(doc).expect("parse selected config section").0
     }
 
     fn parse_and_validate(doc: &str) -> (Config, Vec<String>) {
         let mut cfg = parse_config(doc);
-        let warnings = cfg.validate();
+        let warnings = cfg.validate_diagnostics().into_iter().map(|diagnostic| diagnostic.message).collect();
         (cfg, warnings)
     }
 
@@ -513,9 +873,69 @@ mod tests {
 
     #[test]
     fn malformed_nominal_domain_mode_fails_toml_deserialization() {
-        let parsed = toml::from_str::<Wrapper>("[octet]\nnominal_domain_mode = \"enforce-everything\"\n");
+        let parsed = try_parse_config("[octet]\nnominal_domain_mode = \"enforce-everything\"\n");
 
         assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn inventory_mode_caps_consumer_nominal_denies_at_warn() {
+        let (cfg, warnings) = parse_and_validate(
+            "[octet]\nnominal_domain_mode = \"inventory\"\n\n[octet.lint_levels]\nprimitive_domain_alias = \"deny\"\nraw_domain_value = \"allow\"\n",
+        );
+
+        assert_eq!(warnings, vec![
+            "octet `nominal_domain_mode = \"inventory\"` caps `primitive_domain_alias` at `warn`; ignoring `deny` from `dylint.toml` lint_levels"
+        ]);
+        for lint_name in NOMINAL_DOMAIN_LINTS {
+            assert_eq!(cfg.lint_level(lint_name), Some(LintLevel::Warn), "{lint_name}");
+        }
+    }
+
+    #[test]
+    fn inventory_cap_reports_typed_diagnostic_and_warn_mode_keeps_consumer_deny() {
+        let (_cfg, diagnostics) = parse_and_validate_diagnostics(
+            "[octet]\nnominal_domain_mode = \"inventory\"\n\n[octet.lint_levels]\nnewtype_invariant_bypass = \"deny\"\n",
+        );
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(diagnostics[0].kind, ConfigDiagnosticKind::NominalInventoryLevelCapped);
+        assert_eq!(diagnostics[0].kind.as_str(), "nominal_inventory_level_capped");
+        assert_eq!(diagnostics[0].field, "octet.lint_levels");
+        assert_eq!(diagnostics[0].item, "newtype_invariant_bypass");
+
+        let (cfg, warnings) = parse_and_validate(
+            "[octet]\nnominal_domain_mode = \"warn\"\n\n[octet.lint_levels]\nprimitive_domain_alias = \"deny\"\n",
+        );
+        assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+        assert_eq!(cfg.lint_level("primitive_domain_alias"), Some(LintLevel::Deny));
+    }
+
+    #[test]
+    fn unknown_config_keys_warn_without_failing_validation() {
+        let (cfg, warnings) = parse_and_validate(
+            "[octet]\nmax_parameters = 6\ndisabled_lint = [\"no_unwrap\"]\n\n[octet.lint-levels]\nno_unwrap = \"deny\"\n",
+        );
+
+        assert_eq!(warnings, vec![
+            "unknown octet config key in `dylint.toml`: `disabled_lint`",
+            "unknown octet config key in `dylint.toml`: `lint-levels`",
+        ]);
+        assert_eq!(cfg.max_parameters, 6);
+        assert!(!cfg.lint_is_disabled("no_unwrap"));
+        assert_eq!(cfg.lint_level("no_unwrap"), None);
+    }
+
+    #[test]
+    fn unknown_config_keys_report_typed_diagnostics() {
+        let (_cfg, diagnostics) =
+            parse_and_validate_diagnostics("[octet]\nnot_a_key = 1\n\n[octet.lint_levels]\nno_unwrap = \"deny\"\n");
+
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(diagnostics[0].kind, ConfigDiagnosticKind::UnknownConfigKey);
+        assert_eq!(diagnostics[0].kind.as_str(), "unknown_config_key");
+        assert_eq!(diagnostics[0].source, "dylint.toml");
+        assert_eq!(diagnostics[0].field, "octet");
+        assert_eq!(diagnostics[0].item, "not_a_key");
     }
 
     #[test]
@@ -599,37 +1019,51 @@ mod tests {
 
     #[test]
     fn legacy_slotcar_config_is_used_when_octet_section_is_absent() {
-        let legacy = Config {
-            acronym_allowlist: vec!["IO".to_owned()],
-            ..Default::default()
-        };
-
-        let selected = prefer_octet_or_legacy_config(None, Some(legacy), None);
+        let (selected, notices) =
+            try_parse_config("[slotcar]\nacronym_allowlist = [\"IO\"]\n").expect("slotcar parses");
 
         assert_eq!(selected.acronym_allowlist, vec!["IO".to_owned()]);
+        assert!(notices.is_empty(), "a used legacy section is not reported: {notices:?}");
     }
 
     #[test]
     fn octet_config_wins_over_legacy_slotcar_and_tigerstyle_config() {
-        let primary = Config {
-            acronym_allowlist: vec!["RPC".to_owned()],
-            ..Default::default()
-        };
-        let legacy = Config {
-            acronym_allowlist: vec!["IO".to_owned()],
-            ..Default::default()
-        };
-
-        let selected = prefer_octet_or_legacy_config(
-            Some(primary),
-            Some(legacy),
-            Some(Config {
-                max_parameters: 9,
-                ..Default::default()
-            }),
-        );
+        let (selected, notices) = try_parse_config(
+            "[octet]\nacronym_allowlist = [\"RPC\"]\n\n[slotcar]\nacronym_allowlist = [\"IO\"]\n\n[tigerstyle]\nmax_parameters = 9\n",
+        )
+        .expect("octet parses");
 
         assert_eq!(selected.acronym_allowlist, vec!["RPC".to_owned()]);
+        assert_eq!(selected.max_parameters, Config::default().max_parameters);
+        assert_eq!(notices.len(), 2, "both shadowed legacy sections are reported: {notices:?}");
+        assert!(notices[0].contains("`[slotcar]`") && notices[0].contains("`[octet]`"), "{notices:?}");
+        assert!(notices[1].contains("`[tigerstyle]`") && notices[1].contains("`[octet]`"), "{notices:?}");
+    }
+
+    #[test]
+    fn lint_levels_table_alone_shadows_legacy_settings_with_a_notice() {
+        let (selected, notices) =
+            try_parse_config("[octet.lint_levels]\nno_unwrap = \"deny\"\n\n[tigerstyle]\nmax_parameters = 9\n")
+                .expect("octet parses");
+
+        assert_eq!(selected.max_parameters, Config::default().max_parameters);
+        assert_eq!(notices.len(), 1, "{notices:?}");
+        assert!(notices[0].contains("`[tigerstyle]`"), "{notices:?}");
+    }
+
+    #[test]
+    fn malformed_shadowed_legacy_sections_are_not_parsed() {
+        let (selected, notices) = try_parse_config(
+            "[octet]\nmax_parameters = 6\n\n[slotcar]\nmax_parameters = \"seven\"\n\n[tigerstyle]\ndisabled_lints = 3\n",
+        )
+        .expect("only the selected section is parsed");
+
+        assert_eq!(selected.max_parameters, 6);
+        assert_eq!(notices.len(), 2, "{notices:?}");
+        assert!(
+            try_parse_config("[slotcar]\nmax_parameters = \"seven\"\n").is_err(),
+            "a malformed selected section still fails to parse"
+        );
     }
 
     #[test]
@@ -912,6 +1346,31 @@ function_length = "warn"
     }
 
     #[test]
+    fn boolean_api_rejects_workspace_allow_and_strict_warn_override() {
+        let mut disabled = parse_config("[octet]\ndisabled_lints = [\"raw_bool_parameter\"]\n");
+        disabled.validate_diagnostics();
+        assert!(disabled.reject_broad_boolean_suppression().is_err());
+
+        let mut allowed = parse_config("[octet.lint_levels]\nraw_bool_parameter_suppression = \"allow\"\n");
+        allowed.validate_diagnostics();
+        assert!(allowed.reject_broad_boolean_suppression().is_err());
+
+        let mut weaker = parse_config("[octet.lint_levels]\nraw_bool_parameter = \"warn\"\n");
+        weaker.validate_diagnostics();
+        assert!(weaker.reject_broad_boolean_suppression().is_ok());
+        let robust = octet_lint_metadata::strict_profile::strict_profile("robust").expect("strict profile");
+        assert!(weaker.apply_strict_profile(&robust).is_err());
+
+        let mut cli_denied = parse_config("[octet]\n");
+        cli_denied.validate_diagnostics();
+        cli_denied.enforce_compiler_boolean_guard(&[(
+            "tigerstyle::raw_bool_parameter_suppression".to_owned(),
+            rustc_lint::Level::Deny,
+        )]);
+        assert_eq!(cli_denied.lint_level("raw_bool_parameter_suppression"), Some(LintLevel::Deny));
+    }
+
+    #[test]
     fn reviewed_profiles_select_exact_only_nominal_domain_denial() {
         let mut cfg = parse_config("[octet]\nnominal_domain_mode = \"inventory\"\n");
         let diagnostics = cfg.validate_diagnostics();
@@ -926,6 +1385,48 @@ function_length = "warn"
         }
     }
 
+    fn command_line_level(lint_opts: &[(String, rustc_lint::Level)], lint_name: &str) -> Option<rustc_lint::Level> {
+        lint_opts.iter().rev().find(|(name, _)| name == lint_name).map(|(_, level)| *level)
+    }
+
+    #[test]
+    fn explicit_command_line_levels_win_over_consumer_lint_levels() {
+        let (cfg, warnings) =
+            parse_and_validate("[octet.lint_levels]\nnumeric_units = \"warn\"\nno_unwrap = \"deny\"\n");
+        assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+        let mut lint_opts = vec![
+            ("unknown_lints".to_owned(), rustc_lint::Level::Deny),
+            ("numeric_units".to_owned(), rustc_lint::Level::Deny),
+        ];
+
+        cfg.merge_into_lint_opts(&mut lint_opts);
+
+        assert_eq!(command_line_level(&lint_opts, "numeric_units"), Some(rustc_lint::Level::Deny));
+        assert_eq!(command_line_level(&lint_opts, "no_unwrap"), Some(rustc_lint::Level::Deny));
+        assert_eq!(lint_opts[2..], [
+            ("unknown_lints".to_owned(), rustc_lint::Level::Deny),
+            ("numeric_units".to_owned(), rustc_lint::Level::Deny),
+        ]);
+    }
+
+    #[test]
+    fn strict_profile_floor_wins_over_command_line_weakening() {
+        let mut cfg = parse_config("[octet.lint_levels]\nno_panic = \"allow\"\nfunction_length = \"warn\"\n");
+        let diagnostics = cfg.validate_diagnostics();
+        assert!(diagnostics.is_empty(), "fixture config should validate: {diagnostics:?}");
+        let profile = octet_lint_metadata::strict_profile::strict_profile("robust").expect("robust profile");
+        cfg.apply_strict_profile(&profile).expect("robust profile should apply");
+        let mut lint_opts = vec![
+            ("no_panic".to_owned(), rustc_lint::Level::Allow),
+            ("function_length".to_owned(), rustc_lint::Level::Allow),
+        ];
+
+        cfg.merge_into_lint_opts(&mut lint_opts);
+
+        assert_eq!(command_line_level(&lint_opts, "no_panic"), Some(rustc_lint::Level::Deny));
+        assert_eq!(command_line_level(&lint_opts, "function_length"), Some(rustc_lint::Level::Allow));
+    }
+
     #[test]
     fn deterministic_core_profile_rejects_missing_core_scopes() {
         let mut cfg = parse_config("[octet]\n");
@@ -938,6 +1439,132 @@ function_length = "warn"
 
         assert!(error.contains("deterministic-core"));
         assert!(error.contains("core_source_scopes"));
+    }
+
+    #[test]
+    fn deterministic_core_profile_rejects_scopes_that_normalize_to_empty() {
+        let mut cfg = parse_config("[octet]\ncore_source_scopes = [\" ./ \"]\n");
+        let profile =
+            octet_lint_metadata::strict_profile::strict_profile("deterministic-core").expect("deterministic profile");
+
+        let diagnostics = cfg.validate_diagnostics();
+
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(diagnostics[0].kind, ConfigDiagnosticKind::EmptySourceScope);
+        assert_eq!(diagnostics[0].field, "octet.core_source_scopes");
+        let error = cfg.apply_strict_profile(&profile).expect_err("no usable core scope remains");
+        assert!(error.contains("core_source_scopes"));
+    }
+
+    #[test]
+    fn source_scopes_normalize_like_the_runner() {
+        let (cfg, warnings) = parse_and_validate(
+            "[octet]\ncore_source_scopes = [\" ./crates/domain/src/ \", \"crates/model/src\"]\nstate_machine_core_scopes = [\"./crates/domain/src/fsm/\"]\nstate_machine_generated_adapter_scopes = [\"crates/domain/src/generated/\"]\n",
+        );
+
+        assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+        assert_eq!(cfg.core_source_scopes, ["crates/domain/src", "crates/model/src"]);
+        assert_eq!(cfg.state_machine_core_scopes, ["crates/domain/src/fsm"]);
+        assert_eq!(cfg.state_machine_generated_adapter_scopes, ["crates/domain/src/generated"]);
+    }
+
+    #[test]
+    fn source_scopes_resolve_to_matchable_paths_and_report_dead_ones() {
+        use crate::source::ScopeResolution;
+
+        let (mut cfg, warnings) = parse_and_validate(
+            "[octet]\ncore_source_scopes = [\"./src/\", \"linked\", \"crates/x/../../src/lib.rs\", \"source.rs\"]\nstate_machine_core_scopes = [\"src/fsm\", \"..\"]\nstate_machine_generated_adapter_scopes = [\"crates/..\"]\n",
+        );
+        assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+        let resolve = |scope: &str| match scope {
+            "src" | "src/fsm" => ScopeResolution::Inside(scope.to_owned()),
+            "linked" => ScopeResolution::Inside("src".to_owned()),
+            "crates/x/../../src/lib.rs" => ScopeResolution::Inside("src/lib.rs".to_owned()),
+            ".." => ScopeResolution::Outside,
+            "crates/.." => ScopeResolution::Root,
+            _ => ScopeResolution::Missing,
+        };
+
+        let diagnostics = cfg.resolve_source_scopes(resolve);
+
+        assert_eq!(cfg.core_source_scopes, [
+            "src",
+            "linked",
+            "src",
+            "crates/x/../../src/lib.rs",
+            "src/lib.rs",
+            "source.rs"
+        ]);
+        assert_eq!(cfg.state_machine_core_scopes, ["src/fsm", ".."]);
+        assert_eq!(cfg.state_machine_generated_adapter_scopes, ["crates/.."]);
+        let unmatched = diagnostics
+            .iter()
+            .map(|diagnostic| (diagnostic.kind, diagnostic.field, diagnostic.item.as_str()))
+            .collect::<Vec<_>>();
+        assert_eq!(unmatched, [
+            (ConfigDiagnosticKind::UnmatchedSourceScope, "octet.core_source_scopes", "source.rs"),
+            (ConfigDiagnosticKind::UnmatchedSourceScope, "octet.state_machine_core_scopes", ".."),
+            (
+                ConfigDiagnosticKind::UnmatchedSourceScope,
+                "octet.state_machine_generated_adapter_scopes",
+                "crates/.."
+            ),
+        ]);
+        assert_eq!(diagnostics[0].kind.as_str(), "unmatched_source_scope");
+        assert!(crate::source::path_in_scopes(std::path::Path::new("src/main.rs"), &cfg.core_source_scopes));
+    }
+
+    // rustc names a module reached through an in-root symlink by its in-root
+    // path, even when the symlink leads outside the workspace, so such a scope
+    // keeps matching through its own text.
+    #[cfg(unix)]
+    #[test]
+    fn scope_through_an_outside_symlink_matches_its_in_root_path() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time after the epoch")
+            .as_nanos();
+        let scratch = std::env::temp_dir().join(format!("octet-outside-scope-{}-{unique}", std::process::id()));
+        let root = scratch.join("workspace");
+        std::fs::create_dir_all(root.join("src")).expect("source directory");
+        std::fs::create_dir_all(scratch.join("shared/core")).expect("shared directory");
+        std::os::unix::fs::symlink(scratch.join("shared/core"), root.join("src/core")).expect("outside symlink");
+        let canonical_root = root.canonicalize().expect("canonical root");
+        let (mut cfg, warnings) = parse_and_validate("[octet]\ncore_source_scopes = [\"src/core\"]\n");
+        assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+
+        let diagnostics = cfg.resolve_source_scopes(|scope| crate::source::resolve_scope(&canonical_root, scope));
+        std::fs::remove_dir_all(&scratch).expect("remove scratch directory");
+
+        assert_eq!(cfg.core_source_scopes, ["src/core"]);
+        assert!(crate::source::path_in_scopes(std::path::Path::new("src/core/mod.rs"), &cfg.core_source_scopes));
+        assert!(!crate::source::path_in_scopes(std::path::Path::new("src/lib.rs"), &cfg.core_source_scopes));
+        assert_eq!(diagnostics.len(), 1, "the outside target is reported: {diagnostics:?}");
+        assert_eq!(diagnostics[0].kind, ConfigDiagnosticKind::UnmatchedSourceScope);
+        assert_eq!(diagnostics[0].item, "src/core");
+    }
+
+    #[test]
+    fn profile_denying_nominal_lints_suppresses_the_inventory_cap_diagnostic() {
+        let doc =
+            "[octet]\nnominal_domain_mode = \"inventory\"\n\n[octet.lint_levels]\nprimitive_domain_alias = \"deny\"\n";
+        let bounded = octet_lint_metadata::strict_profile::strict_profile("bounded-systems").expect("bounded profile");
+        let mut cfg = parse_config(doc);
+
+        let (diagnostics, applied) = cfg.resolve(Some(&bounded));
+
+        applied.expect("bounded profile should apply");
+        assert!(diagnostics.is_empty(), "the profile denies, so nothing is capped: {diagnostics:?}");
+        assert_eq!(cfg.lint_level("primitive_domain_alias"), Some(LintLevel::Deny));
+
+        // `robust` does not deny the nominal lints, so the inventory cap still holds.
+        let robust = octet_lint_metadata::strict_profile::strict_profile("robust").expect("robust profile");
+        let mut cfg = parse_config(doc);
+        let (diagnostics, applied) = cfg.resolve(Some(&robust));
+        applied.expect("robust profile should apply");
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(diagnostics[0].kind, ConfigDiagnosticKind::NominalInventoryLevelCapped);
+        assert_eq!(cfg.lint_level("primitive_domain_alias"), Some(LintLevel::Warn));
     }
 
     #[test]

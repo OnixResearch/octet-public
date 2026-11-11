@@ -1,5 +1,5 @@
 warning: function takes time parameter `now_ms` but also reads system time
-  --> $DIR/contradictory_time.rs:8:14
+  --> $DIR/contradictory_time.rs:9:14
    |
 LL |     let _t = Instant::now();
    |              ^^^^^^^^^^^^^^
@@ -14,5 +14,95 @@ LL -     let _t = Instant::now();
 LL +     let _t = now_ms;
    |
 
-warning: 1 warning emitted
+warning: function takes time parameter `timestamp` but also reads system time
+  --> $DIR/contradictory_time.rs:25:14
+   |
+LL |     let _t = std::time::SystemTime::now();
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): choose one source of time for a code path and thread it through consistently Example: fn expires_at(now: Instant, ttl: Duration) -> Instant { now + ttl }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: use the `timestamp` parameter instead of reading system time
+   |
+LL -     let _t = std::time::SystemTime::now();
+LL +     let _t = timestamp;
+   |
+
+warning: function takes time parameter `elapsed` but also reads system time
+  --> $DIR/contradictory_time.rs:33:14
+   |
+LL |     let _t = Monotonic::now();
+   |              ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): choose one source of time for a code path and thread it through consistently Example: fn expires_at(now: Instant, ttl: Duration) -> Instant { now + ttl }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: use the `elapsed` parameter instead of reading system time
+   |
+LL -     let _t = Monotonic::now();
+LL +     let _t = elapsed;
+   |
+
+warning: function takes time parameter `now_ms` but also reads system time
+  --> $DIR/contradictory_time.rs:69:14
+   |
+LL |     let _t = Instant::now();
+   |              ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): choose one source of time for a code path and thread it through consistently Example: fn expires_at(now: Instant, ttl: Duration) -> Instant { now + ttl }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: use the `now_ms` parameter instead of reading system time
+   |
+LL -     let _t = Instant::now();
+LL +     let _t = now_ms;
+   |
+
+warning: function takes time parameter `deadline_ms` but also reads system time
+  --> $DIR/contradictory_time.rs:76:18
+   |
+LL |         let _t = std::time::SystemTime::now();
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): choose one source of time for a code path and thread it through consistently Example: fn expires_at(now: Instant, ttl: Duration) -> Instant { now + ttl }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: use the `deadline_ms` parameter instead of reading system time
+   |
+LL -         let _t = std::time::SystemTime::now();
+LL +         let _t = deadline_ms;
+   |
+
+warning: function takes time parameter `timeout_ms` but also reads system time
+  --> $DIR/contradictory_time.rs:84:18
+   |
+LL |         let _t = Instant::now();
+   |                  ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): choose one source of time for a code path and thread it through consistently Example: fn expires_at(now: Instant, ttl: Duration) -> Instant { now + ttl }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: use the `timeout_ms` parameter instead of reading system time
+   |
+LL -         let _t = Instant::now();
+LL +         let _t = timeout_ms;
+   |
+
+warning: function takes time parameter `now_ms` but also reads system time
+  --> $DIR/contradictory_time.rs:98:18
+   |
+LL |         let _t = Instant::now();
+   |                  ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): choose one source of time for a code path and thread it through consistently Example: fn expires_at(now: Instant, ttl: Duration) -> Instant { now + ttl }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: use the `now_ms` parameter instead of reading system time
+   |
+LL -         let _t = Instant::now();
+LL +         let _t = now_ms;
+   |
+
+warning: 7 warnings emitted
 

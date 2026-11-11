@@ -14,15 +14,20 @@ use crate::diagnostics::emit_tiger_style_lint_with_suggestion;
 const MIN_LOCK_FIELD_COUNT: usize = 2;
 const LOCK_KIND_MUTEX: &str = "Mutex";
 const LOCK_KIND_RWLOCK: &str = "RwLock";
-const LOCK_COMMENT_SUBJECT: &str = "lock";
-const LOCK_COMMENT_ORDER: &str = "order";
-const LOCK_COMMENT_ORDERING: &str = "ordering";
-const LOCK_COMMENT_ACQUISITION: &str = "acquisition";
-const SUPPORTED_LOCK_CRATES: &[&str] = &["std", "tokio", "parking_lot"];
+/// Whole words that make a comment about locks; `clock`, `block`, `unlock`,
+/// and `deadlock` do not count.
+const LOCK_COMMENT_SUBJECTS: &[&str] = &["lock", "locking", "locked"];
+/// Whole words that make a lock comment document acquisition order;
+/// `recorder` and `border` do not count.
+const LOCK_COMMENT_ORDER_WORDS: &[&str] = &["order", "ordering", "ordered", "acquisition"];
+// `parking_lot::Mutex` and `parking_lot::RwLock` are type aliases of the
+// `lock_api` types, so their resolved definition path starts with `lock_api`.
+const SUPPORTED_LOCK_CRATES: &[&str] = &["std", "tokio", "lock_api"];
 
 declare_tool_lint! {
     /// Detects struct definitions containing 2 or more `Mutex` or `RwLock`
-    /// fields without a comment documenting lock acquisition order.
+    /// fields (`std`, `tokio`, or `parking_lot`/`lock_api`, including locks
+    /// held behind `Arc`) without a comment documenting lock acquisition order.
     /// Undocumented lock ordering leads to deadlocks that only appear
     /// under production concurrency.
     pub tigerstyle::MULTI_LOCK_ORDERING,
@@ -42,8 +47,17 @@ fn classify_multi_lock_ordering(facts: LockOrderingFacts) -> bool {
     facts.lock_field_count >= MIN_LOCK_FIELD_COUNT && !facts.has_order_specific_comment
 }
 
-fn ty_lock_kind(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> Option<&'static str> {
-    let ty::Adt(adt, _) = ty.peel_refs().kind() else {
+/// Peels one shared-ownership `Arc` layer so `Arc<Mutex<T>>` counts as a lock field.
+fn peel_shared_lock_owner<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
+    let ty = ty.peel_refs();
+    match ty.kind() {
+        ty::Adt(adt, args) if cx.tcx.is_diagnostic_item(rustc_span::sym::Arc, adt.did()) => args.type_at(0).peel_refs(),
+        _ => ty,
+    }
+}
+
+fn ty_lock_kind<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> Option<&'static str> {
+    let ty::Adt(adt, _) = peel_shared_lock_owner(cx, ty).kind() else {
         return None;
     };
 
@@ -68,18 +82,15 @@ fn lock_field_count(cx: &LateContext<'_>, variant_data: &hir::VariantData<'_>) -
         .count()
 }
 
+fn text_documents_lock_order(text: &str) -> bool {
+    crate::naming::identifier_words::identifier_has_word(text, LOCK_COMMENT_SUBJECTS)
+        && crate::naming::identifier_words::identifier_has_word(text, LOCK_COMMENT_ORDER_WORDS)
+}
+
 fn comment_line_is_lock_order(line: &str) -> bool {
     let trimmed = line.trim_start();
     let is_comment = trimmed.starts_with("//") || trimmed.starts_with("///") || trimmed.starts_with("/*");
-    if !is_comment {
-        return false;
-    }
-
-    let lower = trimmed.to_ascii_lowercase();
-    lower.contains(LOCK_COMMENT_SUBJECT)
-        && (lower.contains(LOCK_COMMENT_ORDER)
-            || lower.contains(LOCK_COMMENT_ORDERING)
-            || lower.contains(LOCK_COMMENT_ACQUISITION))
+    is_comment && text_documents_lock_order(trimmed)
 }
 
 fn has_order_specific_lock_comment(snippet: &str) -> bool {
@@ -87,10 +98,25 @@ fn has_order_specific_lock_comment(snippet: &str) -> bool {
 }
 
 fn item_order_comment_fact(cx: &LateContext<'_>, item: &hir::Item<'_>) -> bool {
-    cx.sess()
-        .source_map()
-        .span_to_snippet(item.span)
-        .is_ok_and(|snippet| has_order_specific_lock_comment(&snippet))
+    let attrs = cx.tcx.hir_attrs(item.hir_id());
+    // Doc attributes (`///`, `/** */`, `#[doc = "..."]`) document the item.
+    if attrs
+        .iter()
+        .filter_map(hir::Attribute::doc_str)
+        .any(|doc| doc.as_str().lines().any(text_documents_lock_order))
+    {
+        return true;
+    }
+
+    // Comments inside the struct body.
+    let source_map = cx.sess().source_map();
+    if source_map.span_to_snippet(item.span).is_ok_and(|snippet| has_order_specific_lock_comment(&snippet)) {
+        return true;
+    }
+
+    // Comments between the outer attributes and directly above them;
+    // `item.span` excludes outer attributes.
+    crate::source::any_leading_comment_line(source_map, item.span, comment_line_is_lock_order)
 }
 
 impl<'tcx> LateLintPass<'tcx> for MultiLockOrdering {
@@ -186,5 +212,16 @@ mod tests {
 
         assert!(!has_order_specific_lock_comment(unrelated));
         assert!(has_order_specific_lock_comment(documented));
+    }
+
+    #[test]
+    fn comment_classifier_matches_whole_words_only() {
+        assert!(!has_order_specific_lock_comment("// Clock ordering follows the wall-clock source."));
+        assert!(!has_order_specific_lock_comment("// Unlock the block recorder at the border."));
+        assert!(has_order_specific_lock_comment("// Locks: acquire in `count`, `state` order."));
+        assert!(has_order_specific_lock_comment("// lock_order: count before state"));
+        assert!(has_order_specific_lock_comment("// Locking order: count before state"));
+        assert!(has_order_specific_lock_comment("// Both are locked as ordered: count, then state"));
+        assert!(!has_order_specific_lock_comment("// Deadlock-free: state is ordered after count."));
     }
 }

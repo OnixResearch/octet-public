@@ -1,0 +1,4 @@
+{
+  "policy_hash": "policy-fixture",
+  "matrix": {"schema_version": "cairn.toolchain-profile-matrix.v1", "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"], "profiles": [{"repo": "cairn", "profile_id": "cairn.dev", "purpose": "dev", "toolchain_pins": [], "commands": ["cargo test --workspace"], "expected_artifacts": ["test-receipt"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]}]}
+}

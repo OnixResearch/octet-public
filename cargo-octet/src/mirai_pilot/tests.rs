@@ -166,6 +166,19 @@ fn missing_comparison_parent_is_rejected() {
 }
 
 #[test]
+fn duplicate_measurement_criteria_are_rejected() {
+    let profile = profile();
+    let mut receipt = blocked_receipt(&profile).expect("blocked decision");
+    assert!(receipt.measurements.len() > 1);
+    receipt.measurements[1] = receipt.measurements[0].clone();
+    receipt.receipt_identity.clear();
+    receipt.receipt_identity = prefixed_identity(&receipt_bytes(&receipt).expect("serialize duplicate receipt"));
+    assert_eq!(validate_receipt(&receipt, &profile), vec![
+        "MIRAI pilot failed-criterion accounting is incomplete".to_owned()
+    ]);
+}
+
+#[test]
 fn claim_promotion_is_rejected() {
     let profile = profile();
     let mut receipt = blocked_receipt(&profile).expect("blocked decision");

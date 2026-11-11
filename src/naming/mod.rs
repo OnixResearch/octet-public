@@ -1,6 +1,7 @@
 pub mod acronym_style;
 pub mod bool_naming;
 pub mod float_for_currency;
+pub(crate) mod identifier_words;
 mod indexable_exceptions;
 pub mod negated_predicate;
 pub mod non_trait_imports;

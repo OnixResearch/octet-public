@@ -93,7 +93,10 @@ an explicit parameter.
 The lint MUST warn on direct wall-clock reads such as `Instant::now()`,
 `SystemTime::now()`, `Utc::now()`, or `Local::now()` in production code unless
 those reads are isolated behind an explicit shell-boundary helper or an item-
-scoped allow with a justification.
+scoped allow with a justification. A clock `now` function passed as a value,
+such as `or_insert_with(Instant::now)`, and `Instant::elapsed` or
+`SystemTime::elapsed`, which read the clock internally, MUST count as
+wall-clock reads.
 
 The lint MUST suggest injecting time as a parameter for pure/core logic, or
 adding a narrow `#[allow(ambient_clock, reason = "...")]` on the boundary
@@ -110,6 +113,14 @@ The lint MUST NOT fire on pure duration/value construction such as
 - WHEN the lint runs
 - THEN it warns that the function should receive time as a parameter or isolate
   the clock read at a boundary helper
+
+#### Scenario: Clock function value and elapsed read
+
+- GIVEN `entries.or_insert_with(Instant::now)` or `started.elapsed()` with
+  `started: Instant` in production code
+- WHEN the lint runs
+- THEN it warns on each as a wall-clock read
+- AND it does NOT warn on `end.duration_since(start)` over injected instants
 
 #### Scenario: Explicit shell boundary helper
 

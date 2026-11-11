@@ -2,7 +2,8 @@ use super::*;
 
 const SOURCE_IDENTITY: &str = "b3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const TOOL_FAILURE_EXIT: i32 = 2;
-const OWNER_ONLY_PERMISSIONS: u32 = 0o700;
+const TIMEOUT_EXIT: i32 = 3;
+const BASELINE_FAILED_EXIT: i32 = 4;
 
 #[test]
 fn profile_registry_and_identity_are_fresh() {
@@ -57,34 +58,51 @@ fn failed_baseline_incomplete_inventory_and_stale_artifacts_fail_closed() {
 fn bounded_native_shell_collects_declared_machine_artifacts() {
     // r[verify octet.mutation_testing.native_artifacts]
     // r[verify octet.mutation_testing.boundary]
-    use std::os::unix::fs::PermissionsExt as _;
+    let observation = run_native_fixture("MissedMutant", true, TOOL_FAILURE_EXIT);
+    assert_eq!(observation.exit_code, TOOL_FAILURE_EXIT);
+    assert_eq!(observation.parts.artifacts.len(), 3);
+    let rendered = request::render(observation.parts).expect("render mutation run input");
+    assert_eq!(request::evaluate(&rendered, PROFILE_ID).details.expect("run details").gate_status, "failed");
+}
+
+#[cfg(unix)]
+#[test]
+fn bounded_native_shell_lets_timeout_and_baseline_exits_reach_outcome_gate() {
+    for (outcome, baseline_passed, exit_code, gate_status) in [
+        ("Timeout", true, TIMEOUT_EXIT, "manual_review_required"),
+        ("CaughtMutant", false, BASELINE_FAILED_EXIT, "failed"),
+    ] {
+        let observation = run_native_fixture(outcome, baseline_passed, exit_code);
+        assert_eq!(observation.exit_code, exit_code);
+        let rendered = request::render(observation.parts).expect("render mutation run input");
+        let details = request::evaluate(&rendered, PROFILE_ID).details.expect("run details");
+        assert_eq!(details.gate_status, gate_status);
+    }
+}
+
+#[cfg(unix)]
+fn run_native_fixture(outcome: &str, baseline_passed: bool, exit_code: i32) -> shell::RunObservation {
+    use crate::test_support::write_executable_script;
 
     let directory = tempfile::tempdir().expect("create mutation shell fixture");
     let script = directory.path().join("cargo-fixture");
     let config = directory.path().join("cargo-config.toml");
     std::fs::write(&config, "[net]\noffline = true\n").expect("write mutation Cargo config");
     let script_text = format!(
-        "#!/bin/sh\nprintf '%s' '{}' > .octet/mutants-output/mutants.out/mutants.json\nprintf '%s' '{}' > .octet/mutants-output/mutants.out/outcomes.json\nprintf '%s' 'baseline log' > .octet/mutants-output/mutants.out/log/baseline.log\nprintf '%s' 'mutant log' > .octet/mutants-output/mutants.out/log/mutant.log\nprintf '%s' 'mutant diff' > .octet/mutants-output/mutants.out/diff/mutant.diff\nexit {TOOL_FAILURE_EXIT}\n",
+        "#!/bin/sh\nprintf '%s' '{}' > .octet/mutants-output/mutants.out/mutants.json\nprintf '%s' '{}' > .octet/mutants-output/mutants.out/outcomes.json\nprintf '%s' 'baseline log' > .octet/mutants-output/mutants.out/log/baseline.log\nprintf '%s' 'mutant log' > .octet/mutants-output/mutants.out/log/mutant.log\nprintf '%s' 'mutant diff' > .octet/mutants-output/mutants.out/diff/mutant.diff\nexit {exit_code}\n",
         inventory(),
-        outcomes("MissedMutant", true)
+        outcomes(outcome, baseline_passed)
     );
-    std::fs::write(&script, script_text).expect("write mutation executable fixture");
-    let mut permissions = std::fs::metadata(&script).expect("inspect mutation executable").permissions();
-    permissions.set_mode(OWNER_ONLY_PERMISSIONS);
-    std::fs::set_permissions(&script, permissions).expect("make mutation fixture executable");
+    write_executable_script(&script, &script_text);
 
     let profile = selected_profile(PROFILE_ID).expect("mutation profile");
-    let observation = shell::run_with(directory.path(), &profile, source_manifest(), shell::RuntimeTools {
+    shell::run_with(directory.path(), &profile, source_manifest(), shell::RuntimeTools {
         cargo: script,
         path: "/bin".into(),
         cargo_config: config,
         library_path: "/lib".into(),
     })
-    .expect("run bounded mutation fixture");
-    assert_eq!(observation.exit_code, TOOL_FAILURE_EXIT);
-    assert_eq!(observation.parts.artifacts.len(), 3);
-    let rendered = request::render(observation.parts).expect("render mutation run input");
-    assert_eq!(request::evaluate(&rendered, PROFILE_ID).details.expect("run details").gate_status, "failed");
+    .expect("run bounded mutation fixture")
 }
 
 fn evaluate_request(text: &str, profile_id: &str) -> Evaluation {

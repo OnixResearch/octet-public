@@ -1,0 +1,78 @@
+warning: `as usize` from `u32` is platform-dependent
+  --> $DIR/platform_dependent_cast_len_bounded.rs:25:10
+   |
+LL |     data[idx as usize]
+   |          ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Types
+   = note: `#[warn(tigerstyle::platform_dependent_cast)]` on by default
+help: replace with `usize::try_from(...)`
+   |
+LL -     data[idx as usize]
+LL +     data[usize::try_from(idx).unwrap_or_else(|_| /* handle out-of-range value */)]
+   |
+
+warning: `as usize` from `u32` is platform-dependent
+  --> $DIR/platform_dependent_cast_len_bounded.rs:30:13
+   |
+LL |     assert!((idx as usize) < other.len());
+   |             ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Types
+help: replace with `usize::try_from(...)`
+   |
+LL -     assert!((idx as usize) < other.len());
+LL +     assert!(usize::try_from(idx).unwrap_or_else(|_| /* handle out-of-range value */) < other.len());
+   |
+
+warning: `as usize` from `u32` is platform-dependent
+  --> $DIR/platform_dependent_cast_len_bounded.rs:32:10
+   |
+LL |     data[idx as usize]
+   |          ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Types
+help: replace with `usize::try_from(...)`
+   |
+LL -     data[idx as usize]
+LL +     data[usize::try_from(idx).unwrap_or_else(|_| /* handle out-of-range value */)]
+   |
+
+warning: `as usize` from `u32` is platform-dependent
+  --> $DIR/platform_dependent_cast_len_bounded.rs:37:22
+   |
+LL |     let value = data[idx as usize];
+   |                      ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Types
+help: replace with `usize::try_from(...)`
+   |
+LL -     let value = data[idx as usize];
+LL +     let value = data[usize::try_from(idx).unwrap_or_else(|_| /* handle out-of-range value */)];
+   |
+
+warning: `as usize` from `u32` is platform-dependent
+  --> $DIR/platform_dependent_cast_len_bounded.rs:39:13
+   |
+LL |     assert!((idx as usize) < data.len());
+   |             ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Types
+help: replace with `usize::try_from(...)`
+   |
+LL -     assert!((idx as usize) < data.len());
+LL +     assert!(usize::try_from(idx).unwrap_or_else(|_| /* handle out-of-range value */) < data.len());
+   |
+
+warning: 5 warnings emitted
+

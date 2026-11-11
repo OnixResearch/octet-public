@@ -1,0 +1,23 @@
+{
+  "schema_version": "octet-durability-claims-profile/v1",
+  "profile_id": "durability-recovery",
+  "boundaries": [
+    {
+      "boundary_id": "durability-recovery",
+      "source_scope": "ui_tests/durability_recovery",
+      "boundary_functions": [
+        "persist_reconcile",
+        "persist_reopen"
+      ],
+      "required_observation": "synchronization",
+      "uncertain_outcome_types": [
+        "StoreError"
+      ],
+      "commit_surfaces": [],
+      "adapter_observations": []
+    }
+  ],
+  "non_claims": [
+    "This fixture profile declares one analyzed boundary only."
+  ]
+}

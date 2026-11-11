@@ -119,7 +119,7 @@
 
 (define PATH-COMPATIBILITY-TOKENS
   (list
-   "/path/to/git/slotcar"
+   "~/git/slotcar"
    "/path/to/slotcar"
    "path:/path/to/slotcar"
    "github:OnixResearch/slotcar"))

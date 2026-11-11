@@ -1,0 +1,6 @@
+[octet]
+# Scopes resolve against the workspace root before matching: the first entry
+# reaches this fixture through `..` and covers it; `..` resolves outside the
+# root and `ui_tests/..` resolves to the root itself, so both warn.
+core_source_scopes = ["ui_tests/impure_call_in_core/../core_scope_resolution_custom", "..", "ui_tests/.."]
+disabled_lints = ["concrete_construction_in_core"]

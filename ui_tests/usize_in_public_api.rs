@@ -26,6 +26,32 @@ impl std::ops::Index<usize> for Buffer {
     }
 }
 
+pub struct PublicBuffer([u8; 4]);
+
+impl PublicBuffer {
+    pub fn slot(&self, idx: usize) -> usize {
+        idx
+    }
+}
+
+mod private_mod {
+    pub fn hidden_len(index: usize) -> usize {
+        index
+    }
+
+    pub struct HiddenBuffer;
+
+    impl HiddenBuffer {
+        pub fn slot(&self, idx: usize) -> usize {
+            idx
+        }
+    }
+}
+
+pub(crate) fn crate_len(index: usize) -> usize {
+    index
+}
+
 fn main() {
     let buf = Buffer([1, 2, 3, 4]);
     let _ = get_item(1);

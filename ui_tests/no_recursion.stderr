@@ -1,5 +1,5 @@
 warning: function calls itself recursively
-  --> $DIR/no_recursion.rs:6:13
+  --> $DIR/no_recursion.rs:8:13
    |
 LL |         n * factorial(n - 1)
    |             ^^^^^^^^^^^^^^^^
@@ -9,7 +9,7 @@ LL |         n * factorial(n - 1)
    = note: `#[warn(tigerstyle::no_recursion)]` on by default
 
 warning: function calls itself recursively
-  --> $DIR/no_recursion.rs:24:32
+  --> $DIR/no_recursion.rs:26:32
    |
 LL |         if n == 0 { 0 } else { self.method_recursion(n - 1) }
    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -17,5 +17,59 @@ LL |         if n == 0 { 0 } else { self.method_recursion(n - 1) }
    = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
    = note: see Tiger Style guide: Simple Control Flow
 
-warning: 2 warnings emitted
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:35:32
+   |
+LL |         if n == 0 { 0 } else { Self::assoc_recursion(n - 1) }
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:40:32
+   |
+LL |         if n == 0 { 0 } else { Counter::named_assoc_recursion(n - 1) }
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:66:32
+   |
+LL |         if n == 0 { 0 } else { self.walk(n - 1) }
+   |                                ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:73:36
+   |
+LL |         if n == 0 { *self } else { Walk::walk(self, n - 1) }
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:105:36
+   |
+LL |     1 + tree.kids.iter().map(|kid| depth(kid)).max().unwrap_or(0)
+   |                                    ^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: function calls itself recursively
+  --> $DIR/no_recursion.rs:110:37
+   |
+LL |     if n == 0 { 0 } else { Box::pin(walk_async(n - 1)).await }
+   |                                     ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Simple Control Flow): prefer explicit iteration or work queues over self-recursive control flow Example: while let Some(item) = stack.pop() { ... }
+   = note: see Tiger Style guide: Simple Control Flow
+
+warning: 8 warnings emitted
 

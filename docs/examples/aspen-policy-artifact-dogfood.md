@@ -7,8 +7,8 @@ Nickel registry directly.
 
 ## Scope
 
-- Octet checkout: `/path/to/git/octet`
-- Aspen checkout: `/path/to/git/aspen`
+- Octet checkout: `~/git/octet`
+- Aspen checkout: `~/git/aspen`
 - Aspen HEAD during capture: `10bb6fb38` (`Document operator receipt evidence`)
 - Aspen source roots checked:
   - `crates/aspen-core`
@@ -41,7 +41,7 @@ checks.${system}.octet-standards-artifacts =
       "crates/aspen-rpc-handlers"
     ];
     expectedDiagnostics = 0;
-    requiredPolicyIds = [ "octet.embedded.bounded-queues" ];
+    requiredPolicyIds = [ "tigerstyle.embedded.bounded-queues" ];
   };
 ```
 
@@ -61,14 +61,14 @@ for f in octet-policies.json octet-check-config.toml octet-seed-manifests.json; 
 done
 nix run .#octet-standards -- check \
   --policy-artifacts-dir "$artifact_dir" \
-  --source /path/to/git/aspen/crates/aspen-core \
-  --source /path/to/git/aspen/crates/aspen-coordination \
-  --source /path/to/git/aspen/crates/aspen-rpc-handlers \
+  --source ~/git/aspen/crates/aspen-core \
+  --source ~/git/aspen/crates/aspen-coordination \
+  --source ~/git/aspen/crates/aspen-rpc-handlers \
   --family embedded \
   --output json > "$out_json"
 jq '{diagnostics:(.diagnostics|length), active_suppressions:(.active_suppressions|length), evaluated:(.evaluated_policy_ids|length), structural:any(.policy_evaluations[]; .target_enforcement_mode=="structural")}' "$out_json"
 jq --exit-status '.diagnostics | length == 0' "$out_json" >/dev/null
-jq --exit-status 'any(.policy_evaluations[]; .policy_id == "octet.embedded.bounded-queues" and .target_enforcement_mode == "structural")' "$out_json" >/dev/null
+jq --exit-status 'any(.policy_evaluations[]; .policy_id == "tigerstyle.embedded.bounded-queues" and .target_enforcement_mode == "structural")' "$out_json" >/dev/null
 ```
 
 ## Captured result
@@ -98,7 +98,7 @@ and the command exited successfully.
 - Aspen's selected production crates have zero `embedded` family diagnostics for
   the artifact-backed bounded-queue structural policy.
 - The JSON report still carries structural policy-evaluation metadata, including
-  `octet.embedded.bounded-queues` with `target_enforcement_mode =
+  `tigerstyle.embedded.bounded-queues` with `target_enforcement_mode =
   "structural"`.
 - The bounded-queue policy is now a hard structural gate: the generated bundle
   exports forbidden unbounded constructors, approved bounded APIs/wrapper scopes,

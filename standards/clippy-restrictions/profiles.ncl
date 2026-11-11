@@ -35,6 +35,14 @@ let bounded_non_claims = [
       non_claims = bounded_non_claims,
     },
     {
+      profile_id = "boolean-api-modeling",
+      summary = "Co-report Clippy's excessive boolean-parameter finding independently of Octet's direct public API rule.",
+      lint_level = "warn",
+      lints = ["fn_params_excessive_bools"],
+      claim_scope = "clippy-restriction-diagnostics",
+      non_claims = bounded_non_claims,
+    },
+    {
       profile_id = "shell-boundary-inventory",
       summary = "Inventory process exits outside main so helpers can return status through a thin imperative shell.",
       lint_level = "warn",

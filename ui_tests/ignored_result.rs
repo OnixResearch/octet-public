@@ -24,6 +24,20 @@ fn handle_result() -> std::io::Result<()> {
     Ok(())
 }
 
+fn ignore_result_underscore_assignment() {
+    let mut buf = Vec::new();
+    // Should warn: `_ = ...` discards the Result like `let _ = ...`.
+    _ = buf.write_all(b"hello");
+}
+
+struct Listener;
+
+impl Listener {
+    // Should NOT warn: a `_` async fn parameter is not a discarded value, even
+    // though rustc lowers it into `let _ = ...` inside the async body.
+    async fn on_done(&self, _: std::io::Result<()>) {}
+}
+
 fn main() {
     ignore_result();
     ignore_result_statement_position();

@@ -91,7 +91,7 @@
     "max_implementations": 16384,
     "max_items": 65536,
     "max_modules": 4096,
-    "max_shard_bytes": 67108864,
+    "max_shard_bytes": 134217728,
     "max_shards": 32,
     "max_signatures": 65536,
     "max_span_bytes": 1048576,
@@ -179,7 +179,8 @@
       "crates/octet-lint-metadata/src",
       "crates/octet-standards/src",
       "src",
-      "cargo-octet/src"
+      "cargo-octet/src",
+      "cargo-octet/build.rs"
     ],
     "targets": [
       {
@@ -382,6 +383,11 @@
     {
       "role": "composition-root",
       "scope": "cargo-octet/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "composition-root",
+      "scope": "cargo-octet/build.rs",
       "scope_kind": "source"
     },
     {

@@ -46,7 +46,7 @@ format carries tier data:
 - `policy_check` — a standards or registry policy evaluation.
 - `ui_fixture` — a checked UI fixture or diagnostic snapshot.
 - `autofix_verified` — an autofix replay that rechecks cleanly.
-- `transcript_assertion` — an executable transcript assertion with expected output.
+- `transcript_assertion` — an executable transcript assertion with expected output. For evidence rails the tier comes from the rail kind, not from who ran the command: every receipt of the `dynamic-evidence`, `coverage-baseline`, `mutation-testing`, `benchmark-evidence`, `hegel-property`, `kani-model-check`, `z4-solver`, `verifier-fixture`, and `charon-semantic` rails records it, whether Octet ran the tool with `--run` or imported a saved report with `--input`. The tier therefore does not mean Octet executed the command. `cargo octet transcript` also records it, but for a structural check only: it confirms `$ ` command and `=> ` expected-output lines and records the transcript BLAKE3, and it runs nothing.
 - `formal_proof` — a scoped proof result with verifier, solver/toolchain, command argv, checked source/proof paths, receipt path, and proof artifact identity.
 - `manual_review_required` — a boundary where a named human action is still required.
 
@@ -142,20 +142,40 @@ Reviewers use the existing commands at the matching stage:
 - `cargo octet prove --rail <policy-id[#rail-N]>` narrows a list, explain, or
   execution run to explicit rails after family/source matching; unmatched
   selectors fail closed with deterministic diagnostics.
-- `cargo octet prove --explain` explains selected rails and deterministic
-  remediation for stale bindings, verifier mismatches, unmatched rails, or
-  unbacked proof claims.
+- `cargo octet prove --explain` runs the selected rails and prefixes failure
+  diagnostics with deterministic remediation for stale bindings, verifier
+  mismatches, unmatched rails, or unbacked proof claims.
 - `cargo octet prove` runs the configured verifier command, writes bounded logs
   and structured receipts, and emits `formal_proof` provenance only for a
-  validated scoped receipt.
+  validated scoped receipt whose proof goal has no blockers. A blocked goal's
+  receipt and Aeneas stage artifacts are recorded as `manual_review_required`
+  instead. Verifier output that exceeds the bounded log capture fails the rail.
 - `cargo octet proof-ref scaffold` computes a consumer source BLAKE3 identity and
   emits linkage JSON copied from a saved proof card; `cargo octet proof-ref
   validate` checks that saved linkage without rerunning Verus or emitting new
-  `formal_proof` provenance.
+  `formal_proof` provenance. Scaffold refuses an `--output` path that resolves
+  to its `--proof-cards` or `--consumer-source` input. Both fail closed when the
+  referenced proof or property ID matches no card or more than one card in the
+  deck. Overclaim wording in the context, anchor, and non-claims is judged per
+  occurrence: a phrase such as `full safety` counts as a non-claim only when
+  `not`, `no`, `never`, `without`, `nor`, `neither`, `cannot`, or an `n't` form
+  appears earlier in its own clause. Clauses end at `;`, `.`, `!`, `?`, or a
+  contrastive word such as `but`, so the Aeneas non-claim `does not establish
+  semantic equivalence or release eligibility` passes while `covers full safety
+  of decode; not full safety of encode` fails.
 - `cargo octet artifact verify` recomputes artifact identities and checks saved
   receipts plus provenance before an artifact directory is treated as evidence.
+  Evidence-rail provenance records must carry the receipt's `workspace_scope`,
+  and each `formal_proof` record in a prove bundle must carry the checked scope
+  its proof receipt records (or, for a receipt without one, its proof card's
+  `checked_rust_source_scope`), so a `fixture-only` proof cannot be relabelled
+  `production` by rewriting provenance. Beside `status.json`, an
+  `evidence-log-manifest.json` is accepted only in prove bundles and only for
+  raw logs under `proofs/`; in any other bundle it and the logs it lists are
+  unexpected artifacts.
   With `--emit-valence-provenance <path>`, it writes a Valence-ready export only
-  after verification succeeds. r[impl octet.evidence_provenance.valence_export.boundary]
+  after verification succeeds, and refuses a path that resolves inside the
+  verified artifact directory. r[impl octet.evidence_provenance.valence_export.boundary]
   r[impl octet.evidence_provenance.valence_export.boundary_hardened]
   The export is a Valence adapter input: every record carries a replayable
   receipt envelope, canonical BLAKE3 input/output artifact identities, typed edge
@@ -248,6 +268,26 @@ claim whole-program correctness, certification, business-domain validation,
 semantic equivalence, full safety, or a verified runtime without separate
 evidence.
 
+## Trust-boundary source prefixes
+
+`cargo octet prove --candidates` ranks an unproven Tiger Style allowance higher
+when the site is on a declared trust boundary. The machine-read block below is
+the authority for that input. The block lists repository-relative path
+prefixes; a candidate is on a trust boundary when its checked-source path equals
+a prefix or starts with it. Keep entries narrow: a prefix is a review signal, not
+a correctness claim.
+
+```text trust-boundary-prefixes
+src/verified/
+cargo-octet/src/proof_ref.rs
+cargo-octet/src/prove.rs
+crates/octet-standards/src/formal_proof.rs
+crates/octet-standards/src/proof.rs
+```
+
+Adding a prefix does not prove that code is correct; it only says a suppressed
+claim there deserves earlier proof triage.
+
 ## Provenance chain
 
 A provenance record connects a claim to its source and artifact:
@@ -305,7 +345,7 @@ Octet is designed for local or consumer-CI execution:
   CI boundary;
 - no required hosted service: Octet does not require uploading source or
   artifacts to an Octet-operated service;
-- pin-capable runner path: consumers can pin `github:OnixResearch/octet-public` to a
+- pin-capable runner path: consumers can pin `github:OnixResearch/octet` to a
   release tag or commit, or use `path:/path/to/octet#cargo-octet`;
 - source-visible toolchain: this repository contains the runner, lint library,
   standards checker, policy registry, and generated artifact seam;
@@ -345,4 +385,45 @@ store, or downstream integrations do after Octet writes local files.
 | type-driven domain modeling | [Type-driven domain modeling](type-driven-domain-modeling.md) | small Rust domain identities, enums, and refined constructors protecting core/adapters while preserving wire fields |
 | effect capability ports | [Effect capability ports](effect-capability-ports.md) | pure cores return process/effect plans and diagnostics; shells own filesystem, process, environment, time, randomness, logging, metrics, network, and runtime effects |
 | scope-boundary | [What Octet does not claim](#what-octet-does-not-claim) and [safety-critical guide](safety-critical.md) | unsupported claims paired with supported capabilities |
+| proof-to-implementation gap | [Proof-to-implementation gap](proof-implementation-gap.md) | named specification-assumption failure class with the interleaving, fault-handling, and unverified-extension layers, and the system-level testing that closes each layer |
 | controlled-deployment | [Controlled deployment posture](#controlled-deployment-posture) and [downstream rollout kit](downstream-rollout.md) | local/CI execution, pinned runner, source-visible toolchain, local artifacts |
+
+## Binary debug-map evidence references
+
+r[impl octet.evidence_provenance.binary_debug_map_profile]
+r[impl octet.evidence_provenance.binary_debug_map_linkage]
+r[impl octet.evidence_provenance.binary_debug_map_failure_boundary]
+r[impl octet.evidence_provenance.binary_debug_map_handoff]
+
+## Artifact bundle and architecture gate traceability
+
+This maintained index links the accepted artifact-bundle-verification and project-architecture-gate requirements to their selected implementation and test roots. It is a linkage index, not additional behavioral evidence.
+
+r[impl octet.artifact_bundle_verification.command]
+r[impl octet.artifact_bundle_verification.command.local]
+r[impl octet.artifact_bundle_verification.command.deterministic_output]
+r[impl octet.artifact_bundle_verification.complete_bundle]
+r[impl octet.artifact_bundle_verification.complete_bundle.passes]
+r[impl octet.artifact_bundle_verification.complete_bundle.exact]
+r[impl octet.artifact_bundle_verification.fail_closed]
+r[impl octet.artifact_bundle_verification.fail_closed.file_set]
+r[impl octet.artifact_bundle_verification.fail_closed.provenance]
+r[impl octet.artifact_bundle_verification.cap_std_boundary.root_wrappers]
+r[impl octet.artifact_bundle_verification.cap_std_boundary.tests.positive]
+r[impl octet.artifact_bundle_verification.cap_std_boundary.tests.negative]
+r[impl octet.artifact_bundle_verification.cap_std_boundary.dependency]
+r[impl octet.artifact_bundle_verification.cap_std_boundary.conversion]
+r[impl octet.artifact_bundle_verification.cap_std_boundary.docs]
+r[impl octet.artifact_bundle_verification.cap_std_boundary.validation]
+r[impl octet.project_architecture_gate.orchestration]
+r[impl octet.project_architecture_gate.input_integrity]
+r[impl octet.project_architecture_gate.role_graph]
+r[impl octet.project_architecture_gate.fcis]
+r[impl octet.project_architecture_gate.modes]
+r[impl octet.project_architecture_gate.admission]
+r[impl octet.project_architecture_gate.waivers]
+r[impl octet.project_architecture_gate.evidence]
+r[impl octet.project_architecture_gate.compatibility]
+r[impl octet.project_architecture_gate.verification]
+r[impl octet.project_architecture_gate.authority_scoped_receipt_ids]
+r[impl octet.project_architecture_gate.test_ownership]

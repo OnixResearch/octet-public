@@ -1,7 +1,10 @@
 // r[impl octet.benchmark_evidence.signal_oracle]
 use std::collections::BTreeMap;
 
-use super::*;
+use super::OracleRecord;
+use super::SignalFinding;
+use super::SignalSummary;
+use super::resources;
 
 const EXPECTED_OUTCOMES: [&str; 4] = ["finding", "suppressed", "clean", "inconclusive"];
 
@@ -96,23 +99,17 @@ fn classify_expected(
         ("finding", Some(finding)) if !finding.suppressed => {
             increment(&mut summary.true_positive, "true positive", diagnostics);
         }
-        ("finding", Some(_)) => {
-            increment(&mut summary.unexpected_suppression, "unexpected suppression", diagnostics);
-        }
-        ("finding", None) | ("suppressed", None) => {
-            increment(&mut summary.false_negative, "false negative", diagnostics);
-        }
         ("suppressed", Some(finding)) if finding.suppressed => {
             increment(&mut summary.expected_suppression, "expected suppression", diagnostics);
         }
-        ("suppressed", Some(_)) => {
-            increment(&mut summary.unexpected_suppression, "unexpected suppression", diagnostics);
-        }
-        ("clean", Some(finding)) if finding.suppressed => {
-            increment(&mut summary.unexpected_suppression, "unexpected suppression", diagnostics);
-        }
-        ("clean", Some(_)) => {
+        ("clean", Some(finding)) if !finding.suppressed => {
             increment(&mut summary.false_positive, "false positive", diagnostics);
+        }
+        ("finding" | "suppressed" | "clean", Some(_)) => {
+            increment(&mut summary.unexpected_suppression, "unexpected suppression", diagnostics);
+        }
+        ("finding" | "suppressed", None) => {
+            increment(&mut summary.false_negative, "false negative", diagnostics);
         }
         ("clean", None) => {}
         ("inconclusive", _) => {

@@ -12,6 +12,9 @@ pub const REQUIRED_NON_CLAIM: &str = "SARIF intake preserves bounded external st
 const PROFILE_JSON: &str = include_str!("../../../../standards/sarif/profiles.json");
 const MAX_DIAGNOSTICS: usize = 32;
 const MIN_COORDINATE: u64 = 1;
+/// The `uriBaseId` that `CodeQL` uses for the analyzed source root, which Octet binds to the
+/// workspace root.
+const SOURCE_ROOT_BASE_ID: &str = "%SRCROOT%";
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Levels {
@@ -21,6 +24,8 @@ pub struct Levels {
     pub none: String,
 }
 
+// `profile_id` is a serialized profile JSON key; renaming the field would change the wire format.
+#[allow(clippy::struct_field_names)]
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Profile {
     pub profile_id: String,
@@ -79,6 +84,16 @@ pub struct Evaluation {
     pub diagnostics: Vec<String>,
 }
 
+/// Returns true when a report driver name matches the checked profile name.
+///
+/// Semgrep CLI 1.180.0 emits `Semgrep OSS` in SARIF while older reports and the checked profiles
+/// use `Semgrep`. Both spellings identify the same local OSS producer; the profile and rule
+/// identities still establish which tool and rules produced the report.
+#[must_use]
+pub(crate) fn driver_name_matches(expected: &str, actual: &str) -> bool {
+    expected == actual || (expected == "Semgrep" && actual == "Semgrep OSS")
+}
+
 // r[impl octet.external_lint.sarif_intake]
 // r[impl octet.external_lint.sarif_intake_boundary]
 pub fn evaluate(report: &str, profile_id: &str) -> Evaluation {
@@ -118,13 +133,42 @@ pub fn prefixed_identity(bytes: &[u8]) -> String {
     format!("b3:{}", blake3::hash(bytes).to_hex())
 }
 
-fn safe_path(path: &str, max_bytes: usize) -> bool {
-    !path.is_empty()
-        && path.len() <= max_bytes
+/// Decodes a SARIF artifact URI reference into the workspace-relative path it names, or `None`
+/// when the reference is unsafe or ambiguous. The path policy runs on the decoded path, so
+/// percent-encoded traversal, separators, drive letters, and schemes cannot slip past it.
+fn safe_path(uri: &str, max_bytes: usize) -> Option<String> {
+    // A raw `?` or `#` starts a query or fragment, which a local file location cannot carry.
+    if uri.len() > max_bytes || uri.contains(['?', '#']) {
+        return None;
+    }
+    let path = percent_decode(uri)?;
+    // A colon in the first segment reads as a drive letter (`C:/x`, `c:x`) or a scheme
+    // (`file:/x`); in later segments it is an ordinary file name character, as in `src/a:b.rs`.
+    let safe = !path.is_empty()
         && !path.starts_with('/')
         && !path.starts_with('\\')
-        && !path.contains(':')
-        && path.split(['/', '\\']).all(|part| !matches!(part, "" | "." | ".."))
+        && path.split(['/', '\\']).next().is_some_and(|first| !first.contains(':'))
+        && !path.chars().any(char::is_control)
+        && path.split(['/', '\\']).all(|part| !matches!(part, "" | "." | ".."));
+    safe.then_some(path)
+}
+
+/// Decodes RFC 3986 percent escapes; a malformed escape or non-UTF-8 result yields `None`.
+fn percent_decode(uri: &str) -> Option<String> {
+    let bytes = uri.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while let Some(&byte) = bytes.get(index) {
+        if byte == b'%' {
+            let digit = |offset: usize| bytes.get(index + offset).and_then(|digit| char::from(*digit).to_digit(16));
+            decoded.push(u8::try_from(digit(1)? * 16 + digit(2)?).ok()?);
+            index += 3;
+        } else {
+            decoded.push(byte);
+            index += 1;
+        }
+    }
+    String::from_utf8(decoded).ok()
 }
 
 fn mapped_level(level: &str, levels: &Levels) -> Option<String> {
@@ -158,6 +202,8 @@ fn finding_identity(input: &IdentityInput<'_>) -> String {
     hasher.update(&input.column.to_le_bytes());
     format!("b3:{}", hasher.finalize().to_hex())
 }
+
+pub(crate) mod producer;
 
 mod validation;
 

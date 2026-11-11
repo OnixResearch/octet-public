@@ -1,0 +1,1 @@
+- [~] [serial] Render the fixture lifecycle state. r[fixture.lifecycle_view]

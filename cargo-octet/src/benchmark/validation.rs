@@ -1,7 +1,27 @@
 // r[impl octet.benchmark_evidence.public_claims]
 use std::collections::BTreeSet;
 
-use super::*;
+use super::BenchmarkProjection;
+use super::Evaluation;
+use super::PROFILE_ID;
+use super::PROFILE_IDENTITY;
+use super::Profile;
+use super::PublicClaim;
+use super::RECEIPT_SCHEMA;
+use super::REQUIRED_NON_CLAIM;
+use super::ReceiptDetails;
+use super::ResourceSummary;
+use super::RunSet;
+use super::SignalSummary;
+use super::WorkloadProfile;
+use super::comparison;
+use super::prefixed_identity;
+use super::profile_validation;
+use super::projection_bytes;
+use super::request;
+use super::resources;
+use super::selected_profile;
+use super::signal;
 
 const SUPPORTED_OUTCOMES: [&str; 5] = ["succeeded", "failed", "timed_out", "output_limit", "cancelled"];
 

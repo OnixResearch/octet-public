@@ -63,6 +63,9 @@ const CONTRACT_INDENT: &str = "  ";
 const HUMAN_ACTION_TRANSFORM_REVIEW: &str =
     "review bounded transform inputs, rule-set identity, parent artifacts, and scoped non-claims before release";
 
+// The `max_*` names are serialized transform-budget JSON keys; renaming would change the wire
+// format.
+#[allow(clippy::struct_field_names)]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct TransformBudget {
     pub max_input_bytes: usize,

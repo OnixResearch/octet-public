@@ -1,0 +1,1986 @@
+{
+  "profiles": [
+    {
+      "adoption": {
+        "clean_consumer": {
+          "immutable": true,
+          "notes": "The checked-in corpus is dependency-free and bounded to the declared architecture cases.",
+          "selection_id": "clean-consumer-architecture-corpus-v1",
+          "source_repository": "github:OnixResearch/octet",
+          "source_revision": "2bdd581980eef7f6ec8363ffa20ab9f3c798c9ee",
+          "workspace_path": "standards/benchmark/corpus"
+        },
+        "real_consumer": {
+          "immutable": true,
+          "notes": "Immutable real consumer selection. Runtime is unavailable in this benchmark environment; no timing is invented.",
+          "selection_id": "bounded-exec-44eb74e",
+          "source_repository": "github:OnixResearch/bounded-exec",
+          "source_revision": "44eb74eb639194665ee820562d5b2ce2c3ff6a94",
+          "workspace_path": "not-checked-out-in-benchmark-environment"
+        },
+        "tools": [
+          {
+            "incremental_command": [
+              "cargo-octet",
+              "--version"
+            ],
+            "initial_command": [
+              "cargo-octet",
+              "--version"
+            ],
+            "required_config_files": [
+              "standards/benchmark/corpus/octet-architecture.ncl"
+            ],
+            "setup_steps": [
+              "Build or install cargo-octet at the pinned source revision.",
+              "Export standards/benchmark/corpus/octet-architecture.ncl and pass the checked policy.",
+              "Select the corpus scope explicitly; do not inherit an ambient workspace."
+            ],
+            "tool_id": "octet",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "cargo-pup",
+              "--version"
+            ],
+            "initial_command": [
+              "cargo-pup",
+              "--version"
+            ],
+            "required_config_files": [],
+            "setup_steps": [
+              "Install cargo-pup 0.1.9 from crates.io.",
+              "Declare the dependency-boundary and reexport rules in the reviewed tool configuration.",
+              "Run against the selected corpus targets and retain diagnostics verbatim."
+            ],
+            "tool_id": "cargo-pup",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "archunit",
+              "--version"
+            ],
+            "initial_command": [
+              "archunit",
+              "--version"
+            ],
+            "required_config_files": [],
+            "setup_steps": [
+              "Add archunit 0.0.2 as a test dependency in the consumer fixture.",
+              "Write the layer and dependency rules as a test module.",
+              "Run cargo test for that module and retain the test output."
+            ],
+            "tool_id": "archunit-rust",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "cargo",
+              "clippy",
+              "--workspace",
+              "--all-targets",
+              "--offline"
+            ],
+            "initial_command": [
+              "cargo",
+              "clippy",
+              "--workspace",
+              "--all-targets",
+              "--offline"
+            ],
+            "required_config_files": [],
+            "setup_steps": [
+              "Install the pinned Rust toolchain with the clippy component.",
+              "Select lints explicitly; the benchmark does not claim an architecture check."
+            ],
+            "tool_id": "clippy",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "cargo-deny",
+              "--version"
+            ],
+            "initial_command": [
+              "cargo-deny",
+              "--version"
+            ],
+            "required_config_files": [
+              "deny.toml"
+            ],
+            "setup_steps": [
+              "Install cargo-deny 0.20.2.",
+              "Supply the reviewed deny.toml policy.",
+              "Run the dependency checks; this tool does not claim architecture or evidence assurance."
+            ],
+            "tool_id": "cargo-deny",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "cargo-vet",
+              "--version"
+            ],
+            "initial_command": [
+              "cargo-vet",
+              "--version"
+            ],
+            "required_config_files": [
+              "supply-chain/config.toml"
+            ],
+            "setup_steps": [
+              "Install cargo-vet 0.10.3.",
+              "Configure the audit set and retain the fetched audit state.",
+              "Run cargo vet; this tool does not claim architecture or evidence assurance."
+            ],
+            "tool_id": "cargo-vet",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "semgrep",
+              "--version"
+            ],
+            "initial_command": [
+              "semgrep",
+              "--version"
+            ],
+            "required_config_files": [],
+            "setup_steps": [
+              "Install Semgrep 1.184.0.",
+              "Load the reviewed token-pattern rules and select the corpus path.",
+              "Retain SARIF or JSON output verbatim; macro and cfg outcomes remain partial."
+            ],
+            "tool_id": "semgrep",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "codeql",
+              "--version"
+            ],
+            "initial_command": [
+              "codeql",
+              "--version"
+            ],
+            "required_config_files": [],
+            "setup_steps": [
+              "Install the CodeQL CLI 2.27.4 and the Rust query pack.",
+              "Create the database from the corpus with the pinned compiler.",
+              "Run the reviewed queries and retain SARIF output verbatim."
+            ],
+            "tool_id": "codeql",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          },
+          {
+            "incremental_command": [
+              "bash",
+              "--version"
+            ],
+            "initial_command": [
+              "bash",
+              "--version"
+            ],
+            "required_config_files": [
+              "standards/benchmark/assurance/repository-baseline.sh"
+            ],
+            "setup_steps": [
+              "Check out the pinned repository script.",
+              "Provide jq and sh, then run the script against each assurance fixture.",
+              "Retain the exit status; an unrun script is not clean evidence."
+            ],
+            "tool_id": "repository-baseline-script",
+            "unavailable_metrics": [
+              "cpu_time_ns",
+              "peak_memory_bytes",
+              "network_install_time_ms"
+            ]
+          }
+        ]
+      },
+      "applicability": [
+        {
+          "case_ids": [
+            "dependency-boundary-compliant",
+            "dependency-boundary-violating"
+          ],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "supported",
+          "task_id": "dependency-boundary",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "reexport-alias-compliant",
+            "reexport-alias-violating"
+          ],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "supported",
+          "task_id": "reexports-aliases",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "macro-expansion-compliant",
+            "macro-expansion-violating"
+          ],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "supported",
+          "task_id": "macro-expansion",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "cfg-compliant",
+            "cfg-violating",
+            "cfg-disputed"
+          ],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "supported",
+          "task_id": "conditional-compilation",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "trait-method-compliant",
+            "trait-method-violating"
+          ],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "supported",
+          "task_id": "trait-method-references",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "workspace-target-compliant",
+            "workspace-target-violating"
+          ],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "supported",
+          "task_id": "workspace-targets",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "empty-selected-scope"
+          ],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "supported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "stale-evidence",
+            "valid-evidence-control"
+          ],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "supported",
+          "task_id": "stale-evidence",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "changed-policy"
+          ],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "supported",
+          "task_id": "changed-policy",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "missing-execution"
+          ],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "supported",
+          "task_id": "missing-execution",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "invalid-proof-source-linkage"
+          ],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `octet` and task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "supported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "octet"
+        },
+        {
+          "case_ids": [
+            "dependency-boundary-compliant",
+            "dependency-boundary-violating"
+          ],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `cargo-pup` and task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "supported",
+          "task_id": "dependency-boundary",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [
+            "reexport-alias-compliant",
+            "reexport-alias-violating"
+          ],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `cargo-pup` and task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "supported",
+          "task_id": "reexports-aliases",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [
+            "trait-method-compliant",
+            "trait-method-violating"
+          ],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `cargo-pup` and task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "supported",
+          "task_id": "trait-method-references",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [
+            "workspace-target-compliant",
+            "workspace-target-violating"
+          ],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `cargo-pup` and task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "supported",
+          "task_id": "workspace-targets",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [
+            "empty-selected-scope"
+          ],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `cargo-pup` and task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "supported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "unsupported",
+          "task_id": "stale-evidence",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "unsupported",
+          "task_id": "changed-policy",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "cargo-pup"
+        },
+        {
+          "case_ids": [
+            "dependency-boundary-compliant",
+            "dependency-boundary-violating"
+          ],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `archunit-rust` and task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "supported",
+          "task_id": "dependency-boundary",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [
+            "reexport-alias-compliant",
+            "reexport-alias-violating"
+          ],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `archunit-rust` and task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "supported",
+          "task_id": "reexports-aliases",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [
+            "trait-method-compliant",
+            "trait-method-violating"
+          ],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `archunit-rust` and task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "supported",
+          "task_id": "trait-method-references",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [
+            "workspace-target-compliant",
+            "workspace-target-violating"
+          ],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `archunit-rust` and task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "supported",
+          "task_id": "workspace-targets",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [
+            "empty-selected-scope"
+          ],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `archunit-rust` and task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "supported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "unsupported",
+          "task_id": "stale-evidence",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "unsupported",
+          "task_id": "changed-policy",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "archunit-rust"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "unsupported",
+          "task_id": "dependency-boundary",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "unsupported",
+          "task_id": "reexports-aliases",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "unsupported",
+          "task_id": "trait-method-references",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "unsupported",
+          "task_id": "workspace-targets",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "unsupported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "unsupported",
+          "task_id": "stale-evidence",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "unsupported",
+          "task_id": "changed-policy",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "clippy"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "unsupported",
+          "task_id": "dependency-boundary",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "unsupported",
+          "task_id": "reexports-aliases",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "unsupported",
+          "task_id": "trait-method-references",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "unsupported",
+          "task_id": "workspace-targets",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "unsupported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "unsupported",
+          "task_id": "stale-evidence",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "unsupported",
+          "task_id": "changed-policy",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "cargo-deny"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "unsupported",
+          "task_id": "dependency-boundary",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "unsupported",
+          "task_id": "reexports-aliases",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "unsupported",
+          "task_id": "trait-method-references",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "unsupported",
+          "task_id": "workspace-targets",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "unsupported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "unsupported",
+          "task_id": "stale-evidence",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "unsupported",
+          "task_id": "changed-policy",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "cargo-vet"
+        },
+        {
+          "case_ids": [
+            "dependency-boundary-compliant",
+            "dependency-boundary-violating"
+          ],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `semgrep` and task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "partial",
+          "task_id": "dependency-boundary",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [
+            "reexport-alias-compliant",
+            "reexport-alias-violating"
+          ],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `semgrep` and task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "partial",
+          "task_id": "reexports-aliases",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "unsupported",
+          "task_id": "trait-method-references",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "unsupported",
+          "task_id": "workspace-targets",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "unsupported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "unsupported",
+          "task_id": "stale-evidence",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "unsupported",
+          "task_id": "changed-policy",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "semgrep"
+        },
+        {
+          "case_ids": [
+            "dependency-boundary-compliant",
+            "dependency-boundary-violating"
+          ],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `codeql` and task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "partial",
+          "task_id": "dependency-boundary",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [
+            "reexport-alias-compliant",
+            "reexport-alias-violating"
+          ],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `codeql` and task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "partial",
+          "task_id": "reexports-aliases",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "unsupported",
+          "task_id": "trait-method-references",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "unsupported",
+          "task_id": "workspace-targets",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "unsupported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "unsupported",
+          "task_id": "stale-evidence",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "unsupported",
+          "task_id": "changed-policy",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "codeql"
+        },
+        {
+          "case_ids": [
+            "dependency-boundary-compliant",
+            "dependency-boundary-violating"
+          ],
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `repository-baseline-script` and task `dependency-boundary`.",
+          "scope": "selected source file and its declared crate role",
+          "status": "partial",
+          "task_id": "dependency-boundary",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [
+            "reexport-alias-compliant",
+            "reexport-alias-violating"
+          ],
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `repository-baseline-script` and task `reexports-aliases`.",
+          "scope": "selected source file and its public item graph",
+          "status": "partial",
+          "task_id": "reexports-aliases",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `macro-expansion`.",
+          "scope": "selected source file and expansion-aware call graph",
+          "status": "unsupported",
+          "task_id": "macro-expansion",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `conditional-compilation`.",
+          "scope": "selected source file plus the declared feature and target configuration",
+          "status": "unsupported",
+          "task_id": "conditional-compilation",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `trait-method-references`.",
+          "scope": "selected source file and resolved method definitions",
+          "status": "unsupported",
+          "task_id": "trait-method-references",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `workspace-targets`.",
+          "scope": "declared target list including binaries",
+          "status": "unsupported",
+          "task_id": "workspace-targets",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `empty-selected-scope`.",
+          "scope": "zero selected Rust files",
+          "status": "unsupported",
+          "task_id": "empty-selected-scope",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [
+            "stale-evidence",
+            "valid-evidence-control"
+          ],
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `repository-baseline-script` and task `stale-evidence`.",
+          "scope": "retained evidence file and checked policy identity",
+          "status": "partial",
+          "task_id": "stale-evidence",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [
+            "changed-policy"
+          ],
+          "comparable_subset": "assurance-changed-policy-v1",
+          "rationale": "Declared by the frozen applicability matrix for tool `repository-baseline-script` and task `changed-policy`.",
+          "scope": "recorded and checked policy identities",
+          "status": "partial",
+          "task_id": "changed-policy",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-missing-execution-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `missing-execution`.",
+          "scope": "execution status and command identity",
+          "status": "unsupported",
+          "task_id": "missing-execution",
+          "tool_id": "repository-baseline-script"
+        },
+        {
+          "case_ids": [],
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "rationale": "The published applicability matrix does not declare this tool for task `invalid-proof-source-linkage`.",
+          "scope": "proof source identity and claimed source identity",
+          "status": "unsupported",
+          "task_id": "invalid-proof-source-linkage",
+          "tool_id": "repository-baseline-script"
+        }
+      ],
+      "corpus": [
+        {
+          "case_id": "dependency-boundary-compliant",
+          "category": "architecture",
+          "expected": "clean",
+          "rationale": "The application shell calls only the core-owned Port trait and constructs no adapter type.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/app/src/compliant.rs"
+            ]
+          },
+          "source_identity": "b3:936954ff246914c7b9e67c7991da6f2296f8469b4cf1732afff523428a64eaa2",
+          "source_path": "standards/benchmark/corpus/crates/app/src/compliant.rs",
+          "task_id": "dependency-boundary",
+          "variant": "compliant"
+        },
+        {
+          "case_id": "dependency-boundary-violating",
+          "category": "architecture",
+          "expected": "finding",
+          "rationale": "The application shell reaches core internals and constructs an outbound adapter, violating the dependency rule.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/app/src/violating.rs"
+            ]
+          },
+          "source_identity": "b3:d88195b2eb597142b97159781bb2c80a6ff6b2be5134767574e0d5746971b168",
+          "source_path": "standards/benchmark/corpus/crates/app/src/violating.rs",
+          "task_id": "dependency-boundary",
+          "variant": "violating"
+        },
+        {
+          "case_id": "reexport-alias-compliant",
+          "category": "architecture",
+          "expected": "clean",
+          "rationale": "Aliasing a core-owned port is a permitted public reexport.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/facade/src/compliant.rs"
+            ]
+          },
+          "source_identity": "b3:296661147fbe3d482f64ee20a5cc8a7aa53e655c56add4c16ae625c95b32f21b",
+          "source_path": "standards/benchmark/corpus/crates/facade/src/compliant.rs",
+          "task_id": "reexports-aliases",
+          "variant": "compliant"
+        },
+        {
+          "case_id": "reexport-alias-violating",
+          "category": "architecture",
+          "expected": "finding",
+          "rationale": "The facade reexports outbound-adapter internals and constructs the adapter directly.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/facade/src/violating.rs"
+            ]
+          },
+          "source_identity": "b3:600991fb24d064fca0c544a5cfe3bee47caf63e6837cef52af665da9e546e81e",
+          "source_path": "standards/benchmark/corpus/crates/facade/src/violating.rs",
+          "task_id": "reexports-aliases",
+          "variant": "violating"
+        },
+        {
+          "case_id": "macro-expansion-compliant",
+          "category": "architecture",
+          "expected": "clean",
+          "rationale": "The macro expands only to the core-owned port method.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/facade/src/compliant_macro.rs"
+            ]
+          },
+          "source_identity": "b3:cbefd91bc520a61a9108033bcc56ef4b7f11acf07c0c391b6cde49fe3da4df77",
+          "source_path": "standards/benchmark/corpus/crates/facade/src/compliant_macro.rs",
+          "task_id": "macro-expansion",
+          "variant": "compliant"
+        },
+        {
+          "case_id": "macro-expansion-violating",
+          "category": "architecture",
+          "expected": "finding",
+          "rationale": "The macro hides an outbound-adapter construction from token-only callers but not from expansion-aware analysis.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/facade/src/violating_macro.rs"
+            ]
+          },
+          "source_identity": "b3:c93654c1708f4deb5e35fe5dd10d39b1bd1c468c555025cc53cdf6dcfbf4b828",
+          "source_path": "standards/benchmark/corpus/crates/facade/src/violating_macro.rs",
+          "task_id": "macro-expansion",
+          "variant": "violating"
+        },
+        {
+          "case_id": "cfg-compliant",
+          "category": "architecture",
+          "expected": "clean",
+          "rationale": "The strict branch calls the port; the non-strict branch is inert and constructs nothing.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/gated/src/compliant.rs"
+            ]
+          },
+          "source_identity": "b3:8eb69d100f53accb82744c34987a2daf5fae9de24027de201c99cea9a085f4c1",
+          "source_path": "standards/benchmark/corpus/crates/gated/src/compliant.rs",
+          "task_id": "conditional-compilation",
+          "variant": "compliant"
+        },
+        {
+          "case_id": "cfg-violating",
+          "category": "architecture",
+          "expected": "finding",
+          "rationale": "With default features the non-strict branch constructs the adapter; the analyzer must state the selected configuration.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/gated/src/violating.rs"
+            ]
+          },
+          "source_identity": "b3:eb9e2867648f5341eb5dbaf01dd0be2f477763820a7116523b8d7544df1376e2",
+          "source_path": "standards/benchmark/corpus/crates/gated/src/violating.rs",
+          "task_id": "conditional-compilation",
+          "variant": "violating"
+        },
+        {
+          "case_id": "cfg-disputed",
+          "category": "architecture",
+          "expected": "disputed",
+          "rationale": "Both feature branches contain the same direct adapter call; reviewers dispute whether this is one violation or two configuration-specific violations.",
+          "reviewer_role": "benchmark-oracle-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/gated/src/disputed.rs"
+            ]
+          },
+          "source_identity": "b3:0fbd717de7cef443b4dd621da98cec312a9a92802ee93d9418aa1fa7fd430987",
+          "source_path": "standards/benchmark/corpus/crates/gated/src/disputed.rs",
+          "task_id": "conditional-compilation",
+          "variant": "disputed"
+        },
+        {
+          "case_id": "trait-method-compliant",
+          "category": "architecture",
+          "expected": "clean",
+          "rationale": "The call is expressed through the trait method on a dyn Trait receiver.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/traits/src/compliant.rs"
+            ]
+          },
+          "source_identity": "b3:5c45d0b972350425a9bdb8c1650591b9d67c00381969fda8539f0b0c552267ad",
+          "source_path": "standards/benchmark/corpus/crates/traits/src/compliant.rs",
+          "task_id": "trait-method-references",
+          "variant": "compliant"
+        },
+        {
+          "case_id": "trait-method-violating",
+          "category": "architecture",
+          "expected": "finding",
+          "rationale": "The call resolves to an inherent method on the concrete outbound adapter.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/traits/src/violating.rs"
+            ]
+          },
+          "source_identity": "b3:fd83c857ce8080bae2af30ade9415a2c76148ac5de8d28098d68299b3992a89d",
+          "source_path": "standards/benchmark/corpus/crates/traits/src/violating.rs",
+          "task_id": "trait-method-references",
+          "variant": "violating"
+        },
+        {
+          "case_id": "workspace-target-compliant",
+          "category": "architecture",
+          "expected": "clean",
+          "rationale": "The composition-root binary wires an explicit port and constructs no adapter.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/bin_target/src/main.rs"
+            ]
+          },
+          "source_identity": "b3:34494cd7b1307108e64ae8df4281bea508920f4b21885cba80fc9213bbd7fccb",
+          "source_path": "standards/benchmark/corpus/crates/bin_target/src/main.rs",
+          "task_id": "workspace-targets",
+          "variant": "compliant"
+        },
+        {
+          "case_id": "workspace-target-violating",
+          "category": "architecture",
+          "expected": "finding",
+          "rationale": "A separate workspace binary target constructs the outbound adapter outside the composition-root port path.",
+          "reviewer_role": "octet-architecture-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "crates/bin_target/src/bin/violating.rs"
+            ]
+          },
+          "source_identity": "b3:9d48b18508c68f34adcc0c7ee73f7847d488ebeb343635241bada62437871541",
+          "source_path": "standards/benchmark/corpus/crates/bin_target/src/bin/violating.rs",
+          "task_id": "workspace-targets",
+          "variant": "violating"
+        },
+        {
+          "case_id": "empty-selected-scope",
+          "category": "architecture",
+          "expected": "empty_scope",
+          "rationale": "The selected child scope contains no Rust files; zero findings are not clean evidence of correctness.",
+          "reviewer_role": "benchmark-oracle-reviewer",
+          "scope": {
+            "empty": true,
+            "expected_analyzed_sources": 0,
+            "selected_sources": []
+          },
+          "source_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+          "source_path": "standards/benchmark/corpus/crates/empty_scope/selected",
+          "task_id": "empty-selected-scope",
+          "variant": "empty_scope"
+        },
+        {
+          "case_id": "stale-evidence",
+          "category": "assurance",
+          "expected": "finding",
+          "rationale": "The retained evidence identity differs from the identity the claim requires.",
+          "reviewer_role": "assurance-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "standards/benchmark/assurance/stale-evidence.json"
+            ]
+          },
+          "source_identity": "b3:99a97796329a551fb7d4a5095be75ddbafc96ea18c637d47bf3ee1127204eeca",
+          "source_path": "standards/benchmark/assurance/stale-evidence.json",
+          "task_id": "stale-evidence",
+          "variant": "violating"
+        },
+        {
+          "case_id": "valid-evidence-control",
+          "category": "assurance",
+          "expected": "clean",
+          "rationale": "All retained identities agree, so a conforming assurance check accepts the claim.",
+          "reviewer_role": "assurance-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "standards/benchmark/assurance/valid-evidence-control.json"
+            ]
+          },
+          "source_identity": "b3:abfc4bd720f58d7308eee25aa89cabdc883388e7ed27b947e89be4b59016aeda",
+          "source_path": "standards/benchmark/assurance/valid-evidence-control.json",
+          "task_id": "stale-evidence",
+          "variant": "control"
+        },
+        {
+          "case_id": "changed-policy",
+          "category": "assurance",
+          "expected": "finding",
+          "rationale": "The recorded policy identity differs from the currently checked policy identity.",
+          "reviewer_role": "assurance-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "standards/benchmark/assurance/changed-policy.json"
+            ]
+          },
+          "source_identity": "b3:1d79832f17d114669e2e58f7817bcbc486ae230924ee2271cd221e8258789c86",
+          "source_path": "standards/benchmark/assurance/changed-policy.json",
+          "task_id": "changed-policy",
+          "variant": "violating"
+        },
+        {
+          "case_id": "missing-execution",
+          "category": "assurance",
+          "expected": "finding",
+          "rationale": "The execution status is not_run, so no observed run supports the claim.",
+          "reviewer_role": "assurance-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "standards/benchmark/assurance/missing-execution.json"
+            ]
+          },
+          "source_identity": "b3:aafd86b34ed7a4858f4da9ae1acb8e663c809d03b49eb48ecffcda8b8a1ed8f2",
+          "source_path": "standards/benchmark/assurance/missing-execution.json",
+          "task_id": "missing-execution",
+          "variant": "violating"
+        },
+        {
+          "case_id": "invalid-proof-source-linkage",
+          "category": "assurance",
+          "expected": "finding",
+          "rationale": "The proof source identity does not match the identity the linkage claims.",
+          "reviewer_role": "assurance-reviewer",
+          "scope": {
+            "empty": false,
+            "expected_analyzed_sources": 1,
+            "selected_sources": [
+              "standards/benchmark/assurance/invalid-proof-linkage.json"
+            ]
+          },
+          "source_identity": "b3:9114f755b70b1b88c4ef4ba931b42f4c4a297b246528172b7cdd7447d2596402",
+          "source_path": "standards/benchmark/assurance/invalid-proof-linkage.json",
+          "task_id": "invalid-proof-source-linkage",
+          "variant": "violating"
+        }
+      ],
+      "coverage_boundary": {
+        "bounded": true,
+        "complete_rust_coverage": false,
+        "corpus_id": "octet-benchmark-architecture-corpus-v1",
+        "statement": "The corpus is a small compiling fixture with declared compliant, violating, disputed, and empty-scope cases; it is not a complete Rust program or a representative sample of Rust projects."
+      },
+      "declared_before_measurement": true,
+      "evidence_tier": "transcript_assertion",
+      "negative_controls": [
+        {
+          "control_id": "noncompiling-violation-counted-as-detection",
+          "description": "A violating case that did not compile must not become a detection."
+        },
+        {
+          "control_id": "renamed-stale-oracle",
+          "description": "An observation whose case or source identity no longer matches the frozen oracle must be rejected."
+        },
+        {
+          "control_id": "differing-scope-hidden",
+          "description": "An observation with a different analyzed scope must not enter comparable metrics."
+        },
+        {
+          "control_id": "dropped-timeouts",
+          "description": "Removing a timed-out observation must surface missing execution instead of clean evidence."
+        },
+        {
+          "control_id": "stale-results",
+          "description": "A derived comparison that does not reproduce from retained inputs must be rejected."
+        },
+        {
+          "control_id": "hidden-toolchain-cache-difference",
+          "description": "A differing toolchain or cache identity must be surfaced, not merged."
+        },
+        {
+          "control_id": "unsupported-counted-clean",
+          "description": "Unsupported scope must not increment clean evidence or true negatives."
+        },
+        {
+          "control_id": "bounded-corpus-presented-as-complete",
+          "description": "The artifact must reject a complete-Rust-coverage claim for the bounded corpus."
+        }
+      ],
+      "non_claims": [
+        "The experiment is bounded fixture evidence; it does not prove correctness, universal detection, complete Rust coverage, or release eligibility.",
+        "The experiment does not prove correctness, universal detection, or release eligibility.",
+        "Fixture observations are recorded evidence, not a claim that every candidate executable ran in this environment.",
+        "Unavailable tools remain unsupported; their absence is not clean evidence.",
+        "The bounded corpus is not complete Rust coverage and precision/recall apply only to declared comparable subsets."
+      ],
+      "profile_id": "octet-cross-tool-architecture-v1",
+      "rust_toolchain": "nightly-2026-03-21",
+      "sample_plan": {
+        "cache_state": "cold",
+        "dependency_differences": [
+          "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+          "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+          "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+        ],
+        "environment_facts": [
+          "host_os",
+          "host_arch",
+          "rust_toolchain",
+          "tool_version",
+          "cache_state"
+        ],
+        "sample_count": 1,
+        "target": "x86_64-unknown-linux-gnu",
+        "timeout_ms": 30000,
+        "unavailable_metrics": [
+          "cpu_time_ns",
+          "peak_memory_bytes",
+          "network_install_time_ms"
+        ],
+        "warm_state": "cold"
+      },
+      "source_revision": "github:OnixResearch/octet@2bdd581980eef7f6ec8363ffa20ab9f3c798c9ee",
+      "tasks": [
+        {
+          "category": "architecture",
+          "comparable_subset": "architecture-dependency-boundary-v1",
+          "description": "Application-shell code may not reach core internals or construct outbound adapters.",
+          "required_scope": "selected source file and its declared crate role",
+          "task_id": "dependency-boundary"
+        },
+        {
+          "category": "architecture",
+          "comparable_subset": "architecture-reexports-aliases-v1",
+          "description": "Public reexports and aliases may expose core ports but not adapter internals.",
+          "required_scope": "selected source file and its public item graph",
+          "task_id": "reexports-aliases"
+        },
+        {
+          "category": "architecture",
+          "comparable_subset": "architecture-macro-expansion-v1",
+          "description": "Macro expansion may not hide a forbidden dependency or construction.",
+          "required_scope": "selected source file and expansion-aware call graph",
+          "task_id": "macro-expansion"
+        },
+        {
+          "category": "architecture",
+          "comparable_subset": "architecture-conditional-compilation-v1",
+          "description": "Cfg-selected branches must be attributed to the analyzed feature configuration.",
+          "required_scope": "selected source file plus the declared feature and target configuration",
+          "task_id": "conditional-compilation"
+        },
+        {
+          "category": "architecture",
+          "comparable_subset": "architecture-trait-method-references-v1",
+          "description": "Trait and inherent method references are resolved to the defining type or trait.",
+          "required_scope": "selected source file and resolved method definitions",
+          "task_id": "trait-method-references"
+        },
+        {
+          "category": "architecture",
+          "comparable_subset": "architecture-workspace-targets-v1",
+          "description": "Every selected workspace target is analyzed with the same dependency rule.",
+          "required_scope": "declared target list including binaries",
+          "task_id": "workspace-targets"
+        },
+        {
+          "category": "architecture",
+          "comparable_subset": "architecture-empty-selected-scope-v1",
+          "description": "An empty selection is neither clean evidence nor a false negative.",
+          "required_scope": "zero selected Rust files",
+          "task_id": "empty-selected-scope"
+        },
+        {
+          "category": "assurance",
+          "comparable_subset": "assurance-stale-evidence-v1",
+          "description": "Retained evidence identities must still match the claim and the checked policy.",
+          "required_scope": "retained evidence file and checked policy identity",
+          "task_id": "stale-evidence"
+        },
+        {
+          "category": "assurance",
+          "comparable_subset": "assurance-changed-policy-v1",
+          "description": "Evidence admitted under a different policy identity is rejected.",
+          "required_scope": "recorded and checked policy identities",
+          "task_id": "changed-policy"
+        },
+        {
+          "category": "assurance",
+          "comparable_subset": "assurance-missing-execution-v1",
+          "description": "A claim without an observed execution is rejected.",
+          "required_scope": "execution status and command identity",
+          "task_id": "missing-execution"
+        },
+        {
+          "category": "assurance",
+          "comparable_subset": "assurance-invalid-proof-source-linkage-v1",
+          "description": "Proof artifacts must link to the source bytes the claim names.",
+          "required_scope": "proof source identity and claimed source identity",
+          "task_id": "invalid-proof-source-linkage"
+        }
+      ],
+      "tools": [
+        {
+          "claims": [
+            "architecture-detection",
+            "evidence-assurance"
+          ],
+          "config_identity": [
+            "b3:a44d618a277e90698a924ae74588511ca5dcf4c0b34fa6ebb35a6b32b073970a"
+          ],
+          "config_path": [
+            "standards/benchmark/corpus/octet-architecture.json"
+          ],
+          "configuration_status": "checked-in",
+          "executable": "cargo-octet",
+          "execution": "recorded",
+          "kind": "compiler-lint",
+          "parser": "none",
+          "probe_argv": [
+            "cargo-octet",
+            "--version"
+          ],
+          "required_config_files": [
+            "standards/benchmark/corpus/octet-architecture.ncl"
+          ],
+          "rules_pin": "corpus architecture policy: application-shell -> domain-core only",
+          "run_argv": [],
+          "setup_source": "docs/benchmark-evidence.md",
+          "setup_steps": [
+            "Build or install cargo-octet at the pinned source revision.",
+            "Export standards/benchmark/corpus/octet-architecture.ncl and pass the checked policy.",
+            "Select the corpus scope explicitly; do not inherit an ambient workspace."
+          ],
+          "source_pin": "github:OnixResearch/octet@2bdd581980eef7f6ec8363ffa20ab9f3c798c9ee",
+          "tool_id": "octet",
+          "version_pin": "cargo-octet 0.1.0"
+        },
+        {
+          "claims": [
+            "architecture-detection"
+          ],
+          "config_identity": [],
+          "config_path": [],
+          "configuration_status": "upstream-args",
+          "executable": "cargo-pup",
+          "execution": "recorded",
+          "kind": "compiler-lint",
+          "parser": "none",
+          "probe_argv": [
+            "cargo-pup",
+            "--version"
+          ],
+          "required_config_files": [],
+          "rules_pin": "cargo-pup architecture rules supplied through the reviewed probe argv",
+          "run_argv": [],
+          "setup_source": "https://github.com/DataDog/cargo-pup",
+          "setup_steps": [
+            "Install cargo-pup 0.1.9 from crates.io.",
+            "Declare the dependency-boundary and reexport rules in the reviewed tool configuration.",
+            "Run against the selected corpus targets and retain diagnostics verbatim."
+          ],
+          "source_pin": "crates.io:cargo_pup@0.1.9",
+          "tool_id": "cargo-pup",
+          "version_pin": "cargo-pup 0.1.9"
+        },
+        {
+          "claims": [
+            "architecture-detection"
+          ],
+          "config_identity": [],
+          "config_path": [],
+          "configuration_status": "upstream-args",
+          "executable": "archunit",
+          "execution": "recorded",
+          "kind": "library",
+          "parser": "none",
+          "probe_argv": [
+            "archunit",
+            "--version"
+          ],
+          "required_config_files": [],
+          "rules_pin": "ArchUnitRust test module rules declared by the benchmark harness",
+          "run_argv": [],
+          "setup_source": "https://lukasniessen.github.io/ArchUnitRust/",
+          "setup_steps": [
+            "Add archunit 0.0.2 as a test dependency in the consumer fixture.",
+            "Write the layer and dependency rules as a test module.",
+            "Run cargo test for that module and retain the test output."
+          ],
+          "source_pin": "crates.io:archunit@0.0.2",
+          "tool_id": "archunit-rust",
+          "version_pin": "archunit 0.0.2"
+        },
+        {
+          "claims": [
+            "lint-baseline"
+          ],
+          "config_identity": [],
+          "config_path": [],
+          "configuration_status": "upstream-args",
+          "executable": "cargo-clippy",
+          "execution": "invoke",
+          "kind": "lint-driver",
+          "parser": "none",
+          "probe_argv": [
+            "cargo-clippy",
+            "--version"
+          ],
+          "required_config_files": [],
+          "rules_pin": "clippy default and restriction selection recorded in the probe argv",
+          "run_argv": [
+            "cargo",
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--offline"
+          ],
+          "setup_source": "https://doc.rust-lang.org/clippy/",
+          "setup_steps": [
+            "Install the pinned Rust toolchain with the clippy component.",
+            "Select lints explicitly; the benchmark does not claim an architecture check."
+          ],
+          "source_pin": "rustup:nightly-2026-03-21/clippy",
+          "tool_id": "clippy",
+          "version_pin": "clippy 0.1.96"
+        },
+        {
+          "claims": [
+            "supply-chain"
+          ],
+          "config_identity": [],
+          "config_path": [],
+          "configuration_status": "not-installed",
+          "executable": "cargo-deny",
+          "execution": "recorded",
+          "kind": "supply-chain",
+          "parser": "none",
+          "probe_argv": [
+            "cargo-deny",
+            "--version"
+          ],
+          "required_config_files": [
+            "deny.toml"
+          ],
+          "rules_pin": "cargo-deny advisories, bans, licenses, and sources policy",
+          "run_argv": [],
+          "setup_source": "https://embarkstudios.github.io/cargo-deny/checks/index.html",
+          "setup_steps": [
+            "Install cargo-deny 0.20.2.",
+            "Supply the reviewed deny.toml policy.",
+            "Run the dependency checks; this tool does not claim architecture or evidence assurance."
+          ],
+          "source_pin": "crates.io:cargo-deny@0.20.2",
+          "tool_id": "cargo-deny",
+          "version_pin": "cargo-deny 0.20.2"
+        },
+        {
+          "claims": [
+            "supply-chain"
+          ],
+          "config_identity": [],
+          "config_path": [],
+          "configuration_status": "not-installed",
+          "executable": "cargo-vet",
+          "execution": "recorded",
+          "kind": "supply-chain",
+          "parser": "none",
+          "probe_argv": [
+            "cargo-vet",
+            "--version"
+          ],
+          "required_config_files": [
+            "supply-chain/config.toml"
+          ],
+          "rules_pin": "cargo-vet config.toml with reviewed audit imports",
+          "run_argv": [],
+          "setup_source": "https://mozilla.github.io/cargo-vet/",
+          "setup_steps": [
+            "Install cargo-vet 0.10.3.",
+            "Configure the audit set and retain the fetched audit state.",
+            "Run cargo vet; this tool does not claim architecture or evidence assurance."
+          ],
+          "source_pin": "crates.io:cargo-vet@0.10.3",
+          "tool_id": "cargo-vet",
+          "version_pin": "cargo-vet 0.10.3"
+        },
+        {
+          "claims": [
+            "architecture-detection-partial"
+          ],
+          "config_identity": [],
+          "config_path": [],
+          "configuration_status": "upstream-args",
+          "executable": "semgrep",
+          "execution": "recorded",
+          "kind": "scanner",
+          "parser": "none",
+          "probe_argv": [
+            "semgrep",
+            "--version"
+          ],
+          "required_config_files": [],
+          "rules_pin": "reviewed token-pattern rules for the dependency-boundary and reexport tasks",
+          "run_argv": [],
+          "setup_source": "https://semgrep.dev/docs/",
+          "setup_steps": [
+            "Install Semgrep 1.184.0.",
+            "Load the reviewed token-pattern rules and select the corpus path.",
+            "Retain SARIF or JSON output verbatim; macro and cfg outcomes remain partial."
+          ],
+          "source_pin": "github:semgrep/semgrep@v1.184.0",
+          "tool_id": "semgrep",
+          "version_pin": "semgrep 1.184.0"
+        },
+        {
+          "claims": [
+            "architecture-detection-partial"
+          ],
+          "config_identity": [],
+          "config_path": [],
+          "configuration_status": "upstream-args",
+          "executable": "codeql",
+          "execution": "recorded",
+          "kind": "scanner",
+          "parser": "none",
+          "probe_argv": [
+            "codeql",
+            "--version"
+          ],
+          "required_config_files": [],
+          "rules_pin": "reviewed Rust query pack for dependency-boundary and reexport tasks",
+          "run_argv": [],
+          "setup_source": "https://codeql.github.com/docs/",
+          "setup_steps": [
+            "Install the CodeQL CLI 2.27.4 and the Rust query pack.",
+            "Create the database from the corpus with the pinned compiler.",
+            "Run the reviewed queries and retain SARIF output verbatim."
+          ],
+          "source_pin": "github:github/codeql@v2.27.4",
+          "tool_id": "codeql",
+          "version_pin": "codeql 2.27.4"
+        },
+        {
+          "claims": [
+            "evidence-assurance-partial",
+            "architecture-detection-partial"
+          ],
+          "config_identity": [
+            "b3:8979b1c1cee37120dc3dfc36f04ca84cf8f052cbc5ffb13b9b2c9850a211b6bf"
+          ],
+          "config_path": [
+            "standards/benchmark/assurance/repository-baseline.sh"
+          ],
+          "configuration_status": "checked-in",
+          "executable": "bash",
+          "execution": "recorded",
+          "kind": "repository-script",
+          "parser": "none",
+          "probe_argv": [
+            "bash",
+            "--version"
+          ],
+          "required_config_files": [
+            "standards/benchmark/assurance/repository-baseline.sh"
+          ],
+          "rules_pin": "repository-baseline.sh identity and execution checks",
+          "run_argv": [],
+          "setup_source": "standards/benchmark/assurance/repository-baseline.sh",
+          "setup_steps": [
+            "Check out the pinned repository script.",
+            "Provide jq and sh, then run the script against each assurance fixture.",
+            "Retain the exit status; an unrun script is not clean evidence."
+          ],
+          "source_pin": "github:OnixResearch/octet@2bdd581980eef7f6ec8363ffa20ab9f3c798c9ee",
+          "tool_id": "repository-baseline-script",
+          "version_pin": "bash 5.3"
+        }
+      ]
+    }
+  ],
+  "schema_version": "octet-benchmark-experiment-profiles/v1"
+}

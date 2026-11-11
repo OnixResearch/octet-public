@@ -1,0 +1,17 @@
+{
+  "schema_version": "cairn.semantic-review.metrics-regression-fixtures.v1",
+  "fixtures": [
+    {
+      "path": "fixtures/positive/tasks.md",
+      "valid": true,
+      "diagnostics": []
+    },
+    {
+      "path": "fixtures/negative/tasks.md",
+      "valid": false,
+      "diagnostics": [
+        "missing_auto_fix_task"
+      ]
+    }
+  ]
+}

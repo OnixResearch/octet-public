@@ -141,7 +141,7 @@
         "build"
       ],
       "limits": {
-        "timeout_ms": 900000,
+        "timeout_ms": 2700000,
         "stdout_max_bytes": 1048576,
         "stderr_max_bytes": 1048576
       },

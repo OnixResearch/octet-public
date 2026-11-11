@@ -41,7 +41,7 @@ let rail_has_aeneas_theorem_approval = fun rail =>
 in
 
 let rail_rules = fun rail =>
-  std.array.elem rail.backend ["verus", "aeneas-lean"]
+  std.array.elem rail.backend ["verus", "aeneas-lean", "vermilion-canary"]
   && std.array.length rail.command_argv > 0
   && std.array.length rail.source_paths > 0
   && std.array.length rail.proof_paths > 0

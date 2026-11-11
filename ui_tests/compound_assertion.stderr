@@ -23,5 +23,35 @@ LL |     assert!(a > 0 || b > 0);
    = help: Tiger Style (Assertion Quality): split compound assertions so the failing clause is obvious Example: assert!(a > 0); assert!(b > 0);
    = note: see Tiger Style guide: Assertion Density
 
-warning: 2 warnings emitted
+warning: compound assertion should be split into separate assertions
+  --> $DIR/compound_assertion.rs:56:5
+   |
+LL |     assert!(ready || fallback(|| true));
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Assertion Quality): split compound assertions so the failing clause is obvious Example: assert!(a > 0); assert!(b > 0);
+   = note: see Tiger Style guide: Assertion Density
+
+warning: compound assertion should be split into separate assertions
+  --> $DIR/compound_assertion.rs:61:5
+   |
+LL | /     assert!(
+LL | |         ready // set by init
+LL | |             && done
+LL | |     );
+   | |_____^
+   |
+   = help: Tiger Style (Assertion Quality): split compound assertions so the failing clause is obvious Example: assert!(a > 0); assert!(b > 0);
+   = note: see Tiger Style guide: Assertion Density
+
+warning: compound assertion should be split into separate assertions
+  --> $DIR/compound_assertion.rs:65:5
+   |
+LL |     assert!(ready /* set by init */ && done);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Assertion Quality): split compound assertions so the failing clause is obvious Example: assert!(a > 0); assert!(b > 0);
+   = note: see Tiger Style guide: Assertion Density
+
+warning: 5 warnings emitted
 

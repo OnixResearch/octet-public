@@ -1,0 +1,12 @@
+[package]
+name = "concrete-construction-in-core-custom-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "concrete_construction_in_core_custom.rs"
+
+[dependencies]
+serde_json = "1"
+
+[workspace]

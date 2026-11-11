@@ -1,0 +1,12 @@
+[package]
+name = "multi-lock-ordering-parking-lot-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "multi_lock_ordering_parking_lot.rs"
+
+[dependencies]
+parking_lot = "0.12"
+
+[workspace]

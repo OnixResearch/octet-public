@@ -1,0 +1,129 @@
+{
+  "drift_cases": [
+    {
+      "baseline_report": {
+        "artifact_identities": [
+          {
+            "artifact": "status.json",
+            "blake3": "2222222222222222222222222222222222222222222222222222222222222222"
+          },
+          {
+            "artifact": "results.jsonl",
+            "blake3": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "binary_hash": "6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6",
+        "issue_codes": [],
+        "non_claims": [
+          "built-binary thread verification proves measured-byte identity and linkage only; it does not prove behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+          "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+        ],
+        "preserves_content_hash": "02c60a16269509700a6e6080120be58661dcd7b41d809e8d8f99090013771f60",
+        "requirement_ids": [
+          "r[octet.policy.no_unwrap]"
+        ],
+        "sidecar_digest_blake3": "5af2ab6b1764a361e9ff34fb33e9872bc5415c5e6d0c78b6d1c75815e1813dfc",
+        "source_ids": [
+          "octet.standards.formal-proof"
+        ],
+        "valid": true
+      },
+      "candidate_report": {
+        "artifact_identities": [
+          {
+            "artifact": "status.json",
+            "blake3": "2222222222222222222222222222222222222222222222222222222222222222"
+          },
+          {
+            "artifact": "results.jsonl",
+            "blake3": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "binary_hash": "6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6",
+        "issue_codes": [
+          "sidecar_digest_mismatch"
+        ],
+        "non_claims": [
+          "built-binary thread verification proves measured-byte identity and linkage only; it does not prove behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+          "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+        ],
+        "preserves_content_hash": "35cb5233961bde2b8a67d23b175ee4870843e99fca5c329814e7d3298fba8ece",
+        "requirement_ids": [
+          "r[octet.policy.no_unwrap]"
+        ],
+        "sidecar_digest_blake3": "5af2ab6b1764a361e9ff34fb33e9872bc5415c5e6d0c78b6d1c75815e1813dfc",
+        "source_ids": [
+          "octet.standards.formal-proof"
+        ],
+        "valid": false
+      },
+      "expected_diff": {
+        "baseline_preserves_content_hash": "02c60a16269509700a6e6080120be58661dcd7b41d809e8d8f99090013771f60",
+        "candidate_preserves_content_hash": "35cb5233961bde2b8a67d23b175ee4870843e99fca5c329814e7d3298fba8ece",
+        "changed_fields": [
+          "valid",
+          "issue_codes"
+        ],
+        "equal": false,
+        "non_claims": [
+          "Preserves stack-provenance values prove canonical metadata identity only; they do not prove measured-byte identity, behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+          "built-binary thread verification proves measured-byte identity and linkage only; it does not prove behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety"
+        ]
+      },
+      "id": "report-diagnostic-change"
+    }
+  ],
+  "entries": [
+    {
+      "non_claims": [
+        "Preserves stack-provenance values prove canonical metadata identity only; they do not prove measured-byte identity, behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "preserves_content_hash": "a7884e1db943580455fcaa417e3b989a2e0f7d66975bfdc14c19cdadfedb15c2",
+      "preserves_encoding": "valence.stack-provenance-preserves-text.v1",
+      "preserves_value": "<octet-valence-provenance-export artifact_dir=\"target/octet-artifact\" artifacts=[<artifact-identity artifact=\"results.jsonl\" blake3=\"3333333333333333333333333333333333333333333333333333333333333333\"> <artifact-identity artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\">] diagnostics=[] non_claims=[\"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] proof_cards=[<octet-proof-card artifact_blake3_identities=[<artifact-identity artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\">] diagnostics=[] evidence_origin=\"octet_verified_receipt\" evidence_tier=\"formal_proof\" non_claims=[\"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] policy_id=\"octet.standards.formal-proof\" proof_or_property_id=\"octet.no-unwrap-proof\" rail_index=0 receipt_path=\"status.json\" source_requirement_or_policy_id=\"r[octet.policy.no_unwrap]\" status=\"valid\">] provenance_records=[<octet-provenance-record artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\" checked_scope=\"standards/proof-claims/catalog.ncl\" checker_id=\"octet-artifact-verifier\" evidence_tier=\"formal_proof\" human_action=<none> parent_artifacts=[\"results.jsonl\"] proof_artifact_identity=<some value=\"3333333333333333333333333333333333333333333333333333333333333333\"> source_id=\"octet.standards.formal-proof\" verifier_identity=<some value=\"octet-verus-rail\">>] schema_version=\"octet-valence-provenance-export/v1\" verification_status=\"valid\">",
+      "surface": "octet-valence-provenance-export"
+    },
+    {
+      "non_claims": [
+        "Preserves stack-provenance values prove canonical metadata identity only; they do not prove measured-byte identity, behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "preserves_content_hash": "4fd7566d1ef466ecfb77a817101e31d5180ec04ea10d9018a2d81146912d6892",
+      "preserves_encoding": "valence.stack-provenance-preserves-text.v1",
+      "preserves_value": "<stack-provenance-sidecar binary_hash=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\" chain=<provenance-chain boundary=\"provenance chain proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, or that the binary satisfies the requirement\" links=[<provenance-link artifact_hash=<some value=\"2222222222222222222222222222222222222222222222222222222222222222\"> binary_hash=<some value=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\"> function_object_id=\"status.json\" requirement_ids=[\"r[octet.policy.no_unwrap]\"] source_id=\"octet.standards.formal-proof\">] schema=\"valence.provenance-chain.v1\"> claim_scope=\"identity-linkage-sidecar\" diagnostics=[] non_claims=[\"provenance chain proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, or that the binary satisfies the requirement\" \"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] octet_export_artifact_dir=\"target/octet-artifact\" parent_artifacts=[<artifact-identity artifact=\"results.jsonl\" blake3=\"3333333333333333333333333333333333333333333333333333333333333333\"> <artifact-identity artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\">] schema=\"valence.stack-provenance-sidecar.v1\">",
+      "surface": "stack-provenance-sidecar"
+    },
+    {
+      "non_claims": [
+        "Preserves stack-provenance values prove canonical metadata identity only; they do not prove measured-byte identity, behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "preserves_content_hash": "1756ff52c45ba23cf06956c2be1ac4a882357726a0def7bcdc9957e32528d8e5",
+      "preserves_encoding": "valence.stack-provenance-preserves-text.v1",
+      "preserves_value": "<mantle-release-manifest-view binaries=[<mantle-binary-identity digest_blake3=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\" relative_path=\"bin/valence-fixture\">] external_evidence=[<mantle-external-evidence claim_scope=\"identity-linkage-sidecar\" digest_blake3=\"5af2ab6b1764a361e9ff34fb33e9872bc5415c5e6d0c78b6d1c75815e1813dfc\" non_claims=[\"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] relative_path=\"external-evidence/stack-provenance.json\" role=\"stack-provenance-trace\" schema=\"valence.stack-provenance-sidecar.v1\">] provenance_coverage=<some value=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\">>",
+      "surface": "mantle-release-manifest-view"
+    },
+    {
+      "non_claims": [
+        "Preserves stack-provenance values prove canonical metadata identity only; they do not prove measured-byte identity, behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "preserves_content_hash": "2963805bd462f251122eac7d71a673e8d5c4a2bb77b426ff4cf26b1a155eeba1",
+      "preserves_encoding": "valence.stack-provenance-preserves-text.v1",
+      "preserves_value": "<built-binary-thread-input binary_hash=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\" mantle_manifest=<mantle-release-manifest-view binaries=[<mantle-binary-identity digest_blake3=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\" relative_path=\"bin/valence-fixture\">] external_evidence=[<mantle-external-evidence claim_scope=\"identity-linkage-sidecar\" digest_blake3=\"5af2ab6b1764a361e9ff34fb33e9872bc5415c5e6d0c78b6d1c75815e1813dfc\" non_claims=[\"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] relative_path=\"external-evidence/stack-provenance.json\" role=\"stack-provenance-trace\" schema=\"valence.stack-provenance-sidecar.v1\">] provenance_coverage=<some value=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\">> octet_export=<octet-valence-provenance-export artifact_dir=\"target/octet-artifact\" artifacts=[<artifact-identity artifact=\"results.jsonl\" blake3=\"3333333333333333333333333333333333333333333333333333333333333333\"> <artifact-identity artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\">] diagnostics=[] non_claims=[\"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] proof_cards=[<octet-proof-card artifact_blake3_identities=[<artifact-identity artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\">] diagnostics=[] evidence_origin=\"octet_verified_receipt\" evidence_tier=\"formal_proof\" non_claims=[\"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] policy_id=\"octet.standards.formal-proof\" proof_or_property_id=\"octet.no-unwrap-proof\" rail_index=0 receipt_path=\"status.json\" source_requirement_or_policy_id=\"r[octet.policy.no_unwrap]\" status=\"valid\">] provenance_records=[<octet-provenance-record artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\" checked_scope=\"standards/proof-claims/catalog.ncl\" checker_id=\"octet-artifact-verifier\" evidence_tier=\"formal_proof\" human_action=<none> parent_artifacts=[\"results.jsonl\"] proof_artifact_identity=<some value=\"3333333333333333333333333333333333333333333333333333333333333333\"> source_id=\"octet.standards.formal-proof\" verifier_identity=<some value=\"octet-verus-rail\">>] schema_version=\"octet-valence-provenance-export/v1\" verification_status=\"valid\"> sidecar=<stack-provenance-sidecar binary_hash=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\" chain=<provenance-chain boundary=\"provenance chain proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, or that the binary satisfies the requirement\" links=[<provenance-link artifact_hash=<some value=\"2222222222222222222222222222222222222222222222222222222222222222\"> binary_hash=<some value=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\"> function_object_id=\"status.json\" requirement_ids=[\"r[octet.policy.no_unwrap]\"] source_id=\"octet.standards.formal-proof\">] schema=\"valence.provenance-chain.v1\"> claim_scope=\"identity-linkage-sidecar\" diagnostics=[] non_claims=[\"provenance chain proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, or that the binary satisfies the requirement\" \"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] octet_export_artifact_dir=\"target/octet-artifact\" parent_artifacts=[<artifact-identity artifact=\"results.jsonl\" blake3=\"3333333333333333333333333333333333333333333333333333333333333333\"> <artifact-identity artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\">] schema=\"valence.stack-provenance-sidecar.v1\">>",
+      "surface": "built-binary-thread-input"
+    },
+    {
+      "non_claims": [
+        "Preserves stack-provenance values prove canonical metadata identity only; they do not prove measured-byte identity, behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "preserves_content_hash": "02c60a16269509700a6e6080120be58661dcd7b41d809e8d8f99090013771f60",
+      "preserves_encoding": "valence.stack-provenance-preserves-text.v1",
+      "preserves_value": "<built-binary-thread-report artifact_identities=[<artifact-identity artifact=\"results.jsonl\" blake3=\"3333333333333333333333333333333333333333333333333333333333333333\"> <artifact-identity artifact=\"status.json\" blake3=\"2222222222222222222222222222222222222222222222222222222222222222\">] binary_hash=\"6c6b50f32058af2bad4e7e4aad2dd2a62725bb31e84e9978c974fea205f2a5f6\" issue_codes=[] non_claims=[\"built-binary thread verification proves measured-byte identity and linkage only; it does not prove behavioral correctness, semantic equivalence, requirement satisfaction, release eligibility, verifier soundness, or whole-program safety\" \"stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction\"] requirement_ids=[\"r[octet.policy.no_unwrap]\"] sidecar_digest_blake3=\"5af2ab6b1764a361e9ff34fb33e9872bc5415c5e6d0c78b6d1c75815e1813dfc\" source_ids=[\"octet.standards.formal-proof\"] valid=#t>",
+      "surface": "built-binary-thread-report"
+    }
+  ],
+  "schema": "valence.stack-provenance-preserves-corpus.v1"
+}

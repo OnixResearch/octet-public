@@ -1,0 +1,20 @@
+{
+  "schema": "octet.downstream-pilot.v1",
+  "pilot_hash": "87c0df244a7ec0d95dd564cd04e5820fa49d7189322bcf261b71142fc77ecefa",
+  "pilot_kind": "aspen-ci-job",
+  "evidence_object_hash": "5555555555555555555555555555555555555555555555555555555555555555",
+  "source_object_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+  "config_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+  "source_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+  "executor_identity_hash": "9999999999999999999999999999999999999999999999999999999999999999",
+  "replay_cache_key_material": {
+    "stage": "dogfood",
+    "executor": "aspen-vmci",
+    "cache_key_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "bounded_claim_class": "ci-job-identity-linkage",
+  "non_claims": {
+    "build_correctness": "none",
+    "distributed_execution_correctness": "proven-by-object-identity"
+  }
+}

@@ -29,5 +29,61 @@ LL ~     let is_ready = false;
 LL ~     let _ = is_ready;
    |
 
-warning: 2 warnings emitted
+warning: boolean binding `dirty` should have a predicate prefix
+  --> $DIR/bool_naming.rs:38:9
+   |
+LL |     let dirty = cache.is_dirty();
+   |         ^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Positive Predicates
+help: rename binding to `is_dirty`
+   |
+LL |     let is_dirty = cache.is_dirty();
+   |         +++
+
+warning: boolean binding `open` should have a predicate prefix
+  --> $DIR/bool_naming.rs:44:9
+   |
+LL |     let open = true;
+   |         ^^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Positive Predicates
+help: rename binding to `is_open`
+   |
+LL |     let is_open = true;
+   |         +++
+
+warning: boolean binding `set` should have a predicate prefix
+  --> $DIR/bool_naming.rs:53:13
+   |
+LL |         let set = value;
+   |             ^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Positive Predicates
+help: rename binding to `is_set`
+   |
+LL |         let is_set = value;
+   |             +++
+
+warning: boolean binding `visible` should have a predicate prefix
+  --> $DIR/bool_naming.rs:65:9
+   |
+LL |     let visible = true;
+   |         ^^^^^^^
+   |
+   = help: Tiger Style (Positive Predicates): name booleans as predicates so call sites read like questions Example: let is_ready = status == Ready;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Positive Predicates
+help: rename binding to `is_visible`
+   |
+LL |     let is_visible = true;
+   |         +++
+
+warning: 6 warnings emitted
 

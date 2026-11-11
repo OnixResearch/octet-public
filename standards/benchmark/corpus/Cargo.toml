@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/app",
+  "crates/bin_target",
+  "crates/core-api",
+  "crates/empty_scope",
+  "crates/facade",
+  "crates/gated",
+  "crates/infra-api",
+  "crates/traits",
+]

@@ -1,0 +1,38 @@
+[package]
+name = "cairn-cli"
+version.workspace = true
+edition.workspace = true
+license = "AGPL-3.0-or-later"
+repository.workspace = true
+
+[[bin]]
+name = "cairn"
+path = "src/main.rs"
+
+[[bin]]
+name = "ironspec"
+path = "src/ironspec.rs"
+
+[features]
+default = []
+redb-registry = ["dep:redb"]
+
+[dependencies]
+artifact-auth-ed25519.workspace = true
+blake3.workspace = true
+bounded-tree-cap.workspace = true
+bounded-tree-core.workspace = true
+cairn-core = { path = "../cairn-core" }
+cap-std.workspace = true
+crossterm.workspace = true
+ed25519-dalek.workspace = true
+nickel-export-core.workspace = true
+onix-cairn-radicle-cob = { path = "../cairn-radicle-cob" }
+rat-nodegraph.workspace = true
+ratatui.workspace = true
+redb = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+artifact-auth-core.workspace = true

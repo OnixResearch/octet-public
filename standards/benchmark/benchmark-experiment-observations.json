@@ -1,0 +1,3259 @@
+{
+  "schema_version": "octet-benchmark-experiment-observations/v1",
+  "profile_id": "octet-cross-tool-architecture-v1",
+  "tool_availability": [
+    {
+      "tool_id": "octet",
+      "status": "recorded",
+      "version_output": "octet cargo-octet 0.1.0 (recorded fixture)",
+      "version_identity": "b3:3c039b5f607883fd266bbbf50a4742e5a2170d8e594c485e6a4729de8dd37c3c",
+      "reason": null
+    },
+    {
+      "tool_id": "cargo-pup",
+      "status": "recorded",
+      "version_output": "cargo-pup cargo-pup 0.1.9 (recorded fixture)",
+      "version_identity": "b3:730b39a6fbb0eb1ccae27d240f20dd10062d727fbf827c93ab33bf45d37a65a0",
+      "reason": null
+    },
+    {
+      "tool_id": "archunit-rust",
+      "status": "unavailable",
+      "version_output": "",
+      "version_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "tool_id": "clippy",
+      "status": "local",
+      "version_output": "clippy 0.1.96 (ac7f9ec7da 2026-03-20)\n",
+      "version_identity": "b3:a6c02e1e0eca3d7038732be92d734fc8e0c1c5a08bc6c1c6c0451db7122eb2be",
+      "reason": null
+    },
+    {
+      "tool_id": "cargo-deny",
+      "status": "unavailable",
+      "version_output": "",
+      "version_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "reason": "`cargo-deny` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "tool_id": "cargo-vet",
+      "status": "unavailable",
+      "version_output": "",
+      "version_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "reason": "`cargo-vet` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "tool_id": "semgrep",
+      "status": "unavailable",
+      "version_output": "",
+      "version_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "reason": "`semgrep` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "tool_id": "codeql",
+      "status": "unavailable",
+      "version_output": "",
+      "version_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "reason": "`codeql` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "tool_id": "repository-baseline-script",
+      "status": "recorded",
+      "version_output": "repository-baseline-script bash 5.3 (recorded fixture)",
+      "version_identity": "b3:676580d6a7304d90867453c72ed614ff8a14ed87165397d1b8e389414fa8ea71",
+      "reason": null
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "octet:dependency-boundary:dependency-boundary-compliant",
+      "tool_id": "octet",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-compliant",
+      "source_identity": "b3:936954ff246914c7b9e67c7991da6f2296f8469b4cf1732afff523428a64eaa2",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "scope_identity": "b3:5a6eb7c7d6741c3df53e227dfe0a62db151031fba0e91fee7d2c7ba721f65dc9"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet dependency-boundary-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:cb558521fad3e69ffc2068c6d580430a517f0609073d4990cc75e234207d3345",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:dependency-boundary:dependency-boundary-violating",
+      "tool_id": "octet",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-violating",
+      "source_identity": "b3:d88195b2eb597142b97159781bb2c80a6ff6b2be5134767574e0d5746971b168",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "scope_identity": "b3:17a0a06b2ca63ee28d84e4972f3674386fbc5840bb09dae92e4ad11fd1e2a12f"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "dependency-boundary-violating",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/app/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for dependency-boundary-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet dependency-boundary-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:5625f5c87e29d1a9b1bdc350c09aa397a6c886fa1cdfb0ff51b38f64843e6e3c",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:reexports-aliases:reexport-alias-compliant",
+      "tool_id": "octet",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-compliant",
+      "source_identity": "b3:296661147fbe3d482f64ee20a5cc8a7aa53e655c56add4c16ae625c95b32f21b",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "scope_identity": "b3:bb406275daa3e00d5bd24705143c3e49c812f6f819a9918f78fab27a8a8f6dc9"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet reexport-alias-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:9512d97a7c8f6b7e2a8e963731601c9a1c2098ac8da03b6de02fae12e6a64851",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:reexports-aliases:reexport-alias-violating",
+      "tool_id": "octet",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-violating",
+      "source_identity": "b3:600991fb24d064fca0c544a5cfe3bee47caf63e6837cef52af665da9e546e81e",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "scope_identity": "b3:424d62b0411dd78cd80a5f1e8343c75ac1962fb11d1570ef3ab2edf6a7c33dac"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "reexport-alias-violating",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/facade/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for reexport-alias-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet reexport-alias-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:7ea5c60fa0cfe09b926df4bb246294f275beba599ad332e6a663b117cd4ab580",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:macro-expansion:macro-expansion-compliant",
+      "tool_id": "octet",
+      "task_id": "macro-expansion",
+      "case_id": "macro-expansion-compliant",
+      "source_identity": "b3:cbefd91bc520a61a9108033bcc56ef4b7f11acf07c0c391b6cde49fe3da4df77",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/compliant_macro.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/compliant_macro.rs"
+        ],
+        "scope_identity": "b3:562b01813e3d8899ec43c6afe169e1750fd01db0f172ce6edef5a9deb7e7551f"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet macro-expansion-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:3d1c0af0733b741491f906bc295ec0169c8351a0aa58db9f24af0dea768cbd88",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:macro-expansion:macro-expansion-violating",
+      "tool_id": "octet",
+      "task_id": "macro-expansion",
+      "case_id": "macro-expansion-violating",
+      "source_identity": "b3:c93654c1708f4deb5e35fe5dd10d39b1bd1c468c555025cc53cdf6dcfbf4b828",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/violating_macro.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/violating_macro.rs"
+        ],
+        "scope_identity": "b3:d7d5c7cd2808292eb2040ddae3af31d75e5c305164747d4af7c0f72b52e9695f"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet macro-expansion-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:bd40964663d5d967cbb232b68409731234699be69fe130572dd206efec3f6d5a",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:conditional-compilation:cfg-compliant",
+      "tool_id": "octet",
+      "task_id": "conditional-compilation",
+      "case_id": "cfg-compliant",
+      "source_identity": "b3:8eb69d100f53accb82744c34987a2daf5fae9de24027de201c99cea9a085f4c1",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/gated/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/gated/src/compliant.rs"
+        ],
+        "scope_identity": "b3:0d5702727f79c5897ebe40cd9e3440d919dcf8b1599b8c3387fb703f6421dd92"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "cfg-compliant",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/gated/src/compliant.rs",
+          "line": 1,
+          "message": "recorded fixture finding for cfg-compliant",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet cfg-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:3893e0221e9191aa21721734af0c444e23722e2ecd3dd601092d3dc837097540",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:conditional-compilation:cfg-violating",
+      "tool_id": "octet",
+      "task_id": "conditional-compilation",
+      "case_id": "cfg-violating",
+      "source_identity": "b3:eb9e2867648f5341eb5dbaf01dd0be2f477763820a7116523b8d7544df1376e2",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/gated/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/gated/src/violating.rs"
+        ],
+        "scope_identity": "b3:45c01d1eb8d40878584f5437fe9e05a2893001694946140f00da86ca6ec88fd8"
+      },
+      "status": "timed_out",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet cfg-violating timed_out",
+      "stderr": "",
+      "stdout_identity": "b3:e45aa8cddda45698e52ab7775fcdf958ea6d90a0d03a844d4d6d53e1c80eb2e7",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": "recorded fixture timeout",
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:conditional-compilation:cfg-disputed",
+      "tool_id": "octet",
+      "task_id": "conditional-compilation",
+      "case_id": "cfg-disputed",
+      "source_identity": "b3:0fbd717de7cef443b4dd621da98cec312a9a92802ee93d9418aa1fa7fd430987",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/gated/src/disputed.rs"
+        ],
+        "analyzed_sources": [
+          "crates/gated/src/disputed.rs"
+        ],
+        "scope_identity": "b3:0c6b7ee33f1ce61e9f6c887f6e14be512f9ef8701bb85eb37c2feff39e4f009c"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "cfg-disputed",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/gated/src/disputed.rs",
+          "line": 1,
+          "message": "recorded fixture finding for cfg-disputed",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet cfg-disputed completed",
+      "stderr": "",
+      "stdout_identity": "b3:fa4523d30bef671cadb5f5d657239d2f4f9614b06d13bb415defe11a8f828377",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:trait-method-references:trait-method-compliant",
+      "tool_id": "octet",
+      "task_id": "trait-method-references",
+      "case_id": "trait-method-compliant",
+      "source_identity": "b3:5c45d0b972350425a9bdb8c1650591b9d67c00381969fda8539f0b0c552267ad",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/traits/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/traits/src/compliant.rs"
+        ],
+        "scope_identity": "b3:d5ef1ec02377a1baf2fb58c9442c49bed19ce81dbe9efd188f277807b8edb6ce"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet trait-method-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:2862c03600ce3a886845e6b61ee02686db69e5e126d06ef25e3e4134d9a437c0",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:trait-method-references:trait-method-violating",
+      "tool_id": "octet",
+      "task_id": "trait-method-references",
+      "case_id": "trait-method-violating",
+      "source_identity": "b3:fd83c857ce8080bae2af30ade9415a2c76148ac5de8d28098d68299b3992a89d",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/traits/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/traits/src/violating.rs"
+        ],
+        "scope_identity": "b3:dcb36d204dd6ac1c9df864674ee5ea85f911d7d6336ab1793d91a5392e3698e8"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "trait-method-violating",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/traits/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for trait-method-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet trait-method-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:632b4cd2ae7ebe69f111cc27c2345872f806ebd3fc651a9303ddb86bb05b4474",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:workspace-targets:workspace-target-compliant",
+      "tool_id": "octet",
+      "task_id": "workspace-targets",
+      "case_id": "workspace-target-compliant",
+      "source_identity": "b3:34494cd7b1307108e64ae8df4281bea508920f4b21885cba80fc9213bbd7fccb",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/bin_target/src/main.rs"
+        ],
+        "analyzed_sources": [
+          "crates/bin_target/src/main.rs"
+        ],
+        "scope_identity": "b3:7eb09a2288d77a4d4209ee3da02f61c02cd95fb5a1289501eb78a47e331ea173"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet workspace-target-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:1e599e35c8a0fd66afc478fe10863b749d39056b23abac413b1fce0dbdfebe34",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:workspace-targets:workspace-target-violating",
+      "tool_id": "octet",
+      "task_id": "workspace-targets",
+      "case_id": "workspace-target-violating",
+      "source_identity": "b3:9d48b18508c68f34adcc0c7ee73f7847d488ebeb343635241bada62437871541",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/bin_target/src/bin/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/bin_target/src/bin/violating.rs"
+        ],
+        "scope_identity": "b3:d3c4c72b7d45bbecdee0665fd25c9a3cf11753b770f2af9e6c92ee89675b18e5"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "workspace-target-violating",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/bin_target/src/bin/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for workspace-target-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet workspace-target-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:e52f29ac7b145b0a6a90cac593f8e9c186db2ed5aface80aa36e17917d0416c1",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:empty-selected-scope:empty-selected-scope",
+      "tool_id": "octet",
+      "task_id": "empty-selected-scope",
+      "case_id": "empty-selected-scope",
+      "source_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [],
+        "analyzed_sources": [],
+        "scope_identity": "b3:f6b583a8bc5d89f227bcae2198d5088a4b5ba201cd01d741cd1f05033b4ea9d1"
+      },
+      "status": "completed",
+      "compile_status": "not_applicable",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet empty-selected-scope completed",
+      "stderr": "",
+      "stdout_identity": "b3:b5a4e6393155c67b11ea1d724b098db25bea9c3de9f6c2058ddb6e3480e782e3",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:stale-evidence:stale-evidence",
+      "tool_id": "octet",
+      "task_id": "stale-evidence",
+      "case_id": "stale-evidence",
+      "source_identity": "b3:99a97796329a551fb7d4a5095be75ddbafc96ea18c637d47bf3ee1127204eeca",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/stale-evidence.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/stale-evidence.json"
+        ],
+        "scope_identity": "b3:f22399108c866963fabb0788717e4ebe7c56603abcf40c8d2b048868506b3360"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "stale-evidence",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/assurance/stale-evidence.json",
+          "line": 1,
+          "message": "recorded fixture finding for stale-evidence",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet stale-evidence completed",
+      "stderr": "",
+      "stdout_identity": "b3:68064a2facea138eadd92f02f0956a4d13b24f3a87c7b1c26a877cefc4809896",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:stale-evidence:valid-evidence-control",
+      "tool_id": "octet",
+      "task_id": "stale-evidence",
+      "case_id": "valid-evidence-control",
+      "source_identity": "b3:abfc4bd720f58d7308eee25aa89cabdc883388e7ed27b947e89be4b59016aeda",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/valid-evidence-control.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/valid-evidence-control.json"
+        ],
+        "scope_identity": "b3:87ab9f6fae62ec184a3f293e7781e2e104697335ebe5cc084d7b774f8b031820"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "octet valid-evidence-control completed",
+      "stderr": "",
+      "stdout_identity": "b3:cafa5bf5ff6d7f171cbc3e3078774c126db563f883797ecc93345e2bd7885ee2",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:changed-policy:changed-policy",
+      "tool_id": "octet",
+      "task_id": "changed-policy",
+      "case_id": "changed-policy",
+      "source_identity": "b3:1d79832f17d114669e2e58f7817bcbc486ae230924ee2271cd221e8258789c86",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/changed-policy.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/changed-policy.json"
+        ],
+        "scope_identity": "b3:e7d772ecdf5010066c44613960b0f76189f0d290f8689bd9df1847d05b556207"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "changed-policy",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/assurance/changed-policy.json",
+          "line": 1,
+          "message": "recorded fixture finding for changed-policy",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet changed-policy completed",
+      "stderr": "",
+      "stdout_identity": "b3:6141c6a108c5623afe4b36251ed85fd2458959c34e37031e0bb21b8cb3717179",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:missing-execution:missing-execution",
+      "tool_id": "octet",
+      "task_id": "missing-execution",
+      "case_id": "missing-execution",
+      "source_identity": "b3:aafd86b34ed7a4858f4da9ae1acb8e663c809d03b49eb48ecffcda8b8a1ed8f2",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/missing-execution.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/missing-execution.json"
+        ],
+        "scope_identity": "b3:79c9586c94bc1bfd72c1a3fe01a42971324094e75aa859adcf92360df6858452"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "missing-execution",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/assurance/missing-execution.json",
+          "line": 1,
+          "message": "recorded fixture finding for missing-execution",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet missing-execution completed",
+      "stderr": "",
+      "stdout_identity": "b3:86c9bc934c61f80e58d7c963acfd9e4a3717aa8feda8d8cef32b90d0eedaf48d",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "octet:invalid-proof-source-linkage:invalid-proof-source-linkage",
+      "tool_id": "octet",
+      "task_id": "invalid-proof-source-linkage",
+      "case_id": "invalid-proof-source-linkage",
+      "source_identity": "b3:9114f755b70b1b88c4ef4ba931b42f4c4a297b246528172b7cdd7447d2596402",
+      "tool_version": "cargo-octet 0.1.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/invalid-proof-linkage.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/invalid-proof-linkage.json"
+        ],
+        "scope_identity": "b3:551f04affc738773699255e9039d048d607d35e441560cadb18c05062f738219"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "invalid-proof-source-linkage",
+          "rule_id": "octet.architecture.fixture-rule",
+          "path": "standards/benchmark/assurance/invalid-proof-linkage.json",
+          "line": 1,
+          "message": "recorded fixture finding for invalid-proof-source-linkage",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "octet invalid-proof-source-linkage completed",
+      "stderr": "",
+      "stdout_identity": "b3:479d34b4f22e7899fc6f07d72f4030874477c8d368eb224bb54839ca44fe5d55",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:dependency-boundary:dependency-boundary-compliant",
+      "tool_id": "cargo-pup",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-compliant",
+      "source_identity": "b3:936954ff246914c7b9e67c7991da6f2296f8469b4cf1732afff523428a64eaa2",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "scope_identity": "b3:5a6eb7c7d6741c3df53e227dfe0a62db151031fba0e91fee7d2c7ba721f65dc9"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "cargo-pup dependency-boundary-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:fa3a1d72ffd00d3638703eb9b518ecb758299e9514922e6fe3829f0ad7c8d56f",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:dependency-boundary:dependency-boundary-violating",
+      "tool_id": "cargo-pup",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-violating",
+      "source_identity": "b3:d88195b2eb597142b97159781bb2c80a6ff6b2be5134767574e0d5746971b168",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "scope_identity": "b3:17a0a06b2ca63ee28d84e4972f3674386fbc5840bb09dae92e4ad11fd1e2a12f"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "dependency-boundary-violating",
+          "rule_id": "cargo-pup.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/app/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for dependency-boundary-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "cargo-pup dependency-boundary-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:dd2ce304fa1e43e69ad072c4aede91a6a897138ef31e9e539f575cbb828a9ee2",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:reexports-aliases:reexport-alias-compliant",
+      "tool_id": "cargo-pup",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-compliant",
+      "source_identity": "b3:296661147fbe3d482f64ee20a5cc8a7aa53e655c56add4c16ae625c95b32f21b",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "scope_identity": "b3:bb406275daa3e00d5bd24705143c3e49c812f6f819a9918f78fab27a8a8f6dc9"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "cargo-pup reexport-alias-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:2ecfbb50bd4f98d7b7726f102b8385228b77e2b0e665168b640702e69c82974f",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:reexports-aliases:reexport-alias-violating",
+      "tool_id": "cargo-pup",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-violating",
+      "source_identity": "b3:600991fb24d064fca0c544a5cfe3bee47caf63e6837cef52af665da9e546e81e",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "scope_identity": "b3:424d62b0411dd78cd80a5f1e8343c75ac1962fb11d1570ef3ab2edf6a7c33dac"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "reexport-alias-violating",
+          "rule_id": "cargo-pup.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/facade/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for reexport-alias-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "cargo-pup reexport-alias-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:061c7398c78cc2a5efa13ca1ad693a3d07f1b81d181b8f22da77bb9fa9f410cd",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:trait-method-references:trait-method-compliant",
+      "tool_id": "cargo-pup",
+      "task_id": "trait-method-references",
+      "case_id": "trait-method-compliant",
+      "source_identity": "b3:5c45d0b972350425a9bdb8c1650591b9d67c00381969fda8539f0b0c552267ad",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/traits/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/traits/src/compliant.rs"
+        ],
+        "scope_identity": "b3:d5ef1ec02377a1baf2fb58c9442c49bed19ce81dbe9efd188f277807b8edb6ce"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "cargo-pup trait-method-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:0e1750715a74d9695f9f58b4582edd7d08b9bbbe447ca9e8ff816e0f5612abe6",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:trait-method-references:trait-method-violating",
+      "tool_id": "cargo-pup",
+      "task_id": "trait-method-references",
+      "case_id": "trait-method-violating",
+      "source_identity": "b3:fd83c857ce8080bae2af30ade9415a2c76148ac5de8d28098d68299b3992a89d",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/traits/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/traits/src/violating.rs"
+        ],
+        "scope_identity": "b3:dcb36d204dd6ac1c9df864674ee5ea85f911d7d6336ab1793d91a5392e3698e8"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "trait-method-violating",
+          "rule_id": "cargo-pup.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/traits/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for trait-method-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "cargo-pup trait-method-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:57327c7861e1aea3453cfa0b2d957d6fd9c0e626cef01121fef9a554f74a11da",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:workspace-targets:workspace-target-compliant",
+      "tool_id": "cargo-pup",
+      "task_id": "workspace-targets",
+      "case_id": "workspace-target-compliant",
+      "source_identity": "b3:34494cd7b1307108e64ae8df4281bea508920f4b21885cba80fc9213bbd7fccb",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/bin_target/src/main.rs"
+        ],
+        "analyzed_sources": [
+          "crates/bin_target/src/main.rs"
+        ],
+        "scope_identity": "b3:7eb09a2288d77a4d4209ee3da02f61c02cd95fb5a1289501eb78a47e331ea173"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "cargo-pup workspace-target-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:a4d6bad22b41df28eb5662daba871ab4a4a8001f10f1f7bdaaee6c4204ad7581",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:workspace-targets:workspace-target-violating",
+      "tool_id": "cargo-pup",
+      "task_id": "workspace-targets",
+      "case_id": "workspace-target-violating",
+      "source_identity": "b3:9d48b18508c68f34adcc0c7ee73f7847d488ebeb343635241bada62437871541",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/bin_target/src/bin/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/bin_target/src/bin/violating.rs"
+        ],
+        "scope_identity": "b3:d3c4c72b7d45bbecdee0665fd25c9a3cf11753b770f2af9e6c92ee89675b18e5"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "workspace-target-violating",
+          "rule_id": "cargo-pup.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/bin_target/src/bin/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for workspace-target-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "cargo-pup workspace-target-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:307c9e375250685902c133db851b3e73e5dac74a8fa669a7b437c28aef8d6a75",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "cargo-pup:empty-selected-scope:empty-selected-scope",
+      "tool_id": "cargo-pup",
+      "task_id": "empty-selected-scope",
+      "case_id": "empty-selected-scope",
+      "source_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "tool_version": "cargo-pup 0.1.9",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [],
+        "analyzed_sources": [],
+        "scope_identity": "b3:f6b583a8bc5d89f227bcae2198d5088a4b5ba201cd01d741cd1f05033b4ea9d1"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "cargo-pup empty-selected-scope completed",
+      "stderr": "",
+      "stdout_identity": "b3:a3225f140942ccdbc242962c295cab9777f516fd90e1263062227fae23015a0e",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "archunit-rust:dependency-boundary:dependency-boundary-compliant",
+      "tool_id": "archunit-rust",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-compliant",
+      "source_identity": "b3:936954ff246914c7b9e67c7991da6f2296f8469b4cf1732afff523428a64eaa2",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "scope_identity": "b3:5a6eb7c7d6741c3df53e227dfe0a62db151031fba0e91fee7d2c7ba721f65dc9"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:dependency-boundary:dependency-boundary-violating",
+      "tool_id": "archunit-rust",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-violating",
+      "source_identity": "b3:d88195b2eb597142b97159781bb2c80a6ff6b2be5134767574e0d5746971b168",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "scope_identity": "b3:17a0a06b2ca63ee28d84e4972f3674386fbc5840bb09dae92e4ad11fd1e2a12f"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:reexports-aliases:reexport-alias-compliant",
+      "tool_id": "archunit-rust",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-compliant",
+      "source_identity": "b3:296661147fbe3d482f64ee20a5cc8a7aa53e655c56add4c16ae625c95b32f21b",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "scope_identity": "b3:bb406275daa3e00d5bd24705143c3e49c812f6f819a9918f78fab27a8a8f6dc9"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:reexports-aliases:reexport-alias-violating",
+      "tool_id": "archunit-rust",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-violating",
+      "source_identity": "b3:600991fb24d064fca0c544a5cfe3bee47caf63e6837cef52af665da9e546e81e",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "scope_identity": "b3:424d62b0411dd78cd80a5f1e8343c75ac1962fb11d1570ef3ab2edf6a7c33dac"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:trait-method-references:trait-method-compliant",
+      "tool_id": "archunit-rust",
+      "task_id": "trait-method-references",
+      "case_id": "trait-method-compliant",
+      "source_identity": "b3:5c45d0b972350425a9bdb8c1650591b9d67c00381969fda8539f0b0c552267ad",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/traits/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/traits/src/compliant.rs"
+        ],
+        "scope_identity": "b3:d5ef1ec02377a1baf2fb58c9442c49bed19ce81dbe9efd188f277807b8edb6ce"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:trait-method-references:trait-method-violating",
+      "tool_id": "archunit-rust",
+      "task_id": "trait-method-references",
+      "case_id": "trait-method-violating",
+      "source_identity": "b3:fd83c857ce8080bae2af30ade9415a2c76148ac5de8d28098d68299b3992a89d",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/traits/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/traits/src/violating.rs"
+        ],
+        "scope_identity": "b3:dcb36d204dd6ac1c9df864674ee5ea85f911d7d6336ab1793d91a5392e3698e8"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:workspace-targets:workspace-target-compliant",
+      "tool_id": "archunit-rust",
+      "task_id": "workspace-targets",
+      "case_id": "workspace-target-compliant",
+      "source_identity": "b3:34494cd7b1307108e64ae8df4281bea508920f4b21885cba80fc9213bbd7fccb",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/bin_target/src/main.rs"
+        ],
+        "analyzed_sources": [
+          "crates/bin_target/src/main.rs"
+        ],
+        "scope_identity": "b3:7eb09a2288d77a4d4209ee3da02f61c02cd95fb5a1289501eb78a47e331ea173"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:workspace-targets:workspace-target-violating",
+      "tool_id": "archunit-rust",
+      "task_id": "workspace-targets",
+      "case_id": "workspace-target-violating",
+      "source_identity": "b3:9d48b18508c68f34adcc0c7ee73f7847d488ebeb343635241bada62437871541",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/bin_target/src/bin/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/bin_target/src/bin/violating.rs"
+        ],
+        "scope_identity": "b3:d3c4c72b7d45bbecdee0665fd25c9a3cf11753b770f2af9e6c92ee89675b18e5"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "archunit-rust:empty-selected-scope:empty-selected-scope",
+      "tool_id": "archunit-rust",
+      "task_id": "empty-selected-scope",
+      "case_id": "empty-selected-scope",
+      "source_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "tool_version": "archunit 0.0.2",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [],
+        "analyzed_sources": [],
+        "scope_identity": "b3:f6b583a8bc5d89f227bcae2198d5088a4b5ba201cd01d741cd1f05033b4ea9d1"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`archunit` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "semgrep:dependency-boundary:dependency-boundary-compliant",
+      "tool_id": "semgrep",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-compliant",
+      "source_identity": "b3:936954ff246914c7b9e67c7991da6f2296f8469b4cf1732afff523428a64eaa2",
+      "tool_version": "semgrep 1.184.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "scope_identity": "b3:5a6eb7c7d6741c3df53e227dfe0a62db151031fba0e91fee7d2c7ba721f65dc9"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`semgrep` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "semgrep:dependency-boundary:dependency-boundary-violating",
+      "tool_id": "semgrep",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-violating",
+      "source_identity": "b3:d88195b2eb597142b97159781bb2c80a6ff6b2be5134767574e0d5746971b168",
+      "tool_version": "semgrep 1.184.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "scope_identity": "b3:17a0a06b2ca63ee28d84e4972f3674386fbc5840bb09dae92e4ad11fd1e2a12f"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`semgrep` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "semgrep:reexports-aliases:reexport-alias-compliant",
+      "tool_id": "semgrep",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-compliant",
+      "source_identity": "b3:296661147fbe3d482f64ee20a5cc8a7aa53e655c56add4c16ae625c95b32f21b",
+      "tool_version": "semgrep 1.184.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "scope_identity": "b3:bb406275daa3e00d5bd24705143c3e49c812f6f819a9918f78fab27a8a8f6dc9"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`semgrep` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "semgrep:reexports-aliases:reexport-alias-violating",
+      "tool_id": "semgrep",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-violating",
+      "source_identity": "b3:600991fb24d064fca0c544a5cfe3bee47caf63e6837cef52af665da9e546e81e",
+      "tool_version": "semgrep 1.184.0",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "scope_identity": "b3:424d62b0411dd78cd80a5f1e8343c75ac1962fb11d1570ef3ab2edf6a7c33dac"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`semgrep` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "codeql:dependency-boundary:dependency-boundary-compliant",
+      "tool_id": "codeql",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-compliant",
+      "source_identity": "b3:936954ff246914c7b9e67c7991da6f2296f8469b4cf1732afff523428a64eaa2",
+      "tool_version": "codeql 2.27.4",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "scope_identity": "b3:5a6eb7c7d6741c3df53e227dfe0a62db151031fba0e91fee7d2c7ba721f65dc9"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`codeql` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "codeql:dependency-boundary:dependency-boundary-violating",
+      "tool_id": "codeql",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-violating",
+      "source_identity": "b3:d88195b2eb597142b97159781bb2c80a6ff6b2be5134767574e0d5746971b168",
+      "tool_version": "codeql 2.27.4",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "scope_identity": "b3:17a0a06b2ca63ee28d84e4972f3674386fbc5840bb09dae92e4ad11fd1e2a12f"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`codeql` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "codeql:reexports-aliases:reexport-alias-compliant",
+      "tool_id": "codeql",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-compliant",
+      "source_identity": "b3:296661147fbe3d482f64ee20a5cc8a7aa53e655c56add4c16ae625c95b32f21b",
+      "tool_version": "codeql 2.27.4",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "scope_identity": "b3:bb406275daa3e00d5bd24705143c3e49c812f6f819a9918f78fab27a8a8f6dc9"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`codeql` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "codeql:reexports-aliases:reexport-alias-violating",
+      "tool_id": "codeql",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-violating",
+      "source_identity": "b3:600991fb24d064fca0c544a5cfe3bee47caf63e6837cef52af665da9e546e81e",
+      "tool_version": "codeql 2.27.4",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "scope_identity": "b3:424d62b0411dd78cd80a5f1e8343c75ac1962fb11d1570ef3ab2edf6a7c33dac"
+      },
+      "status": "unavailable",
+      "compile_status": "unknown",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": "`codeql` is unavailable or unusable in the recorded fixture environment"
+    },
+    {
+      "observation_id": "repository-baseline-script:dependency-boundary:dependency-boundary-compliant",
+      "tool_id": "repository-baseline-script",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-compliant",
+      "source_identity": "b3:936954ff246914c7b9e67c7991da6f2296f8469b4cf1732afff523428a64eaa2",
+      "tool_version": "bash 5.3",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/compliant.rs"
+        ],
+        "scope_identity": "b3:5a6eb7c7d6741c3df53e227dfe0a62db151031fba0e91fee7d2c7ba721f65dc9"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "repository-baseline-script dependency-boundary-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:e6538fdcb9feaff42c334c53225134fd881a0a7773ecfa394cd24d81e3fcba6e",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "repository-baseline-script:dependency-boundary:dependency-boundary-violating",
+      "tool_id": "repository-baseline-script",
+      "task_id": "dependency-boundary",
+      "case_id": "dependency-boundary-violating",
+      "source_identity": "b3:d88195b2eb597142b97159781bb2c80a6ff6b2be5134767574e0d5746971b168",
+      "tool_version": "bash 5.3",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/app/src/violating.rs"
+        ],
+        "scope_identity": "b3:17a0a06b2ca63ee28d84e4972f3674386fbc5840bb09dae92e4ad11fd1e2a12f"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "dependency-boundary-violating",
+          "rule_id": "repository-baseline-script.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/app/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for dependency-boundary-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "repository-baseline-script dependency-boundary-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:7be2260f25369b544426a3a2b4e7eabc64684cebf058dd94a3ea40ef2a0b126a",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "repository-baseline-script:reexports-aliases:reexport-alias-compliant",
+      "tool_id": "repository-baseline-script",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-compliant",
+      "source_identity": "b3:296661147fbe3d482f64ee20a5cc8a7aa53e655c56add4c16ae625c95b32f21b",
+      "tool_version": "bash 5.3",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/compliant.rs"
+        ],
+        "scope_identity": "b3:bb406275daa3e00d5bd24705143c3e49c812f6f819a9918f78fab27a8a8f6dc9"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "repository-baseline-script reexport-alias-compliant completed",
+      "stderr": "",
+      "stdout_identity": "b3:e7865b32740051eda913a9c69bfe89ec9d9dd306f4afb44f5726dd94d97e3d2c",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "repository-baseline-script:reexports-aliases:reexport-alias-violating",
+      "tool_id": "repository-baseline-script",
+      "task_id": "reexports-aliases",
+      "case_id": "reexport-alias-violating",
+      "source_identity": "b3:600991fb24d064fca0c544a5cfe3bee47caf63e6837cef52af665da9e546e81e",
+      "tool_version": "bash 5.3",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "analyzed_sources": [
+          "crates/facade/src/violating.rs"
+        ],
+        "scope_identity": "b3:424d62b0411dd78cd80a5f1e8343c75ac1962fb11d1570ef3ab2edf6a7c33dac"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "reexport-alias-violating",
+          "rule_id": "repository-baseline-script.architecture.fixture-rule",
+          "path": "standards/benchmark/corpus/crates/facade/src/violating.rs",
+          "line": 1,
+          "message": "recorded fixture finding for reexport-alias-violating",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "repository-baseline-script reexport-alias-violating completed",
+      "stderr": "",
+      "stdout_identity": "b3:fce9c5d10f59e658478cd5c639c32512d6e269467564528db94b99c61e356aa5",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "repository-baseline-script:stale-evidence:stale-evidence",
+      "tool_id": "repository-baseline-script",
+      "task_id": "stale-evidence",
+      "case_id": "stale-evidence",
+      "source_identity": "b3:99a97796329a551fb7d4a5095be75ddbafc96ea18c637d47bf3ee1127204eeca",
+      "tool_version": "bash 5.3",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/stale-evidence.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/stale-evidence.json"
+        ],
+        "scope_identity": "b3:f22399108c866963fabb0788717e4ebe7c56603abcf40c8d2b048868506b3360"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "stale-evidence",
+          "rule_id": "repository-baseline-script.architecture.fixture-rule",
+          "path": "standards/benchmark/assurance/stale-evidence.json",
+          "line": 1,
+          "message": "recorded fixture finding for stale-evidence",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "repository-baseline-script stale-evidence completed",
+      "stderr": "",
+      "stdout_identity": "b3:a003f573846c8bd001b8c35978071c89fb2fab4d11c45dd3309a1fcf6f037d45",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "repository-baseline-script:stale-evidence:valid-evidence-control",
+      "tool_id": "repository-baseline-script",
+      "task_id": "stale-evidence",
+      "case_id": "valid-evidence-control",
+      "source_identity": "b3:abfc4bd720f58d7308eee25aa89cabdc883388e7ed27b947e89be4b59016aeda",
+      "tool_version": "bash 5.3",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/valid-evidence-control.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/valid-evidence-control.json"
+        ],
+        "scope_identity": "b3:87ab9f6fae62ec184a3f293e7781e2e104697335ebe5cc084d7b774f8b031820"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [],
+      "suppressions": [],
+      "stdout": "repository-baseline-script valid-evidence-control completed",
+      "stderr": "",
+      "stdout_identity": "b3:da5bf4d7d0269f8dfe403fff111163e9d93c7c0a5713c02e14391b828c01a389",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    },
+    {
+      "observation_id": "repository-baseline-script:changed-policy:changed-policy",
+      "tool_id": "repository-baseline-script",
+      "task_id": "changed-policy",
+      "case_id": "changed-policy",
+      "source_identity": "b3:1d79832f17d114669e2e58f7817bcbc486ae230924ee2271cd221e8258789c86",
+      "tool_version": "bash 5.3",
+      "origin": "recorded_fixture",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "scope": {
+        "selected_sources": [
+          "standards/benchmark/assurance/changed-policy.json"
+        ],
+        "analyzed_sources": [
+          "standards/benchmark/assurance/changed-policy.json"
+        ],
+        "scope_identity": "b3:e7d772ecdf5010066c44613960b0f76189f0d290f8689bd9df1847d05b556207"
+      },
+      "status": "completed",
+      "compile_status": "compiled",
+      "findings": [
+        {
+          "case_id": "changed-policy",
+          "rule_id": "repository-baseline-script.architecture.fixture-rule",
+          "path": "standards/benchmark/assurance/changed-policy.json",
+          "line": 1,
+          "message": "recorded fixture finding for changed-policy",
+          "suppressed": false
+        }
+      ],
+      "suppressions": [],
+      "stdout": "repository-baseline-script changed-policy completed",
+      "stderr": "",
+      "stdout_identity": "b3:519274a66483ebfe0285428f4050cfd00353bb160430391829483fd9749056e3",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": 0,
+      "wall_duration_ns": 1000,
+      "warm_state": "cold",
+      "sample_index": 0,
+      "failure_reason": null,
+      "unavailable_reason": null
+    }
+  ],
+  "adoption": [
+    {
+      "observation_id": "octet:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "octet",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "no reviewed adoption command; probe-only recorded tool",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "octet:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "octet",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "no reviewed adoption command; probe-only recorded tool",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "octet:bounded-exec-44eb74e:initial",
+      "tool_id": "octet",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "octet:bounded-exec-44eb74e:incremental",
+      "tool_id": "octet",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-pup:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "cargo-pup",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "no reviewed adoption command; probe-only recorded tool",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-pup:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "cargo-pup",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "no reviewed adoption command; probe-only recorded tool",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-pup:bounded-exec-44eb74e:initial",
+      "tool_id": "cargo-pup",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-pup:bounded-exec-44eb74e:incremental",
+      "tool_id": "cargo-pup",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "archunit-rust:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "archunit-rust",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "archunit-rust:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "archunit-rust",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "archunit-rust:bounded-exec-44eb74e:initial",
+      "tool_id": "archunit-rust",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "archunit-rust:bounded-exec-44eb74e:incremental",
+      "tool_id": "archunit-rust",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "clippy:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "clippy",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "local",
+      "measured": true,
+      "wall_duration_ns": 255671526,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "    Checking infra-api v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/infra-api)\n    Checking core-api v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/core-api)\n    Checking empty_scope v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/empty_scope)\n    Checking bin_target v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/bin_target)\n    Checking traits v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/traits)\n    Checking facade v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/facade)\n    Checking gated v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/gated)\n    Checking app v0.0.0 (/path/to/octet/standards/benchmark/corpus/crates/app)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s\n",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:7147ffd83a25255fd50d383ea1671bb21ddea2d531c33bb4857367fe89dde558",
+      "exit_code": 0,
+      "unavailable_reason": null,
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "clippy:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "clippy",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "local",
+      "measured": true,
+      "wall_duration_ns": 50894103,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s\n",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:d4dec14e3b16612a12f2daea1d2c0e36fff833c1522f3aadf877322e9b39d4b2",
+      "exit_code": 0,
+      "unavailable_reason": null,
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "clippy:bounded-exec-44eb74e:initial",
+      "tool_id": "clippy",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "clippy:bounded-exec-44eb74e:incremental",
+      "tool_id": "clippy",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-deny:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "cargo-deny",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-deny:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "cargo-deny",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-deny:bounded-exec-44eb74e:initial",
+      "tool_id": "cargo-deny",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-deny:bounded-exec-44eb74e:incremental",
+      "tool_id": "cargo-deny",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-vet:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "cargo-vet",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-vet:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "cargo-vet",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-vet:bounded-exec-44eb74e:initial",
+      "tool_id": "cargo-vet",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "cargo-vet:bounded-exec-44eb74e:incremental",
+      "tool_id": "cargo-vet",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "semgrep:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "semgrep",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "semgrep:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "semgrep",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "semgrep:bounded-exec-44eb74e:initial",
+      "tool_id": "semgrep",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "semgrep:bounded-exec-44eb74e:incremental",
+      "tool_id": "semgrep",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "codeql:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "codeql",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "codeql:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "codeql",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "executable is unavailable in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "codeql:bounded-exec-44eb74e:initial",
+      "tool_id": "codeql",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "codeql:bounded-exec-44eb74e:incremental",
+      "tool_id": "codeql",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "repository-baseline-script:clean-consumer-architecture-corpus-v1:initial",
+      "tool_id": "repository-baseline-script",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "no reviewed adoption command; probe-only recorded tool",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "repository-baseline-script:clean-consumer-architecture-corpus-v1:incremental",
+      "tool_id": "repository-baseline-script",
+      "target_selection": "clean-consumer-architecture-corpus-v1",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "no reviewed adoption command; probe-only recorded tool",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "repository-baseline-script:bounded-exec-44eb74e:initial",
+      "tool_id": "repository-baseline-script",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "initial",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "cold",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "cold"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    },
+    {
+      "observation_id": "repository-baseline-script:bounded-exec-44eb74e:incremental",
+      "tool_id": "repository-baseline-script",
+      "target_selection": "bounded-exec-44eb74e",
+      "phase": "incremental",
+      "origin": "recorded_fixture",
+      "measured": false,
+      "wall_duration_ns": null,
+      "warm_state": "warm",
+      "environment": {
+        "target": "x86_64-unknown-linux-gnu",
+        "host_os": "linux",
+        "host_arch": "x86_64",
+        "rust_toolchain": "nightly-2026-03-21",
+        "cache_state": "warm"
+      },
+      "stdout": "",
+      "stderr": "",
+      "stdout_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "stderr_identity": "b3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "exit_code": null,
+      "unavailable_reason": "immutable real-consumer selection is not checked out in the recorded fixture environment",
+      "dependencies": [
+        "cargo-pup and ArchUnitRust require their own pinned crates; Octet runs from the pinned workspace build.",
+        "Semgrep and CodeQL are unavailable in this environment, so their runtime rows stay unavailable.",
+        "cargo-vet is unavailable and cargo-deny is unusable in the current shell; neither is counted as clean."
+      ]
+    }
+  ]
+}

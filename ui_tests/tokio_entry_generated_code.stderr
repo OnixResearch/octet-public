@@ -1,0 +1,42 @@
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/tokio_async/tokio_entry_generated_code.rs:54:16
+   |
+LL |     let name = read_name("octet").unwrap();
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+note: the lint level is defined here
+  --> $DIR/tokio_async/tokio_entry_generated_code.rs:4:5
+   |
+LL |     tigerstyle::safety,
+   |     ^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::no_unwrap)]` implied by `#[warn(tigerstyle::safety)]`
+help: propagate the error with `?` instead of panicking
+   |
+LL -     let name = read_name("octet").unwrap();
+LL +     let name = read_name("octet")?;
+   |
+
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/tokio_async/tokio_entry_generated_code.rs:26:9
+   |
+LL |         read_name($raw).unwrap()
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+LL |     let name = name_or_panic!("octet");
+   |                ----------------------- in this macro invocation
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+   = note: this warning originates in the macro `name_or_panic` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: propagate the error with `?` instead of panicking
+   |
+LL -         read_name($raw).unwrap()
+LL +         read_name($raw)?
+   |
+
+warning: 2 warnings emitted
+

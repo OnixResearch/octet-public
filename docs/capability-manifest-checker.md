@@ -23,9 +23,23 @@ capability family, matched source shape, linked lint IDs, evidence tier, replay
 artifact, and whether the observation was accepted or diagnostic.
 
 Strict manifests fail closed when required core scopes, handler artifacts, replay
-commands, success-path coverage, or failure-path coverage are missing. Unknown
-scope classes and capability families are rejected by Nickel before exported JSON
-is consumed.
+commands, success-path coverage, or failure-path coverage are missing. Handler
+artifacts and replay commands pair with deterministic handlers by position:
+each handler needs its own entry in both lists, and a handler without one gets a
+diagnostic naming it rather than borrowing another handler's command. A handler
+artifact matches a checked source path exactly or on whole trailing path
+components, so `fixtures/legacy_tests/fs-handler.txt` does not satisfy
+`tests/fs-handler.txt`. Unknown scope classes and capability families, and
+strict manifests whose handler, artifact, and replay-command lists differ in
+length, are rejected by Nickel before exported JSON is consumed.
+
+A handler artifact shows success-path coverage when it contains one of the whole
+words or phrases `success`, `succeeds`, `ok`, or `happy path`, and failure-path
+coverage when it contains `failure`, `fails`, `error`, or `sad path` (ASCII
+case-insensitive). Markers inside longer words do not count, so `token` is not
+`ok` and `terror` is not `error`. Labelled lines such as
+`success path: fake clock returns deterministic millis` and
+`failure path: fake clock returns configured error` are the recommended form.
 
 ## Boundaries
 

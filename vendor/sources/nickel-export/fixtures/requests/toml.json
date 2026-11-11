@@ -1,0 +1,12 @@
+{
+  "schema": "onix-nickel-export-request/v1",
+  "family_id": "fixtures.toml",
+  "source": "fixtures/config.ncl",
+  "dependencies": ["fixtures/contract.ncl"],
+  "import_paths": ["fixtures"],
+  "selector": "",
+  "contract": "fixtures/contract.ncl",
+  "format": "toml",
+  "destination": "fixtures/generated/config.toml",
+  "allow_secret_material": false
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "octet-nickel-export-manifest/v1",
+  "generator": "octet-standards.nickel-export-helper/v1",
+  "nickel_identity": "nickel-lang-cli nickel 1.17.0 (rev 1320a98)",
+  "exports": [
+    {
+      "family_id": "octet.storage-fault-assurance-profile",
+      "output_format": "json",
+      "source": {
+        "path": "standards/policies/assurance-profiles/storage-fault/profile.ncl",
+        "blake3": "3564da6c7d295daaee3bb7c465df4cae74d07689d075420d4202a34d65bd4147",
+        "bytes": 1188
+      },
+      "dependencies": [
+        {
+          "path": "standards/policies/assurance-profiles/storage-fault/contracts.ncl",
+          "blake3": "74aed01243a4376a1811ab2fcb028cbd296ae4ae2077fd9b6f8e114c1d43cdb4",
+          "bytes": 1877
+        }
+      ],
+      "output": {
+        "path": "standards/policies/assurance-profiles/storage-fault/generated/profile.json",
+        "blake3": "a17cc9ec444a960c93840af5283c27d8b138581320bc67c2c268c06d62089168",
+        "bytes": 1162
+      },
+      "selector": "",
+      "contract": "Profile and ProfileRules",
+      "generation_command": "nickel export --format json standards/policies/assurance-profiles/storage-fault/profile.ncl",
+      "command_argv": [
+        "nickel",
+        "export",
+        "--format",
+        "json",
+        "standards/policies/assurance-profiles/storage-fault/profile.ncl"
+      ]
+    }
+  ]
+}

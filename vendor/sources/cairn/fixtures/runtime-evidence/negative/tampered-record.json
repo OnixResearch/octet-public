@@ -1,0 +1,56 @@
+[
+  {
+    "action_class": "tool_call",
+    "agent_identity": {
+      "model": "fixture-model",
+      "wrapper": "cairn-runtime-fixture"
+    },
+    "authorization": "denied-after-hash",
+    "capture_origin": "boundary_captured",
+    "input_identity": {
+      "hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "hash_algorithm": "BLAKE3"
+    },
+    "integrity": {
+      "previous_hash": null
+    },
+    "non_claims": [
+      "runtime evidence proves presented-chain integrity and witnessed-prefix comparison only; it does not prove agent correctness, action policy enforcement, witness authority trust, or completeness without an independently controlled checkpoint"
+    ],
+    "outcome_identity": {
+      "hash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "hash_algorithm": "BLAKE3"
+    },
+    "record_hash": "1f04fe96d46f6b9904e71506fc93a7a7bebb75d9f95f954b57bd6ad5d644a8b1",
+    "record_id": "runtime-record-001",
+    "schema_version": "cairn.runtime_evidence.v1",
+    "subject": "repo:cairn"
+  },
+  {
+    "action_class": "evidence_export",
+    "agent_identity": {
+      "model": "fixture-model",
+      "wrapper": "cairn-runtime-fixture"
+    },
+    "authorization": "allowed",
+    "capture_origin": "ingested_telemetry",
+    "input_identity": {
+      "hash": "3333333333333333333333333333333333333333333333333333333333333333",
+      "hash_algorithm": "BLAKE3"
+    },
+    "integrity": {
+      "previous_hash": "1f04fe96d46f6b9904e71506fc93a7a7bebb75d9f95f954b57bd6ad5d644a8b1"
+    },
+    "non_claims": [
+      "runtime evidence proves presented-chain integrity and witnessed-prefix comparison only; it does not prove agent correctness, action policy enforcement, witness authority trust, or completeness without an independently controlled checkpoint"
+    ],
+    "outcome_identity": {
+      "hash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "hash_algorithm": "BLAKE3"
+    },
+    "record_hash": "fc228126a2ca55fcd0c5d18bb75bb1c2d4b61a454d15c0c5302d8f772e6bfae3",
+    "record_id": "runtime-record-002",
+    "schema_version": "cairn.runtime_evidence.v1",
+    "subject": "repo:cairn"
+  }
+]

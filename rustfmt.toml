@@ -17,3 +17,7 @@ comment_width = 100
 chain_width = 100
 inline_attribute_width = 0
 merge_derives = false
+
+# Vendored snapshots keep their upstream formatting; they are path dependencies
+# for the pinned artifact-auth crates but are not first-party source here.
+ignore = ["vendor/sources/artifact"]

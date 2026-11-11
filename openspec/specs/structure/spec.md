@@ -132,14 +132,65 @@ The lint MUST NOT fire on functions with only 1 parameter of that type.
 
 ### Requirement: Allow Attribute Without Justification
 
-The lint MUST be able to warn on `#[allow(clippy::...)]` and `#![allow(clippy::...)]`
-attributes that are not preceded by a comment explaining why the lint
-is suppressed.
+The lint MUST be able to warn on `allow` and `expect` attributes, outer
+(`#[allow(...)]`) and inner (`#![allow(...)]`), that suppress a governed lint
+without a local justification. Governed lint paths are `clippy::*`,
+`tigerstyle::*` (Octet lints and Octet groups such as `tigerstyle::safety`),
+and Octet's bare compatibility aliases such as `no_unwrap`. rustc's own lints
+are not governed, and `no_todo` allows are audited by
+`unjustified_no_todo_allow` instead. The lint MUST check attributes on the
+crate root, items, associated items, statements, fields, and every other
+lint-level node, and MUST decide scope from the attribute's lint paths only,
+never from the source file path.
 
-The lint MUST accept a comment on the same line or the line immediately
-preceding the attribute.
+Under a selected strict profile the lint MUST also govern a source `warn`
+attribute that reaches one of the profile's required lints, by bare alias,
+canonical name, or an Octet group with a required member, because it lowers
+that lint from the profile's `deny`. A `warn` that reaches no required lint,
+and every `warn` without a profile, MUST NOT be governed. The
+suppression-governance lints themselves are covered by the profile's
+governance guard instead. A required lint that a later `deny` or `forbid`
+attribute on the same node raises back is not lowered, so neither this lint
+nor the guard counts it.
+
+The lint MUST accept a non-doc `//` comment on the attribute's source lines,
+including a trailing comment after the attribute, or on the line immediately
+preceding the attribute. Doc comments (`///`, `//!`) MUST NOT count, and
+neither MUST a comment starting with the `TODO(octet)` placeholder that the
+lint's own suggestion inserts.
+
+The lint MUST also accept a non-empty `reason = "..."` argument inside the
+attribute (stable `lint_reasons` syntax since Rust 1.81) as the
+justification. An empty or whitespace-only reason MUST NOT count.
 
 The lint MUST NOT fire on `#[allow(dead_code)]` in `#[cfg(test)]` blocks.
+
+The lint MUST govern only attributes the user wrote in source, including an
+allow expanded from `cfg_attr(..., allow(...))`, an allow inside a local
+`macro_rules!` body, an allow forwarded through a local macro's `meta` or
+`ident` fragment, and an attribute with comments inside it. Whether the user
+wrote an attribute MUST be decided from its name token. It MUST NOT fire on
+attributes that a macro from another crate generates, including proc-macro
+output such as the `#[allow(clippy::...)]` block `#[tokio::main]` emits with
+spans borrowed from user tokens. A forwarded attribute is reported at its
+name, without an autofix suggestion.
+
+The lint MUST also check, where a macro is defined, each lint-level attribute
+written literally in a `macro_rules!` transcriber or `macro` body, including
+each one a literal `cfg_attr(predicate, ...)` there would expand into, with the
+same scope, justification, and later-raise rules, whether or not the macro is
+invoked in that crate. This covers `#[macro_export]` macros whose expansions
+land in other crates, where those crates treat the attribute as another
+crate's macro output. Attributes built from fragments, such as `#[$meta]` or
+`#[$level(...)]`, and a matcher's tokens are left to the expansion-site
+check. An attribute in a local macro body MUST be reported once, however
+often the macro expands, whether the definition-site or the expansion-site
+check reports it. A macro definition that expanding another crate's macro
+produces is that crate's code: this lint and the profile guard MUST NOT check
+its body in the expanding crate. In a body, a `///` doc comment between
+attributes MUST NOT end their attribute list, and a lowering attribute that a
+`$(...)` repetition follows in its list MUST be left to the expansion-site
+check, since the repetition may expand into a later raise.
 
 The lint MUST NOT fire on workspace-level lint configuration in
 `Cargo.toml` (those are outside Clippy's reach anyway).
@@ -166,19 +217,62 @@ a `# ---` section comment. Unjustified suppression hides real bugs.
 - WHEN the lint runs
 - THEN it does NOT fire
 
+#### Scenario: Allow with reason argument
+
+- GIVEN `#[allow(clippy::needless_return, reason = "early return mirrors the protocol state table")]`
+  with no preceding comment
+- WHEN the lint runs
+- THEN it does NOT fire
+
+#### Scenario: Octet lint, alias, and group allows are governed
+
+- GIVEN `#[allow(tigerstyle::no_unwrap)]`, `#[allow(no_unwrap)]`, or
+  `#[allow(tigerstyle::safety)]` with no justification
+- WHEN the lint runs
+- THEN it warns on each attribute
+
+#### Scenario: Doc comment or placeholder is not a justification
+
+- GIVEN `#[allow(clippy::needless_return)]` directly below a `///` doc comment
+  or below `// TODO(octet): explain why this allow is safe here`
+- WHEN the lint runs
+- THEN it warns
+
+#### Scenario: Trailing comment justifies the attribute
+
+- GIVEN `#[allow(clippy::needless_return)] // Early return mirrors the protocol state table.`
+- WHEN the lint runs
+- THEN it does NOT fire
+
+#### Scenario: rustc lint allow in a path containing `clippy`
+
+- GIVEN `#[allow(dead_code)]` in a file whose path contains `clippy`
+- WHEN the lint runs
+- THEN it does NOT fire
+
 ### Requirement: Platform-Dependent Cast
 
 The lint MUST warn on `as usize` and `as isize` casts from fixed-width
 integer types (`u32`, `u64`, `i32`, `i64`, etc.).
 
 The lint MUST suggest keeping the fixed-width type or using an explicit
-conversion that handles the platform difference.
+conversion that handles the platform difference. The suggested conversion
+MUST fit the enclosing body: `<target>::from(x)` for conversions std
+provides losslessly on every platform, `<target>::try_from(x)?` only when the
+body returns a `Result` whose error converts from the `TryFrom` error,
+`<target>::try_from(x).ok()?` when it returns an `Option`, and a
+placeholder form marked `HasPlaceholders` otherwise. Const contexts get no
+structured suggestion.
 
 The lint MUST NOT fire on `as usize` from types that are already
 platform-sized (e.g., array `.len()` which returns `usize`).
 
 The lint MUST NOT fire inside indexing expressions (`array[x as usize]`)
-when `x` is already bounded by a prior check against `array.len()`.
+when `x` is already bounded by a prior check against `array.len()`. The
+recognized checks compare the same cast with `array.len()` (`<` or `>`) in
+an enclosing `if` condition, the left operand of an enclosing `&&`, or an
+earlier `assert!` in an enclosing block. The cast inside such a check is
+exempt when it guards a later index of the same place.
 
 This lint exists because Tiger Style mandates explicitly sized types
 (`u32`, `i64`, not `usize`) for consistent cross-platform behavior.
@@ -191,6 +285,13 @@ platform assumptions throughout the codebase.
 - GIVEN `let size = u32::from_be_bytes(buf) as usize;`
 - WHEN the lint runs
 - THEN it warns: "`as usize` from u32 is platform-dependent — use explicit conversion"
+
+#### Scenario: Suggestion fits the enclosing body
+
+- GIVEN `fn len(x: u32) -> usize { x as usize }`
+- WHEN the lint runs
+- THEN it does NOT suggest `usize::try_from(x)?`, which would not compile
+- AND it suggests a placeholder `usize::try_from(x)` form marked `HasPlaceholders`
 
 #### Scenario: Len-bounded index
 
@@ -217,7 +318,10 @@ signature is dictated by the trait, including but not limited to `Index`,
 `IndexMut`, `Iterator::nth`, and `Read::read`.
 
 The lint MUST NOT fire on private functions or on restricted-visibility items
-such as `pub(crate)` and `pub(super)`.
+such as `pub(crate)` and `pub(super)`. Visibility is the item's effective
+visibility: a `pub fn` in a private module that is not re-exported, or a
+`pub fn` method on a private type, is not part of the public API and MUST NOT
+fire, while crate-root `pub` items and public re-exports still do.
 
 #### Scenario: Public function with usize parameter
 
@@ -324,7 +428,7 @@ The lint MUST remain advisory or allow-by-default until compliant, noncompliant,
 
 ### Requirement: Deref Polymorphism Lint [r[deref-polymorphism-lint]]
 
-The structure lint inventory MUST include an advisory `deref_polymorphism` lint that identifies public `Deref` implementations which make one public local type inherit a nominal target type's API surface.
+The structure lint inventory MUST include an advisory `deref_polymorphism` lint that identifies public `Deref` implementations which make one public local type inherit a nominal target type's API surface. A nominal target is a path that resolves to a struct, enum, union, or type alias definition; generic type parameters, associated types, and `Self` are not nominal targets.
 
 #### Scenario: Public Deref to nominal target warns [r[deref-polymorphism-lint.warn-public-nominal-target]]
 
@@ -334,7 +438,7 @@ The structure lint inventory MUST include an advisory `deref_polymorphism` lint 
 
 #### Scenario: Accepted Deref targets do not warn [r[deref-polymorphism-lint.accepted-targets]]
 
-- GIVEN private wrappers, non-`Deref` impls, `Deref<Target = str>`, or `Deref<Target = [T]>`
+- GIVEN private wrappers (including `pub` wrappers in private modules that are not re-exported), non-`Deref` impls, `Deref<Target = str>`, `Deref<Target = [T]>`, or a generic guard such as `impl<T> Deref for Guard<'_, T> { type Target = T; }`
 - WHEN Tigerstyle analyzes the crate
 - THEN `tigerstyle::deref_polymorphism` MUST NOT warn for those accepted borrowed-view or non-public cases
 
@@ -352,7 +456,7 @@ The lint MUST warn on inline numeric literals in production code when the litera
 
 For this rule, a named constant is a `const` or `static` item whose identifier contains at least one non-generic domain word beyond the numeric type or unit.
 
-For this rule, a unit-bearing binding is a binding or constant name ending in an explicit unit suffix already accepted by Octet numeric-unit naming rules.
+For this rule, a unit-bearing binding is a binding or constant name ending in an explicit unit suffix already accepted by Octet numeric-unit naming rules. A binding documents only the literal that is its whole initializer (optionally cast or negated); it does not document literals nested deeper in that initializer, such as a threshold inside an `if` condition.
 
 For this rule, a domain-specific wrapper is a constructor call or associated constructor whose type name is not a primitive integer/float type and whose argument is the literal.
 
@@ -367,6 +471,18 @@ The lint SHOULD suggest extracting the literal into a named constant or configur
 - GIVEN production code with `if elapsed_ms > 30_000 { reconnect(); }`
 - WHEN the lint runs
 - THEN `magic_number` warns that `30_000` should be named or configured
+
+#### Scenario: Field and method operands name the policy [r[magic-number-detection.scenario.field-and-method-operands]]
+
+- GIVEN production code with `if self.elapsed_ms > 30_000 { reconnect(); }`, `if cfg.retry_attempts > 5 { reconnect(); }`, or `if cfg.retry_limit() > 5 { reconnect(); }`
+- WHEN the lint runs
+- THEN `magic_number` warns on the literal, because a field or method operand with a unit suffix or domain word names the policy just like a local binding
+
+#### Scenario: Binding does not document a nested threshold [r[magic-number-detection.scenario.binding-nested-threshold]]
+
+- GIVEN production code with `let retry_delay_ms = if elapsed_ms > 30_000 { 50 } else { 10 };`
+- WHEN the lint runs
+- THEN `magic_number` warns on `30_000`, because the binding names the selected delay rather than the threshold
 
 #### Scenario: Named constant [r[magic-number-detection.scenario.named-constant]]
 

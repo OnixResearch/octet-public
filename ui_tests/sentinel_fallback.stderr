@@ -55,5 +55,50 @@ LL -     })
 LL +     i64::try_from(raw_index)?
    |
 
-warning: 3 warnings emitted
+warning: extreme sentinel fallback masks absence or failure
+  --> $DIR/sentinel_fallback.rs:70:5
+   |
+LL |     maybe_ticks.unwrap_or(Ticks::MAX)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (safety): branch explicitly, propagate the missing/error state, or emit tagged fallback text instead of <int>::MAX/<int>::MIN. Example: match u64::try_from(command_index) { Ok(i) => format!("recent_{i}"), Err(_) => "recent_missing_index".to_string() }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: make invalid state explicit
+help: propagate the error instead of masking with sentinel
+   |
+LL -     maybe_ticks.unwrap_or(Ticks::MAX)
+LL +     maybe_ticks?
+   |
+
+warning: extreme sentinel fallback masks absence or failure
+  --> $DIR/sentinel_fallback.rs:75:5
+   |
+LL |     i64::try_from(raw_index).unwrap_or(<i64>::MIN)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (safety): branch explicitly, propagate the missing/error state, or emit tagged fallback text instead of <int>::MAX/<int>::MIN. Example: match u64::try_from(command_index) { Ok(i) => format!("recent_{i}"), Err(_) => "recent_missing_index".to_string() }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: make invalid state explicit
+help: propagate the error instead of masking with sentinel
+   |
+LL -     i64::try_from(raw_index).unwrap_or(<i64>::MIN)
+LL +     i64::try_from(raw_index)?
+   |
+
+warning: extreme sentinel fallback masks absence or failure
+  --> $DIR/sentinel_fallback.rs:87:9
+   |
+LL |         maybe.unwrap_or(Self::MAX)
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (safety): branch explicitly, propagate the missing/error state, or emit tagged fallback text instead of <int>::MAX/<int>::MIN. Example: match u64::try_from(command_index) { Ok(i) => format!("recent_{i}"), Err(_) => "recent_missing_index".to_string() }
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: make invalid state explicit
+help: propagate the error instead of masking with sentinel
+   |
+LL -         maybe.unwrap_or(Self::MAX)
+LL +         maybe?
+   |
+
+warning: 6 warnings emitted
 

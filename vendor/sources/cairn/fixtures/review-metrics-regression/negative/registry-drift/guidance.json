@@ -1,0 +1,27 @@
+{
+  "schema_version": "cairn.semantic-review.metrics-regression-guidance-sync.v1",
+  "guidance": [
+    {
+      "anchor": "review-metrics-auto-fix",
+      "diagnostics": [
+        "missing_auto_fix_task"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "path": ".cairn/changes/example/tasks.md",
+      "requirement_ids": [
+        "cairn.semantic_review.review_metrics_regression_rail.downstream_category_ownership"
+      ]
+    }
+  ],
+  "specs": [
+    {
+      "path": ".cairn/changes/example/specs/semantic-review/spec.md",
+      "requirement_ids": [
+        "cairn.semantic_review.review_metrics_regression_rail.downstream_category_ownership"
+      ]
+    }
+  ]
+}

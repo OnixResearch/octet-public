@@ -5,14 +5,29 @@ LL |     x as u32
    |     ^^^^^^^^
    |
    = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
-   = note: structured suggestion applicability: MaybeIncorrect
+   = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Safe Narrowing / Conversions
    = note: `#[warn(tigerstyle::unchecked_narrowing)]` on by default
 help: replace with `u32::try_from(...)`
    |
 LL -     x as u32
-LL +     u32::try_from(x)?
+LL +     u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
    |
 
-warning: 1 warning emitted
+warning: narrowing cast from `i64` to `u32` without bounds check
+  --> $DIR/unchecked_narrowing_min.rs:13:5
+   |
+LL |     x.min(u32::MAX as i64) as u32
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Safe Narrowing / Conversions
+help: replace with `u32::try_from(...)`
+   |
+LL -     x.min(u32::MAX as i64) as u32
+LL +     u32::try_from(x.min(u32::MAX as i64)).unwrap_or_else(|_| /* handle out-of-range value */)
+   |
+
+warning: 2 warnings emitted
 

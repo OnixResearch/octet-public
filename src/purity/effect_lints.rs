@@ -1,15 +1,22 @@
 use rustc_hir as hir;
+use rustc_hir::def::DefKind;
+use rustc_hir::def_id::DefId;
+use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
 use rustc_hir::intravisit::Visitor;
 use rustc_lint::LateContext;
 use rustc_lint::LateLintPass;
 use rustc_lint::LintContext;
 use rustc_middle::hir::nested_filter::All;
+use rustc_middle::ty;
+use rustc_middle::ty::Ty;
+use rustc_middle::ty::TyCtxt;
 use rustc_session::declare_tool_lint;
 use rustc_session::impl_lint_pass;
 use rustc_span::Span;
 
 use crate::diagnostics::emit_tiger_style_lint;
+use crate::markers::attrs_carry_marker;
 use crate::performance::allocation_in_loop;
 use crate::test_context;
 
@@ -40,8 +47,39 @@ const ENV_CALLS: &[&str] = &[
     "vars",
     "vars_os",
 ];
+/// Ambient randomness entry points. `fastrand` lists only the free functions
+/// that draw from or expose the thread-local generator, plus the entropy-seeded
+/// `Rng` constructors; `fastrand::Rng::with_seed(seed)` and `fastrand::seed(seed)`
+/// take an explicit seed and stay clean.
 const RANDOM_CALL_PATTERNS: &[&str] = &[
-    "fastrand::",
+    "fastrand::Rng::default(",
+    "fastrand::Rng::new(",
+    "fastrand::alphabetic(",
+    "fastrand::alphanumeric(",
+    "fastrand::bool(",
+    "fastrand::char(",
+    "fastrand::choice(",
+    "fastrand::choose_multiple(",
+    "fastrand::digit(",
+    "fastrand::f32(",
+    "fastrand::f64(",
+    "fastrand::fill(",
+    "fastrand::get_seed(",
+    "fastrand::i128(",
+    "fastrand::i16(",
+    "fastrand::i32(",
+    "fastrand::i64(",
+    "fastrand::i8(",
+    "fastrand::isize(",
+    "fastrand::lowercase(",
+    "fastrand::shuffle(",
+    "fastrand::u128(",
+    "fastrand::u16(",
+    "fastrand::u32(",
+    "fastrand::u64(",
+    "fastrand::u8(",
+    "fastrand::uppercase(",
+    "fastrand::usize(",
     "getrandom::fill(",
     "getrandom::getrandom(",
     "rand::random(",
@@ -92,12 +130,14 @@ const TIME_CALL_PATTERNS: &[&str] = &[
 const RUNTIME_CALL_PATTERNS: &[&str] = &["tokio::runtime::", "Runtime::new(", "Builder::new_current_thread("];
 const LOGGING_CALL_PATTERNS: &[&str] = &[
     "dbg!(",
+    "eprint!(",
     "eprintln!(",
     "log::debug!(",
     "log::error!(",
     "log::info!(",
     "log::trace!(",
     "log::warn!(",
+    "print!(",
     "println!(",
     "tracing::debug!(",
     "tracing::error!(",
@@ -112,20 +152,6 @@ const SPAWN_CALL_PATTERNS: &[&str] = &[
     "thread::spawn(",
     "tokio::spawn(",
     "tokio::task::spawn(",
-];
-const GLOBAL_STATE_PATTERNS: &[&str] = &[
-    "static mut ",
-    "thread_local!(",
-    "AtomicBool",
-    "AtomicI",
-    "AtomicPtr",
-    "AtomicU",
-    "LazyLock<",
-    "Mutex<",
-    "OnceLock<",
-    "RefCell<",
-    "RwLock<",
-    "UnsafeCell<",
 ];
 const INTERIOR_MUTABILITY_PATTERNS: &[&str] = &[
     "AtomicBool",
@@ -160,32 +186,57 @@ const MUTATING_PARAM_PATTERNS: &[&str] = &[
     "RwLock<",
     "UnsafeCell<",
 ];
-const RESOURCE_RETURN_PATTERNS: &[&str] = &[
-    "Child",
-    "Client",
-    "Command",
-    "Connection",
-    "File",
-    "JoinHandle",
-    "Receiver<",
-    "Sender<",
-    "Socket",
-    "TcpListener",
-    "TcpStream",
-    "UdpSocket",
-    "UnixListener",
-    "UnixStream",
-];
-const RESOURCE_DESCRIPTION_ALLOW_PATTERNS: &[&str] = &[
-    "CommandDescription",
-    "CommandPlan",
-    "CommandSpec",
-    "Description",
-    "Descriptor",
-    "Plan",
-    "Port",
-    "Request",
-    "Spec",
+/// Concrete resource handles by defining crate and type name: files, sockets,
+/// processes and commands, task handles, channel endpoints, and external
+/// client or connection handles. Matching the resolved ADT keeps domain types
+/// such as `FileId` or a local `Command` enum, and std values such as
+/// `SocketAddr`, out of scope.
+const RESOURCE_HANDLE_TYPES: &[(&str, &[&str])] = &[
+    ("std", &[
+        "Child",
+        "ChildStderr",
+        "ChildStdin",
+        "ChildStdout",
+        "Command",
+        "File",
+        "JoinHandle",
+        "Receiver",
+        "ScopedJoinHandle",
+        "Sender",
+        "SyncSender",
+        "TcpListener",
+        "TcpStream",
+        "UdpSocket",
+        "UnixDatagram",
+        "UnixListener",
+        "UnixStream",
+    ]),
+    ("tokio", &[
+        "Child",
+        "ChildStderr",
+        "ChildStdin",
+        "ChildStdout",
+        "Command",
+        "File",
+        "JoinHandle",
+        "Receiver",
+        "Sender",
+        "TcpListener",
+        "TcpStream",
+        "UdpSocket",
+        "UnboundedReceiver",
+        "UnboundedSender",
+        "UnixDatagram",
+        "UnixListener",
+        "UnixStream",
+    ]),
+    ("crossbeam_channel", &["Receiver", "Sender"]),
+    ("flume", &["Receiver", "Sender"]),
+    ("postgres", &["Client"]),
+    ("redis", &["Client", "Connection"]),
+    ("reqwest", &["Client"]),
+    ("rusqlite", &["Connection"]),
+    ("tokio_postgres", &["Client"]),
 ];
 const CONST_INELIGIBLE_PATTERNS: &[&str] = &[
     " async fn ",
@@ -369,6 +420,7 @@ pub struct InteriorMutabilityInCore {
 }
 pub struct LoggingInCore {
     core_source_scopes: Vec<String>,
+    reported_callsites: std::collections::HashSet<Span>,
 }
 pub struct MissingConstFn;
 pub struct MutatingInputInPure {
@@ -404,7 +456,10 @@ impl InteriorMutabilityInCore {
 
 impl LoggingInCore {
     pub fn new(core_source_scopes: Vec<String>) -> Self {
-        Self { core_source_scopes }
+        Self {
+            core_source_scopes,
+            reported_callsites: std::collections::HashSet::new(),
+        }
     }
 }
 
@@ -507,12 +562,74 @@ fn classify_effect(source: &str) -> Option<EffectClass> {
     None
 }
 
-fn contains_global_state(source: &str) -> bool {
-    let compact_source = compact(source);
-    if source.contains("static mut ") || compact_source.contains("thread_local!(") {
-        return true;
+/// Returns the span to report when `item` declares process-wide state: a
+/// `static mut`, a `static` whose type has interior mutability (locks, atomics,
+/// cells, lazy or once cells), or a `thread_local!` key. Statics generated
+/// inside a `thread_local!` expansion belong to that key's declaration.
+fn global_state_declaration_span(cx: &LateContext<'_>, item: &hir::Item<'_>) -> Option<Span> {
+    match item.kind {
+        hir::ItemKind::Static(mutability, ..) => {
+            if span_is_from_thread_local_macro(cx, item.span) {
+                return None;
+            }
+            let ty = cx.tcx.type_of(item.owner_id).instantiate_identity();
+            let interior_mutable = !ty.is_freeze(cx.tcx, ty::TypingEnv::fully_monomorphized());
+            (mutability.is_mut() || interior_mutable).then(|| item.span.source_callsite())
+        }
+        hir::ItemKind::Const(ident, ..) => {
+            let ty::Adt(adt, _) = cx.tcx.type_of(item.owner_id).instantiate_identity().kind() else {
+                return None;
+            };
+            let is_thread_local_key =
+                cx.tcx.get_diagnostic_name(adt.did()).is_some_and(|name| name.as_str() == "LocalKey");
+            is_thread_local_key.then_some(ident.span)
+        }
+        _ => None,
     }
-    source.contains("static ") && contains_any(&compact_source, GLOBAL_STATE_PATTERNS)
+}
+
+fn span_is_from_thread_local_macro(cx: &LateContext<'_>, span: Span) -> bool {
+    let mut current = span;
+    while current.from_expansion() {
+        let expn_data = current.ctxt().outer_expn_data();
+        let is_thread_local = expn_data
+            .macro_def_id
+            .and_then(|macro_def_id| cx.tcx.get_diagnostic_name(macro_def_id))
+            .is_some_and(|name| name.as_str() == "thread_local_macro");
+        if is_thread_local {
+            return true;
+        }
+        current = expn_data.call_site;
+    }
+    false
+}
+
+/// Finds global-state declarations among the items nested in a function body.
+struct GlobalStateFinder<'a, 'tcx> {
+    cx: &'a LateContext<'tcx>,
+    found: bool,
+}
+
+impl<'tcx> Visitor<'tcx> for GlobalStateFinder<'_, 'tcx> {
+    type NestedFilter = All;
+
+    fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
+        self.cx.tcx
+    }
+
+    fn visit_item(&mut self, item: &'tcx hir::Item<'tcx>) {
+        if global_state_declaration_span(self.cx, item).is_some() {
+            self.found = true;
+            return;
+        }
+        rustc_hir::intravisit::walk_item(self, item);
+    }
+}
+
+fn body_declares_global_state<'tcx>(cx: &LateContext<'tcx>, body: &'tcx hir::Body<'tcx>) -> bool {
+    let mut finder = GlobalStateFinder { cx, found: false };
+    finder.visit_body(body);
+    finder.found
 }
 
 fn contains_interior_mutability(source: &str) -> bool {
@@ -528,11 +645,67 @@ fn mutating_param_kind(source: &str) -> Option<&'static str> {
         .find(|pattern| source.contains(pattern) || compact_source.contains(pattern))
 }
 
-fn return_type_has_resource(source: &str) -> Option<&'static str> {
-    if contains_any(source, RESOURCE_DESCRIPTION_ALLOW_PATTERNS) {
+fn resource_handle_name(crate_name: &str, type_name: &str) -> Option<&'static str> {
+    RESOURCE_HANDLE_TYPES
+        .iter()
+        .filter(|(handle_crate, _)| *handle_crate == crate_name)
+        .flat_map(|(_, names)| names.iter().copied())
+        .find(|name| *name == type_name)
+}
+
+fn adt_resource_handle_name(cx: &LateContext<'_>, adt_def_id: DefId) -> Option<&'static str> {
+    let def_path = cx.get_def_path(adt_def_id);
+    resource_handle_name(def_path.first()?.as_str(), def_path.last()?.as_str())
+}
+
+/// Returns the first concrete resource handle in `ty`, looking through
+/// wrappers, tuples, references, type aliases, and the bounds of `impl Trait`
+/// types such as an `async fn`'s future output.
+fn type_resource_handle_name<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<&'static str> {
+    let mut pending = vec![ty];
+    let mut visited_opaques = Vec::new();
+    while let Some(ty) = pending.pop() {
+        for inner in ty.walk().filter_map(ty::GenericArg::as_type) {
+            match inner.kind() {
+                ty::Adt(adt, _) => {
+                    if let Some(name) = adt_resource_handle_name(cx, adt.did()) {
+                        return Some(name);
+                    }
+                }
+                ty::Alias(ty::AliasTyKind::Opaque, alias) if !visited_opaques.contains(&alias.def_id) => {
+                    visited_opaques.push(alias.def_id);
+                    pending.extend(
+                        cx.tcx
+                            .explicit_item_bounds(alias.def_id)
+                            .iter_identity_copied()
+                            .filter_map(|(clause, _)| clause.as_projection_clause())
+                            .filter_map(|projection| projection.skip_binder().term.as_type()),
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+    None
+}
+
+/// Returns the resolved return type of a function or closure that spells out
+/// its return type.
+fn declared_return_ty<'tcx>(cx: &LateContext<'tcx>, decl: &hir::FnDecl<'_>, def_id: LocalDefId) -> Option<Ty<'tcx>> {
+    if matches!(decl.output, hir::FnRetTy::DefaultReturn(_)) {
         return None;
     }
-    RESOURCE_RETURN_PATTERNS.iter().copied().find(|pattern| source.contains(pattern))
+    if cx.tcx.def_kind(def_id) == DefKind::Closure {
+        let ty::Closure(_, args) = cx.tcx.type_of(def_id).instantiate_identity().kind() else {
+            return None;
+        };
+        return Some(args.as_closure().sig().output().skip_binder());
+    }
+    Some(cx.tcx.fn_sig(def_id).instantiate_identity().output().skip_binder())
+}
+
+fn returned_resource_handle(cx: &LateContext<'_>, decl: &hir::FnDecl<'_>, def_id: LocalDefId) -> Option<&'static str> {
+    type_resource_handle_name(cx, declared_return_ty(cx, decl, def_id)?)
 }
 
 fn source_has_panic(source: &str) -> bool {
@@ -542,97 +715,18 @@ fn source_has_panic(source: &str) -> bool {
         .any(|pattern| compact_source.contains(pattern))
 }
 
-fn source_has_pure_marker(source: &str) -> bool {
-    let compact_source = compact(source);
-    compact_source.contains("#[tigerstyle::pure]")
-        || compact_source.contains("#[octet::pure]")
-        || compact_source.contains("#[pure]")
-}
+const PURE_MARKER: &str = "octet::pure";
+const ZERO_ALLOC_MARKER: &str = "octet::zero_alloc";
 
-fn source_has_zero_alloc_marker(source: &str) -> bool {
-    let compact_source = compact(source);
-    compact_source.contains("#[tigerstyle::zero_alloc]")
-        || compact_source.contains("#[octet::zero_alloc]")
-        || compact_source.contains("#[zero_alloc]")
-}
-
-fn preceding_attrs_have_pure_marker(cx: &LateContext<'_>, span: Span) -> bool {
-    let source_map = cx.sess().source_map();
-    let Ok(lines) = source_map.span_to_lines(span) else {
-        return false;
-    };
-    let Some(first_line_idx) = lines.lines.first().map(|line| line.line_index) else {
-        return false;
-    };
-
-    for idx in (0..first_line_idx).rev() {
-        let Some(line) = lines.file.get_line(idx) else {
-            continue;
-        };
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("//") {
-            continue;
-        }
-        if trimmed.starts_with("#[") || trimmed.starts_with("#![") {
-            if source_has_pure_marker(trimmed) {
-                return true;
-            }
-            continue;
-        }
-        break;
-    }
-    false
-}
-
-fn preceding_attrs_have_zero_alloc_marker(cx: &LateContext<'_>, span: Span) -> bool {
-    let source_map = cx.sess().source_map();
-    let Ok(lines) = source_map.span_to_lines(span) else {
-        return false;
-    };
-    let Some(first_line_idx) = lines.lines.first().map(|line| line.line_index) else {
-        return false;
-    };
-
-    for idx in (0..first_line_idx).rev() {
-        let Some(line) = lines.file.get_line(idx) else {
-            continue;
-        };
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("//") {
-            continue;
-        }
-        if trimmed.starts_with("#[") || trimmed.starts_with("#![") {
-            if source_has_zero_alloc_marker(trimmed) {
-                return true;
-            }
-            continue;
-        }
-        break;
-    }
-    false
-}
-
-fn fn_source_is_declared_pure(cx: &LateContext<'_>, _def_id: rustc_hir::def_id::LocalDefId, span: Span) -> bool {
-    preceding_attrs_have_pure_marker(cx, span)
-        || cx.sess().source_map().span_to_snippet(span).is_ok_and(|source| source_has_pure_marker(&source))
-}
-
-fn fn_source_is_declared_zero_alloc(cx: &LateContext<'_>, _def_id: rustc_hir::def_id::LocalDefId, span: Span) -> bool {
-    preceding_attrs_have_zero_alloc_marker(cx, span)
-        || cx
-            .sess()
-            .source_map()
-            .span_to_snippet(span)
-            .is_ok_and(|source| source_has_zero_alloc_marker(&source))
+/// Whether the function or closure `def_id` itself carries `marker`, under any
+/// tool prefix (`octet::`, `tigerstyle::`). Markers on nested items or closures,
+/// and marker text in strings, comments, or doc attributes, do not count.
+fn fn_is_declared(cx: &LateContext<'_>, def_id: LocalDefId, marker: &str) -> bool {
+    attrs_carry_marker(cx.tcx.hir_attrs(cx.tcx.local_def_id_to_hir_id(def_id)), marker)
 }
 
 fn source_is_in_core_scope(cx: &LateContext<'_>, span: Span, scopes: &[String]) -> bool {
-    if scopes.is_empty() {
-        return false;
-    }
-    let filename = cx.sess().source_map().span_to_filename(span);
-    let path = filename.prefer_local_unconditionally().to_string();
-    scopes.iter().any(|scope| path.contains(scope))
+    crate::source::span_in_scopes(cx.sess(), span, scopes)
 }
 
 fn late_expr_should_skip(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> bool {
@@ -643,23 +737,84 @@ fn expr_is_direct_call(expr: &hir::Expr<'_>) -> bool {
     matches!(expr.kind, hir::ExprKind::Call(..))
 }
 
+/// Returns the source text of a direct call's callee path followed by `(`, so
+/// call patterns such as `std::env::var(` match.
+///
+/// Only the callee is inspected: arguments are separate expressions that report
+/// on their own, so wrappers like `Some(std::env::var("X"))` or
+/// `parse(std::env::var("X").ok())` must not match again. Callees produced by
+/// macro expansion or desugaring (for example `format!` internals or the
+/// `Try::branch` call behind `?`) have no user-written callee text and are
+/// skipped.
+fn direct_call_callee_snippet(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> Option<String> {
+    let hir::ExprKind::Call(callee, _) = expr.kind else {
+        return None;
+    };
+    if !matches!(callee.kind, hir::ExprKind::Path(..)) || callee.span.from_expansion() {
+        return None;
+    }
+    let source = cx.sess().source_map().span_to_snippet(callee.span).ok()?;
+    Some(format!("{source}("))
+}
+
+/// Maps a macro definition to its logging pattern when it is one of the
+/// recognized std, `log`, or `tracing` logging macros.
+fn logging_macro_pattern(cx: &LateContext<'_>, macro_def_id: rustc_hir::def_id::DefId) -> Option<&'static str> {
+    if let Some(diagnostic_name) = cx.tcx.get_diagnostic_name(macro_def_id) {
+        return match diagnostic_name.as_str() {
+            "dbg_macro" => Some("dbg!("),
+            "eprint_macro" => Some("eprint!("),
+            "eprintln_macro" => Some("eprintln!("),
+            "print_macro" => Some("print!("),
+            "println_macro" => Some("println!("),
+            _ => None,
+        };
+    }
+    let crate_name = cx.tcx.crate_name(macro_def_id.krate);
+    let macro_name = cx.tcx.opt_item_name(macro_def_id)?;
+    match (crate_name.as_str(), macro_name.as_str()) {
+        ("log", "debug") => Some("log::debug!("),
+        ("log", "error") => Some("log::error!("),
+        ("log", "info") => Some("log::info!("),
+        ("log", "trace") => Some("log::trace!("),
+        ("log", "warn") => Some("log::warn!("),
+        ("tracing", "debug") => Some("tracing::debug!("),
+        ("tracing", "error") => Some("tracing::error!("),
+        ("tracing", "event") => Some("tracing::event!("),
+        ("tracing", "info") => Some("tracing::info!("),
+        ("tracing", "trace") => Some("tracing::trace!("),
+        ("tracing", "warn") => Some("tracing::warn!("),
+        _ => None,
+    }
+}
+
+/// Returns the logging pattern and user-written callsite when `span` comes from
+/// a direct invocation of a recognized logging macro.
+///
+/// The macro is identified by the outermost expansion's macro definition, so
+/// nested expansions (for example the `eprintln!` inside `dbg!`) resolve to the
+/// macro the user wrote. Invocations nested inside other macros are not
+/// reported.
+fn logging_macro_call(cx: &LateContext<'_>, span: Span) -> Option<(&'static str, Span)> {
+    let mut outermost = None;
+    let mut current = span;
+    while current.from_expansion() {
+        let expn_data = current.ctxt().outer_expn_data();
+        current = expn_data.call_site;
+        outermost = Some(expn_data);
+    }
+
+    let outermost = outermost?;
+    let pattern = logging_macro_pattern(cx, outermost.macro_def_id?)?;
+    Some((pattern, outermost.call_site))
+}
+
 fn span_snippet(cx: &LateContext<'_>, span: Span) -> Option<String> {
     cx.sess().source_map().span_to_snippet(span.source_callsite()).ok()
 }
 
-fn expr_snippet(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> Option<String> {
-    span_snippet(cx, expr.span)
-}
-
 fn fn_snippet(cx: &LateContext<'_>, body: &hir::Body<'_>, span: Span) -> Option<String> {
     span_snippet(cx, span).or_else(|| span_snippet(cx, body.value.span))
-}
-
-fn return_type_snippet(cx: &LateContext<'_>, decl: &hir::FnDecl<'_>) -> Option<String> {
-    if let hir::FnRetTy::Return(ret_ty) = &decl.output {
-        return span_snippet(cx, ret_ty.span);
-    }
-    None
 }
 
 fn params_contain_mutating_input(cx: &LateContext<'_>, body: &hir::Body<'_>) -> Option<(Span, &'static str)> {
@@ -710,27 +865,84 @@ fn function_is_const_candidate(source: &str) -> bool {
     contains_any(source, CONST_ELIGIBLE_HINTS)
 }
 
-fn pure_contract_violation(
-    function_source: &str,
-    return_source: Option<&str>,
+fn const_subset_type(ty: rustc_middle::ty::Ty<'_>) -> bool {
+    use rustc_middle::ty::TyKind;
+
+    matches!(
+        ty.kind(),
+        TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) | TyKind::Never
+    ) || ty.is_unit()
+}
+
+struct ConstSubsetVisitor<'a, 'tcx> {
+    cx: &'a LateContext<'tcx>,
+    eligible: bool,
+}
+
+impl<'tcx> Visitor<'tcx> for ConstSubsetVisitor<'_, 'tcx> {
+    fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
+        if !self.eligible {
+            return;
+        }
+        // Absence of known effects is not evidence that a call is const. Admit
+        // only primitive expressions with built-in (not trait-resolved) operators.
+        let supported = matches!(
+            expr.kind,
+            hir::ExprKind::Lit(_)
+                | hir::ExprKind::Path(_)
+                | hir::ExprKind::Binary(..)
+                | hir::ExprKind::Unary(..)
+                | hir::ExprKind::Cast(..)
+                | hir::ExprKind::If(..)
+                | hir::ExprKind::Match(..)
+                | hir::ExprKind::Block(..)
+                | hir::ExprKind::Ret(_)
+                | hir::ExprKind::Let(_)
+                | hir::ExprKind::DropTemps(_)
+        );
+        let static_path = if let hir::ExprKind::Path(path) = &expr.kind {
+            matches!(
+                self.cx.typeck_results().qpath_res(path, expr.hir_id),
+                hir::def::Res::Def(hir::def::DefKind::Static { .. }, _)
+            )
+        } else {
+            false
+        };
+        self.eligible = supported
+            && !static_path
+            && const_subset_type(self.cx.typeck_results().expr_ty(expr))
+            && self.cx.typeck_results().type_dependent_def_id(expr.hir_id).is_none();
+        if self.eligible {
+            hir::intravisit::walk_expr(self, expr);
+        }
+    }
+}
+
+/// Observed signature and body signals for one `#[tigerstyle::pure]` callable.
+#[derive(Clone, Copy)]
+struct PureContractSignals {
+    global_state: bool,
     mutating_input: bool,
-) -> Option<PureViolation> {
+    resource_return: bool,
+}
+
+fn pure_contract_violation(function_source: &str, signals: PureContractSignals) -> Option<PureViolation> {
     if let Some(effect) = classify_effect(function_source) {
         return Some(PureViolation::DirectEffect(effect));
     }
-    if contains_global_state(function_source) {
+    if signals.global_state {
         return Some(PureViolation::GlobalState);
     }
     if contains_interior_mutability(function_source) {
         return Some(PureViolation::InteriorMutability);
     }
-    if mutating_input {
+    if signals.mutating_input {
         return Some(PureViolation::MutatingInput);
     }
     if source_has_panic(function_source) {
         return Some(PureViolation::Panic);
     }
-    if return_source.is_some_and(|source| return_type_has_resource(source).is_some()) {
+    if signals.resource_return {
         return Some(PureViolation::ResourceReturn);
     }
     None
@@ -745,10 +957,10 @@ impl<'tcx> LateLintPass<'tcx> for AmbientEnv {
         if !expr_is_direct_call(expr) || late_expr_should_skip(cx, expr) {
             return;
         }
-        let Some(source) = expr_snippet(cx, expr) else {
+        let Some(callee) = direct_call_callee_snippet(cx, expr) else {
             return;
         };
-        let Some(call) = contains_env_call(&source) else {
+        let Some(call) = contains_env_call(&callee) else {
             return;
         };
         emit(
@@ -766,10 +978,10 @@ impl<'tcx> LateLintPass<'tcx> for AmbientRandom {
         if !expr_is_direct_call(expr) || late_expr_should_skip(cx, expr) {
             return;
         }
-        let Some(source) = expr_snippet(cx, expr) else {
+        let Some(callee) = direct_call_callee_snippet(cx, expr) else {
             return;
         };
-        let Some(pattern) = classify_random_call(&source) else {
+        let Some(pattern) = classify_random_call(&callee) else {
             return;
         };
         emit(
@@ -784,21 +996,18 @@ impl<'tcx> LateLintPass<'tcx> for AmbientRandom {
 
 impl<'tcx> LateLintPass<'tcx> for GlobalStateInCore {
     fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx hir::Item<'tcx>) {
-        if !source_is_in_core_scope(cx, item.span, &self.core_source_scopes)
-            || test_context::late_hir_id_is_in_test_context(cx, item.hir_id(), item.span)
-        {
-            return;
-        }
-        let Some(source) = span_snippet(cx, item.span) else {
+        let Some(report_span) = global_state_declaration_span(cx, item) else {
             return;
         };
-        if !contains_global_state(&source) {
+        if !source_is_in_core_scope(cx, report_span, &self.core_source_scopes)
+            || test_context::late_hir_id_is_in_test_context(cx, item.hir_id(), report_span)
+        {
             return;
         }
         emit(
             cx,
             GLOBAL_STATE_IN_CORE,
-            item.span,
+            report_span,
             "core scope declares process-wide mutable or lazy state; thread explicit state through inputs instead"
                 .to_owned(),
             GLOBAL_STATE_IN_CORE_LINT,
@@ -814,10 +1023,10 @@ impl<'tcx> LateLintPass<'tcx> for ImpureCallInCore {
         {
             return;
         }
-        let Some(source) = expr_snippet(cx, expr) else {
+        let Some(callee) = direct_call_callee_snippet(cx, expr) else {
             return;
         };
-        let Some(effect) = classify_effect(&source) else {
+        let Some(effect) = classify_effect(&callee) else {
             return;
         };
         emit(
@@ -863,10 +1072,10 @@ impl<'tcx> LateLintPass<'tcx> for InteriorMutabilityInCore {
         {
             return;
         }
-        let Some(source) = expr_snippet(cx, expr) else {
+        let Some(callee) = direct_call_callee_snippet(cx, expr) else {
             return;
         };
-        if !contains_interior_mutability(&source) {
+        if !contains_interior_mutability(&callee) {
             return;
         }
         emit(
@@ -881,45 +1090,101 @@ impl<'tcx> LateLintPass<'tcx> for InteriorMutabilityInCore {
 
 impl<'tcx> LateLintPass<'tcx> for LoggingInCore {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx hir::Expr<'tcx>) {
-        if !source_is_in_core_scope(cx, expr.span, &self.core_source_scopes) || late_expr_should_skip(cx, expr) {
-            return;
-        }
-        if expr.span.from_expansion() && !matches!(expr.kind, hir::ExprKind::Block(..)) {
-            return;
-        }
-        let Some(source) = expr_snippet(cx, expr) else {
+        let Some((pattern, callsite)) = logging_macro_call(cx, expr.span) else {
             return;
         };
-        let Some(pattern) = classify_logging_call(&source) else {
+        if !source_is_in_core_scope(cx, callsite, &self.core_source_scopes) || late_expr_should_skip(cx, expr) {
             return;
-        };
+        }
+        // Every expression expanded from one invocation shares its callsite;
+        // report the invocation once.
+        if !self.reported_callsites.insert(callsite) {
+            return;
+        }
         emit(
             cx,
             LOGGING_IN_CORE,
-            expr.span.source_callsite(),
+            callsite,
             format!("core scope emits `{pattern}` directly; return events or diagnostics for the shell to log"),
             LOGGING_IN_CORE_LINT,
         );
     }
 }
 
+/// Trait methods and trait-impl methods cannot be declared `const fn` (E0379).
+fn fn_is_trait_method(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
+    matches!(cx.tcx.def_kind(cx.tcx.local_parent(def_id)), DefKind::Trait | DefKind::Impl { of_trait: true })
+}
+
+/// Finds a call or method call whose callee is not a `const fn` (including
+/// calls through function pointers, closures, and generic callables) in the
+/// function's own body.
+struct NonConstCallFinder<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    typeck_results: &'a ty::TypeckResults<'tcx>,
+    found: bool,
+}
+
+impl<'tcx> Visitor<'tcx> for NonConstCallFinder<'_, 'tcx> {
+    fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
+        let callee_is_const = match expr.kind {
+            hir::ExprKind::Call(callee, _) => match self.typeck_results.expr_ty(callee).kind() {
+                ty::FnDef(callee_def_id, _) => self.tcx.is_const_fn(*callee_def_id),
+                _ => false,
+            },
+            hir::ExprKind::MethodCall(..) => self
+                .typeck_results
+                .type_dependent_def_id(expr.hir_id)
+                .is_some_and(|callee_def_id| self.tcx.is_const_fn(callee_def_id)),
+            _ => true,
+        };
+        if !callee_is_const {
+            self.found = true;
+            return;
+        }
+        rustc_hir::intravisit::walk_expr(self, expr);
+    }
+}
+
+fn body_calls_non_const_fn<'tcx>(cx: &LateContext<'tcx>, body: &'tcx hir::Body<'tcx>) -> bool {
+    let mut finder = NonConstCallFinder {
+        tcx: cx.tcx,
+        typeck_results: cx.tcx.typeck_body(body.id()),
+        found: false,
+    };
+    finder.visit_expr(body.value);
+    finder.found
+}
+
 impl<'tcx> LateLintPass<'tcx> for MissingConstFn {
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
-        _kind: FnKind<'tcx>,
+        kind: FnKind<'tcx>,
         _decl: &'tcx hir::FnDecl<'tcx>,
         body: &'tcx hir::Body<'tcx>,
         span: Span,
-        _def_id: rustc_hir::def_id::LocalDefId,
+        def_id: rustc_hir::def_id::LocalDefId,
     ) {
-        if test_context::late_hir_id_is_in_test_context(cx, body.value.hir_id, span) {
+        if !matches!(kind, FnKind::ItemFn(..))
+            || test_context::late_hir_id_is_in_test_context(cx, body.value.hir_id, span)
+        {
             return;
         }
         let Some(source) = fn_snippet(cx, body, span) else {
             return;
         };
-        if !function_is_const_candidate(&source) {
+        if !function_is_const_candidate(&source) || fn_is_trait_method(cx, def_id) || body_calls_non_const_fn(cx, body)
+        {
+            return;
+        }
+        let signature = cx.tcx.fn_sig(def_id).instantiate_identity().skip_binder();
+        if !signature.inputs().iter().copied().all(const_subset_type) || !const_subset_type(signature.output()) {
+            return;
+        }
+        let mut subset = ConstSubsetVisitor { cx, eligible: true };
+        subset.visit_expr(body.value);
+        if !subset.eligible {
             return;
         }
         emit(
@@ -945,7 +1210,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingInputInPure {
         if test_context::late_hir_id_is_in_test_context(cx, body.value.hir_id, span) {
             return;
         }
-        let declared_pure = fn_source_is_declared_pure(cx, def_id, span);
+        let declared_pure = fn_is_declared(cx, def_id, PURE_MARKER);
         let in_core_scope = source_is_in_core_scope(cx, span, &self.core_source_scopes);
         if !declared_pure && !in_core_scope {
             return;
@@ -1007,16 +1272,21 @@ impl<'tcx> LateLintPass<'tcx> for PureAttrContract {
         def_id: rustc_hir::def_id::LocalDefId,
     ) {
         if test_context::late_hir_id_is_in_test_context(cx, body.value.hir_id, span)
-            || !fn_source_is_declared_pure(cx, def_id, span)
+            || !fn_is_declared(cx, def_id, PURE_MARKER)
         {
             return;
         }
         let Some(source) = fn_snippet(cx, body, span) else {
             return;
         };
-        let return_source = return_type_snippet(cx, decl);
+        let global_state = body_declares_global_state(cx, body);
         let mutating_input = decl_inputs_contain_mutating_type(cx, decl).is_some();
-        let Some(violation) = pure_contract_violation(&source, return_source.as_deref(), mutating_input) else {
+        let resource_return = returned_resource_handle(cx, decl, def_id).is_some();
+        let Some(violation) = pure_contract_violation(&source, PureContractSignals {
+            global_state,
+            mutating_input,
+            resource_return,
+        }) else {
             return;
         };
         emit(
@@ -1043,7 +1313,7 @@ impl<'tcx> LateLintPass<'tcx> for ZeroAllocAttrContract {
         def_id: rustc_hir::def_id::LocalDefId,
     ) {
         if test_context::late_hir_id_is_in_test_context(cx, body.value.hir_id, span)
-            || !fn_source_is_declared_zero_alloc(cx, def_id, span)
+            || !fn_is_declared(cx, def_id, ZERO_ALLOC_MARKER)
         {
             return;
         }
@@ -1052,11 +1322,16 @@ impl<'tcx> LateLintPass<'tcx> for ZeroAllocAttrContract {
 }
 
 fn check_marked_zero_alloc_body<'tcx>(cx: &LateContext<'tcx>, body: &'tcx hir::Body<'tcx>, fn_span: Span) {
-    // Walk all expressions in the function body
+    // Walk the expressions of the marked body only; see `AllocExprFinder`.
     let mut finder = AllocExprFinder { cx, fn_span };
     finder.visit_expr(body.value);
 }
 
+/// Visits the marked function's own body with the default nested filter, so it
+/// does not enter nested bodies: closures and nested functions are separate
+/// functions, and nested const items, array lengths, and inline constants are
+/// evaluated at compile time. Those bodies also have their own typeck results,
+/// which the shared allocation classifier cannot read through `cx`.
 #[allow(dead_code)]
 struct AllocExprFinder<'a, 'tcx> {
     cx: &'a LateContext<'tcx>,
@@ -1064,13 +1339,7 @@ struct AllocExprFinder<'a, 'tcx> {
 }
 
 impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for AllocExprFinder<'_, 'tcx> {
-    type NestedFilter = All;
-
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
-        if let hir::ExprKind::Closure(_) = expr.kind {
-            // Skip closures - they're separate functions
-            return;
-        }
         if let Some(type_name) = allocation_in_loop::expr_is_allocation(self.cx, expr) {
             let message = format!(
                 "marked zero-alloc function constructs `{type_name}` which allocates on the heap; this lint checks direct allocation sites only, not transitive proof"
@@ -1089,17 +1358,14 @@ impl<'tcx> LateLintPass<'tcx> for ResourceReturnFromCore {
         decl: &'tcx hir::FnDecl<'tcx>,
         body: &'tcx hir::Body<'tcx>,
         span: Span,
-        _def_id: rustc_hir::def_id::LocalDefId,
+        def_id: rustc_hir::def_id::LocalDefId,
     ) {
         if !source_is_in_core_scope(cx, span, &self.core_source_scopes)
             || test_context::late_hir_id_is_in_test_context(cx, body.value.hir_id, span)
         {
             return;
         }
-        let Some(return_source) = return_type_snippet(cx, decl) else {
-            return;
-        };
-        let Some(resource) = return_type_has_resource(&return_source) else {
+        let Some(resource) = returned_resource_handle(cx, decl, def_id) else {
             return;
         };
         emit(
@@ -1122,10 +1388,10 @@ impl<'tcx> LateLintPass<'tcx> for SpawnInCore {
         {
             return;
         }
-        let Some(source) = expr_snippet(cx, expr) else {
+        let Some(callee) = direct_call_callee_snippet(cx, expr) else {
             return;
         };
-        let Some(pattern) = classify_spawn_call(&source) else {
+        let Some(pattern) = classify_spawn_call(&callee) else {
             return;
         };
         emit(
@@ -1143,16 +1409,25 @@ mod tests {
     use super::EffectClass;
     use super::PureViolation;
     use super::classify_effect;
+    use super::classify_random_call;
     use super::contains_env_call;
     use super::function_has_nondeterministic_output;
     use super::function_is_const_candidate;
     use super::pure_contract_violation;
-    use super::return_type_has_resource;
+    use super::resource_handle_name;
 
     #[test]
     fn env_classifier_accepts_direct_calls_and_rejects_explicit_config() {
         assert_eq!(contains_env_call("std::env::var(\"HOME\")"), Some("var"));
         assert_eq!(contains_env_call("config.home_dir.clone()"), None);
+    }
+
+    #[test]
+    fn random_classifier_flags_ambient_fastrand_and_allows_seeded_rng() {
+        assert_eq!(classify_random_call("fastrand::u64("), Some("fastrand::u64("));
+        assert_eq!(classify_random_call("fastrand::Rng::new("), Some("fastrand::Rng::new("));
+        assert_eq!(classify_random_call("fastrand::Rng::with_seed("), None);
+        assert_eq!(classify_random_call("fastrand::seed("), None);
     }
 
     #[test]
@@ -1162,9 +1437,18 @@ mod tests {
     }
 
     #[test]
-    fn resource_return_classifier_allows_descriptions() {
-        assert_eq!(return_type_has_resource("std::fs::File"), Some("File"));
-        assert_eq!(return_type_has_resource("CommandSpec"), None);
+    fn effect_classifier_treats_print_and_eprint_as_logging() {
+        assert_eq!(classify_effect("print!(\"{value}\")"), Some(EffectClass::Logging));
+        assert_eq!(classify_effect("eprint!(\"{value}\")"), Some(EffectClass::Logging));
+    }
+
+    #[test]
+    fn resource_return_classifier_matches_handle_types_not_name_fragments() {
+        assert_eq!(resource_handle_name("std", "File"), Some("File"));
+        assert_eq!(resource_handle_name("tokio", "JoinHandle"), Some("JoinHandle"));
+        assert_eq!(resource_handle_name("std", "SocketAddr"), None);
+        assert_eq!(resource_handle_name("my_core", "Command"), None);
+        assert_eq!(resource_handle_name("my_core", "FileId"), None);
     }
 
     #[test]
@@ -1189,14 +1473,46 @@ mod tests {
     #[test]
     fn pure_contract_reports_direct_violation_and_accepts_clean_logic() {
         assert_eq!(
-            pure_contract_violation("#[tigerstyle::pure] fn read() { std::fs::read(\"x\"); }", None, false),
+            pure_contract_violation(
+                "#[tigerstyle::pure] fn read() { std::fs::read(\"x\"); }",
+                super::PureContractSignals {
+                    global_state: false,
+                    mutating_input: false,
+                    resource_return: false,
+                }
+            ),
             Some(PureViolation::DirectEffect(EffectClass::Filesystem))
         );
         assert_eq!(
             pure_contract_violation(
-                "#[tigerstyle::pure] fn add(left: u32, right: u32) -> u32 { left + right }",
-                None,
-                false
+                "#[tigerstyle::pure] fn count() { static mut N: u8 = 0; }",
+                super::PureContractSignals {
+                    global_state: true,
+                    mutating_input: false,
+                    resource_return: false,
+                }
+            ),
+            Some(PureViolation::GlobalState)
+        );
+        assert_eq!(
+            pure_contract_violation(
+                "#[tigerstyle::pure] fn open() -> std::fs::File { loop {} }",
+                super::PureContractSignals {
+                    global_state: false,
+                    mutating_input: false,
+                    resource_return: true,
+                }
+            ),
+            Some(PureViolation::ResourceReturn)
+        );
+        assert_eq!(
+            pure_contract_violation(
+                "#[tigerstyle::pure] fn label() -> &'static str { \"static mut\" }",
+                super::PureContractSignals {
+                    global_state: false,
+                    mutating_input: false,
+                    resource_return: false,
+                }
             ),
             None
         );

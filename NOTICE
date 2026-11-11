@@ -1,0 +1,18 @@
+Octet — evidence-backed checks for Rust
+
+Unless a more specific notice applies, Octet's original source code,
+documentation, configuration, fixtures, and templates are licensed under the
+GNU Affero General Public License as published by the Free Software Foundation,
+either version 3 of the License, or (at your option) any later version.
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Copyright remains with the respective authors. Existing copyright and
+attribution notices must be preserved. This notice does not assert ownership
+of imported material or replace its original terms; see THIRD_PARTY_NOTICES.md
+and the notices accompanying dependencies.
+
+Octet is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See LICENSE for the full terms.
+
+Source: https://github.com/OnixResearch/octet

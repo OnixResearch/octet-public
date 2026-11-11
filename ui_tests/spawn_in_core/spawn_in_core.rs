@@ -32,6 +32,12 @@ fn start_core_work() {
     let _async_std_handle = async_std::task::spawn(async {});
 }
 
+fn start_wrapped_core_work() {
+    let _wrapped_handle = Some(std::thread::spawn(|| {}));
+    let _wrapped_tokio = Ok::<_, ()>(tokio::spawn(async {}));
+}
+
 fn main() {
     start_core_work();
+    start_wrapped_core_work();
 }

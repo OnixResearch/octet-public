@@ -1,0 +1,10 @@
+{
+  "schema": "cairn.receipt.v1",
+  "valid": false,
+  "result": {
+    "ok": true,
+    "count": 3
+  },
+  "command": "test-diff-candidate",
+  "extra_field": "appeared"
+}

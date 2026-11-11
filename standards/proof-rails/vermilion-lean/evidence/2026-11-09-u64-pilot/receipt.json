@@ -1,0 +1,30 @@
+{
+  "schema_version": "octet-vermilion-live-canary-receipt/v1",
+  "provider_id": "vermilion-lean",
+  "claim_scope": "per-obligation-lean-kernel-theorem-over-pinned-verus-frontend",
+  "vermilion_revision": "7c83bbca96940538eb282a67ca923893e5aa0e06",
+  "verus_fork_revision": "48600836424a79420589c56d86e720236a029811",
+  "lean_toolchain": "leanprover/lean4:v4.33.0",
+  "mathlib_revision": "db584cd6d46c92f209a44c0f1c829460d327499d",
+  "cvc5_revision": "7e3365990661b697ccb30e92d6912f4cc6589322",
+  "source_path": "standards/proof-rails/vermilion-lean/evidence/2026-11-09-u64-pilot/checked.rs",
+  "source_blake3": "0f0a83de0d5f47f74e3a58ad1a215fbbbc7912e64d8d80ca83c3ffa1eb2538df",
+  "statement": "For value < u64::MAX, increment_checked(value) == Some(value + 1); at u64::MAX it returns None.",
+  "required_obligations": [
+    "pilot.increment.overflow-check",
+    "pilot.increment.value"
+  ],
+  "obligations_verified": 2,
+  "obligations_failed": 0,
+  "sorry_count": 0,
+  "proof_twin": "kernel-checked",
+  "outcome": "verified",
+  "non_claims": [
+    "the Verus-syntax source is a parallel specification, not the plain Rust executable",
+    "does not prove the generated obligations refine the executable Rust function",
+    "does not check the Verus nat-to-u64 bridge",
+    "does not check the Aeneas u32-to-u64 bridge",
+    "does not add cargo octet prove, proof-card, artifact-verification, or Valence integration",
+    "does not prove provider soundness, whole-program correctness, semantic equivalence, or release eligibility"
+  ]
+}

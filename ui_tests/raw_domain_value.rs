@@ -1,4 +1,5 @@
 #![warn(raw_domain_value)]
+#![allow(non_trait_imports, reason = "fixture targets another lint; the import and path-naming lints have their own fixtures")]
 
 use std::collections::BTreeMap;
 
@@ -37,6 +38,44 @@ struct WireDto {
 // Should not warn: this core field uses a nominal type.
 struct TypedCore {
     session: SessionId,
+}
+
+mod hashed {
+    use std::collections::HashMap;
+
+    // Should warn: a `HashMap` key is a map key like a `BTreeMap` key.
+    pub struct RawMapFixture {
+        pub sessions: HashMap<String, u64>,
+    }
+}
+
+// `borrowed_argument_types` would flag `&String`; this fixture only covers raw domain values.
+#[allow(borrowed_argument_types)]
+mod borrowed {
+    static SESSION: String = String::new();
+
+    // Should warn: a borrowed parameter still exposes raw storage.
+    pub fn open_session(session: &String) -> usize {
+        session.len()
+    }
+
+    // Should warn: a borrowed result still exposes raw storage.
+    pub fn current_session() -> &'static String {
+        &SESSION
+    }
+}
+
+// `borrowed_argument_types` recommends `&str` over `&String`; the view still exposes raw storage.
+mod viewed {
+    // Should warn: a borrowed string view parameter still exposes raw storage.
+    pub fn open_session(session: &str) -> usize {
+        session.len()
+    }
+
+    // Should warn: a borrowed string view result still exposes raw storage.
+    pub fn current_session() -> &'static str {
+        "session"
+    }
 }
 
 fn main() {

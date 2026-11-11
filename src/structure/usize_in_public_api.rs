@@ -126,7 +126,7 @@ impl<'tcx> LateLintPass<'tcx> for UsizeInPublicApi {
         };
 
         let def_id = item.owner_id.def_id;
-        if !cx.tcx.visibility(def_id).is_public() {
+        if !cx.effective_visibilities.is_exported(def_id) {
             return;
         }
 
@@ -156,7 +156,7 @@ impl<'tcx> LateLintPass<'tcx> for UsizeInPublicApi {
         let hir::ItemKind::Impl(impl_block) = &parent_item.kind else {
             return;
         };
-        if impl_block.of_trait.is_some() || !cx.tcx.visibility(def_id).is_public() {
+        if impl_block.of_trait.is_some() || !cx.effective_visibilities.is_exported(def_id) {
             return;
         }
 

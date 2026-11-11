@@ -3,10 +3,14 @@
 #
 # Requirements:
 #   - cargo-octet installed (cargo install --path /path/to/octet/cargo-octet)
+#   - runner environment: export OCTET_DYLINT_REV (the bootstrap revision in
+#     docs/consumer-guide.md) or OCTET_DRIVER_PATH; optionally OCTET_LINT_LIB
+#     and OCTET_TOOLCHAIN. TIGERSTYLE_* names are compatibility aliases.
 #   - dylint.toml copied from templates/dylint.toml
 #   - [workspace.metadata.octet] configured in workspace Cargo.toml
 #
-# CI must not pass --allow-style-violations.
+# CI must always run this gate; Octet has no flag or environment variable that
+# skips it.
 
 steps:
   - name: Octet checked path

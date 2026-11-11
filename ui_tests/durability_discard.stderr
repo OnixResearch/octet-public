@@ -1,0 +1,63 @@
+warning: synchronization result is discarded; handle the failure or record an explicit uncertain outcome
+  --> $DIR/durability_discard/durability_discard.rs:26:5
+   |
+LL |     file.sync_all();
+   |     ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Durable Persistence): handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, reopen, rewrite, or reconcile instead of discarding it Example: let outcome = file.sync_all().map_err(|error| DurabilityOutcome::Uncertain(error))?;
+   = note: see Tiger Style guide: Resilience / Silent error swallowing
+   = note: bounded repair guidance: handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, or a propagated error instead of discarding it
+   = note: bounded repair options: record an explicit uncertain outcome; quarantine the artifact; reopen or replace the handle; rewrite from the source of truth; reconcile against storage; no single repair proves durability
+   = note: These checks cover selected source shapes inside consumer-declared boundary functions only; they do not prove filesystem, device, or hardware durability. Passing these checks does not prove that sync_all, sync_data, a configured commit, or an adapter observation succeeded. The checks do not analyze aliasing, interprocedural control flow, runtime ordering, or macro-expanded synchronization.
+   = note: `#[warn(tigerstyle::discarded_sync_result)]` on by default
+
+warning: synchronization result is discarded; handle the failure or record an explicit uncertain outcome
+  --> $DIR/durability_discard/durability_discard.rs:31:13
+   |
+LL |     let _ = file.sync_data();
+   |             ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Durable Persistence): handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, reopen, rewrite, or reconcile instead of discarding it Example: let outcome = file.sync_all().map_err(|error| DurabilityOutcome::Uncertain(error))?;
+   = note: see Tiger Style guide: Resilience / Silent error swallowing
+   = note: bounded repair guidance: handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, or a propagated error instead of discarding it
+   = note: bounded repair options: record an explicit uncertain outcome; quarantine the artifact; reopen or replace the handle; rewrite from the source of truth; reconcile against storage; no single repair proves durability
+   = note: These checks cover selected source shapes inside consumer-declared boundary functions only; they do not prove filesystem, device, or hardware durability. Passing these checks does not prove that sync_all, sync_data, a configured commit, or an adapter observation succeeded. The checks do not analyze aliasing, interprocedural control flow, runtime ordering, or macro-expanded synchronization.
+
+warning: synchronization failure is ignored by an empty error arm; handle the failure or record an explicit uncertain outcome
+  --> $DIR/durability_discard/durability_discard.rs:36:26
+   |
+LL |     if let Err(_error) = file.sync_all() {}
+   |                          ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Durable Persistence): handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, reopen, rewrite, or reconcile instead of discarding it Example: let outcome = file.sync_all().map_err(|error| DurabilityOutcome::Uncertain(error))?;
+   = note: see Tiger Style guide: Resilience / Silent error swallowing
+   = note: bounded repair guidance: handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, or a propagated error instead of discarding it
+   = note: bounded repair options: record an explicit uncertain outcome; quarantine the artifact; reopen or replace the handle; rewrite from the source of truth; reconcile against storage; no single repair proves durability
+   = note: These checks cover selected source shapes inside consumer-declared boundary functions only; they do not prove filesystem, device, or hardware durability. Passing these checks does not prove that sync_all, sync_data, a configured commit, or an adapter observation succeeded. The checks do not analyze aliasing, interprocedural control flow, runtime ordering, or macro-expanded synchronization.
+
+warning: synchronization failure is mapped to success without an explicit uncertain outcome
+  --> $DIR/durability_discard/durability_discard.rs:41:11
+   |
+LL |     match file.sync_all() {
+   |           ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Durable Persistence): handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, reopen, rewrite, or reconcile instead of discarding it Example: let outcome = file.sync_all().map_err(|error| DurabilityOutcome::Uncertain(error))?;
+   = note: see Tiger Style guide: Resilience / Silent error swallowing
+   = note: bounded repair guidance: handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, or a propagated error instead of discarding it
+   = note: bounded repair options: record an explicit uncertain outcome; quarantine the artifact; reopen or replace the handle; rewrite from the source of truth; reconcile against storage; no single repair proves durability
+   = note: These checks cover selected source shapes inside consumer-declared boundary functions only; they do not prove filesystem, device, or hardware durability. Passing these checks does not prove that sync_all, sync_data, a configured commit, or an adapter observation succeeded. The checks do not analyze aliasing, interprocedural control flow, runtime ordering, or macro-expanded synchronization.
+
+warning: configured commit result is discarded; handle the failure or record an explicit uncertain outcome
+  --> $DIR/durability_discard/durability_discard.rs:48:13
+   |
+LL |     let _ = transaction.commit();
+   |             ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Durable Persistence): handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, reopen, rewrite, or reconcile instead of discarding it Example: let outcome = file.sync_all().map_err(|error| DurabilityOutcome::Uncertain(error))?;
+   = note: see Tiger Style guide: Resilience / Silent error swallowing
+   = note: bounded repair guidance: handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, or a propagated error instead of discarding it
+   = note: bounded repair options: record an explicit uncertain outcome; quarantine the artifact; reopen or replace the handle; rewrite from the source of truth; reconcile against storage; no single repair proves durability
+   = note: These checks cover selected source shapes inside consumer-declared boundary functions only; they do not prove filesystem, device, or hardware durability. Passing these checks does not prove that sync_all, sync_data, a configured commit, or an adapter observation succeeded. The checks do not analyze aliasing, interprocedural control flow, runtime ordering, or macro-expanded synchronization.
+
+warning: 5 warnings emitted
+

@@ -8,5 +8,14 @@ LL | pub fn module_file_count_module_file_count_over_01() {}
    = note: see Tiger Style guide: File Length
    = note: `#[warn(tigerstyle::module_file_count)]` on by default
 
-warning: 1 warning emitted
+warning: module directory `$ROOT/policy_inputs/registry` contains 8 Rust source files (limit: 7)
+  --> $ROOT/ui_tests/../policy_inputs/registry/registry_module_01.rs:1:1
+   |
+LL | pub fn module_file_count_registry_01() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Module Size): split crowded module directories into smaller responsibility-based submodules Example: mod parser; mod planner; mod executor;
+   = note: see Tiger Style guide: File Length
+
+warning: 2 warnings emitted
 

@@ -1,0 +1,38 @@
+warning: renamed import `Map as ValueMap` hides the original searchable name
+  --> $DIR/concrete_construction_in_core_custom/concrete_construction_in_core_custom.rs:8:5
+   |
+LL |     use serde_json::Map as ValueMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Import Names): avoid `use ... as ...` aliases that hide the original searchable item name Example: use crate::transport::Config;
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::renamed_imports)]` on by default
+
+warning: implicit default on external type — construct with explicit values
+  --> $DIR/concrete_construction_in_core_custom/concrete_construction_in_core_custom.rs:13:18
+   |
+LL |     let _value = serde_json::Value::default();
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Defaults): construct foreign-crate values explicitly instead of relying on `Default` Example: let client = reqwest::ClientBuilder::new();
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Explicit Defaults
+   = note: `#[warn(tigerstyle::explicit_defaults)]` on by default
+help: use explicit constructor instead of `Default::default()`
+   |
+LL -     let _value = serde_json::Value::default();
+LL +     let _value = serde_json::Value::new(/* fields */);
+   |
+
+warning: core scope constructs concrete type `serde_json::Value`; inject the dependency through a port or capability
+  --> $DIR/concrete_construction_in_core_custom/concrete_construction_in_core_custom.rs:13:18
+   |
+LL |     let _value = serde_json::Value::default();
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Dependency Inversion): inject infrastructure dependencies through ports or capabilities instead of constructing concrete types in core Example: fn run(clock: impl Clock) -> Output
+   = note: see Tiger Style guide: Architecture / Ports and Capabilities
+   = note: `#[warn(tigerstyle::concrete_construction_in_core)]` on by default
+
+warning: 3 warnings emitted
+

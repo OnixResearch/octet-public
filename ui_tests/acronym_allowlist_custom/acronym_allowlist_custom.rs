@@ -8,7 +8,13 @@ struct RPCHandler {
     data: u32,
 }
 
+// Should warn: IO is allowlisted, but JSON is not
+struct IOStreamJSONBody {
+    data: u32,
+}
+
 fn main() {
     let _ = IOError { code: 1 };
     let _ = RPCHandler { data: 1 };
+    let _ = IOStreamJSONBody { data: 1 };
 }

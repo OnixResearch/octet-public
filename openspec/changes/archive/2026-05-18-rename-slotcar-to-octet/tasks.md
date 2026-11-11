@@ -1,0 +1,40 @@
+## Phase 1: Implementation
+
+- [x] I1 Define the Octet naming map in README/docs and distinguish canonical identity from Tiger Style philosophy and legacy compatibility. ✅ 3m20s (started: 2026-05-18T01:49:52Z → completed: 2026-05-18T01:53:12Z)
+- [x] I2 Rename Cargo package/binary/runner surfaces to `octet` / `cargo-octet` while retaining explicit compatibility aliases where chosen. ✅ 6m50s (started: 2026-05-18T01:54:05Z → completed: 2026-05-18T02:00:55Z)
+- [x] I3 Update Nix packages/apps/check helpers, flake library surfaces, and generated command wrappers to prefer Octet names. ✅ 12m (started: 2026-05-18T02:07:25Z → completed: 2026-05-18T02:19:25Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/metadata-build.txt`)
+- [x] I4 Update consumer config parsing/templates/docs for `[octet]`, `[octet.lint_levels]`, and `[workspace.metadata.octet]` with Octet-over-legacy precedence. ✅ 10m (started: 2026-05-18T02:21:32Z → completed: 2026-05-18T02:31:32Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-surface.txt`)
+- [x] I5 Update structured outputs, SARIF driver metadata, sidecar artifacts, migration manifests, transcript reports, and fingerprint/review records to use Octet canonical identity. ✅ 6m38s (started: 2026-05-18T02:38:42Z → completed: 2026-05-18T02:45:20Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/structured-output.txt`)
+- [x] I6 Update standards registry/policy artifact names and regenerate any Nickel-derived artifacts affected by Octet identity. ✅ 19m39s (started: 2026-05-18T03:17:44Z → completed: 2026-05-18T03:37:23Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/policy-artifacts.txt`)
+- [x] I7 Update tests, UI snapshots, consumer fixtures, docs examples, and changelog entries for the Octet identity. ✅ 15m12s (started: 2026-05-18T03:44:22Z → completed: 2026-05-18T03:59:34Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/docs-fixtures-ui.txt`)
+- [x] I8 Add deterministic remaining-name classification support for non-archived `slotcar`, `Slotcar`, `tigerstyle`, and `Tiger Style` occurrences. ✅ 12m12s (started: 2026-05-18T03:59:34Z → completed: 2026-05-18T04:11:46Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/name-classification.txt`)
+
+## Phase 2: Deterministic verification
+
+- [x] V1 Verify scenario "Canonical install and usage docs say Octet" with the remaining-name classification helper; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/name-classification.txt` ✅ 0m (verified: 2026-05-18T04:11:46Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/name-classification.txt`)
+- [x] V2 Verify scenario "Chemistry metaphor explains stable-shell interfaces" with a focused docs grep/helper; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/docs-metaphor.txt` ✅ 0m (verified: 2026-05-18T04:14:38Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/docs-metaphor.txt`)
+- [x] V3 Verify scenario "Legacy names remain distinguishable" with the remaining-name classification helper; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/name-classification.txt` ✅ 0m (verified: 2026-05-18T04:11:46Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/name-classification.txt`)
+- [x] V4 Verify scenario "Cargo subcommand uses Octet" with focused cargo runner help/integration checks; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/cli-surface.txt` ✅ 0m (verified: 2026-05-18T04:18:07Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/cli-surface.txt`)
+- [x] V5 Verify scenario "Structured outputs name Octet" with focused human/JSON/SARIF output checks; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/structured-output.txt` ✅ 1m08s (started: 2026-05-18T04:36:37Z → completed: 2026-05-18T04:37:45Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/structured-output.txt`)
+- [x] V6 Verify scenario "Compatibility aliases are explicit" with compatibility invocation tests or a documented no-alias decision; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/compatibility-aliases.txt` ✅ 1m59s (started: 2026-05-18T04:39:20Z → completed: 2026-05-18T04:41:19Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/compatibility-aliases.txt`)
+- [x] V7 Verify scenario "Octet config section controls lint behavior" with a focused config fixture/integration test; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-surface.txt` ✅ 2m13s (started: 2026-05-18T04:45:53Z → completed: 2026-05-18T04:48:06Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-surface.txt`)
+- [x] V8 Verify scenario "Octet workspace metadata controls runner policy" with a focused consumer integration test; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-surface.txt` ✅ 16m33s (started: 2026-05-18T04:49:06Z → completed: 2026-05-18T05:05:39Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-surface.txt`)
+- [x] V9 Verify scenario "Octet config wins over legacy config" with a focused precedence test; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-precedence.txt` ✅ 3m47s (started: 2026-05-18T05:05:39Z → completed: 2026-05-18T05:09:26Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-precedence.txt`)
+- [x] V10 Verify the rename package/build metadata with `cargo metadata --no-deps`, `git diff --check`, and the smallest maintained Nix/Cargo checks that cover renamed surfaces; save output at `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/metadata-build.txt` ✅ 1m40s (started: 2026-05-18T05:09:26Z → completed: 2026-05-18T05:11:06Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/metadata-build.txt`)
+- [x] V11 Verify any Nickel/policy artifact rename effects with policy export/validation checks when `.ncl` files change. ✅ 20m02s (started: 2026-05-18T03:17:44Z → completed: 2026-05-18T03:37:46Z; evidence: `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/policy-artifacts.txt`)
+
+## Change Status
+- Status: complete
+- Open tasks: none
+
+## Verification Coverage
+
+- `Scenario: Canonical install and usage docs say Octet` -> `V1` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/name-classification.txt`
+- `Scenario: Chemistry metaphor explains stable-shell interfaces` -> `V2` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/docs-metaphor.txt`
+- `Scenario: Legacy names remain distinguishable` -> `V3` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/name-classification.txt`
+- `Scenario: Cargo subcommand uses Octet` -> `V4` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/cli-surface.txt`
+- `Scenario: Structured outputs name Octet` -> `V5` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/structured-output.txt`
+- `Scenario: Compatibility aliases are explicit` -> `V6` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/compatibility-aliases.txt`
+- `Scenario: Octet config section controls lint behavior` -> `V7` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-surface.txt`
+- `Scenario: Octet workspace metadata controls runner policy` -> `V8` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-surface.txt`
+- `Scenario: Octet config wins over legacy config` -> `V9` -> `openspec/changes/archive/2026-05-18-rename-slotcar-to-octet/evidence/config-precedence.txt`

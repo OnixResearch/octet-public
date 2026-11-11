@@ -1,0 +1,8 @@
+property: bounded-increment
+item: increment_checked(value: u64) -> Option<u64>
+precondition: value < u64::MAX
+postcondition: result == Some(value + 1)
+overflow: checked (None when value == u64::MAX)
+termination: single call, no loops
+observable_failure: None at value == u64::MAX
+width: u64 (64-bit unsigned, no implicit nat conversion)

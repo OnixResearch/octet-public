@@ -55,6 +55,51 @@ pub struct Suppression {
     pub line: u32,
 }
 
+impl Suppression {
+    /// Returns the one-based source line this suppression covers.
+    ///
+    /// `line` covers the annotated line and `next-line` the line after it; other scopes are
+    /// rejected during validation and cover nothing.
+    #[must_use]
+    pub fn covered_line(&self) -> Option<u32> {
+        match self.scope.as_str() {
+            LINE_SCOPE => Some(self.line),
+            NEXT_LINE_SCOPE => self.line.checked_add(1),
+            _ => None,
+        }
+    }
+
+    /// Returns true when this suppression names the diagnostic's policy and covers its path and
+    /// line.
+    #[must_use]
+    pub fn covers(&self, diagnostic: &Diagnostic) -> bool {
+        diagnostic.policy_id == self.policy_id
+            && diagnostic.path == self.path
+            && diagnostic.line.is_some()
+            && diagnostic.line == self.covered_line()
+    }
+}
+
+/// Checker diagnostics split by the active suppressions that cover them.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SuppressedDiagnostics {
+    /// Diagnostics no active suppression covers.
+    pub remaining: Vec<Diagnostic>,
+    /// Diagnostics an active suppression covers.
+    pub suppressed: Vec<Diagnostic>,
+}
+
+/// Splits checker diagnostics into those that still apply and those an active suppression covers.
+///
+/// Pass only checker findings: suppression-validation diagnostics must stay unsuppressible.
+#[must_use]
+pub fn apply_suppressions(diagnostics: Vec<Diagnostic>, active_suppressions: &[Suppression]) -> SuppressedDiagnostics {
+    let (suppressed, remaining) = diagnostics
+        .into_iter()
+        .partition(|diagnostic| active_suppressions.iter().any(|suppression| suppression.covers(diagnostic)));
+    SuppressedDiagnostics { remaining, suppressed }
+}
+
 /// Result of validating suppressions for one source set.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct SuppressionReport {

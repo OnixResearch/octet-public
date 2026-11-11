@@ -60,5 +60,61 @@ help: rename with an explicit unit suffix like `_ms`, `_secs`, or `_bytes`
 LL | fn schedule(delay_<unit>: u64) -> u64 {
    |                  +++++++
 
-warning: 4 warnings emitted
+warning: `connect_timeout` looks like a raw numeric quantity but has no unit suffix
+  --> $DIR/numeric_units.rs:74:9
+   |
+LL |     let connect_timeout = 30_u64;
+   |         ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Unit Suffixes): use a nominal unit type or put the unit in the name of raw numeric quantities Example: timeout_ms
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Unit Suffixes
+help: rename with an explicit unit suffix like `_ms`, `_secs`, or `_bytes`
+   |
+LL |     let connect_timeout_<unit> = 30_u64;
+   |                        +++++++
+
+warning: `request_timeout` looks like a raw numeric quantity but has no unit suffix
+  --> $DIR/numeric_units.rs:80:9
+   |
+LL |     let request_timeout = 30_u64;
+   |         ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Unit Suffixes): use a nominal unit type or put the unit in the name of raw numeric quantities Example: timeout_ms
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Unit Suffixes
+help: rename with an explicit unit suffix like `_ms`, `_secs`, or `_bytes`
+   |
+LL |     let request_timeout_<unit> = 30_u64;
+   |                        +++++++
+
+warning: `buffer_size` looks like a raw numeric quantity but has no unit suffix
+  --> $DIR/numeric_units.rs:81:9
+   |
+LL |     let buffer_size = 1024_u64;
+   |         ^^^^^^^^^^^
+   |
+   = help: Tiger Style (Unit Suffixes): use a nominal unit type or put the unit in the name of raw numeric quantities Example: timeout_ms
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Unit Suffixes
+help: rename with an explicit unit suffix like `_ms`, `_secs`, or `_bytes`
+   |
+LL |     let buffer_size_<unit> = 1024_u64;
+   |                    +++++++
+
+warning: `delay` looks like a raw numeric quantity but has no unit suffix
+  --> $DIR/numeric_units.rs:111:26
+   |
+LL | async fn async_parameter(delay: u64) -> u64 {
+   |                          ^^^^^
+   |
+   = help: Tiger Style (Unit Suffixes): use a nominal unit type or put the unit in the name of raw numeric quantities Example: timeout_ms
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Unit Suffixes
+help: rename with an explicit unit suffix like `_ms`, `_secs`, or `_bytes`
+   |
+LL | async fn async_parameter(delay_<unit>: u64) -> u64 {
+   |                               +++++++
+
+warning: 8 warnings emitted
 

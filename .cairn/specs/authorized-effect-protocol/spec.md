@@ -24,6 +24,12 @@ Each effectful outbound adapter capability in an active project architecture pol
 - WHEN `gate` or `admission` evaluation runs
 - THEN the architecture phase MUST block with an unclassified-authority diagnostic
 
+#### Scenario: Protected executor scope is not an outbound adapter
+
+- GIVEN a protected classification whose `executor_scope` has the application-shell or composition-root role
+- WHEN Rust or Nickel policy validation runs
+- THEN validation MUST fail, because the gate admits protected executors only in outbound-adapter scopes
+
 ### Requirement: Protected protocol schema is typed
 
 r[octet.authorized_effect_protocol.schema]
@@ -59,6 +65,19 @@ A declared authorization witness MUST prevent ambient construction through compi
 - GIVEN the witness has public fields, a public unchecked constructor, forbidden derive, broad `From` or `Into`, unsafe construction, or forbidden duplication
 - WHEN witness evaluation runs
 - THEN strict modes MUST block with the exact forgery or replay path
+
+#### Scenario: Witness converts only from an authorized output
+
+- GIVEN the witness implements `From` or `Into` whose single type argument is a declared authorized output type
+- WHEN witness evaluation runs
+- THEN that conversion MUST NOT be treated as forbidden or broad, while a generic, wrapped, or other argument MUST block as a broad conversion
+
+#### Scenario: Consume witness constructor borrows the authorized output
+
+- GIVEN policy selects `consume` witness use and a declared witness constructor receives the authorized output as `&Output` or `&mut Output`
+- WHEN witness evaluation runs
+- THEN strict modes MUST block with a borrowed consume-authorization diagnostic, because one authorization could mint several witnesses
+- AND under `borrow` witness use that constructor MAY receive the authorized output by reference
 
 #### Scenario: Reusable witness is declared
 
@@ -101,6 +120,18 @@ Every declared protected executor method and selected wrapper path MUST preserve
 - GIVEN an overload, helper, adapter method, or wrapper reaches the protected effect without the witness
 - WHEN strict evaluation runs
 - THEN the protocol MUST block with the unguarded call path
+
+#### Scenario: Borrow executor references the witness
+
+- GIVEN policy selects `borrow` witness use and a protected executor receives the witness as `&Witness` or `&mut Witness`
+- WHEN the executor witness-parameter obligation is evaluated
+- THEN the referenced witness definition MUST satisfy that obligation
+
+#### Scenario: Consume executor borrows the witness
+
+- GIVEN policy selects `consume` witness use and a protected executor receives the witness as `&Witness` or `&mut Witness`
+- WHEN strict evaluation runs
+- THEN the protocol MUST block with a borrowed consume-witness diagnostic, because one witness could authorize repeated calls
 
 ### Requirement: Planned and observed effect types remain distinct
 

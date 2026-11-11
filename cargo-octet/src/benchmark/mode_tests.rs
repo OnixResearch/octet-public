@@ -4,13 +4,17 @@ use super::*;
 
 const EXPECTED_MODE_COUNT: usize = 4;
 
+#[cfg(unix)]
 #[test]
 fn cold_warm_no_change_and_incremental_modes_remain_separate_bounded_groups() {
     let profile = selected_profile(PROFILE_ID).expect("profile");
     let directory = tempfile::tempdir().expect("temporary directory");
     std::fs::create_dir_all(directory.path().join(".octet")).expect("create benchmark fixture root");
+    let tool_directory = tempfile::tempdir().expect("temporary tool directory");
+    let cargo = tool_directory.path().join("cargo-fixture");
+    crate::test_support::write_executable_script(&cargo, "#!/bin/sh\nexit 0\n");
     let tools = shell::RuntimeTools {
-        cargo: "/bin/true".into(),
+        cargo,
         path: "/bin".into(),
         library_path: "/lib".into(),
         kernel_identity: "kernel-fixture".to_owned(),
@@ -23,7 +27,7 @@ fn cold_warm_no_change_and_incremental_modes_remain_separate_bounded_groups() {
         write_resource_inputs(directory.path(), &profile, &workload.workload_id);
         let baseline = run_set_for_workload(&profile, workload, BASE_DURATION_NS);
         let observation =
-            shell::run_with(directory.path(), &profile, baseline, tools.clone()).expect("bounded benchmark mode run");
+            shell::run_with(directory.path(), &profile, baseline, &tools).expect("bounded benchmark mode run");
         assert_eq!(observation.input.candidate.mode, workload.mode);
         assert_eq!(observation.input.candidate.samples.len(), SAMPLE_COUNT);
         assert!(observation.input.candidate.samples.iter().all(|sample| sample.outcome == "succeeded"));

@@ -210,6 +210,21 @@ The lint MUST NOT warn on clones that are moved into ownership-consuming APIs, s
 - GIVEN a clone is stored in a struct, returned, moved into a task, or used to detach from a lock guard or short-lived borrow
 - WHEN the lint runs
 - THEN it does NOT warn in the first implementation scope because the clone may be the intended ownership boundary
+- AND a clone whose receiver chain dereferences a temporary call result with drop glue, such as `emit(&lock.lock().unwrap().clone())`, counts as detaching from a guard, because borrowing it instead would hold the guard while the borrow lives
+
+#### Scenario: Borrowed clone kept across a mutation of the original is accepted [r[clone-then-borrow-lint.scenario.mutated-original-accepted]]
+
+- GIVEN `let before = &values.clone(); values.push(1);`
+- WHEN the lint runs
+- THEN it does NOT warn because the borrowed clone is stored in a `let` binding (directly or inside a tuple, array, or struct literal) and a later statement in the same block assigns or mutably borrows the original, so borrowing the original would fail with E0502
+- AND a stored borrowed clone with no later mutation of the original still warns
+
+#### Scenario: Borrowed clone kept across a move of the original is accepted [r[clone-then-borrow-lint.scenario.moved-original-accepted]]
+
+- GIVEN `let snapshot = &guard.clone(); drop(guard);` or `let before = &values.clone(); consume(values);`
+- WHEN the lint runs
+- THEN it does NOT warn because the borrowed clone is stored in a `let` binding and a later statement in the same block moves the original (or a place inside it) by value, so borrowing the original would fail with E0505
+- AND a stored borrowed clone whose original is only borrowed afterwards still warns
 
 #### Scenario: Expansion boundary is skipped [r[clone-then-borrow-lint.scenario.expansion-skip]]
 
@@ -219,25 +234,28 @@ The lint MUST NOT warn on clones that are moved into ownership-consuming APIs, s
 
 ### Requirement: Content Identity Lint Cache [r[content-identity-lint-cache]]
 
-The system MUST support an optional deterministic lint-result cache keyed by Octet version, rustc/toolchain identity, lint config hash, crate graph hash, lint ID, and semantic item identity. The cache MUST be disabled or bypassed for findings that cannot prove deterministic inputs.
+The system MUST support an optional deterministic lint cache that labels each finding with whether an earlier run already reported it. The cache key MUST cover the Octet version, rustc/toolchain identity, lint config hash (including the effective scope and `cargo check` arguments), and crate graph hash (the root `Cargo.toml` and `Cargo.lock` bytes); each finding's lint ID and semantic item identity select its entry. The cache MUST keep a separate bounded entry per key, so a run with one key does not discard another key's entry, and MUST NOT record a run whose `cargo check` did not succeed. The cache MUST be disabled or bypassed for findings that cannot prove deterministic inputs and for runs whose rustc identity is unknown. The cache file MUST be replaced atomically, and a cache file that cannot be parsed MUST read as empty rather than fail the run. The cache is a label, not result reuse: every run lints every selected crate and reports its own findings.
 
 #### Scenario: Unchanged item uses cached finding [r[content-identity-lint-cache.scenario.unchanged-item-uses-cached-finding]]
 
-- GIVEN an item identity, config hash, crate graph hash, and toolchain identity are unchanged between runs
+- GIVEN an item identity, config hash, crate graph hash, toolchain identity, and Octet version are unchanged between runs
 - WHEN `cargo octet check --cache` runs again
-- THEN deterministic findings for that item are loaded from cache and reported with cache-hit metadata
+- THEN the finding for that item reports `cache_status: hit`
+- AND the finding still comes from the current run's lint results
 
 #### Scenario: Config change invalidates cache [r[content-identity-lint-cache.scenario.config-change-invalidates-cache]]
 
-- GIVEN the lint config hash changes between two runs
+- GIVEN the lint config hash, toolchain identity, crate graph hash, or Octet version changes between two runs
 - WHEN `cargo octet check --cache` runs
-- THEN previous cached findings are not reused for affected lint IDs
+- THEN its findings report `cache_status: miss`
+- AND the earlier key's entry is kept, so a later run with that key still reports hits
+- AND each key's entry holds only the semantic IDs of the latest complete run with that key, so an ID that run did not report is forgotten
 
 #### Scenario: Non-deterministic input bypasses cache [r[content-identity-lint-cache.scenario.non-deterministic-input-bypasses-cache]]
 
-- GIVEN an item lacks semantic identity or depends on unsupported macro expansion context
+- GIVEN an item lacks semantic identity or depends on unsupported macro expansion context, or the run cannot read its rustc identity
 - WHEN the cache key is computed
-- THEN the item is marked cache-ineligible and linting runs normally
+- THEN the item is marked `cache_status: bypassed` and linting runs normally
 
 ### Requirement: Pure Result Cache [r[pure-result-cache]]
 

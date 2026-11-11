@@ -1,0 +1,12 @@
+{
+  "schema": "onix-nickel-export-request/v1",
+  "family_id": "fixtures.unsafe",
+  "source": "../secret.ncl",
+  "dependencies": [],
+  "import_paths": [],
+  "selector": "",
+  "contract": "",
+  "format": "json",
+  "destination": "fixtures/generated/unsafe.json",
+  "allow_secret_material": false
+}

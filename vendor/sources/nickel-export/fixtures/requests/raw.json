@@ -1,0 +1,12 @@
+{
+  "schema": "onix-nickel-export-request/v1",
+  "family_id": "fixtures.raw",
+  "source": "fixtures/config.ncl",
+  "dependencies": ["fixtures/contract.ncl"],
+  "import_paths": ["fixtures"],
+  "selector": "label",
+  "contract": "fixtures/contract.ncl",
+  "format": "raw",
+  "destination": "fixtures/generated/label.txt",
+  "allow_secret_material": false
+}

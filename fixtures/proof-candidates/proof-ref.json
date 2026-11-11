@@ -1,0 +1,27 @@
+{
+  "schema_version": "octet-proof-evidence-ref/v1",
+  "reference_id": "unchecked-narrowing-range-proof",
+  "consumer_context": "allow tigerstyle::unchecked_narrowing at src/codec.rs:42",
+  "consumer_source_path": "src/codec.rs",
+  "consumer_source_blake3": "5a76efe26e29d5e12ce701325e37d38f7ca60c281fb78746b3f4c01e8410d9a1",
+  "consumer_source_anchor": "octet-proof-ref: unchecked-narrowing-range-proof -> octet.verus_proof_rails.addition-bound-production#rail-0",
+  "proof_or_property_id": "octet.verus_proof_rails.addition-bound-production#rail-0",
+  "source_requirement_or_policy_id": "octet.verus_proof_rails.addition-bound-production",
+  "checked_rust_source_scope": "formal-proof:production:octet.verus_proof_rails.addition-bound-production#rail-0",
+  "expected_evidence_tier": "formal_proof",
+  "required_status": "passed",
+  "required_artifacts": [
+    "src/verified/addition.rs",
+    "verus/proofs/addition_bound.rs",
+    "proofs/octet.verus_proof_rails.addition-bound-production-rail-0.stdout",
+    "proofs/octet.verus_proof_rails.addition-bound-production-rail-0.stderr",
+    "proofs/octet.verus_proof_rails.addition-bound-production-rail-0.receipt"
+  ],
+  "non_claims": [
+    "not whole-program correctness",
+    "not certification",
+    "not business-domain validation",
+    "not semantic equivalence",
+    "not full safety"
+  ]
+}

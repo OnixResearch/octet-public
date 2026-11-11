@@ -81,7 +81,7 @@ The system MUST produce valid output on stdout even when the underlying `cargo c
 - In `json` mode: any findings emitted before the error MUST appear as valid JSON lines; no partial/malformed JSON on stdout
 - In `sarif` mode: the SARIF document MUST still be a valid JSON document with whatever findings were emitted before the error
 - In all modes: the summary MUST still print on stderr, reflecting only the findings that were successfully emitted
-- The exit code MUST be `2` when the underlying cargo check fails, regardless of output format
+- The exit code MUST be `2` when the underlying cargo check fails, regardless of output format, unless Cargo exited with a code and every compiler error in the stream is an error-level Octet lint finding; rustc fails a compile that hit a denied lint, so that run MUST exit `1` as a lint failure
 
 #### Scenario: Compilation error during JSON output
 - GIVEN a workspace with a syntax error in one crate and lint findings in another
@@ -92,6 +92,11 @@ The system MUST produce valid output on stdout even when the underlying `cargo c
 - GIVEN a workspace with a compilation error
 - WHEN `cargo tigerstyle check --output-format sarif` runs
 - THEN stdout is a valid SARIF JSON document (possibly with zero results), and exit code is 2
+
+#### Scenario: Denied lint fails the compile
+- GIVEN a workspace whose only compiler errors are error-level Octet lint findings, so `cargo check` exits `101`
+- WHEN `cargo octet check` runs
+- THEN the run reports `lint-failure` and exits `1`; any other compiler error (an `E####` code, an uncoded error, or an internal compiler error) keeps exit `2`
 
 ### Requirement: Finding Index
 The system MUST assign each finding a deterministic index (`F1`, `F2`, ...) based on order of appearance in the diagnostic stream.
@@ -187,7 +192,7 @@ Attribute form MUST support `#[fingerprint("b3:...", review = "...")]` or an equ
 
 The system MUST provide deterministic machine-readable output for fingerprint validation results when requested.
 
-Machine output MUST include the schema version, function name, relative file path, review class, stored hash, computed hash, status, macro allowance state, and optional evidence or spec reference. It MUST NOT include absolute paths, timestamps, local usernames, or environment dumps.
+Machine output MUST include the schema version, function name, relative file path, review class, stored hash, computed hash, status, macro allowance state, and optional evidence or spec reference. It MUST NOT include absolute paths, timestamps, local usernames, or environment dumps. File paths in records and review-manifest input paths MUST be relative to the current directory; a scanned path outside it MUST be rejected before any source is rewritten.
 
 #### Scenario: Machine output captures mismatch identity [r[fingerprint-machine-output.scenario.mismatch-identity]]
 

@@ -1,0 +1,22 @@
+{
+  "schema_version": "octet-durability-claims-profile/v1",
+  "profile_id": "durability-retry",
+  "boundaries": [
+    {
+      "boundary_id": "durability-retry",
+      "source_scope": "ui_tests/durability_retry",
+      "boundary_functions": [
+        "persist"
+      ],
+      "required_observation": "synchronization",
+      "uncertain_outcome_types": [
+        "StoreError"
+      ],
+      "commit_surfaces": [],
+      "adapter_observations": []
+    }
+  ],
+  "non_claims": [
+    "This fixture profile declares one analyzed boundary only."
+  ]
+}

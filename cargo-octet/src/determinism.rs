@@ -124,18 +124,23 @@ fn profile_hash(
     full_hash(&payload.to_string())
 }
 
+/// `[workspace.metadata.<name>]` tables the runner reads from the root manifest (current table
+/// first, then the legacy fallbacks in `config::workspace_metadata_table`). Every other manifest
+/// key stays out of finding identity.
+const RUNNER_METADATA_TABLES: [&str; 3] = ["octet", "slotcar", "tigerstyle"];
+
 fn config_hash(
     workspace_root: &Path,
     scope_args: &[String],
     cargo_check_args: &[String],
     strict_profile: Option<StrictProfileIdentity<'_>>,
 ) -> String {
-    let mut files = Vec::new();
-    push_file_hash(&workspace_root.join("Cargo.toml"), &mut files);
-    push_file_hash(&workspace_root.join("dylint.toml"), &mut files);
+    let runner_manifest_config = runner_manifest_config(&workspace_root.join("Cargo.toml"));
+    let dylint_toml = file_hash(&workspace_root.join("dylint.toml"));
     let payload = match strict_profile {
         Some(profile) => serde_json::json!({
-            "files": files,
+            "runner_manifest_config": runner_manifest_config,
+            "dylint_toml": dylint_toml,
             "effective_scope_args": scope_args,
             "effective_cargo_check_args": cargo_check_args,
             "strict_profile": {
@@ -144,7 +149,8 @@ fn config_hash(
             },
         }),
         None => serde_json::json!({
-            "files": files,
+            "runner_manifest_config": runner_manifest_config,
+            "dylint_toml": dylint_toml,
             "effective_scope_args": scope_args,
             "effective_cargo_check_args": cargo_check_args,
         }),
@@ -152,17 +158,62 @@ fn config_hash(
     full_hash(&payload.to_string())
 }
 
-fn push_file_hash(path: &Path, files: &mut Vec<serde_json::Value>) {
-    let relative = path.file_name().and_then(|name| name.to_str()).unwrap_or("unknown");
-    files.push(serde_json::json!({
-        "path": relative,
-        "hash": file_hash(path),
-    }));
+/// Canonical JSON of the runner metadata tables in the root manifest. A missing manifest and an
+/// unparsable one hash differently from each other and from any parsed manifest; the unparsable
+/// case keeps the raw bytes in identity.
+fn runner_manifest_config(manifest_path: &Path) -> serde_json::Value {
+    let Ok(bytes) = fs::read(manifest_path) else {
+        return serde_json::json!({ "status": "missing" });
+    };
+    let document = std::str::from_utf8(&bytes).ok().and_then(|text| text.parse::<toml::Table>().ok());
+    let Some(document) = document else {
+        return serde_json::json!({
+            "status": "unparsable",
+            "hash": format!("b3:{}", blake3::hash(&bytes).to_hex()),
+        });
+    };
+    let metadata = document
+        .get("workspace")
+        .and_then(toml::Value::as_table)
+        .and_then(|workspace| workspace.get("metadata"))
+        .and_then(toml::Value::as_table);
+    let tables = RUNNER_METADATA_TABLES
+        .iter()
+        .filter_map(|name| {
+            let value = metadata?.get(*name)?;
+            Some(((*name).to_owned(), canonical_toml_json(value)))
+        })
+        .collect::<serde_json::Map<_, _>>();
+    serde_json::json!({ "status": "parsed", "workspace_metadata": tables })
+}
+
+/// Converts TOML to JSON with object keys inserted in sorted order, so the rendered text does not
+/// depend on manifest key order or on whether `serde_json` preserves insertion order.
+fn canonical_toml_json(value: &toml::Value) -> serde_json::Value {
+    match value {
+        toml::Value::String(text) => serde_json::Value::String(text.clone()),
+        toml::Value::Integer(number) => serde_json::Value::from(*number),
+        toml::Value::Float(number) => serde_json::Number::from_f64(*number)
+            .map_or_else(|| serde_json::Value::String(number.to_string()), serde_json::Value::Number),
+        toml::Value::Boolean(flag) => serde_json::Value::Bool(*flag),
+        toml::Value::Datetime(datetime) => serde_json::Value::String(datetime.to_string()),
+        toml::Value::Array(items) => serde_json::Value::Array(items.iter().map(canonical_toml_json).collect()),
+        toml::Value::Table(table) => {
+            let mut keys = table.keys().collect::<Vec<_>>();
+            keys.sort();
+            serde_json::Value::Object(
+                keys.into_iter().map(|key| (key.clone(), canonical_toml_json(&table[key.as_str()]))).collect(),
+            )
+        }
+    }
 }
 
 fn file_hash(path: &Path) -> Option<String> {
     fs::read(path).ok().map(|bytes| format!("b3:{}", blake3::hash(&bytes).to_hex()))
 }
+
+/// `RunMetadata::rustc_version` when `rustc -Vv` cannot be run or read.
+pub const UNKNOWN_RUSTC_VERSION: &str = "unknown";
 
 fn rustc_version(toolchain: &str) -> String {
     Command::new("rustc")
@@ -172,7 +223,8 @@ fn rustc_version(toolchain: &str) -> String {
         .ok()
         .filter(|output| output.status.success())
         .and_then(|output| String::from_utf8(output.stdout).ok())
-        .map_or_else(|| "unknown".to_owned(), |text| text.lines().next().unwrap_or("unknown").to_owned())
+        .and_then(|text| text.lines().next().map(ToOwned::to_owned))
+        .unwrap_or_else(|| UNKNOWN_RUSTC_VERSION.to_owned())
 }
 
 #[cfg(test)]
@@ -202,10 +254,8 @@ mod tests {
         let default_hash = config_hash(root.path(), &scope_args, &cargo_args, None);
         let expected_default_hash = full_hash(
             &serde_json::json!({
-                "files": [
-                    { "path": "Cargo.toml", "hash": file_hash(&root.path().join("Cargo.toml")) },
-                    { "path": "dylint.toml", "hash": file_hash(&root.path().join("dylint.toml")) },
-                ],
+                "runner_manifest_config": { "status": "parsed", "workspace_metadata": {} },
+                "dylint_toml": file_hash(&root.path().join("dylint.toml")),
                 "effective_scope_args": scope_args,
                 "effective_cargo_check_args": cargo_args,
             })
@@ -219,6 +269,69 @@ mod tests {
         assert_eq!(robust_hash, repeated_robust_hash);
         assert_ne!(default_hash, robust_hash);
         assert_ne!(robust_hash, bounded_hash);
+    }
+
+    const BASE_MANIFEST: &str = r#"[workspace]
+members = ["core"]
+resolver = "2"
+
+[workspace.dependencies]
+serde = "1.0.200"
+
+[workspace.metadata.octet]
+default_scope = ["--workspace"]
+cargo_check_args = ["--lib"]
+
+[package]
+name = "root"
+version = "0.1.0"
+"#;
+
+    fn config_hash_for(manifest: &str, dylint: &str) -> String {
+        let root = tempfile::tempdir().expect("config hash tempdir");
+        std::fs::write(root.path().join("Cargo.toml"), manifest).expect("write Cargo.toml");
+        std::fs::write(root.path().join("dylint.toml"), dylint).expect("write dylint.toml");
+        config_hash(root.path(), &["--workspace".to_owned()], &["--lib".to_owned()], None)
+    }
+
+    #[test]
+    fn config_hash_ignores_manifest_edits_outside_runner_metadata() {
+        let baseline = config_hash_for(BASE_MANIFEST, "[octet]\n");
+        let dependency_bump = BASE_MANIFEST.replace("serde = \"1.0.200\"", "serde = \"1.0.228\"");
+        let new_member = BASE_MANIFEST.replace("members = [\"core\"]", "members = [\"core\", \"cli\"]");
+        let package_edit = BASE_MANIFEST.replace("version = \"0.1.0\"", "version = \"0.2.0\"\nedition = \"2024\"");
+        let reordered_metadata = BASE_MANIFEST.replace(
+            "default_scope = [\"--workspace\"]\ncargo_check_args = [\"--lib\"]",
+            "cargo_check_args = [\"--lib\"]\ndefault_scope = [\"--workspace\"]",
+        );
+
+        assert!(baseline.starts_with("b3:") && baseline.len() == "b3:".len() + 64);
+        for edited in [dependency_bump, new_member, package_edit, reordered_metadata] {
+            assert_ne!(edited, BASE_MANIFEST);
+            assert_eq!(config_hash_for(&edited, "[octet]\n"), baseline, "manifest edit changed config hash:\n{edited}");
+        }
+    }
+
+    #[test]
+    fn config_hash_tracks_runner_metadata_and_dylint_config() {
+        let baseline = config_hash_for(BASE_MANIFEST, "[octet]\n");
+        let octet_edit = BASE_MANIFEST.replace("cargo_check_args = [\"--lib\"]", "cargo_check_args = [\"--tests\"]");
+        let legacy_table =
+            format!("{BASE_MANIFEST}\n[workspace.metadata.slotcar]\ndefault_scope = [\"-p\", \"core\"]\n");
+        let dylint_edit = config_hash_for(BASE_MANIFEST, "[octet]\ndisabled_lints = [\"no_unwrap\"]\n");
+        let missing_manifest = {
+            let root = tempfile::tempdir().expect("missing manifest tempdir");
+            config_hash(root.path(), &["--workspace".to_owned()], &["--lib".to_owned()], None)
+        };
+        let unparsable = config_hash_for("[workspace\n", "[octet]\n");
+
+        assert_ne!(config_hash_for(&octet_edit, "[octet]\n"), baseline);
+        assert_ne!(config_hash_for(&legacy_table, "[octet]\n"), baseline);
+        assert_ne!(dylint_edit, baseline);
+        assert_eq!(unparsable, config_hash_for("[workspace\n", "[octet]\n"));
+        assert_ne!(unparsable, config_hash_for("[workspace\n\n", "[octet]\n"));
+        assert_ne!(unparsable, baseline);
+        assert_ne!(missing_manifest, baseline);
     }
 
     #[test]

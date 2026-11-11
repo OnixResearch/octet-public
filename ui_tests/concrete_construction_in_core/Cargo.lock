@@ -6,6 +6,7 @@ version = 4
 name = "concrete-construction-in-core-fixture"
 version = "0.0.0"
 dependencies = [
+ "memchr",
  "serde_json",
 ]
 

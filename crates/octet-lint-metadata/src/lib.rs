@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+pub mod durability;
 #[path = "identity.rs"]
 pub mod identity;
 pub mod nominal_domain {
@@ -230,7 +231,7 @@ pub const LINT_METADATA: &[LintMetadata] = &[
         guide_section: "Documented Suppression",
         domain_group: GROUP_STRUCTURE,
         guidance: "every lint suppression needs a local reason tied to the code shape",
-        docs_summary: "require local justification for `#[allow(clippy::...)]`",
+        docs_summary: "require a local `//` comment or a non-empty `reason` on `allow` / `expect` of Clippy or Octet lints",
         effect_family: EFFECT_RESOURCE,
         example_mode: ExampleMode::Required,
         example_text: Some(
@@ -406,6 +407,32 @@ pub const LINT_METADATA: &[LintMetadata] = &[
         effect_family: EFFECT_RESOURCE,
         example_mode: ExampleMode::Required,
         example_text: Some("fn connect(opts: ConnectOptions) -> ..."),
+    },
+    LintMetadata {
+        lint_name: "raw_bool_parameter",
+        default_level: DEFAULT_WARN,
+        principle: "Explicit Interfaces",
+        guide_section: "Explicit Interfaces / Boolean API Modeling",
+        domain_group: GROUP_STRUCTURE,
+        guidance: "use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid",
+        docs_summary: "avoid direct `bool` parameters in public APIs and multiple positional booleans in private callables",
+        effect_family: EFFECT_UNKNOWN,
+        example_mode: ExampleMode::Required,
+        example_text: Some("pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)"),
+    },
+    LintMetadata {
+        lint_name: "raw_bool_parameter_suppression",
+        default_level: DEFAULT_WARN,
+        principle: "Explicit Interfaces",
+        guide_section: "Explicit Interfaces / Boolean API Modeling",
+        domain_group: GROUP_STRUCTURE,
+        guidance: "keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression",
+        docs_summary: "reject broad or unjustified raw-boolean parameter suppressions",
+        effect_family: EFFECT_UNKNOWN,
+        example_mode: ExampleMode::Required,
+        example_text: Some(
+            "#[expect(tigerstyle::raw_bool_parameter, reason = \"external compatibility contract: v1 callback ABI; owner: api-team\")]",
+        ),
     },
     LintMetadata {
         lint_name: "fat_trait",
@@ -632,7 +659,7 @@ pub const LINT_METADATA: &[LintMetadata] = &[
         guide_section: "Functional Core / Imperative Shell",
         domain_group: GROUP_PURITY,
         guidance: "consider `const fn` for conservative private helpers when doing so does not freeze public API flexibility",
-        docs_summary: "identify private helpers that appear eligible for `const fn`",
+        docs_summary: "identify private free helpers in a conservative primitive HIR subset that appear eligible for `const fn`; calls, methods, closures, and type-dependent operators remain excluded",
         effect_family: EFFECT_UNKNOWN,
         example_mode: ExampleMode::Required,
         example_text: Some("const fn clamp_to_limit(value: u32, limit: u32) -> u32"),
@@ -778,7 +805,7 @@ pub const LINT_METADATA: &[LintMetadata] = &[
         guide_section: "Integer Currency",
         domain_group: GROUP_NAMING,
         guidance: "store money as scaled integers, not floats",
-        docs_summary: "avoid `f64` in price, cost, or budget fields",
+        docs_summary: "avoid `f64` in price, cost, or budget fields and function return types",
         effect_family: EFFECT_UNKNOWN,
         example_mode: ExampleMode::Required,
         example_text: Some("let price_micros: i64 = 125_000;"),
@@ -926,6 +953,42 @@ pub const LINT_METADATA: &[LintMetadata] = &[
         effect_family: EFFECT_FAILURE,
         example_mode: ExampleMode::Required,
         example_text: Some("while let Some(item) = stack.pop() { ... }"),
+    },
+    LintMetadata {
+        lint_name: "discarded_sync_result",
+        default_level: DEFAULT_WARN,
+        principle: "Durable Persistence",
+        guide_section: "Resilience / Silent error swallowing",
+        domain_group: GROUP_SAFETY,
+        guidance: "handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, reopen, rewrite, or reconcile instead of discarding it",
+        docs_summary: "flag discarded synchronization and configured commit results in declared durability boundaries",
+        effect_family: EFFECT_FAILURE,
+        example_mode: ExampleMode::Required,
+        example_text: Some("let outcome = file.sync_all().map_err(|error| DurabilityOutcome::Uncertain(error))?;"),
+    },
+    LintMetadata {
+        lint_name: "flush_only_durability",
+        default_level: DEFAULT_WARN,
+        principle: "Durable Persistence",
+        guide_section: "Resilience / Silent error swallowing",
+        domain_group: GROUP_SAFETY,
+        guidance: "observe an explicit synchronization or configured adapter result; Write::flush() drains user-space buffers and is not durable-persistence evidence",
+        docs_summary: "flag declared durable boundaries that observe only `Write::flush()`",
+        effect_family: EFFECT_FAILURE,
+        example_mode: ExampleMode::Required,
+        example_text: Some("writer.flush()?; file.sync_all()?;"),
+    },
+    LintMetadata {
+        lint_name: "retry_sync_after_error",
+        default_level: DEFAULT_WARN,
+        principle: "Durable Persistence",
+        guide_section: "Resilience / Silent error swallowing",
+        domain_group: GROUP_SAFETY,
+        guidance: "after a failed synchronization, rewrite from the source of truth, reopen or replace the handle, quarantine, or reconcile before observing durability again",
+        docs_summary: "flag same-receiver synchronization retries after a handled failure without an admitted recovery operation",
+        effect_family: EFFECT_FAILURE,
+        example_mode: ExampleMode::Required,
+        example_text: Some("file.sync_all()?; file = File::create(path)?; file.write_all(bytes)?; file.sync_all()?;"),
     },
 ];
 

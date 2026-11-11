@@ -1,0 +1,26 @@
+{
+  "change": {
+    "delta_specs": [
+      "fixtures/basic/.cairn/changes/demo/specs/demo/spec.md"
+    ],
+    "has_design": true,
+    "has_proposal": true,
+    "has_tasks": true,
+    "metadata": {
+      "groups": [],
+      "status": null,
+      "target_date": null
+    },
+    "name": "demo",
+    "path": "fixtures/basic/.cairn/changes/demo",
+    "task_counts": {
+      "done": 0,
+      "in_progress": 0,
+      "todo": 2,
+      "total": 2,
+      "unmarked": 0
+    }
+  },
+  "layout": "cairn",
+  "root": "fixtures/basic"
+}

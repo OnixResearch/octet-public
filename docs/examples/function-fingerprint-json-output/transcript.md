@@ -14,7 +14,12 @@ $ cargo octet fingerprint --update --output-format=json reviewed.rs
       "path": "reviewed.rs",
       "name": "capped_retries",
       "stored_hash": "0",
-      "computed_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
+      "computed_hash": "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
+      "normalized_body_hash": "b3:08a39243e7958345cd57fbc60fa89296f48250abb747ee64ae7ba78cdb6bae5b",
+      "semantic_id": "b3:f30e26140e01e3e7",
+      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
+      "dependency_identity_status": "source-scanner-token-set",
+      "tool_version": "0.1.0",
       "status": "written",
       "review": "json-script-example",
       "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
@@ -37,8 +42,13 @@ $ cargo octet fingerprint --check --output-format=json reviewed.rs
     {
       "path": "reviewed.rs",
       "name": "capped_retries",
-      "stored_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "computed_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
+      "stored_hash": "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
+      "computed_hash": "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
+      "normalized_body_hash": "b3:08a39243e7958345cd57fbc60fa89296f48250abb747ee64ae7ba78cdb6bae5b",
+      "semantic_id": "b3:f30e26140e01e3e7",
+      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
+      "dependency_identity_status": "source-scanner-token-set",
+      "tool_version": "0.1.0",
       "status": "match",
       "review": "json-script-example",
       "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
@@ -61,8 +71,13 @@ $ cargo octet fingerprint --check --output-format=json reviewed.rs
     {
       "path": "reviewed.rs",
       "name": "capped_retries",
-      "stored_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "computed_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
+      "stored_hash": "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
+      "computed_hash": "ea3ca43821de8c24558ea6c5d43beae6c6731f49e62ebc6b2675f96e4c2019f7",
+      "normalized_body_hash": "b3:9d7d00e696aa416d3628b520808a46eb1f80ab853402d54088e959db416a08a8",
+      "semantic_id": "b3:28a4d594d2760515",
+      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
+      "dependency_identity_status": "source-scanner-token-set",
+      "tool_version": "0.1.0",
       "status": "mismatch",
       "review": "json-script-example",
       "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
@@ -85,8 +100,13 @@ $ cargo octet fingerprint --update --output-format=json reviewed.rs
     {
       "path": "reviewed.rs",
       "name": "capped_retries",
-      "stored_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "computed_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
+      "stored_hash": "6b4c3f4e650e7cbc286f37ba67d94bc3bc4676b06ac870d7f157ebec09215a0c",
+      "computed_hash": "ea3ca43821de8c24558ea6c5d43beae6c6731f49e62ebc6b2675f96e4c2019f7",
+      "normalized_body_hash": "b3:9d7d00e696aa416d3628b520808a46eb1f80ab853402d54088e959db416a08a8",
+      "semantic_id": "b3:28a4d594d2760515",
+      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
+      "dependency_identity_status": "source-scanner-token-set",
+      "tool_version": "0.1.0",
       "status": "written",
       "review": "json-script-example",
       "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
@@ -109,8 +129,13 @@ $ cargo octet fingerprint --check --output-format=json reviewed.rs
     {
       "path": "reviewed.rs",
       "name": "capped_retries",
-      "stored_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "computed_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
+      "stored_hash": "ea3ca43821de8c24558ea6c5d43beae6c6731f49e62ebc6b2675f96e4c2019f7",
+      "computed_hash": "ea3ca43821de8c24558ea6c5d43beae6c6731f49e62ebc6b2675f96e4c2019f7",
+      "normalized_body_hash": "b3:9d7d00e696aa416d3628b520808a46eb1f80ab853402d54088e959db416a08a8",
+      "semantic_id": "b3:28a4d594d2760515",
+      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
+      "dependency_identity_status": "source-scanner-token-set",
+      "tool_version": "0.1.0",
       "status": "match",
       "review": "json-script-example",
       "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
@@ -120,167 +145,4 @@ $ cargo octet fingerprint --check --output-format=json reviewed.rs
   ]
 }
 # exit status: 0
-```
-## Regenerated output compatibility
-
-### Output 1
-
-```text
-{
-  "schema_version": 1,
-  "mode": "update",
-  "records": [
-    {
-      "path": "reviewed.rs",
-      "name": "capped_retries",
-      "stored_hash": "0",
-      "computed_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "normalized_body_hash": "b3:d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "semantic_id": "b3:0b0e5d9093b4693c",
-      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
-      "dependency_identity_status": "source-scanner-token-set",
-      "tool_version": "0.1.0",
-      "status": "written",
-      "review": "json-script-example",
-      "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
-      "macro_calls": false,
-      "macro_warning": false
-    }
-  ]
-}
-```
-
-### Output 2
-
-```text
-{
-  "schema_version": 1,
-  "mode": "check",
-  "records": [
-    {
-      "path": "reviewed.rs",
-      "name": "capped_retries",
-      "stored_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "computed_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "normalized_body_hash": "b3:d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "semantic_id": "b3:0b0e5d9093b4693c",
-      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
-      "dependency_identity_status": "source-scanner-token-set",
-      "tool_version": "0.1.0",
-      "status": "match",
-      "review": "json-script-example",
-      "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
-      "macro_calls": false,
-      "macro_warning": false
-    }
-  ]
-}
-```
-
-### Output 3
-
-```text
-{
-  "schema_version": 1,
-  "mode": "check",
-  "records": [
-    {
-      "path": "reviewed.rs",
-      "name": "capped_retries",
-      "stored_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "computed_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "normalized_body_hash": "b3:9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "semantic_id": "b3:2c3127b904340cf3",
-      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
-      "dependency_identity_status": "source-scanner-token-set",
-      "tool_version": "0.1.0",
-      "status": "mismatch",
-      "review": "json-script-example",
-      "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
-      "macro_calls": false,
-      "macro_warning": false
-    }
-  ]
-}
-```
-
-### Output 4
-
-```text
-{
-  "schema_version": 1,
-  "mode": "update",
-  "records": [
-    {
-      "path": "reviewed.rs",
-      "name": "capped_retries",
-      "stored_hash": "d849f27312de653868c870135a9c9ef4c006512d325cfb3e5c726f0492c4d03f",
-      "computed_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "normalized_body_hash": "b3:9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "semantic_id": "b3:2c3127b904340cf3",
-      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
-      "dependency_identity_status": "source-scanner-token-set",
-      "tool_version": "0.1.0",
-      "status": "written",
-      "review": "json-script-example",
-      "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
-      "macro_calls": false,
-      "macro_warning": false
-    }
-  ]
-}
-```
-
-### Output 5
-
-```text
-{
-  "schema_version": 1,
-  "mode": "check",
-  "records": [
-    {
-      "path": "reviewed.rs",
-      "name": "capped_retries",
-      "stored_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "computed_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "normalized_body_hash": "b3:9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "semantic_id": "b3:2c3127b904340cf3",
-      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
-      "dependency_identity_status": "source-scanner-token-set",
-      "tool_version": "0.1.0",
-      "status": "match",
-      "review": "json-script-example",
-      "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
-      "macro_calls": false,
-      "macro_warning": false
-    }
-  ]
-}
-```
-
-### Output 6
-
-```text
-{
-  "schema_version": 1,
-  "mode": "check",
-  "records": [
-    {
-      "path": "reviewed.rs",
-      "name": "capped_retries",
-      "stored_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "computed_hash": "9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "normalized_body_hash": "b3:9edc0f2555bf5f15be3d7b09806228695671427c8f8720f466af4280b4bd1130",
-      "semantic_id": "b3:2c3127b904340cf3",
-      "dependency_set_hash": "b3:61992fe00fd340488786403ac289d8dbc3c6237a469b9c0352a02dee91e7073a",
-      "dependency_identity_status": "source-scanner-token-set",
-      "tool_version": "0.1.0",
-      "status": "match",
-      "review": "json-script-example",
-      "evidence": "docs/examples/function-fingerprint-json-output/transcript.md",
-      "macro_calls": false,
-      "macro_warning": false
-    }
-  ]
-}
 ```

@@ -32,9 +32,18 @@ cargo_check_args = ["--lib"]
 
 Use the published flake app or helper instead of copying bash glue:
 
-- `nix run path:/path/to/octet#cargo-octet -- check`
+- supported public channel (pinned cohort `octet-public-b9b4b404-2026-11-11`):
+
+  ```bash
+  nix run github:OnixResearch/octet-public/b9b4b4044142820a07dc00332c36e07d1e1c4711#cargo-octet -- check
+  ```
+
+- local development checkout: `nix run path:/path/to/octet#cargo-octet -- check`
 - consumer flake checks should call the same `cargo-octet` engine through
   `lib.mkConsumerCheck`
+
+Pin the full public revision, not `main`. The reviewed public cohort ships
+77 Dylint lints and is checked against the public source inventory.
 
 Repo-local helpers like `just octet` should stay thin and delegate to the
 same command surface rather than reimplementing toolchain, lockfile, or Dylint
@@ -107,6 +116,15 @@ Why this works:
 - false-positive and shell-boundary patterns get written down before rollout
 - promotion decisions stay tied to measured baselines
 
+`raw_bool_parameter` is different from the generic debt-based rollout above:
+inventory direct bool parameters in the declared owned API scope, migrate
+callers to reviewed domain types, and use only a source-local owned
+compatibility expectation for an unavoidable external contract. Do not count
+a finding baseline, warning budget, broad disable, or warning-only run as
+clean strict activation. The separate `boolean-api-modeling` Clippy profile
+co-reports excessive bool parameters without replacing Octet's public
+single-boolean check; see [`boolean-api-modeling.md`](boolean-api-modeling.md).
+
 ## Profile-to-config mapping
 
 All three rollout profiles now use the same first-class engine path and differ
@@ -119,9 +137,12 @@ in two knobs:
 Per-lint config rules to preserve in every consumer example:
 
 - omitted `disabled_lints` / `lint_levels` default to empty collections
-- unknown lint names and invalid level values warn and are ignored
+- unknown config keys (such as a misspelled `[octet.lint-levels]` table),
+  unknown lint names, and invalid level values warn and are ignored
 - `disabled_lints` wins over `lint_levels` and source-level lint attrs because
   disabled lints are not registered
+- explicit command-line levels such as `-D numeric_units` in
+  `DYLINT_RUSTFLAGS` win over `lint_levels`
 
 Nominal domains use one additional staged control:
 
@@ -131,9 +152,15 @@ nominal_domain_mode = "inventory"
 ```
 
 Use `inventory` to review exact findings and suffix candidates without a hard
-failure. Use `warn` for exact findings only. Use `deny` only after saved
-positive, negative, compatibility, bypass, compile-fail, and pilot evidence is
-accepted. Suffix candidates never enter warning or deny mode.
+failure; it caps `[octet.lint_levels]` denies for `primitive_domain_alias`,
+`raw_domain_value`, and `newtype_invariant_bypass` at `warn` and reports a
+config warning when it lowers one. Use `warn` for exact findings only. Use
+`deny` only after saved positive, negative, compatibility, bypass,
+compile-fail, and pilot evidence is accepted. Suffix candidates never enter
+warning or deny mode, and they never fail a build: when the effective
+`primitive_domain_alias` level is above `warn` (for example the deny-all
+hook's `-D primitive_domain_alias` in inventory mode), candidates are skipped
+while exact findings keep that level.
 
 ### breaking-change: migrate `todo!()` escapes from `no_panic` to `no_todo`
 
@@ -162,6 +189,13 @@ production crates.
 disabled_lints = [
   "function_length",
   "acronym_style",
+  "magic_number",
+  "excessive_file_length",
+  "module_file_count",
+  "underscore_in_module_filename",
+  "non_trait_imports",
+  "renamed_imports",
+  "path_segment_repetition",
   "numeric_units",
   "unbounded_loop",
   "compound_condition",
@@ -178,6 +212,7 @@ disabled_lints = [
   "pure_attr_contract",
   "resource_return_from_core",
   "spawn_in_core",
+  "zero_alloc_attr_contract",
   "unjustified_allow",
   "nested_conditionals",
   "assertion_density",
@@ -186,6 +221,10 @@ disabled_lints = [
   "unbounded_collection_growth",
   "sentinel_fallback",
   "too_many_parameters",
+  "fat_trait",
+  "concrete_construction_in_core",
+  "drop_must_use",
+  "fallible_int_fallback",
   "bool_naming",
   "ignored_result",
   "unchecked_narrowing",
@@ -205,12 +244,15 @@ disabled_lints = [
   "no_todo",
   "unjustified_no_todo_allow",
   "no_recursion",
+  "state_machine_exhaustiveness",
 ]
 ```
 
 That leaves `ambient_clock`, `compound_assertion`, `contradictory_time`,
 `explicit_defaults`, `unbounded_channel`, `usize_in_public_api`, and
-`negated_predicate` enabled.
+`negated_predicate` enabled. Allow-by-default lints stay off unless
+`lint_levels` raises them, so a new warn-by-default lint must join this list to
+keep the enabled set unchanged.
 
 For the Aspen-backed classification table and promotion evidence, see
 `downstream-rollout-evidence.md`.
@@ -219,13 +261,21 @@ For the Aspen-backed classification table and promotion evidence, see
 
 Inventory-only means one deferred lint family at a time, one scope slice at a
 time. Example: inventory only `no_unwrap` while keeping every other lint out of
-that run.
+that run. The list names every other lint whose default level is `warn` or
+`deny`; allow-by-default lints stay off unless `lint_levels` raises them.
 
 ```toml
 [octet]
 disabled_lints = [
   "compound_assertion",
   "function_length",
+  "magic_number",
+  "excessive_file_length",
+  "module_file_count",
+  "underscore_in_module_filename",
+  "non_trait_imports",
+  "renamed_imports",
+  "path_segment_repetition",
   "acronym_style",
   "numeric_units",
   "unbounded_loop",
@@ -243,6 +293,7 @@ disabled_lints = [
   "pure_attr_contract",
   "resource_return_from_core",
   "spawn_in_core",
+  "zero_alloc_attr_contract",
   "unjustified_allow",
   "nested_conditionals",
   "assertion_density",
@@ -254,6 +305,10 @@ disabled_lints = [
   "sentinel_fallback",
   "usize_in_public_api",
   "too_many_parameters",
+  "fat_trait",
+  "concrete_construction_in_core",
+  "drop_must_use",
+  "fallible_int_fallback",
   "negated_predicate",
   "bool_naming",
   "ignored_result",
@@ -275,6 +330,7 @@ disabled_lints = [
   "no_todo",
   "unjustified_no_todo_allow",
   "no_recursion",
+  "state_machine_exhaustiveness",
 ]
 
 [octet.lint_levels]
@@ -337,7 +393,8 @@ The template separates four things that should stay consumer-owned:
 Rules for the per-lint controls:
 
 - omitted `disabled_lints` and `lint_levels` default to empty collections
-- unknown lint names and invalid level values warn and are ignored
+- unknown config keys, unknown lint names, and invalid level values warn and
+  are ignored
 - `disabled_lints` and `[octet.lint_levels]` keep bare lint-name keys such
   as `no_unwrap`; source attrs and group attrs use current live tool names such as
   `tigerstyle::no_unwrap` and `tigerstyle::safety`
@@ -445,10 +502,12 @@ Octet self-dogfood run saved at
 | `raw_arithmetic_overflow` | 27 | 27 | 0 | 27 | blocked |
 | `ambiguous_params` | 1 | 1 | 0 | 1 | deferred |
 | `multi_lock_ordering` | 0 | 0 | 0 | 0 | deferred pending downstream sample |
-| `ignored_join_handle` | 0 | 0 | 0 | 0 | deferred pending downstream sample |
 | `allocation_in_loop` | 0 | 0 | 0 | 0 | deferred pending hot-path sample |
 | `defaulting_trait_method` | 0 | 0 | 0 | 0 | deferred pending downstream sample |
 | `numeric_units` | 2 | 2 | 0 | 2 | deferred |
+
+`ignored_join_handle` is not a promotion candidate: it already defaults to
+`warn`.
 
 Because none are `ready`, this playbook does not change default levels,
 `templates/dylint.toml`, or copied starter profiles for those lints.

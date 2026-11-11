@@ -33,8 +33,9 @@ Each policy row declares these items:
 - the wrapper and constructor contract
 
 `primitive_domain_alias` finds raw type aliases. `raw_domain_value` checks
-registered fields and API values. `newtype_invariant_bypass` checks refined
-wrapper escape paths.
+registered fields and API values, looking through references, `Vec`, `Option`,
+and `Result`, and treating `BTreeMap`, `HashMap`, and `IndexMap` keys as map
+keys. `newtype_invariant_bypass` checks refined wrapper escape paths.
 
 Use this boundary flow:
 

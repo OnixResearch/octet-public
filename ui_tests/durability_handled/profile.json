@@ -1,0 +1,27 @@
+{
+  "schema_version": "octet-durability-claims-profile/v1",
+  "profile_id": "durability-handled",
+  "boundaries": [
+    {
+      "boundary_id": "durability-handled",
+      "source_scope": "ui_tests/durability_handled",
+      "boundary_functions": [
+        "persist",
+        "persist_with_quarantine",
+        "persist_commit"
+      ],
+      "required_observation": "synchronization",
+      "uncertain_outcome_types": [
+        "PersistOutcome",
+        "StoreError"
+      ],
+      "commit_surfaces": [
+        "WriteTransaction::commit"
+      ],
+      "adapter_observations": []
+    }
+  ],
+  "non_claims": [
+    "This fixture profile declares one analyzed boundary only."
+  ]
+}

@@ -1,30 +1,45 @@
 {
-  "cairn_commit": "6b7e19531554714b6760e8cacc2a980e576d36af",
-  "convergence_remotes": [],
+  "schema": "octet.cairn-cob-conflict-transport.v1",
+  "commands": [
+    "git fetch --no-tags <creator-store> +refs/heads/main:refs/heads/main +<creator-ref>:<creator-ref>",
+    "git fetch --no-tags <delegate-store> +<delegate-ref>:<delegate-ref>",
+    "git fetch --no-tags octet-cob-conflict.bundle +refs/heads/main:refs/heads/main +refs/namespaces/*:refs/namespaces/*"
+  ],
+  "backend": "radicle-cob.v1",
+  "change": "exercise-cairn-cob-conflict-recovery",
+  "cairn_commit": "70db8fe114910feb5d162fea5db8ad4ffdb6f176",
+  "octet_base_git_oid": "22722030cd734900c565840997a62b36055aa85d",
+  "object_id": "0702d3bd89a7be698cd24ec343323d7786a99d6d",
   "creator": {
-    "actor": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
-    "ref_name": "refs/namespaces/z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5/refs/cobs/xyz.onixresearch.cairn-change/030a0e27d379e6e5ff67f6eac940e2369a8169b1",
-    "resolved_target": "61922203bead59f454200971ffcd9e016f84840e"
+    "actor": "z6MkrYePae54PSMayuv3YJJcPV65GE6Mhvuq2537cmJybFCW",
+    "ref_name": "refs/namespaces/z6MkrYePae54PSMayuv3YJJcPV65GE6Mhvuq2537cmJybFCW/refs/cobs/xyz.onixresearch.cairn-change/0702d3bd89a7be698cd24ec343323d7786a99d6d",
+    "conflict_target": "2ba95e8204bd05dd566d93f7f5f9ac68f7126904",
+    "resolved_target": "3669f3e1001bba8878d9ad4bcaf874d21207703b"
   },
   "delegate": {
-    "actor": "z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU",
-    "ref_name": "refs/namespaces/z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU/refs/cobs/xyz.onixresearch.cairn-change/030a0e27d379e6e5ff67f6eac940e2369a8169b1",
-    "resolved_target": "91ad968acd64ce5d4d26439e9ba72261c96e2653"
+    "actor": "z6Mkgvh5Qq4bjh8BZUDwPB9ZPNoQvHGMu1wvPX2KRyPNUDtq",
+    "ref_name": "refs/namespaces/z6Mkgvh5Qq4bjh8BZUDwPB9ZPNoQvHGMu1wvPX2KRyPNUDtq/refs/cobs/xyz.onixresearch.cairn-change/0702d3bd89a7be698cd24ec343323d7786a99d6d",
+    "conflict_target": "e73bf24a150c12c5cbeda410c40d113d002ef259",
+    "resolved_target": "e73bf24a150c12c5cbeda410c40d113d002ef259"
   },
-  "non_claims": [
-    "shell-measured Git observations, not a Cairn-emitted receipt or Radicle runtime observation",
-    "local Git bundle transport and reload observations do not prove semantic merge correctness, synchronization, distributed convergence, durability, or release eligibility"
-  ],
-  "object_id": "030a0e27d379e6e5ff67f6eac940e2369a8169b1",
-  "reload_remotes": [],
   "resolution": {
+    "operation_id": "3669f3e1001bba8878d9ad4bcaf874d21207703b",
     "direct_parents": [
-      "91ad968acd64ce5d4d26439e9ba72261c96e2653",
-      "bdac0c8ff7cc99c781d382d43e69b9a8e10dc1fe"
+      "2ba95e8204bd05dd566d93f7f5f9ac68f7126904",
+      "e73bf24a150c12c5cbeda410c40d113d002ef259"
     ],
+    "selected_revision": "2ba95e8204bd05dd566d93f7f5f9ac68f7126904",
     "losing_revision_reachable": true
   },
   "source_remotes": [],
-  "synthetic_base_git_oid": "b91fdcff9139492e55a7e64a142de6d0684ddb03",
-  "valid": true
+  "convergence_remotes": [],
+  "reload_remotes": [],
+  "valid": true,
+  "verdict": "PASS",
+  "non_claims": [
+    "matching local Git refs and ancestry prove bounded local transport observations only",
+    "local path and bundle transport do not prove authentication, remote authorization, publication, availability, durability, synchronization, distributed convergence, or remote trust",
+    "explicit head selection and complete ancestry do not prove semantic merge correctness or that the losing revision is invalid",
+    "matching lifecycle bytes do not prove gate validity, evidence truth, source correctness, whole-program correctness, or release eligibility"
+  ]
 }

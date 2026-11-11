@@ -1,4 +1,8 @@
-use super::*;
+use super::Comparison;
+use super::MetricComparison;
+use super::MetricCount;
+use super::NativeReport;
+use super::Profile;
 
 const BASIS_POINTS_SCALE: u128 = 10_000;
 const COMPARISON_DIAGNOSTIC_CAPACITY: usize = 16;

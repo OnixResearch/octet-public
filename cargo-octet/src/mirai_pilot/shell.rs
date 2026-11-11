@@ -15,6 +15,11 @@ pub struct ProviderPlan {
     pub max_log_bytes: u64,
 }
 
+/// Builds the reviewed provider plan for a validated MIRAI pilot profile.
+///
+/// # Errors
+///
+/// Returns an error when the profile fails preflight policy validation.
 pub fn reviewed_plan(profile: &PilotProfile) -> Result<ProviderPlan, String> {
     let diagnostics = super::policy::validate(profile);
     if !diagnostics.is_empty() {
@@ -30,12 +35,18 @@ pub fn reviewed_plan(profile: &PilotProfile) -> Result<ProviderPlan, String> {
     })
 }
 
+/// Refuses to execute the MIRAI provider until it has a stable output contract.
+///
+/// # Errors
+///
+/// Always returns the pinned blocker before any process is spawned.
 pub fn execute(_plan: &ProviderPlan) -> Result<(), String> {
     Err(format!(
         "MIRAI pilot execution blocked before spawn: {EXPECTED_BLOCKER}; no stable machine-readable output contract"
     ))
 }
 
+#[must_use]
 pub fn verify_corpus(workspace: &Path, profile: &PilotProfile) -> Vec<String> {
     let root = match SourceRoot::open_existing(workspace) {
         Ok(root) => root,

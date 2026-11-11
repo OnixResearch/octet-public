@@ -1,0 +1,125 @@
+{
+  "schema_version": "octet-vermilion-negative-matrix/v1",
+  "cases": [
+    {
+      "case_id": "source-substitution",
+      "mutation": "replace-source",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "source_substitution"
+    },
+    {
+      "case_id": "spec-substitution",
+      "mutation": "replace-spec-revision",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "spec_substitution"
+    },
+    {
+      "case_id": "weakened-precondition",
+      "mutation": "weaken-precondition",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "weakened_precondition"
+    },
+    {
+      "case_id": "changed-overflow-semantics",
+      "mutation": "wrapping-overflow",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "changed_overflow_semantics"
+    },
+    {
+      "case_id": "nat-u64-confusion",
+      "mutation": "nat-width",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "nat_u64_confusion"
+    },
+    {
+      "case_id": "wrong-provider",
+      "mutation": "aeneas-provider",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "wrong_provider"
+    },
+    {
+      "case_id": "stale-generated-output",
+      "mutation": "stale-artifact",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "stale_generated_output"
+    },
+    {
+      "case_id": "stale-proof-twin",
+      "mutation": "stale-twin",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "stale_proof_twin"
+    },
+    {
+      "case_id": "missing-obligation",
+      "mutation": "remove-obligation",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "missing_obligation"
+    },
+    {
+      "case_id": "unexpected-obligation",
+      "mutation": "add-obligation",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "unexpected_obligation"
+    },
+    {
+      "case_id": "unexpected-axiom",
+      "mutation": "add-axiom",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "unexpected_axiom"
+    },
+    {
+      "case_id": "unresolved-proof-hole",
+      "mutation": "sorry-assumption",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "unresolved_proof_hole"
+    },
+    {
+      "case_id": "interrupted-checking",
+      "mutation": "interrupt-checker",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "interrupted_checking"
+    },
+    {
+      "case_id": "empty-checker-output",
+      "mutation": "empty-output",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "empty_output"
+    },
+    {
+      "case_id": "missing-checker",
+      "mutation": "unavailable-checker",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "missing_checker"
+    },
+    {
+      "case_id": "missing-dependency-audit",
+      "mutation": "stale-lake-manifest",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "missing_dependency_audit"
+    },
+    {
+      "case_id": "receipt-tamper",
+      "mutation": "tamper-receipt",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "receipt_tamper"
+    },
+    {
+      "case_id": "non-claim-drift",
+      "mutation": "drop-non-claim",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "non_claim_drift"
+    },
+    {
+      "case_id": "evidence-overclaim",
+      "mutation": "synthetic-property",
+      "expected_outcome": "failed",
+      "expected_diagnostic": "evidence_overclaim"
+    },
+    {
+      "case_id": "toolchain-absent",
+      "mutation": "toolchain-unavailable",
+      "expected_outcome": "blocked",
+      "expected_diagnostic": "missing_checker"
+    }
+  ]
+}

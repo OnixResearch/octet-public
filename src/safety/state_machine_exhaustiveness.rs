@@ -15,6 +15,7 @@ use rustc_session::impl_lint_pass;
 use rustc_span::Span;
 
 use crate::diagnostics::emit_tiger_style_lint;
+use crate::markers::attrs_carry_marker;
 
 const LINT_NAME: &str = "state_machine_exhaustiveness";
 const UNSUPPORTED_SHAPE: &str = "unsupported-state-machine-shape";
@@ -23,14 +24,11 @@ const HIDDEN_INVALID_TRANSITION: &str = "hidden-invalid-transition";
 const MISSING_ENUM_MARKER: &str = "missing-fsm-enum-marker";
 const MUTATION_COUPLED_TRANSITION: &str = "mutation-coupled-transition";
 
-const INVALID_TRANSITION_TOKENS: &[&str] = &["Err(", "Invalid", "invalid", "None"];
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct TransitionArmFact {
     pub state_variants: Vec<String>,
     pub event_variants: Vec<String>,
     pub uses_wildcard: bool,
-    pub explicit_invalid: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -297,12 +295,10 @@ fn transition_arm_fact(
     event_variants: &[String],
 ) -> TransitionArmFact {
     let pattern = snippet(cx, arm.pat.span);
-    let body = snippet(cx, arm.body.span);
     TransitionArmFact {
         state_variants: mentioned_variants(&pattern, state_variants),
         event_variants: mentioned_variants(&pattern, event_variants),
-        uses_wildcard: pattern_uses_wildcard(arm, &pattern),
-        explicit_invalid: INVALID_TRANSITION_TOKENS.iter().any(|token| body.contains(token)),
+        uses_wildcard: pattern_uses_wildcard(arm.pat),
     }
 }
 
@@ -315,8 +311,26 @@ fn pattern_mentions_variant(pattern: &str, variant: &str) -> bool {
         || pattern.split(|ch: char| !ch.is_alphanumeric() && ch != '_').any(|token| token == variant)
 }
 
-fn pattern_uses_wildcard(arm: &hir::Arm<'_>, pattern: &str) -> bool {
-    matches!(arm.pat.kind, PatKind::Wild) || pattern.contains('_') || pattern.contains("..")
+/// Reports whether the arm, or its state/event tuple position, matches without naming a variant:
+/// `_`, a bare binding, or a `..` rest in the tuple. Variant payloads such as
+/// `State::Running { retry_count, .. }` or `Event::Reset(_)` stay explicit arms.
+fn pattern_uses_wildcard(pat: &hir::Pat<'_>) -> bool {
+    let mut pending = vec![pat];
+    while let Some(pat) = pending.pop() {
+        match pat.kind {
+            PatKind::Wild | PatKind::Binding(_, _, _, None) => return true,
+            PatKind::Tuple(positions, rest) => {
+                if rest.as_opt_usize().is_some() {
+                    return true;
+                }
+                pending.extend(positions);
+            }
+            PatKind::Or(alternatives) => pending.extend(alternatives),
+            PatKind::Binding(_, _, _, Some(inner)) | PatKind::Guard(inner, _) => pending.push(inner),
+            _ => {}
+        }
+    }
+    false
 }
 
 fn snippet(cx: &LateContext<'_>, span: Span) -> String {
@@ -331,20 +345,11 @@ fn enum_has_marker(cx: &LateContext<'_>, adt: rustc_middle::ty::AdtDef<'_>, mark
 }
 
 fn has_marker(cx: &LateContext<'_>, def_id: hir::def_id::LocalDefId, marker: &str) -> bool {
-    let hir_id = cx.tcx.local_def_id_to_hir_id(def_id);
-    let marker_tail = marker.rsplit("::").next().unwrap_or(marker);
-    cx.tcx.hir_attrs(hir_id).iter().any(|attr| {
-        let rendered = format!("{attr:?}");
-        rendered.contains(marker) || rendered.contains(marker_tail)
-    })
+    attrs_carry_marker(cx.tcx.hir_attrs(cx.tcx.local_def_id_to_hir_id(def_id)), marker)
 }
 
-fn span_path(cx: &LateContext<'_>, span: Span) -> String {
-    format!("{:?}", cx.sess().source_map().lookup_char_pos(span.lo()).file.name)
-}
-
-fn span_matches_any_scope(path: &str, scopes: &[String]) -> bool {
-    scopes.iter().any(|scope| !scope.is_empty() && path.contains(scope))
+fn span_matches_any_scope(cx: &LateContext<'_>, span: Span, scopes: &[String]) -> bool {
+    crate::source::span_in_scopes(cx.sess(), span, scopes)
 }
 
 fn function_name(kind: FnKind<'_>, def_id: hir::def_id::LocalDefId, cx: &LateContext<'_>) -> String {
@@ -389,13 +394,12 @@ impl<'tcx> LateLintPass<'tcx> for StateMachineExhaustiveness {
         span: Span,
         def_id: hir::def_id::LocalDefId,
     ) {
-        let function_path = span_path(cx, span);
-        if span_matches_any_scope(&function_path, &self.generated_adapter_scopes) {
+        if span_matches_any_scope(cx, span, &self.generated_adapter_scopes) {
             return;
         }
 
         let marker_selected = has_marker(cx, def_id, &self.core_marker);
-        let scope_selected = span_matches_any_scope(&function_path, &self.core_scopes);
+        let scope_selected = span_matches_any_scope(cx, span, &self.core_scopes);
         if !marker_selected && !scope_selected {
             return;
         }
@@ -485,7 +489,6 @@ mod tests {
             state_variants: state_variants.iter().map(|variant| (*variant).to_owned()).collect(),
             event_variants: event_variants.iter().map(|variant| (*variant).to_owned()).collect(),
             uses_wildcard,
-            explicit_invalid: false,
         }
     }
 

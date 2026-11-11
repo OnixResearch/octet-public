@@ -1,0 +1,9 @@
+[package]
+name = "core-scope-resolution-custom-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "core_scope_resolution_custom.rs"
+
+[workspace]

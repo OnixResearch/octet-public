@@ -1,0 +1,18 @@
+warning: direct system clock read in production code
+  --> $DIR/ambient_clock_cfg_not.rs:4:9
+   |
+LL |         std::time::Instant::now()
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): pass time into core logic or isolate clock reads in a shell-boundary helper with a narrow allow reason Example: #[allow(tigerstyle::ambient_clock, reason = "shell boundary clock read")] fn read_now() -> Instant { Instant::now() }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::ambient_clock)]` on by default
+help: inject time as a parameter instead of reading the system clock
+   |
+LL -         std::time::Instant::now()
+LL +         /* inject time parameter */
+   |
+
+warning: 1 warning emitted
+

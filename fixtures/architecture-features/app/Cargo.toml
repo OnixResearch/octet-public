@@ -1,0 +1,19 @@
+[package]
+name = "feature-app"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[features]
+default = ["base"]
+base = []
+extra = ["dep:feature-optional", "feature-optional/leaf"]
+
+[dependencies]
+feature-helper = { path = "../helper" }
+feature-optional = { path = "../optional", optional = true }
+
+[[bin]]
+name = "feature-app"
+path = "src/main.rs"
+required-features = ["extra"]

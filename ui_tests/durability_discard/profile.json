@@ -1,0 +1,28 @@
+{
+  "schema_version": "octet-durability-claims-profile/v1",
+  "profile_id": "durability-discard",
+  "boundaries": [
+    {
+      "boundary_id": "durability-discard",
+      "source_scope": "ui_tests/durability_discard",
+      "boundary_functions": [
+        "persist_direct",
+        "persist_ignored",
+        "persist_empty_error",
+        "persist_missing_uncertainty",
+        "persist_commit_ignored"
+      ],
+      "required_observation": "synchronization",
+      "uncertain_outcome_types": [
+        "StoreError"
+      ],
+      "commit_surfaces": [
+        "WriteTransaction::commit"
+      ],
+      "adapter_observations": []
+    }
+  ],
+  "non_claims": [
+    "This fixture profile declares one analyzed boundary only."
+  ]
+}

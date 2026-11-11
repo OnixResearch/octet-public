@@ -1,0 +1,21 @@
+{
+  "command": "valence stack-provenance verify",
+  "valid": true,
+  "verdict": "pass",
+  "receipt_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "valence_policy_hash": "9999999999999999999999999999999999999999999999999999999999999999",
+  "mantle_linkage": {
+    "claim_scope": "stack_provenance.v1.lifecycle_policy_conformance",
+    "sidecar_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "binary_identity_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "artifacts": [
+    {
+      "path": "stack-provenance.sidecar.json",
+      "declared_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "observed_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
+  "verification_role_summary": {"property_count": 1, "verified_count": 1},
+  "non_claim_boundary": "Cairn consumed Valence and Mantle stack provenance receipts for lifecycle/release policy conformance only; it did not prove source-code correctness, Valence verifier soundness, Mantle build correctness, or Trellis/Octet proof validity"
+}

@@ -229,33 +229,32 @@ pub fn validate_finding_domain(finding: &impl FindingDomainView) -> Result<Valid
     let line = collect_result(&mut diagnostics, OneBasedPosition::new(LINE_FIELD, finding.line()));
     let column = collect_result(&mut diagnostics, OneBasedPosition::new(COLUMN_FIELD, finding.column()));
 
-    match (lint_name, group_name, stable_id, semantic_id, artifact_locator, severity, line, column) {
-        (
-            Some(lint_name),
-            Some(group_name),
-            Some(stable_id),
-            Some(semantic_id),
-            Some(artifact_locator),
-            Some(severity),
-            Some(line),
-            Some(column),
-        ) => Ok(ValidatedFindingDomain {
-            lint_name,
-            group_name,
-            stable_id,
-            semantic_id,
-            artifact_locator,
-            severity,
-            line,
-            column,
-            gate_state: severity.gate_state(),
-        }),
-        _ => {
-            diagnostics.sort();
-            diagnostics.dedup();
-            Err(diagnostics)
-        }
-    }
+    let (
+        Some(lint_name),
+        Some(group_name),
+        Some(stable_id),
+        Some(semantic_id),
+        Some(artifact_locator),
+        Some(severity),
+        Some(line),
+        Some(column),
+    ) = (lint_name, group_name, stable_id, semantic_id, artifact_locator, severity, line, column)
+    else {
+        diagnostics.sort();
+        diagnostics.dedup();
+        return Err(diagnostics);
+    };
+    Ok(ValidatedFindingDomain {
+        lint_name,
+        group_name,
+        stable_id,
+        semantic_id,
+        artifact_locator,
+        severity,
+        line,
+        column,
+        gate_state: severity.gate_state(),
+    })
 }
 
 fn collect_result<T>(diagnostics: &mut Vec<String>, result: Result<T, String>) -> Option<T> {

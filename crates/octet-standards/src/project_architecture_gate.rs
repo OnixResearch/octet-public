@@ -1,5 +1,6 @@
 //! Pure project architecture gate evaluation over supplied Cargo and compiler facts.
 
+mod production_view;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -15,6 +16,9 @@ use octet_architecture_ir::CoverageStatus;
 use octet_architecture_ir::SourceOrigin;
 use octet_architecture_ir::SourceSpan;
 use octet_architecture_ir::ValueProvenanceStatus;
+use production_view::GateIndexes;
+use production_view::ProductionGateInput;
+use production_view::ProductionView;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -31,16 +35,17 @@ use crate::project_architecture_policy::ProjectArchitecturePolicy;
 use crate::project_architecture_policy::validate_architecture_waiver_binding;
 
 /// Project architecture receipt schema emitted by this Octet release.
-pub const PROJECT_ARCHITECTURE_RECEIPT_SCHEMA_VERSION: &str = "octet-project-architecture-receipt/v1";
+pub const PROJECT_ARCHITECTURE_RECEIPT_SCHEMA_VERSION: &str = "octet-project-architecture-receipt/v3";
 /// Repository path for the generated project architecture receipt contract.
 pub const PROJECT_ARCHITECTURE_RECEIPT_CONTRACT_PATH: &str =
     "standards/project-architecture/contracts/project-architecture-receipt.generated.ncl";
 /// Cargo graph schema consumed by the project architecture gate.
 pub const PROJECT_ARCHITECTURE_CARGO_GRAPH_SCHEMA_VERSION: &str = "octet-project-architecture-cargo-graph/v1";
 
-const RECEIPT_ID_DOMAIN: &str = "octet.project-architecture-gate.receipt/v1";
+const RECEIPT_ID_DOMAIN: &str = "octet.project-architecture-gate.receipt/v2";
 const FINDING_ID_DOMAIN: &str = "octet.project-architecture-gate.finding/v1";
 const CARGO_GRAPH_ID_DOMAIN: &str = "octet.project-architecture-gate.cargo-graph/v1";
+const SCOPE_SOURCE_ID_DOMAIN: &str = "octet.project-architecture-gate.scope-source/v1";
 const EVIDENCE_TIER: &str = "policy-check";
 const CLAIM_ROLE_GRAPH: &str = "role-aware-dependency-graph";
 const CLAIM_CORE_PURITY: &str = "domain-core-purity";
@@ -56,14 +61,14 @@ const CLAIM_AUTHORIZATION_WITNESS: &str = "authorization-witness-opacity";
 const CLAIM_AUTHORIZATION_ORIGIN: &str = "authorization-witness-origin";
 const CLAIM_PROTECTED_EXECUTOR: &str = "protected-effect-executor";
 const CLAIM_EFFECT_RECEIPT: &str = "observed-effect-receipt";
+// Conversions are not listed: `witness-broad-conversion` admits only `From`/`Into`
+// whose type argument is a declared authorized output.
 const FORBIDDEN_WITNESS_TRAITS: &[&str] = &[
     "core::marker::Copy",
     "core::clone::Clone",
     "core::default::Default",
     "serde::de::Deserialize",
     "serde::Deserialize",
-    "core::convert::From",
-    "core::convert::Into",
 ];
 const NON_CLAIMS: &[&str] = &[
     "complete-fcis-proof",
@@ -72,6 +77,8 @@ const NON_CLAIMS: &[&str] = &[
     "runtime-determinism",
     "whole-program-correctness",
     "release-eligibility",
+    "test-only-evidence-is-not-production-proof",
+    "membership-consistency-is-not-authenticity",
     "signer-authenticity",
     "credential-validity",
     "revocation-freshness",
@@ -222,6 +229,11 @@ pub struct ProjectArchitectureGateInput<'a> {
     pub policy_source_blake3: &'a str,
     /// BLAKE3 identity of the exported policy bytes.
     pub policy_blake3: &'a str,
+    /// Waiver binding identity of the policy, from
+    /// [`crate::project_architecture_policy::architecture_waiver_policy_blake3`]. Compiler
+    /// evidence, policy-sourced findings, and waivers bind to it because it does not change
+    /// when only waivers change.
+    pub waiver_policy_blake3: &'a str,
     /// Separate lint phase status supplied by the runner.
     pub lint_phase_status: &'a str,
     /// BLAKE3 identity of the normalized command.
@@ -236,6 +248,19 @@ pub struct ProjectArchitectureGateInput<'a> {
     pub compiler_receipt: &'a CompilerArchitectureReceipt,
     /// Optional separate effect-closure result for admission mode.
     pub effect_closure: Option<&'a EffectClosureParent>,
+}
+
+/// Observations retained in the full IR but excluded from production obligations.
+/// Shared production observations are never listed as test-only.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TestOnlyDisposition {
+    /// All independently bound test units, including units with shared observations.
+    pub unit_ids: Vec<String>,
+    /// Facts observed only in those test units.
+    pub fact_ids: Vec<String>,
+    /// Unknowns observed only in those test units.
+    pub unknown_ids: Vec<String>,
 }
 
 /// Rust-owned architecture evaluation receipt.
@@ -260,6 +285,9 @@ pub struct ProjectArchitectureReceipt {
     pub policy_source_blake3: String,
     /// Exported policy identity.
     pub policy_blake3: String,
+    /// Waiver binding identity: the policy identity with `waivers` removed.
+    /// Waivers copy it into `policy_blake3`; policy-sourced findings use it as `source_blake3`.
+    pub waiver_policy_blake3: String,
     /// Separate lint phase status.
     pub lint_phase_status: String,
     /// Normalized command identity.
@@ -298,12 +326,21 @@ pub struct ProjectArchitectureReceipt {
     pub findings: Vec<ProjectArchitectureFinding>,
     /// Compiler unknown identities retained by the gate.
     pub unknown_ids: Vec<String>,
+    /// None only when input integrity prevents production projection.
+    #[serde(deserialize_with = "deserialize_test_only")]
+    pub test_only: Option<TestOnlyDisposition>,
     /// Applied waiver finding identities.
     pub applied_waiver_ids: Vec<String>,
     /// Separate effect-closure parent, when supplied.
     pub effect_closure: Option<EffectClosureParent>,
     /// Explicit architecture non-claims.
     pub non_claims: Vec<String>,
+}
+
+fn deserialize_test_only<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<TestOnlyDisposition>, D::Error> {
+    Option::<TestOnlyDisposition>::deserialize(deserializer)
 }
 
 /// Render the Nickel contract derived from the Rust receipt DTO.
@@ -356,6 +393,7 @@ let EffectClosureParent = {{
     checker_id | NonEmptyString,
     policy_source_blake3 | Blake3,
     policy_blake3 | Blake3,
+    waiver_policy_blake3 | Blake3,
     lint_phase_status | OneOf ["clean", "warning-only", "lint-failure", "integration-failure"],
     command_blake3 | Blake3,
     cargo_graph_id | Blake3,
@@ -375,6 +413,15 @@ let EffectClosureParent = {{
     authorized_effect_type_ids | Array Blake3,
     findings | Array Finding,
     unknown_ids | Array Blake3,
+    test_only | std.contract.from_predicate (fun value =>
+      value == null || (std.is_record value
+        && std.record.has_field "unit_ids" value
+        && std.record.has_field "fact_ids" value
+        && std.record.has_field "unknown_ids" value
+        && std.is_array value.unit_ids && std.array.all (fun id => std.is_string id && std.string.length id == 64) value.unit_ids
+        && std.is_array value.fact_ids && std.array.all (fun id => std.is_string id && std.string.length id == 64) value.fact_ids
+        && std.is_array value.unknown_ids && std.array.all (fun id => std.is_string id && std.string.length id == 64) value.unknown_ids)
+    ),
     applied_waiver_ids | Array Blake3,
     effect_closure | Dyn,
     non_claims | Array NonEmptyString,
@@ -418,20 +465,13 @@ pub fn architecture_cargo_graph_identity(graph: &ArchitectureCargoGraph) -> Stri
 #[must_use]
 #[allow(clippy::too_many_lines)]
 pub fn evaluate_project_architecture(input: &ProjectArchitectureGateInput<'_>) -> ProjectArchitectureReceipt {
-    let mut findings = evaluate_findings(input);
+    let (mut findings, test_only) = evaluate_findings(input);
     findings.sort();
     findings.dedup();
     apply_waivers(input, &mut findings);
     findings.sort();
 
-    let integration_failure = findings.iter().any(|finding| {
-        finding.severity == ArchitectureFindingSeverity::Integration
-            && finding.status == ArchitectureFindingStatus::Open
-    });
-    let open_policy_findings = findings.iter().any(|finding| {
-        finding.severity == ArchitectureFindingSeverity::Policy && finding.status == ArchitectureFindingStatus::Open
-    });
-    let status = classify_status(input.policy.mode, integration_failure, open_policy_findings, input.effect_closure);
+    let status = classify_status(input.policy.mode, &findings, input.effect_closure);
     let targets = sorted_dedup(input.architecture_ir.units.iter().map(|unit| unit.target_triple.clone()).collect());
     let feature_sets =
         sorted_dedup(input.architecture_ir.units.iter().map(|unit| sorted_dedup(unit.features.clone())).collect());
@@ -507,6 +547,7 @@ pub fn evaluate_project_architecture(input: &ProjectArchitectureGateInput<'_>) -
         checker_id: "octet-standards.project-architecture-gate".to_owned(),
         policy_source_blake3: input.policy_source_blake3.to_owned(),
         policy_blake3: input.policy_blake3.to_owned(),
+        waiver_policy_blake3: input.waiver_policy_blake3.to_owned(),
         lint_phase_status: input.lint_phase_status.to_owned(),
         command_blake3: input.command_blake3.to_owned(),
         cargo_graph_id: input.cargo_graph.cargo_graph_id.clone(),
@@ -526,6 +567,7 @@ pub fn evaluate_project_architecture(input: &ProjectArchitectureGateInput<'_>) -
         authorized_effect_type_ids,
         findings,
         unknown_ids,
+        test_only,
         applied_waiver_ids,
         effect_closure: input.effect_closure.cloned(),
         non_claims,
@@ -544,6 +586,7 @@ pub fn verify_project_architecture_receipt(receipt: &ProjectArchitectureReceipt)
     if receipt.receipt_id != receipt_identity(receipt) {
         diagnostics.push("project architecture receipt identity is stale or malformed".to_owned());
     }
+    verify_test_only_disposition(receipt, &mut diagnostics);
     for required in NON_CLAIMS {
         if !receipt.non_claims.iter().any(|claim| claim == required) {
             diagnostics.push(format!("project architecture receipt is missing non-claim `{required}`"));
@@ -563,7 +606,14 @@ pub fn verify_project_architecture_receipt(receipt: &ProjectArchitectureReceipt)
                     .push(format!("project architecture receipt is missing authorized-effect non-claim `{required}`"));
             }
         }
-        if receipt.authorized_effect_fact_ids.is_empty() || receipt.authorized_effect_type_ids.is_empty() {
+        // r[impl octet.project_architecture_gate.authority_scoped_receipt_ids]
+        // The producer selects these identities from protected protocols only.
+        if receipt
+            .outbound_effects
+            .iter()
+            .any(|effect| effect.authority == ArchitectureEffectAuthority::Protected)
+            && (receipt.authorized_effect_fact_ids.is_empty() || receipt.authorized_effect_type_ids.is_empty())
+        {
             diagnostics.push("project architecture receipt lacks authorized-effect fact or type identities".to_owned());
         }
     }
@@ -588,20 +638,72 @@ pub fn verify_project_architecture_receipt(receipt: &ProjectArchitectureReceipt)
     diagnostics
 }
 
-fn evaluate_findings(input: &ProjectArchitectureGateInput<'_>) -> Vec<ProjectArchitectureFinding> {
-    let mut findings = input_integrity_findings(input);
-    if findings.is_empty() {
-        let indexes = GateIndexes::new(input.architecture_ir);
-        evaluate_role_graph(input, &indexes, &mut findings);
-        evaluate_core_effects(input, &indexes, &mut findings);
-        evaluate_authorized_effects(input, &indexes, &mut findings);
-        evaluate_ports(input, &indexes, &mut findings);
-        evaluate_construction(input, &indexes, &mut findings);
-        evaluate_contract_types(input, &indexes, &mut findings);
-        evaluate_no_std(input, &indexes, &mut findings);
-        evaluate_unknowns(input, &indexes, &mut findings);
+fn verify_test_only_disposition(receipt: &ProjectArchitectureReceipt, diagnostics: &mut Vec<String>) {
+    let Some(test_only) = &receipt.test_only else {
+        if receipt.status != ArchitecturePhaseStatus::IntegrationFailure {
+            diagnostics.push("project architecture receipt lacks evaluated test-only disposition".to_owned());
+        }
+        return;
+    };
+    for ids in [&test_only.unit_ids, &test_only.fact_ids, &test_only.unknown_ids] {
+        if ids.windows(2).any(|pair| pair[0] >= pair[1])
+            || ids
+                .iter()
+                .any(|id| id.len() != 64 || !id.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')))
+        {
+            diagnostics.push("project architecture test-only identities are not canonical".to_owned());
+        }
     }
-    findings
+    if test_only.unit_ids.is_empty() && (!test_only.fact_ids.is_empty() || !test_only.unknown_ids.is_empty()) {
+        diagnostics.push("project architecture test-only subjects lack a test unit".to_owned());
+    }
+    if test_only.unknown_ids.iter().any(|id| !receipt.unknown_ids.contains(id)) {
+        diagnostics.push("project architecture test-only unknown is absent from full input identities".to_owned());
+    }
+    for finding in &receipt.findings {
+        if finding.unit_id.as_ref().is_some_and(|id| test_only.unit_ids.contains(id))
+            || finding
+                .fact_id
+                .as_ref()
+                .is_some_and(|id| test_only.fact_ids.contains(id) || test_only.unknown_ids.contains(id))
+        {
+            diagnostics.push("project architecture finding uses excluded test-only evidence".to_owned());
+        }
+    }
+}
+
+fn evaluate_findings(
+    input: &ProjectArchitectureGateInput<'_>,
+) -> (Vec<ProjectArchitectureFinding>, Option<TestOnlyDisposition>) {
+    let mut findings = input_integrity_findings(input);
+    if !findings.is_empty() {
+        return (findings, None);
+    }
+    let view = match ProductionView::new(input.architecture_ir, &input.policy.collection_limits) {
+        Ok(view) => view,
+        Err(errors) => {
+            for error in errors {
+                require_input(&mut findings, input.policy_blake3, false, "production-evidence-integrity", &error);
+            }
+            return (findings, None);
+        }
+    };
+    let production = ProductionGateInput {
+        policy: input.policy,
+        waiver_policy_blake3: input.waiver_policy_blake3,
+        cargo_graph: input.cargo_graph,
+        architecture_ir: &view,
+    };
+    let indexes = GateIndexes::new(&view);
+    evaluate_role_graph(&production, &indexes, &mut findings);
+    evaluate_core_effects(&production, &indexes, &mut findings);
+    evaluate_authorized_effects(&production, &indexes, &mut findings);
+    evaluate_ports(&production, &indexes, &mut findings);
+    evaluate_construction(&production, &indexes, &mut findings);
+    evaluate_contract_types(&production, &indexes, &mut findings);
+    evaluate_no_std(&production, &indexes, &mut findings);
+    evaluate_unknowns(&production, &indexes, &mut findings);
+    (findings, Some(view.disposition))
 }
 
 fn sorted_dedup<T: Ord>(mut values: Vec<T>) -> Vec<T> {
@@ -617,6 +719,13 @@ fn input_integrity_findings(input: &ProjectArchitectureGateInput<'_>) -> Vec<Pro
     validate_cargo_inputs(input, source_identity, &mut findings);
     validate_compiler_inputs(input, source_identity, &mut findings);
     validate_unit_inputs(input, source_identity, &mut findings);
+    for diagnostic in octet_architecture_ir::verify_ir_unit_bindings(input.architecture_ir) {
+        require_input(&mut findings, source_identity, false, "compiler-unit-binding", &diagnostic);
+    }
+    for diagnostic in octet_architecture_ir::verify_ir_unit_memberships(input.architecture_ir) {
+        require_input(&mut findings, source_identity, false, "compiler-unit-membership", &diagnostic);
+    }
+    validate_source_unit_roles(input, &mut findings);
     findings
 }
 
@@ -656,6 +765,8 @@ fn validate_cargo_inputs(
         "cargo-package-selection",
         "resolved Cargo graph package selection does not match production policy",
     );
+    // The graph and the runner's row selection both use sorted, deduplicated feature sets.
+    let selected_features = sorted_dedup(input.cargo_graph.features.iter().map(String::as_str).collect());
     let selected_targets = input
         .policy
         .production
@@ -663,7 +774,7 @@ fn validate_cargo_inputs(
         .iter()
         .filter(|target| {
             target.triple == input.cargo_graph.target_triple
-                && target.features == input.cargo_graph.features
+                && sorted_dedup(target.features.iter().map(String::as_str).collect()) == selected_features
                 && target.default_features == input.cargo_graph.default_features
         })
         .count();
@@ -681,7 +792,39 @@ fn validate_compiler_inputs(
     source_identity: &str,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
+    let unit_ids = sorted_dedup(input.architecture_ir.units.iter().map(|unit| unit.unit_id.clone()).collect());
     let checks = [
+        (
+            input.architecture_ir.schema_version == octet_architecture_ir::COMPILER_ARCHITECTURE_IR_SCHEMA_VERSION
+                && input.architecture_ir.architecture_ir_id
+                    == octet_architecture_ir::ir_identity(input.architecture_ir),
+            "compiler-ir-identity",
+            "compiler Architecture IR schema or identity is invalid",
+        ),
+        (
+            input.coverage.schema_version == octet_architecture_ir::COMPILER_ARCHITECTURE_COVERAGE_SCHEMA_VERSION
+                && input.coverage.coverage_id == octet_architecture_ir::coverage_identity(input.coverage),
+            "compiler-coverage-identity",
+            "compiler coverage schema or identity is invalid",
+        ),
+        (
+            input.coverage.expected_unit_ids == unit_ids
+                && input.coverage.observed_unit_ids == unit_ids
+                && input.coverage.missing_unit_ids.is_empty()
+                && input.coverage.unexpected_unit_ids.is_empty()
+                && input.coverage.duplicate_unit_ids.is_empty()
+                && input.coverage.invalid_shard_ids.is_empty(),
+            "compiler-unit-coverage",
+            "compiler coverage does not cover the complete IR unit set",
+        ),
+        (
+            input.compiler_receipt.schema_version
+                == octet_architecture_ir::COMPILER_ARCHITECTURE_RECEIPT_SCHEMA_VERSION
+                && input.compiler_receipt.receipt_id == octet_architecture_ir::receipt_identity(input.compiler_receipt)
+                && input.compiler_receipt.issue_ids.is_empty(),
+            "compiler-receipt-identity",
+            "compiler collection receipt schema, identity, or issues are invalid",
+        ),
         (
             !input.policy_source_blake3.trim().is_empty(),
             "policy-source-identity",
@@ -693,7 +836,7 @@ fn validate_compiler_inputs(
             "separate lint phase status is empty",
         ),
         (
-            input.architecture_ir.policy_blake3 == input.policy_blake3,
+            input.architecture_ir.policy_blake3 == input.waiver_policy_blake3,
             "policy-ir-mismatch",
             "Architecture IR policy identity does not match the activated policy",
         ),
@@ -708,7 +851,7 @@ fn validate_compiler_inputs(
             "compiler Architecture IR receipt is incomplete",
         ),
         (
-            input.compiler_receipt.policy_blake3 == input.policy_blake3,
+            input.compiler_receipt.policy_blake3 == input.waiver_policy_blake3,
             "compiler-policy-mismatch",
             "compiler receipt policy identity does not match the activated policy",
         ),
@@ -736,8 +879,13 @@ fn validate_unit_inputs(
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
     let expected_packages = input.policy.production.packages.iter().map(String::as_str).collect::<BTreeSet<_>>();
-    let unit_packages =
-        input.architecture_ir.units.iter().map(|unit| unit.package_name.as_str()).collect::<BTreeSet<_>>();
+    let unit_packages = input
+        .architecture_ir
+        .units
+        .iter()
+        .filter(|unit| unit.role != CompilerArchitectureRole::Test)
+        .map(|unit| unit.package_name.as_str())
+        .collect::<BTreeSet<_>>();
     require_input(
         findings,
         source_identity,
@@ -746,15 +894,93 @@ fn validate_unit_inputs(
         "compiler units do not exactly cover declared production packages",
     );
     let policy_roles = policy_package_roles(input.policy);
+    let source_roles = input
+        .policy
+        .roles
+        .iter()
+        .filter(|assignment| assignment.scope_kind == ArchitectureScopeKind::Source)
+        .map(|assignment| octet_architecture_ir::SourceRoleScope {
+            source_scope: assignment.scope.clone(),
+            role: compiler_role(assignment.role),
+        })
+        .collect::<Vec<_>>();
     for unit in &input.architecture_ir.units {
-        let role_matches = policy_roles.get(&unit.package_name).is_some_and(|role| compiler_role(*role) == unit.role);
+        let role_matches = policy_roles.get(&unit.package_name).is_some_and(|role| {
+            octet_architecture_ir::select_compilation_unit_role(
+                compiler_role(*role),
+                &unit.target_kind,
+                &unit.source_path,
+                &source_roles,
+            ) == Ok(unit.role)
+        });
         require_input(
             findings,
             source_identity,
             role_matches,
             "unit-role-mismatch",
-            &format!("compiler unit `{}` role does not match explicit package policy", unit.package_name),
+            &format!(
+                "compiler unit `{}/{}` role or source root does not match explicit policy",
+                unit.package_name, unit.target_name
+            ),
         );
+    }
+}
+
+/// Check every production observation before test-only evidence can be excluded.
+fn validate_source_unit_roles(
+    input: &ProjectArchitectureGateInput<'_>,
+    findings: &mut Vec<ProjectArchitectureFinding>,
+) {
+    let ir = input.architecture_ir;
+    let spans = ir.spans.iter().map(|span| (span.span_id.as_str(), span)).collect::<BTreeMap<_, _>>();
+    let facts = ir.facts.iter().map(|fact| (fact.fact_id(), fact)).collect::<BTreeMap<_, _>>();
+    let units = ir.units.iter().map(|unit| (unit.unit_id.as_str(), unit)).collect::<BTreeMap<_, _>>();
+    let roles = policy_package_roles(input.policy);
+    for row in &ir.unit_memberships {
+        let Some(unit) = units.get(row.unit_id.as_str()) else {
+            continue;
+        };
+        if unit.role == CompilerArchitectureRole::Test {
+            continue;
+        }
+        for id in &row.fact_ids {
+            let Some(CompilerArchitectureFact::Item {
+                span_id, origin_crate, ..
+            }) = facts.get(id.as_str())
+            else {
+                continue;
+            };
+            let Some(SourceSpan {
+                origin: SourceOrigin::Workspace { source_path },
+                ..
+            }) = spans.get(span_id.as_str()).copied()
+            else {
+                continue;
+            };
+            // A foreign declaration reference does not move its definition into the observing package.
+            let expected = if origin_crate == &unit.package_name {
+                Some(unit.role)
+            } else {
+                roles.get(origin_crate).map(|role| compiler_role(*role))
+            };
+            let assignments = input
+                .policy
+                .roles
+                .iter()
+                .filter(|assignment| {
+                    assignment.scope_kind == ArchitectureScopeKind::Source
+                        && path_in_scope(source_path, &assignment.scope)
+                })
+                .collect::<Vec<_>>();
+            require_input(
+                findings,
+                &unit.source_blake3,
+                !assignments.is_empty()
+                    && assignments.iter().all(|assignment| Some(compiler_role(assignment.role)) == expected),
+                "source-role-unit-mismatch",
+                &format!("source `{source_path}` conflicts with production observation `{}`", unit.unit_id),
+            );
+        }
     }
 }
 
@@ -781,7 +1007,7 @@ fn require_input(
 }
 
 fn evaluate_role_graph(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
@@ -795,7 +1021,7 @@ fn evaluate_role_graph(
             None,
             None,
             None,
-            input.policy_blake3,
+            input.waiver_policy_blake3,
             "production architecture has no explicit composition-root package",
         ));
     }
@@ -809,7 +1035,7 @@ fn evaluate_role_graph(
                 None,
                 None,
                 None,
-                input.policy_blake3,
+                input.waiver_policy_blake3,
                 &format!("Cargo graph caller `{}` has no production role", edge.caller_package),
             ));
             continue;
@@ -849,7 +1075,7 @@ fn evaluate_role_graph(
 }
 
 fn evaluate_core_effects(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
@@ -870,26 +1096,26 @@ fn evaluate_core_effects(
         else {
             continue;
         };
-        let Some(unit) = indexes.unit_for_fact(fact_id) else {
-            continue;
-        };
-        let source = indexes.source_path(span_id);
-        let policy_family = policy_capability(*capability_family);
-        if unit.role == CompilerArchitectureRole::DomainCore {
-            findings.push(finding_for_unit(
-                "domain-core-effect",
-                CLAIM_CORE_PURITY,
-                Some(unit),
-                Some(fact_id),
-                source,
-                &format!("domain-core compiler fact performs `{capability_family:?}` through `{primitive_definition}`"),
-            ));
-        } else if let Some(policy_family) = policy_family {
-            let executor_matches = classifications
-                .get(&policy_family)
-                .is_some_and(|classification| compiler_role(classification.executor_role) == unit.role);
-            if !executor_matches {
+        for unit in indexes.units_for_fact(fact_id) {
+            let source = indexes.source_path(span_id);
+            let policy_family = policy_capability(*capability_family);
+            if unit.role == CompilerArchitectureRole::DomainCore {
                 findings.push(finding_for_unit(
+                    "domain-core-effect",
+                    CLAIM_CORE_PURITY,
+                    Some(unit),
+                    Some(fact_id),
+                    source,
+                    &format!(
+                        "domain-core compiler fact performs `{capability_family:?}` through `{primitive_definition}`"
+                    ),
+                ));
+            } else if let Some(policy_family) = policy_family {
+                let executor_matches = classifications
+                    .get(&policy_family)
+                    .is_some_and(|classification| compiler_role(classification.executor_role) == unit.role);
+                if !executor_matches {
+                    findings.push(finding_for_unit(
                     "capability-executor-role",
                     CLAIM_CAPABILITY,
                     Some(unit),
@@ -900,16 +1126,17 @@ fn evaluate_core_effects(
                         unit.package_name
                     ),
                 ));
+                }
+            } else {
+                findings.push(finding_for_unit(
+                    "unclassified-capability",
+                    CLAIM_CAPABILITY,
+                    Some(unit),
+                    Some(fact_id),
+                    source,
+                    &format!("compiler effect capability `{capability_family:?}` has no project classification"),
+                ));
             }
-        } else {
-            findings.push(finding_for_unit(
-                "unclassified-capability",
-                CLAIM_CAPABILITY,
-                Some(unit),
-                Some(fact_id),
-                source,
-                &format!("compiler effect capability `{capability_family:?}` has no project classification"),
-            ));
         }
     }
 }
@@ -937,7 +1164,7 @@ fn protected_effect_definitions(policy: &ProjectArchitecturePolicy) -> Protected
 }
 
 fn evaluate_authorized_effects(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
@@ -957,24 +1184,23 @@ fn evaluate_authorized_effects(
         else {
             continue;
         };
-        let Some(unit) = indexes.unit_for_fact(fact_id) else {
-            continue;
-        };
-        if unit.role != CompilerArchitectureRole::OutboundAdapter {
-            continue;
-        }
-        let Some(family) = policy_capability(*capability_family) else {
-            continue;
-        };
-        if !classifications.contains_key(&family) {
-            findings.push(finding_for_unit(
-                "unclassified-effect-authority",
-                CLAIM_EFFECT_AUTHORITY_CLASSIFICATION,
-                Some(unit),
-                Some(fact_id),
-                indexes.source_path(span_id),
-                &format!("outbound effect capability `{family:?}` has no explicit authority classification"),
-            ));
+        for unit in indexes.units_for_fact(fact_id) {
+            if unit.role != CompilerArchitectureRole::OutboundAdapter {
+                continue;
+            }
+            let Some(family) = policy_capability(*capability_family) else {
+                continue;
+            };
+            if !classifications.contains_key(&family) {
+                findings.push(finding_for_unit(
+                    "unclassified-effect-authority",
+                    CLAIM_EFFECT_AUTHORITY_CLASSIFICATION,
+                    Some(unit),
+                    Some(fact_id),
+                    indexes.source_path(span_id),
+                    &format!("outbound effect capability `{family:?}` has no explicit authority classification"),
+                ));
+            }
         }
     }
     for classification in classifications.values() {
@@ -990,7 +1216,7 @@ fn evaluate_authorized_effects(
                 None,
                 None,
                 Some(classification.executor_scope.clone()),
-                input.policy_blake3,
+                input.waiver_policy_blake3,
                 &format!("protected effect capability `{:?}` has no protocol", classification.family),
             ));
             continue;
@@ -1002,7 +1228,7 @@ fn evaluate_authorized_effects(
 
 #[allow(clippy::too_many_lines)]
 fn evaluate_protected_witness(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     classification: &ArchitectureOutboundEffectClassification,
     protocol: &ArchitectureProtectedEffectProtocol,
@@ -1069,12 +1295,11 @@ fn evaluate_protected_witness(
                 ));
             }
         }
+        // A conversion is narrow only when its one type argument is a declared authorized output.
         let broad_conversion = traits.iter().any(|current| {
-            (current.contains("From<")
-                || current.contains("Into<")
-                || trait_matches(current, "core::convert::From")
-                || trait_matches(current, "core::convert::Into"))
-                && !protocol.authorized_output_types.iter().any(|allowed| current.contains(allowed))
+            (trait_matches(current, "core::convert::From") || trait_matches(current, "core::convert::Into"))
+                && !trait_arguments(current)
+                    .is_some_and(|argument| protocol.authorized_output_types.iter().any(|allowed| allowed == argument))
         });
         if broad_conversion {
             findings.push(finding_for_unit(
@@ -1099,15 +1324,13 @@ fn evaluate_protected_witness(
             ));
         }
     } else {
-        findings.push(new_finding(
+        findings.push(finding_for_scopes(
+            input,
+            indexes,
             "witness-shape-resolution",
-            ArchitectureFindingSeverity::Policy,
             CLAIM_AUTHORIZATION_WITNESS,
-            None,
-            None,
-            None,
+            std::slice::from_ref(&protocol.witness_owner_scope),
             Some(protocol.witness_owner_scope.clone()),
-            input.policy_blake3,
             &format!("witness type `{}` must resolve to exactly one compiler type-shape fact", protocol.witness_type),
         ));
     }
@@ -1186,7 +1409,7 @@ fn evaluate_protected_witness(
 
 #[allow(clippy::too_many_lines)]
 fn evaluate_protected_calls(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     classification: &ArchitectureOutboundEffectClassification,
     protocol: &ArchitectureProtectedEffectProtocol,
@@ -1250,15 +1473,13 @@ fn evaluate_protected_calls(
             })
             .collect::<Vec<_>>();
         if decision_items.len() != 1 {
-            findings.push(new_finding(
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "authority-decision-resolution",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_AUTHORIZATION_ORIGIN,
-                None,
-                None,
-                None,
+                std::slice::from_ref(&protocol.decision_scope),
                 Some(protocol.decision_scope.clone()),
-                input.policy_blake3,
                 &format!("authority decision `{decision}` must resolve to exactly one compiler item"),
             ));
             continue;
@@ -1329,15 +1550,13 @@ fn evaluate_protected_calls(
             })
             .collect::<Vec<_>>();
         if constructor_items.len() != 1 {
-            findings.push(new_finding(
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "witness-constructor-resolution",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_AUTHORIZATION_WITNESS,
-                None,
-                None,
-                None,
+                std::slice::from_ref(&protocol.witness_owner_scope),
                 Some(protocol.witness_owner_scope.clone()),
-                input.policy_blake3,
                 &format!("witness constructor `{constructor}` must resolve to exactly one compiler item"),
             ));
             continue;
@@ -1362,6 +1581,20 @@ fn evaluate_protected_calls(
                 Some(fact_id),
                 indexes.source_path(span_id),
                 &format!("witness constructor `{constructor}` must transform a declared authorized output into the witness type"),
+            ));
+        }
+        let output_references = input_reference_flags(input, item_id, &type_definitions, |definition| {
+            protocol.authorized_output_types.iter().any(|allowed| allowed == definition)
+        });
+        if protocol.witness_use == ArchitectureWitnessUse::Consume && output_references.contains(&true) {
+            // A borrowed authorized output survives the call, so one decision could mint many witnesses.
+            findings.push(finding_for_unit(
+                "consume-authorization-borrowed",
+                CLAIM_AUTHORIZATION_WITNESS,
+                indexes.unit_for_fact(fact_id),
+                Some(fact_id),
+                indexes.source_path(span_id),
+                &format!("witness constructor `{constructor}` borrows the authorized output instead of consuming it"),
             ));
         }
     }
@@ -1408,15 +1641,13 @@ fn evaluate_protected_calls(
             })
             .collect::<Vec<_>>();
         if executor_items.len() != 1 {
-            findings.push(new_finding(
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "protected-executor-resolution",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_PROTECTED_EXECUTOR,
-                None,
-                None,
-                None,
+                std::slice::from_ref(&classification.executor_scope),
                 Some(classification.executor_scope.clone()),
-                input.policy_blake3,
                 &format!("protected executor `{executor}` must resolve to exactly one compiler item"),
             ));
         }
@@ -1435,15 +1666,10 @@ fn evaluate_protected_calls(
                     &format!("protected executor `{executor}` is outside its declared outbound-adapter scope"),
                 ));
             }
-            let has_witness_input = signatures.iter().any(|(_, owner_item_id, input_type_ids, _)| {
-                *owner_item_id == *item_id
-                    && input_type_ids.iter().any(|type_id| {
-                        type_definitions
-                            .get(type_id.as_str())
-                            .is_some_and(|definition| *definition == protocol.witness_type)
-                    })
+            let witness_inputs = input_reference_flags(input, item_id, &type_definitions, |definition| {
+                definition == protocol.witness_type
             });
-            if !has_witness_input {
+            if witness_inputs.is_empty() {
                 findings.push(finding_for_unit(
                     "protected-executor-witness-parameter",
                     CLAIM_PROTECTED_EXECUTOR,
@@ -1451,6 +1677,18 @@ fn evaluate_protected_calls(
                     Some(item_fact_id),
                     source,
                     &format!("protected executor `{executor}` lacks its declared witness parameter"),
+                ));
+            } else if protocol.witness_use == ArchitectureWitnessUse::Consume && witness_inputs.contains(&true) {
+                // A borrowed one-shot witness survives the call, so it could authorize another.
+                findings.push(finding_for_unit(
+                    "consume-witness-borrowed",
+                    CLAIM_PROTECTED_EXECUTOR,
+                    unit,
+                    Some(item_fact_id),
+                    source,
+                    &format!(
+                        "protected executor `{executor}` borrows its consume witness instead of taking it by value"
+                    ),
                 ));
             }
         }
@@ -1464,15 +1702,13 @@ fn evaluate_protected_calls(
             })
             .collect::<Vec<_>>();
         if calls.is_empty() {
-            findings.push(new_finding(
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "protected-executor-provenance-missing",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_PROTECTED_EXECUTOR,
-                None,
-                None,
-                None,
+                std::slice::from_ref(&classification.executor_scope),
                 Some(classification.executor_scope.clone()),
-                input.policy_blake3,
                 &format!("protected executor `{executor}` has no selected witness provenance fact"),
             ));
         }
@@ -1573,7 +1809,7 @@ fn evaluate_protected_calls(
 
 #[allow(clippy::too_many_arguments)]
 fn evaluate_receipt_constructors(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     protocol: &ArchitectureProtectedEffectProtocol,
     type_definitions: &BTreeMap<&str, &str>,
@@ -1590,15 +1826,13 @@ fn evaluate_receipt_constructors(
             .filter(|(_, _, callee, _, _, _, _)| *callee == receipt_constructor)
             .collect::<Vec<_>>();
         if calls.is_empty() {
-            findings.push(new_finding(
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "receipt-observation-provenance-missing",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_EFFECT_RECEIPT,
-                None,
-                None,
-                None,
+                std::slice::from_ref(&protocol.receipt_scope),
                 Some(protocol.receipt_scope.clone()),
-                input.policy_blake3,
                 &format!("receipt constructor `{receipt_constructor}` has no selected observation provenance fact"),
             ));
         }
@@ -1606,9 +1840,8 @@ fn evaluate_receipt_constructors(
             let observed_argument = type_definitions
                 .get(argument_type_id.as_str())
                 .is_some_and(|definition| *definition == protocol.observed_outcome_type);
-            let approved_observation = origins
-                .iter()
-                .all(|origin| permitted_observation_origins.iter().any(|constructor| constructor == origin));
+            let approved_observation = matches!(origins.as_slice(), [origin]
+                if permitted_observation_origins.iter().any(|constructor| constructor == origin));
             let opposite_origin = origins.iter().any(|origin| {
                 if success_receipt {
                     protocol.failure_observation_constructors.iter().any(|constructor| constructor == origin)
@@ -1659,16 +1892,49 @@ fn evaluate_receipt_constructors(
 type ProvenanceFactRef<'a> =
     (&'a String, &'a String, &'a String, &'a String, &'a Vec<String>, ValueProvenanceStatus, &'a String);
 
+/// By-reference flags of an item's signature inputs whose type definition `selected` accepts.
+fn input_reference_flags(
+    input: &ProductionGateInput<'_>,
+    owner: &str,
+    type_definitions: &BTreeMap<&str, &str>,
+    selected: impl Fn(&str) -> bool,
+) -> Vec<bool> {
+    input
+        .architecture_ir
+        .facts
+        .iter()
+        .filter_map(|fact| match fact {
+            CompilerArchitectureFact::Signature {
+                owner_item_id,
+                input_type_ids,
+                input_by_reference,
+                ..
+            } if owner_item_id == owner => Some(input_type_ids.iter().zip(input_by_reference)),
+            _ => None,
+        })
+        .flatten()
+        .filter(|(type_id, _)| type_definitions.get(type_id.as_str()).is_some_and(|definition| selected(definition)))
+        .map(|(_, by_reference)| *by_reference)
+        .collect()
+}
+
 fn witness_owner_module(witness_type: &str) -> &str {
     witness_type.rsplit_once("::").map_or(witness_type, |(module, _)| module)
 }
 
+// Implemented traits carry their type arguments, as in `core::convert::From<domain::Decision>`;
+// trait identity compares only the path's final segment.
 fn trait_matches(actual: &str, expected: &str) -> bool {
-    actual == expected || actual.rsplit_once("::").is_some_and(|(_, tail)| expected.ends_with(tail))
+    let path = actual.split_once('<').map_or(actual, |(path, _)| path);
+    path == expected || path.rsplit("::").next() == expected.rsplit("::").next()
+}
+
+fn trait_arguments(actual: &str) -> Option<&str> {
+    actual.split_once('<').and_then(|(_, arguments)| arguments.strip_suffix('>'))
 }
 
 fn evaluate_ports(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
@@ -1688,15 +1954,13 @@ fn evaluate_ports(
             })
             .collect::<Vec<_>>();
         if traits.len() != 1 {
-            findings.push(new_finding(
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "port-trait-resolution",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_PORT_OWNERSHIP,
+                std::slice::from_ref(&port.application_owner_scope),
                 None,
-                None,
-                None,
-                None,
-                input.policy_blake3,
                 &format!("port trait `{}` must resolve to exactly one compiler trait fact", port.port_trait),
             ));
             continue;
@@ -1735,15 +1999,13 @@ fn evaluate_ports(
             })
             .collect::<Vec<_>>();
         if implementations.is_empty() && !port.reserved {
-            findings.push(new_finding(
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "port-implementation-missing",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_PORT_OWNERSHIP,
+                &port.permitted_adapter_scopes,
                 None,
-                None,
-                None,
-                None,
-                input.policy_blake3,
                 &format!("non-reserved port trait `{}` has no compiler-resolved implementation", port.port_trait),
             ));
         }
@@ -1776,7 +2038,7 @@ fn evaluate_ports(
 }
 
 fn evaluate_construction(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
@@ -1811,22 +2073,24 @@ fn evaluate_construction(
         if !is_adapter {
             continue;
         }
-        let unit = indexes.unit_for_fact(fact_id);
-        if unit.is_none_or(|current| current.role != CompilerArchitectureRole::CompositionRoot) {
-            findings.push(finding_for_unit(
-                "adapter-construction-outside-root",
-                CLAIM_ADAPTER_CONSTRUCTION,
-                unit,
-                Some(fact_id),
-                indexes.source_path(span_id),
-                &format!("concrete adapter type from package `{origin}` is constructed outside a composition root"),
-            ));
+        for unit in indexes.units_for_fact(fact_id) {
+            // An adapter package building its own values, such as `Self { .. }`, selects no infrastructure.
+            if unit.role != CompilerArchitectureRole::CompositionRoot && unit.package_name != *origin {
+                findings.push(finding_for_unit(
+                    "adapter-construction-outside-root",
+                    CLAIM_ADAPTER_CONSTRUCTION,
+                    Some(unit),
+                    Some(fact_id),
+                    indexes.source_path(span_id),
+                    &format!("concrete adapter type from package `{origin}` is constructed outside a composition root"),
+                ));
+            }
         }
     }
 }
 
 fn evaluate_contract_types(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
@@ -1916,42 +2180,49 @@ fn evaluate_contract_types(
 }
 
 fn evaluate_no_std(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
     let roles = policy_package_roles(input.policy);
     for obligation in &input.policy.core_no_std {
         let package_match = roles.get(&obligation.scope).copied() == Some(ArchitectureRole::DomainCore);
+        // A package obligation binds the crate attribute of the package library and its
+        // test configuration; build scripts, binaries, examples, and benches are other crates.
         let units = if package_match {
             input
                 .architecture_ir
                 .units
                 .iter()
-                .filter(|unit| unit.package_name == obligation.scope)
+                .filter(|unit| unit.package_name == obligation.scope && is_library_unit(unit))
                 .collect::<Vec<_>>()
         } else {
             indexes.units_for_source_scope(&obligation.scope)
         };
-        let has_no_std = units.iter().all(|unit| indexes.package_has_configuration(&unit.package_name, "crate:no-std"));
-        if units.is_empty() || !has_no_std {
-            findings.push(new_finding(
+        let has_std = units.iter().any(|unit| !indexes.unit_has_configuration(unit, "crate:no-std"));
+        if units.is_empty() || has_std {
+            findings.push(finding_for_scopes(
+                input,
+                indexes,
                 "no-std-obligation",
-                ArchitectureFindingSeverity::Policy,
                 CLAIM_NO_STD,
-                None,
-                None,
-                None,
+                std::slice::from_ref(&obligation.scope),
                 Some(obligation.scope.clone()),
-                input.policy_blake3,
                 &format!("domain-core scope `{}` lacks compiler-confirmed crate:no-std", obligation.scope),
             ));
         }
     }
 }
 
+// Cargo joins a target's kinds with `+` and marks test configurations with a final `+test`.
+fn is_library_unit(unit: &CompilationUnit) -> bool {
+    unit.target_kind
+        .split('+')
+        .any(|kind| matches!(kind, "lib" | "rlib" | "dylib" | "cdylib" | "staticlib" | "proc-macro"))
+}
+
 fn evaluate_unknowns(
-    input: &ProjectArchitectureGateInput<'_>,
+    input: &ProductionGateInput<'_>,
     indexes: &GateIndexes<'_>,
     findings: &mut Vec<ProjectArchitectureFinding>,
 ) {
@@ -1987,9 +2258,26 @@ fn apply_waivers(input: &ProjectArchitectureGateInput<'_>, findings: &mut Vec<Pr
             ));
             continue;
         };
+        if finding.severity == ArchitectureFindingSeverity::Integration {
+            stale.push(new_finding(
+                "unwaivable-integration-finding",
+                ArchitectureFindingSeverity::Integration,
+                CLAIM_INPUT_INTEGRITY,
+                finding.package_name.as_deref(),
+                finding.unit_id.as_deref(),
+                finding.fact_id.as_deref(),
+                finding.source_path.clone(),
+                &finding.source_blake3,
+                &format!(
+                    "architecture waiver `{}` targets an input-integrity finding, which cannot be waived",
+                    waiver.finding_id
+                ),
+            ));
+            continue;
+        }
         let identity = ArchitectureFindingIdentity {
             finding_id: &finding.finding_id,
-            policy_blake3: input.policy_blake3,
+            policy_blake3: input.waiver_policy_blake3,
             source_blake3: &finding.source_blake3,
             affected_claim: &finding.affected_claim,
         };
@@ -2015,13 +2303,18 @@ fn apply_waivers(input: &ProjectArchitectureGateInput<'_>, findings: &mut Vec<Pr
 
 fn classify_status(
     mode: ArchitectureMode,
-    integration_failure: bool,
-    open_policy_findings: bool,
+    findings: &[ProjectArchitectureFinding],
     closure: Option<&EffectClosureParent>,
 ) -> ArchitecturePhaseStatus {
-    if integration_failure {
+    if findings.iter().any(|finding| {
+        finding.severity == ArchitectureFindingSeverity::Integration
+            && finding.status == ArchitectureFindingStatus::Open
+    }) {
         return ArchitecturePhaseStatus::IntegrationFailure;
     }
+    let open_policy_findings = findings.iter().any(|finding| {
+        finding.severity == ArchitectureFindingSeverity::Policy && finding.status == ArchitectureFindingStatus::Open
+    });
     match mode {
         ArchitectureMode::Inventory | ArchitectureMode::Advisory => {
             if open_policy_findings {
@@ -2048,106 +2341,6 @@ fn classify_status(
                 }
             }
         }
-    }
-}
-
-struct GateIndexes<'a> {
-    ir: &'a CompilerArchitectureIr,
-    units_by_package: BTreeMap<&'a str, &'a CompilationUnit>,
-    fact_units: BTreeMap<&'a str, &'a CompilationUnit>,
-    unknown_units: BTreeMap<&'a str, &'a CompilationUnit>,
-    spans: BTreeMap<&'a str, &'a SourceSpan>,
-}
-
-impl<'a> GateIndexes<'a> {
-    fn new(ir: &'a CompilerArchitectureIr) -> Self {
-        let units_by_package =
-            ir.units.iter().map(|unit| (unit.package_name.as_str(), unit)).collect::<BTreeMap<_, _>>();
-        let item_packages = ir
-            .facts
-            .iter()
-            .filter_map(|fact| match fact {
-                CompilerArchitectureFact::Item {
-                    item_id, origin_crate, ..
-                } => Some((item_id.as_str(), origin_crate.as_str())),
-                _ => None,
-            })
-            .collect::<BTreeMap<_, _>>();
-        let type_packages = ir
-            .facts
-            .iter()
-            .filter_map(|fact| match fact {
-                CompilerArchitectureFact::Type {
-                    type_id, origin_crate, ..
-                } => Some((type_id.as_str(), origin_crate.as_str())),
-                _ => None,
-            })
-            .collect::<BTreeMap<_, _>>();
-        let mut fact_units = BTreeMap::new();
-        for fact in &ir.facts {
-            let package = fact_package(fact, &item_packages, &type_packages);
-            if let Some(unit) = package.and_then(|package| units_by_package.get(package).copied()) {
-                fact_units.insert(fact.fact_id(), unit);
-            }
-        }
-        let unknown_units = ir
-            .unknowns
-            .iter()
-            .filter_map(|unknown| {
-                let package =
-                    unknown.owner_item_id.as_deref().and_then(|item_id| item_packages.get(item_id).copied())?;
-                Some((unknown.unknown_id.as_str(), *units_by_package.get(package)?))
-            })
-            .collect::<BTreeMap<_, _>>();
-        let spans = ir.spans.iter().map(|span| (span.span_id.as_str(), span)).collect::<BTreeMap<_, _>>();
-        Self {
-            ir,
-            units_by_package,
-            fact_units,
-            unknown_units,
-            spans,
-        }
-    }
-
-    fn unit_for_package(&self, package: &str) -> Option<&'a CompilationUnit> {
-        self.units_by_package.get(package).copied()
-    }
-
-    fn unit_for_fact(&self, fact_id: &str) -> Option<&'a CompilationUnit> {
-        self.fact_units.get(fact_id).copied()
-    }
-
-    fn unit_for_unknown(&self, unknown_id: &str) -> Option<&'a CompilationUnit> {
-        self.unknown_units.get(unknown_id).copied()
-    }
-
-    fn source_path(&self, span_id: &str) -> Option<&'a str> {
-        self.spans.get(span_id).and_then(|span| match &span.origin {
-            SourceOrigin::Workspace { source_path } => Some(source_path.as_str()),
-            SourceOrigin::ExternalGenerated { .. } => None,
-        })
-    }
-
-    fn units_for_source_scope(&self, scope: &str) -> Vec<&'a CompilationUnit> {
-        let packages = self
-            .ir
-            .facts
-            .iter()
-            .filter_map(|fact| {
-                let span_id = fact_span_id(fact)?;
-                let source_path = self.source_path(span_id)?;
-                let unit = path_in_scope(source_path, scope).then(|| self.unit_for_fact(fact.fact_id())).flatten()?;
-                Some((unit.package_name.as_str(), unit))
-            })
-            .collect::<BTreeMap<_, _>>();
-        packages.into_values().collect()
-    }
-
-    fn package_has_configuration(&self, package: &str, predicate: &str) -> bool {
-        let expected = format!("{predicate}={package}");
-        self.ir.facts.iter().any(|fact| {
-            matches!(fact, CompilerArchitectureFact::Configuration { predicate: current, active: true, .. } if current == &expected)
-        })
     }
 }
 
@@ -2266,6 +2459,52 @@ fn finding_for_unit(
     )
 }
 
+/// Bind a finding about what a declared scope lacks or holds ambiguously to the source identity
+/// of every production unit that owns the scope, so a source edit there makes its waiver stale.
+/// A unit owns a scope that names its package, contains its target root, lies under its target
+/// root directory, or contains one of its observations. With no owning unit, the finding binds
+/// only the waiver policy identity.
+fn finding_for_scopes(
+    input: &ProductionGateInput<'_>,
+    indexes: &GateIndexes<'_>,
+    code: &str,
+    affected_claim: &str,
+    scopes: &[String],
+    source_path: Option<String>,
+    message: &str,
+) -> ProjectArchitectureFinding {
+    let mut sources = BTreeSet::new();
+    for scope in scopes {
+        for unit in &input.architecture_ir.units {
+            let owns = unit.package_name == *scope
+                || path_in_scope(&unit.source_path, scope)
+                || unit.source_path.rsplit_once('/').is_some_and(|(root, _)| path_in_scope(scope, root));
+            if owns {
+                sources.insert(unit.source_blake3.as_str());
+            }
+        }
+        sources.extend(indexes.units_for_source_scope(scope).into_iter().map(|unit| unit.source_blake3.as_str()));
+    }
+    let sources = sources.into_iter().collect::<Vec<_>>();
+    let source_blake3 = match sources.as_slice() {
+        [] => input.waiver_policy_blake3.to_owned(),
+        [source] => (*source).to_owned(),
+        _ => octet_architecture_ir::canonical_identity(SCOPE_SOURCE_ID_DOMAIN, &sources)
+            .expect("project architecture scope source identity fields must serialize"),
+    };
+    new_finding(
+        code,
+        ArchitectureFindingSeverity::Policy,
+        affected_claim,
+        None,
+        None,
+        None,
+        source_path,
+        &source_blake3,
+        message,
+    )
+}
+
 #[allow(clippy::too_many_arguments)]
 fn new_finding(
     code: &str,
@@ -2311,6 +2550,7 @@ fn path_in_scope(path: &str, scope: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    mod ownership;
     use octet_architecture_ir::ArchitectureCollectionLimits;
     use octet_architecture_ir::ItemKind;
     use octet_architecture_ir::UnknownCompilerFact;
@@ -2330,6 +2570,7 @@ mod tests {
     use crate::project_architecture_policy::ArchitectureWitnessUse;
     use crate::project_architecture_policy::CoreCapabilityHandling;
     use crate::project_architecture_policy::PROJECT_ARCHITECTURE_POLICY_SCHEMA_VERSION;
+    use crate::project_architecture_policy::architecture_waiver_policy_blake3;
 
     const HASH_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const HASH_B: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -2356,6 +2597,127 @@ mod tests {
         assert!(first.findings.is_empty());
         assert_eq!(first, second);
         assert!(verify_project_architecture_receipt(&first).is_empty());
+    }
+
+    #[test]
+    fn matching_source_and_package_roles_pass() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        let source_span = span("crates/host/src/core.rs");
+        let local_item = item(&source_span.span_id, "host::core::value");
+        let foreign_type = type_fact("domain", "domain::Value");
+        let mut implementation = CompilerArchitectureFact::Implementation {
+            fact_id: String::new(),
+            implementation_id: HASH_A.to_owned(),
+            trait_id: None,
+            trait_definition: Some("host::LocalTrait".to_owned()),
+            self_type_id: type_id(&foreign_type).to_owned(),
+            span_id: source_span.span_id.clone(),
+        };
+        set_fact_id(&mut implementation);
+        fixture.add_unit_facts("host", vec![source_span], vec![local_item, foreign_type, implementation], Vec::new());
+
+        let receipt = fixture.evaluate(None);
+        assert_eq!(receipt.status, ArchitecturePhaseStatus::Clean);
+        assert!(receipt.findings.is_empty());
+    }
+
+    // r[verify octet.project_architecture_gate.test_ownership]
+    #[test]
+    fn integration_root_binding_precedes_production_evaluation() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.policy.roles.push(role_assignment(
+            ArchitectureScopeKind::Source,
+            "crates/domain/tests",
+            ArchitectureRole::Test,
+        ));
+        let mut test = unit("domain", CompilerArchitectureRole::Test);
+        test.target_name = "contract".to_owned();
+        test.target_kind = "test+test".to_owned();
+        test.source_path = "crates/domain/tests/contract.rs".to_owned();
+        test.crate_types = vec!["bin".to_owned()];
+        test.unit_id = octet_architecture_ir::compilation_unit_identity(&test);
+        fixture.ir.units.push(test.clone());
+        fixture.ir.unit_memberships.push(octet_architecture_ir::UnitFactMembership {
+            unit_id: test.unit_id.clone(),
+            fact_ids: Vec::new(),
+            unknown_ids: Vec::new(),
+        });
+        let receipt = fixture.evaluate(None);
+        assert!(!receipt.findings.iter().any(|finding| finding.code == "unit-role-mismatch"));
+        assert_eq!(receipt.status, ArchitecturePhaseStatus::Clean);
+        let json = serde_json::to_value(&receipt).expect("receipt");
+        assert_eq!(json["test_only"]["unit_ids"], serde_json::json!([test.unit_id]));
+        for kind in ["lib", "lib+test", "bin+test", "test"] {
+            let last = fixture.ir.units.last_mut().expect("test unit");
+            last.target_kind = kind.to_owned();
+            last.unit_id = octet_architecture_ir::compilation_unit_identity(last);
+            fixture.ir.unit_memberships.last_mut().expect("test row").unit_id = last.unit_id.clone();
+            assert!(
+                fixture.evaluate(None).findings.iter().any(|finding| finding.code == "unit-role-mismatch"),
+                "{kind}"
+            );
+        }
+        *fixture.ir.units.last_mut().expect("test unit") = test;
+        let last = fixture.ir.units.last_mut().expect("test unit");
+        last.source_path = "crates/domain/src/lib.rs".to_owned();
+        last.unit_id = octet_architecture_ir::compilation_unit_identity(last);
+        fixture.ir.unit_memberships.last_mut().expect("test row").unit_id = last.unit_id.clone();
+        assert!(fixture.evaluate(None).findings.iter().any(|finding| finding.code == "unit-role-mismatch"));
+    }
+
+    // r[verify octet.project_architecture_gate.test_ownership]
+    #[test]
+    fn production_and_library_test_imports_cannot_claim_test_source() {
+        for kind in ["lib", "lib+test"] {
+            let mut fixture = Fixture::new(ArchitectureMode::Gate);
+            let domain = fixture.ir.units.iter_mut().find(|unit| unit.package_name == "domain").expect("domain");
+            let previous = domain.unit_id.clone();
+            domain.target_kind = kind.to_owned();
+            domain.unit_id = octet_architecture_ir::compilation_unit_identity(domain);
+            fixture
+                .ir
+                .unit_memberships
+                .iter_mut()
+                .find(|row| row.unit_id == previous)
+                .expect("domain row")
+                .unit_id = domain.unit_id.clone();
+            fixture.policy.roles.push(role_assignment(
+                ArchitectureScopeKind::Source,
+                "crates/domain/tests",
+                ArchitectureRole::Test,
+            ));
+            let source_span = span("crates/domain/tests/imported.rs");
+            let imported = item(&source_span.span_id, "domain::imported::value");
+            fixture.add_unit_facts("domain", vec![source_span], vec![imported], Vec::new());
+            let receipt = fixture.evaluate(None);
+            assert_eq!(receipt.status, ArchitecturePhaseStatus::IntegrationFailure);
+            assert!(receipt.findings.iter().any(|finding| finding.code == "source-role-unit-mismatch"), "{kind}");
+        }
+    }
+
+    #[test]
+    fn conflicting_source_and_package_roles_fail_closed() {
+        for mode in [
+            ArchitectureMode::Gate,
+            ArchitectureMode::Inventory,
+            ArchitectureMode::Advisory,
+        ] {
+            let mut fixture = Fixture::new(mode);
+            let assignment = fixture
+                .policy
+                .roles
+                .iter_mut()
+                .find(|assignment| assignment.scope == "crates/host/src")
+                .expect("host source assignment");
+            assignment.role = ArchitectureRole::DomainCore;
+            let source_span = span("crates/host/src/core.rs");
+            let local_item = item(&source_span.span_id, "host::core::value");
+            fixture.add_unit_facts("host", vec![source_span], vec![local_item], Vec::new());
+
+            let receipt = fixture.evaluate(None);
+            assert_eq!(receipt.status, ArchitecturePhaseStatus::IntegrationFailure);
+            assert!(receipt.findings.iter().any(|finding| finding.code == "source-role-unit-mismatch"));
+        }
     }
 
     #[test]
@@ -2414,6 +2776,60 @@ mod tests {
         assert!(blocked.findings.iter().any(|finding| finding.code == "port-implementation-scope"));
     }
 
+    // r[verify octet.project_architecture_gate.input_integrity]
+    #[test]
+    fn policy_feature_order_does_not_change_target_selection() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.policy.production.targets[0].features = vec!["production".to_owned(), "audit".to_owned()];
+        fixture.graph.features = vec!["audit".to_owned(), "production".to_owned()];
+        fixture.refresh_graph_id();
+        let selected = fixture.evaluate(None);
+        assert_eq!(selected.status, ArchitecturePhaseStatus::Clean, "{:?}", selected.findings);
+
+        fixture.graph.features = vec!["audit".to_owned()];
+        fixture.refresh_graph_id();
+        let mismatched = fixture.evaluate(None);
+        assert_eq!(mismatched.status, ArchitecturePhaseStatus::IntegrationFailure);
+        assert!(mismatched.findings.iter().any(|finding| finding.code == "cargo-target-selection"));
+    }
+
+    // r[verify octet.project_architecture_gate.role_graph]
+    #[test]
+    fn adapter_constructs_its_own_type_while_core_shell_and_peer_adapters_cannot() {
+        for (package, constructing_item, allowed) in [
+            ("outbound", "outbound::RepositoryAdapter::new", true),
+            ("domain", "domain::decide", false),
+            ("application", "application::wire", false),
+            ("inbound", "inbound::wire", false),
+        ] {
+            let mut fixture = Fixture::new(ArchitectureMode::Gate);
+            let source = span(&format!("crates/{package}/src/lib.rs"));
+            let caller = item(&source.span_id, constructing_item);
+            let adapter = type_fact("outbound", "outbound::RepositoryAdapter");
+            // The collector records `Self { .. }` in an adapter impl as a constructor of its own type.
+            let mut constructor = CompilerArchitectureFact::Constructor {
+                fact_id: String::new(),
+                caller_item_id: item_id(&caller).to_owned(),
+                constructed_type_id: type_id(&adapter).to_owned(),
+                constructor_definition: None,
+                span_id: source.span_id.clone(),
+            };
+            set_fact_id(&mut constructor);
+            fixture.add_unit_facts(package, vec![source], vec![caller, adapter, constructor], Vec::new());
+
+            let receipt = fixture.evaluate(None);
+            let flagged = receipt.findings.iter().any(|finding| {
+                finding.code == "adapter-construction-outside-root" && finding.package_name.as_deref() == Some(package)
+            });
+            assert_eq!(flagged, !allowed, "{package}: {:?}", receipt.findings);
+            if allowed {
+                assert_eq!(receipt.status, ArchitecturePhaseStatus::Clean, "{:?}", receipt.findings);
+            } else {
+                assert_eq!(receipt.status, ArchitecturePhaseStatus::Blocked);
+            }
+        }
+    }
+
     #[test]
     fn incomplete_compiler_coverage_is_an_integration_failure_in_advisory_mode() {
         let mut fixture = Fixture::new(ArchitectureMode::Advisory);
@@ -2430,10 +2846,11 @@ mod tests {
         let mut fixture = Fixture::new(ArchitectureMode::Gate);
         fixture.graph.edges.push(edge("domain", "outbound"));
         fixture.refresh_graph_id();
-        let finding = fixture.evaluate(None).findings.remove(0);
+        let mut open = fixture.evaluate(None);
+        let finding = open.findings.remove(0);
         fixture.policy.waivers.push(ArchitectureWaiver {
             finding_id: finding.finding_id.clone(),
-            policy_blake3: HASH_A.to_owned(),
+            policy_blake3: open.waiver_policy_blake3,
             source_blake3: finding.source_blake3.clone(),
             owner: "architecture-team".to_owned(),
             reason: "bounded migration".to_owned(),
@@ -2448,6 +2865,186 @@ mod tests {
         let stale = fixture.evaluate(None);
         assert_eq!(stale.status, ArchitecturePhaseStatus::IntegrationFailure);
         assert!(stale.findings.iter().any(|current| current.code == "stale-waiver"));
+    }
+
+    // r[verify octet.project_architecture_gate.waivers]
+    // r[verify octet.project_architecture_policy.waivers]
+    #[test]
+    fn waiver_bound_to_waiver_free_policy_identity_applies_until_policy_changes() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.graph.edges.push(edge("domain", "outbound"));
+        fixture.refresh_graph_id();
+        fixture.policy.ports.push(ArchitecturePort {
+            port_trait: "application::MissingPort".to_owned(),
+            application_owner_scope: "crates/application/src".to_owned(),
+            permitted_adapter_scopes: vec!["crates/outbound/src".to_owned()],
+            forbidden_concrete_types: Vec::new(),
+            reserved: true,
+        });
+        let open = fixture.evaluate_exported();
+        assert_eq!(open.status, ArchitecturePhaseStatus::Blocked);
+        let codes = open.findings.iter().map(|finding| finding.code.as_str()).collect::<BTreeSet<_>>();
+        assert_eq!(codes, BTreeSet::from(["forbidden-role-edge", "port-trait-resolution"]));
+        let binding = waiver_free_policy_blake3(&fixture.policy);
+        assert_eq!(open.waiver_policy_blake3, binding);
+        assert_eq!(architecture_waiver_policy_blake3(&fixture.policy), binding);
+        fixture.policy.waivers = open
+            .findings
+            .iter()
+            .map(|finding| ArchitectureWaiver {
+                finding_id: finding.finding_id.clone(),
+                policy_blake3: binding.clone(),
+                source_blake3: finding.source_blake3.clone(),
+                owner: "architecture-team".to_owned(),
+                reason: "bounded migration".to_owned(),
+                review_condition: "remove after provider extraction".to_owned(),
+                affected_claim: finding.affected_claim.clone(),
+            })
+            .collect();
+
+        let waived = fixture.evaluate_exported();
+        assert_ne!(waived.policy_blake3, open.policy_blake3);
+        assert_eq!(waived.waiver_policy_blake3, binding);
+        assert_eq!(waived.status, ArchitecturePhaseStatus::Clean);
+        assert_eq!(waived.findings.len(), 2);
+        assert!(waived.findings.iter().all(|finding| finding.status == ArchitectureFindingStatus::Waived));
+        assert_eq!(waived.applied_waiver_ids.len(), 2);
+
+        fixture.policy.non_claims.push("runtime-determinism".to_owned());
+        let stale = fixture.evaluate_exported();
+        assert_eq!(stale.status, ArchitecturePhaseStatus::IntegrationFailure);
+        assert!(stale.applied_waiver_ids.is_empty());
+        assert!(stale.findings.iter().any(|finding| finding.code == "stale-waiver"));
+        assert_ne!(stale.waiver_policy_blake3, binding);
+    }
+
+    // r[verify octet.project_architecture_gate.waivers]
+    #[test]
+    fn scope_findings_bind_their_unit_sources_so_source_edits_stale_waivers() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.policy.ports.push(ArchitecturePort {
+            port_trait: "application::MissingPort".to_owned(),
+            application_owner_scope: "crates/application/src".to_owned(),
+            permitted_adapter_scopes: vec!["crates/outbound/src".to_owned()],
+            forbidden_concrete_types: Vec::new(),
+            reserved: true,
+        });
+        fixture.policy.ports.push(ArchitecturePort {
+            port_trait: "application::ports::Audit".to_owned(),
+            application_owner_scope: "crates/application/src".to_owned(),
+            permitted_adapter_scopes: vec!["crates/outbound/src".to_owned()],
+            forbidden_concrete_types: Vec::new(),
+            reserved: false,
+        });
+        let trait_span = span("crates/application/src/ports.rs");
+        let mut trait_fact = CompilerArchitectureFact::Trait {
+            fact_id: String::new(),
+            trait_id: HASH_C.to_owned(),
+            qualified_path: "application::ports::Audit".to_owned(),
+            origin_crate: "application".to_owned(),
+            span_id: trait_span.span_id.clone(),
+        };
+        set_fact_id(&mut trait_fact);
+        fixture.add_unit_facts("application", vec![trait_span], vec![trait_fact], Vec::new());
+        fixture.policy.core_no_std.push(crate::project_architecture_policy::ArchitectureNoStdObligation {
+            scope: "domain".to_owned(),
+        });
+        let open = fixture.evaluate_exported();
+        let codes = open.findings.iter().map(|finding| finding.code.as_str()).collect::<BTreeSet<_>>();
+        assert_eq!(
+            codes,
+            BTreeSet::from([
+                "no-std-obligation",
+                "port-implementation-missing",
+                "port-trait-resolution"
+            ])
+        );
+        assert!(open.findings.iter().all(|finding| finding.source_blake3 != open.waiver_policy_blake3));
+        fixture.policy.waivers = open
+            .findings
+            .iter()
+            .map(|finding| ArchitectureWaiver {
+                finding_id: finding.finding_id.clone(),
+                policy_blake3: open.waiver_policy_blake3.clone(),
+                source_blake3: finding.source_blake3.clone(),
+                owner: "architecture-team".to_owned(),
+                reason: "bounded migration".to_owned(),
+                review_condition: "remove after port extraction".to_owned(),
+                affected_claim: finding.affected_claim.clone(),
+            })
+            .collect();
+        let waived = fixture.evaluate_exported();
+        assert_eq!(waived.applied_waiver_ids.len(), 3, "{:?}", waived.findings);
+
+        let edit_source = |fixture: &mut Fixture, package: &str| {
+            let unit = fixture.ir.units.iter_mut().find(|unit| unit.package_name == package).expect("unit");
+            unit.source_blake3 =
+                octet_architecture_ir::canonical_identity("fixture-edited-source", &package).expect("source id");
+        };
+        let mut unrelated = fixture.clone();
+        edit_source(&mut unrelated, "host");
+        assert_eq!(unrelated.evaluate_exported().applied_waiver_ids.len(), 3);
+        for (package, stale_code) in [
+            ("application", "port-trait-resolution"),
+            ("outbound", "port-implementation-missing"),
+            ("domain", "no-std-obligation"),
+        ] {
+            let mut edited = fixture.clone();
+            edit_source(&mut edited, package);
+            let stale = edited.evaluate_exported();
+            assert_eq!(stale.status, ArchitecturePhaseStatus::IntegrationFailure, "{package}");
+            assert_eq!(stale.applied_waiver_ids.len(), 2, "{package}: {:?}", stale.findings);
+            let stale_finding = stale
+                .findings
+                .iter()
+                .find(|finding| finding.code == stale_code)
+                .expect("edited finding remains visible");
+            assert_eq!(stale_finding.status, ArchitectureFindingStatus::Open);
+        }
+    }
+
+    fn waiver_free_policy_blake3(policy: &ProjectArchitecturePolicy) -> String {
+        let mut binding = policy.clone();
+        binding.waivers.clear();
+        blake3::hash(&serde_json::to_vec(&binding).expect("policy serializes")).to_hex().to_string()
+    }
+
+    #[test]
+    fn integration_findings_cannot_be_waived() {
+        let mut fixture = Fixture::new(ArchitectureMode::Advisory);
+        fixture.coverage.status = CoverageStatus::Incomplete;
+        let findings = fixture.evaluate(None).findings;
+        assert!(findings.iter().any(|finding| finding.code == "compiler-coverage-incomplete"));
+        assert!(findings.iter().all(|finding| finding.severity == ArchitectureFindingSeverity::Integration));
+        fixture.policy.waivers = findings
+            .iter()
+            .map(|finding| ArchitectureWaiver {
+                finding_id: finding.finding_id.clone(),
+                policy_blake3: HASH_A.to_owned(),
+                source_blake3: finding.source_blake3.clone(),
+                owner: "architecture-team".to_owned(),
+                reason: "attempted input-integrity waiver".to_owned(),
+                review_condition: "never".to_owned(),
+                affected_claim: finding.affected_claim.clone(),
+            })
+            .collect();
+
+        let receipt = fixture.evaluate(None);
+
+        assert_eq!(receipt.status, ArchitecturePhaseStatus::IntegrationFailure);
+        assert!(receipt.applied_waiver_ids.is_empty());
+        for original in &findings {
+            let current = receipt
+                .findings
+                .iter()
+                .find(|current| current.finding_id == original.finding_id)
+                .expect("integration finding remains");
+            assert_eq!(current.status, ArchitectureFindingStatus::Open);
+        }
+        assert_eq!(
+            receipt.findings.iter().filter(|finding| finding.code == "unwaivable-integration-finding").count(),
+            findings.len()
+        );
     }
 
     #[test]
@@ -2474,6 +3071,132 @@ mod tests {
         let blocked = fixture.evaluate(Some(&denied));
         assert_eq!(blocked.status, ArchitecturePhaseStatus::Blocked);
         assert_eq!(blocked.effect_closure, Some(denied));
+    }
+
+    // r[verify octet.project_architecture_gate.authority_scoped_receipt_ids]
+    #[test]
+    fn unprotected_effect_receipt_self_verifies_without_authorization_identities() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.add_outbound_effect_only();
+        fixture.policy.outbound_effects.push(unprotected_effect(ArchitectureCapabilityFamily::Filesystem));
+
+        let receipt = fixture.evaluate(None);
+        assert_eq!(receipt.status, ArchitecturePhaseStatus::Clean);
+        assert!(receipt.findings.is_empty());
+        assert!(receipt.authorized_effect_fact_ids.is_empty());
+        assert!(receipt.authorized_effect_type_ids.is_empty());
+        assert_eq!(receipt.outbound_effects, fixture.policy.outbound_effects);
+        assert_eq!(receipt, fixture.evaluate(None));
+        let encoded = serde_json::to_vec(&receipt).expect("encode receipt");
+        let decoded: ProjectArchitectureReceipt = serde_json::from_slice(&encoded).expect("decode receipt");
+        assert_eq!(decoded, receipt);
+        assert_eq!(verify_project_architecture_receipt(&decoded), Vec::<String>::new());
+    }
+
+    // r[verify octet.project_architecture_gate.authority_scoped_receipt_ids]
+    #[test]
+    fn protected_and_mixed_receipts_reject_each_missing_identity_array_after_resealing() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
+        let protected = fixture.evaluate(None);
+        fixture
+            .policy
+            .outbound_effects
+            .push(unprotected_effect(ArchitectureCapabilityFamily::Observability));
+        let mixed = fixture.evaluate(None);
+        let mut reversed = mixed.clone();
+        reversed.outbound_effects.reverse();
+        reversed.receipt_id = receipt_identity(&reversed);
+
+        for complete in [protected, mixed, reversed] {
+            assert_eq!(complete.status, ArchitecturePhaseStatus::Clean);
+            assert!(verify_project_architecture_receipt(&complete).is_empty());
+            for clear_facts in [true, false] {
+                let mut missing = complete.clone();
+                if clear_facts {
+                    missing.authorized_effect_fact_ids.clear();
+                } else {
+                    missing.authorized_effect_type_ids.clear();
+                }
+                missing.receipt_id = receipt_identity(&missing);
+                assert_eq!(verify_project_architecture_receipt(&missing), [
+                    "project architecture receipt lacks authorized-effect fact or type identities"
+                ]);
+            }
+        }
+    }
+
+    // r[verify octet.project_architecture_gate.authority_scoped_receipt_ids]
+    #[test]
+    fn unprotected_receipt_cannot_promote_authority_without_identities() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.add_outbound_effect_only();
+        fixture.policy.outbound_effects.push(unprotected_effect(ArchitectureCapabilityFamily::Filesystem));
+        let mut receipt = fixture.evaluate(None);
+        receipt.outbound_effects[0].authority = ArchitectureEffectAuthority::Protected;
+        assert!(receipt.outbound_effects[0].protected.is_none());
+        receipt.receipt_id = receipt_identity(&receipt);
+
+        assert_eq!(verify_project_architecture_receipt(&receipt), [
+            "project architecture receipt lacks authorized-effect fact or type identities"
+        ]);
+    }
+
+    // r[verify octet.project_architecture_gate.authority_scoped_receipt_ids]
+    #[test]
+    fn unprotected_receipt_retains_identity_and_non_claim_checks() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.add_outbound_effect_only();
+        fixture.policy.outbound_effects.push(unprotected_effect(ArchitectureCapabilityFamily::Filesystem));
+        let complete = fixture.evaluate(None);
+        let mut tampered = complete.clone();
+        tampered.outbound_effects[0].rationale = "changed without resealing".to_owned();
+        assert_eq!(verify_project_architecture_receipt(&tampered), [
+            "project architecture receipt identity is stale or malformed"
+        ]);
+
+        for required in [
+            "credential-validity",
+            "revocation-freshness",
+            "actor-trust",
+            "business-policy-correctness",
+            "external-execution-success",
+            "receipt-authenticity",
+        ] {
+            let mut missing = complete.clone();
+            missing.non_claims.retain(|claim| claim != required);
+            missing.receipt_id = receipt_identity(&missing);
+            let diagnostics = verify_project_architecture_receipt(&missing);
+            assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains(required)));
+            assert!(!diagnostics.iter().any(|diagnostic| diagnostic.contains("identity is stale")));
+        }
+    }
+
+    // r[verify octet.project_architecture_gate.authority_scoped_receipt_ids]
+    #[test]
+    fn unprotected_classification_does_not_hide_another_unclassified_effect() {
+        let mut fixture = Fixture::new(ArchitectureMode::Gate);
+        fixture.add_outbound_effect_only();
+        fixture
+            .policy
+            .outbound_effects
+            .push(unprotected_effect(ArchitectureCapabilityFamily::Observability));
+
+        let receipt = fixture.evaluate(None);
+        assert_eq!(receipt.status, ArchitecturePhaseStatus::Blocked);
+        assert!(receipt.findings.iter().any(|finding| finding.code == "unclassified-effect-authority"));
+        assert!(verify_project_architecture_receipt(&receipt).is_empty());
+    }
+
+    fn unprotected_effect(family: ArchitectureCapabilityFamily) -> ArchitectureOutboundEffectClassification {
+        ArchitectureOutboundEffectClassification {
+            family,
+            executor_scope: "crates/outbound/src".to_owned(),
+            executor_methods: vec!["outbound::FilesystemPort::publish".to_owned()],
+            authority: ArchitectureEffectAuthority::Unprotected,
+            rationale: "fixture output has no authorization requirement".to_owned(),
+            protected: None,
+        }
     }
 
     #[test]
@@ -2503,7 +3226,7 @@ mod tests {
         assert!(receipt.findings.iter().any(|finding| finding.code == "undeclared-witness-constructor"));
         assert!(receipt.findings.iter().any(|finding| finding.code == "witness-forbidden-trait"));
         mutate_witness_shape(&mut fixture.ir, |_, traits| {
-            traits.push("core::convert::From<application::Request>".to_owned());
+            traits.push("std::convert::From<application::Request>".to_owned());
         });
         let converted = fixture.evaluate(None);
         assert!(converted.findings.iter().any(|finding| finding.code == "witness-broad-conversion"));
@@ -2520,7 +3243,7 @@ mod tests {
                 "core::clone::Clone".to_owned(),
                 "core::default::Default".to_owned(),
                 "serde::Deserialize".to_owned(),
-                "core::convert::From<application::Request>".to_owned(),
+                "std::convert::From<application::Request>".to_owned(),
             ]);
         });
 
@@ -2536,6 +3259,36 @@ mod tests {
             );
         }
         assert!(receipt.findings.iter().any(|finding| finding.code == "witness-broad-conversion"));
+    }
+
+    #[test]
+    fn protected_effect_protocol_accepts_only_narrow_witness_conversions() {
+        for (conversion, broad) in [
+            ("std::convert::From<domain::AuthorizedPublication>", false),
+            ("std::convert::From<&domain::AuthorizedPublication>", true),
+            ("std::convert::From", true),
+            ("std::convert::From<T>", true),
+            ("std::convert::From<application::Request>", true),
+            ("std::convert::From<alloc::vec::Vec<domain::AuthorizedPublication>>", true),
+            ("std::convert::Into<application::Request>", true),
+        ] {
+            let mut fixture = Fixture::new(ArchitectureMode::Gate);
+            fixture.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
+            mutate_witness_shape(&mut fixture.ir, |_, traits| traits.push(conversion.to_owned()));
+            let receipt = fixture.evaluate(None);
+            assert!(
+                !receipt.findings.iter().any(|finding| finding.code == "witness-forbidden-trait"),
+                "{conversion}: {:?}",
+                receipt.findings
+            );
+            assert_eq!(
+                receipt.findings.iter().any(|finding| finding.code == "witness-broad-conversion"),
+                broad,
+                "{conversion}: {:?}",
+                receipt.findings
+            );
+            assert_eq!(receipt.status == ArchitecturePhaseStatus::Clean, !broad, "{conversion}");
+        }
     }
 
     #[test]
@@ -2600,6 +3353,69 @@ mod tests {
 
         assert_eq!(receipt.status, ArchitecturePhaseStatus::Clean);
         assert!(receipt.findings.is_empty());
+    }
+
+    // r[verify octet.authorized_effect_protocol.executor]
+    #[test]
+    fn consume_executor_must_take_its_witness_by_value_while_borrow_may_reference_it() {
+        let borrowed_witness = |input_type_ids: &mut Vec<String>, input_by_reference: &mut Vec<bool>| {
+            assert_eq!(input_type_ids.len(), 1);
+            *input_by_reference = vec![true];
+        };
+        let mut consume = Fixture::new(ArchitectureMode::Gate);
+        consume.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
+        assert_eq!(consume.evaluate(None).status, ArchitecturePhaseStatus::Clean);
+        mutate_executor_signature(&mut consume.ir, borrowed_witness);
+        let replayable = consume.evaluate(None);
+        assert_eq!(replayable.status, ArchitecturePhaseStatus::Blocked);
+        assert!(
+            replayable.findings.iter().any(|finding| finding.code == "consume-witness-borrowed"),
+            "{:?}",
+            replayable.findings
+        );
+        assert!(!replayable.findings.iter().any(|finding| finding.code == "protected-executor-witness-parameter"));
+
+        let mut borrow = Fixture::new(ArchitectureMode::Gate);
+        borrow.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
+        let protocol = borrow.policy.outbound_effects[0].protected.as_mut().expect("protected protocol");
+        protocol.witness_use = ArchitectureWitnessUse::Borrow;
+        protocol.borrow_scope = Some("crates/outbound/src".to_owned());
+        protocol.borrow_rationale = Some("one bounded outbound request".to_owned());
+        mutate_executor_signature(&mut borrow.ir, borrowed_witness);
+        let reused = borrow.evaluate(None);
+        assert_eq!(reused.status, ArchitecturePhaseStatus::Clean, "{:?}", reused.findings);
+    }
+
+    // r[verify octet.authorized_effect_protocol.witness]
+    #[test]
+    fn consume_witness_constructor_must_take_the_authorized_output_by_value() {
+        let borrowed_output = |input_type_ids: &mut Vec<String>, input_by_reference: &mut Vec<bool>| {
+            assert_eq!(input_type_ids.len(), 1);
+            *input_by_reference = vec![true];
+        };
+        let constructor = "domain::PublicationAuthority::from_decision";
+        let mut consume = Fixture::new(ArchitectureMode::Gate);
+        consume.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
+        assert_eq!(consume.evaluate(None).status, ArchitecturePhaseStatus::Clean);
+        mutate_signature(&mut consume.ir, constructor, borrowed_output);
+        let minting = consume.evaluate(None);
+        assert_eq!(minting.status, ArchitecturePhaseStatus::Blocked);
+        assert!(
+            minting.findings.iter().any(|finding| finding.code == "consume-authorization-borrowed"),
+            "{:?}",
+            minting.findings
+        );
+        assert!(!minting.findings.iter().any(|finding| finding.code == "witness-constructor-signature"));
+
+        let mut borrow = Fixture::new(ArchitectureMode::Gate);
+        borrow.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
+        let protocol = borrow.policy.outbound_effects[0].protected.as_mut().expect("protected protocol");
+        protocol.witness_use = ArchitectureWitnessUse::Borrow;
+        protocol.borrow_scope = Some("crates/outbound/src".to_owned());
+        protocol.borrow_rationale = Some("one bounded outbound request".to_owned());
+        mutate_signature(&mut borrow.ir, constructor, borrowed_output);
+        let reused = borrow.evaluate(None);
+        assert_eq!(reused.status, ArchitecturePhaseStatus::Clean, "{:?}", reused.findings);
     }
 
     #[test]
@@ -2687,6 +3503,32 @@ mod tests {
     }
 
     #[test]
+    fn receipt_constructor_requires_exactly_one_approved_observation() {
+        const RETRIED_SUCCESS: &str = "application::PublicationObservation::retried_success";
+        for origins in [Vec::new(), vec![
+            "application::PublicationObservation::success".to_owned(),
+            RETRIED_SUCCESS.to_owned(),
+        ]] {
+            let mut fixture = Fixture::new(ArchitectureMode::Gate);
+            fixture.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
+            let protocol = fixture.policy.outbound_effects[0].protected.as_mut().expect("protected protocol");
+            protocol.success_observation_constructors.push(RETRIED_SUCCESS.to_owned());
+            mutate_receipt_provenance(&mut fixture.ir, |_, current, status| {
+                current.clone_from(&origins);
+                *status = ValueProvenanceStatus::Exact;
+            });
+
+            let receipt = fixture.evaluate(None);
+
+            assert_eq!(receipt.status, ArchitecturePhaseStatus::Blocked, "{origins:?}");
+            assert!(
+                receipt.findings.iter().any(|finding| finding.code == "unknown-receipt-observation"),
+                "{origins:?}"
+            );
+        }
+    }
+
+    #[test]
     fn receipt_verifier_rejects_protocol_overclaim_and_tampering() {
         let mut fixture = Fixture::new(ArchitectureMode::Gate);
         fixture.add_protected_effect_facts(ValueProvenanceStatus::Exact, "domain::authorize_publication", false);
@@ -2724,6 +3566,7 @@ mod tests {
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("whole-program-correctness")));
     }
 
+    #[derive(Clone)]
     struct Fixture {
         policy: ProjectArchitecturePolicy,
         graph: ArchitectureCargoGraph,
@@ -2832,6 +3675,14 @@ mod tests {
                 schema_version: octet_architecture_ir::COMPILER_ARCHITECTURE_IR_SCHEMA_VERSION.to_owned(),
                 architecture_ir_id: HASH_B.to_owned(),
                 policy_blake3: HASH_A.to_owned(),
+                unit_memberships: units
+                    .iter()
+                    .map(|unit| octet_architecture_ir::UnitFactMembership {
+                        unit_id: unit.unit_id.clone(),
+                        fact_ids: Vec::new(),
+                        unknown_ids: Vec::new(),
+                    })
+                    .collect(),
                 units,
                 spans: Vec::new(),
                 facts: Vec::new(),
@@ -2868,17 +3719,84 @@ mod tests {
             }
         }
 
+        fn prepared_ir(&self) -> CompilerArchitectureIr {
+            let mut ir = self.ir.clone();
+            ir.units.sort_by(|left, right| left.unit_id.cmp(&right.unit_id));
+            ir.facts.sort_by(|left, right| left.fact_id().cmp(right.fact_id()));
+            ir.facts.dedup();
+            ir.spans.sort();
+            ir.spans.dedup();
+            ir.unknowns.sort();
+            ir.unknowns.dedup();
+            ir.unit_memberships.sort_by(|left, right| left.unit_id.cmp(&right.unit_id));
+            for row in &mut ir.unit_memberships {
+                row.fact_ids = sorted_dedup(std::mem::take(&mut row.fact_ids));
+                row.unknown_ids = sorted_dedup(std::mem::take(&mut row.unknown_ids));
+            }
+            ir.architecture_ir_id = octet_architecture_ir::ir_identity(&ir);
+            ir
+        }
+
         fn evaluate(&self, effect_closure: Option<&EffectClosureParent>) -> ProjectArchitectureReceipt {
+            self.evaluate_ir(&self.prepared_ir(), effect_closure)
+        }
+
+        /// Bind inputs as the runner does: the gate input names the exported policy bytes,
+        /// while compiler evidence binds the waiver-free policy identity.
+        fn evaluate_exported(&mut self) -> ProjectArchitectureReceipt {
+            let export = serde_json::to_vec_pretty(&self.policy).expect("fixture policy exports");
+            let policy_blake3 = blake3::hash(&export).to_hex().to_string();
+            let waiver_policy_blake3 = architecture_waiver_policy_blake3(&self.policy);
+            self.ir.policy_blake3.clone_from(&waiver_policy_blake3);
+            self.compiler_receipt.policy_blake3.clone_from(&waiver_policy_blake3);
+            for unit in &mut self.ir.units {
+                let previous_unit_id = std::mem::take(&mut unit.unit_id);
+                unit.policy_blake3.clone_from(&waiver_policy_blake3);
+                unit.unit_id = octet_architecture_ir::compilation_unit_identity(unit);
+                for membership in &mut self.ir.unit_memberships {
+                    if membership.unit_id == previous_unit_id {
+                        membership.unit_id.clone_from(&unit.unit_id);
+                    }
+                }
+            }
+            self.evaluate_bound(&self.prepared_ir(), None, &policy_blake3, &waiver_policy_blake3)
+        }
+
+        // Malformed-input tests use this entry directly: it does not repair the supplied IR.
+        fn evaluate_ir(
+            &self,
+            ir: &CompilerArchitectureIr,
+            effect_closure: Option<&EffectClosureParent>,
+        ) -> ProjectArchitectureReceipt {
+            self.evaluate_bound(ir, effect_closure, HASH_A, HASH_A)
+        }
+
+        fn evaluate_bound(
+            &self,
+            ir: &CompilerArchitectureIr,
+            effect_closure: Option<&EffectClosureParent>,
+            policy_blake3: &str,
+            waiver_policy_blake3: &str,
+        ) -> ProjectArchitectureReceipt {
+            let mut coverage = self.coverage.clone();
+            coverage.expected_unit_ids = sorted_dedup(ir.units.iter().map(|unit| unit.unit_id.clone()).collect());
+            coverage.observed_unit_ids = coverage.expected_unit_ids.clone();
+            coverage.coverage_id = octet_architecture_ir::coverage_identity(&coverage);
+            let mut compiler_receipt = self.compiler_receipt.clone();
+            compiler_receipt.architecture_ir_id = Some(ir.architecture_ir_id.clone());
+            compiler_receipt.coverage_id = coverage.coverage_id.clone();
+            compiler_receipt.receipt_id = octet_architecture_ir::receipt_identity(&compiler_receipt);
             evaluate_project_architecture(&ProjectArchitectureGateInput {
                 policy: &self.policy,
                 policy_source_blake3: HASH_C,
-                policy_blake3: HASH_A,
+                policy_blake3,
+                waiver_policy_blake3,
                 lint_phase_status: "clean",
                 command_blake3: HASH_B,
                 cargo_graph: &self.graph,
-                architecture_ir: &self.ir,
-                coverage: &self.coverage,
-                compiler_receipt: &self.compiler_receipt,
+                architecture_ir: ir,
+                coverage: &coverage,
+                compiler_receipt: &compiler_receipt,
                 effect_closure,
             })
         }
@@ -2972,6 +3890,7 @@ mod tests {
                 .expect("signature id"),
                 owner_item_id: item_id(&decision).to_owned(),
                 input_type_ids: vec![authority_input_type_id],
+                input_by_reference: vec![true],
                 output_type_id: authorized_output_type_id.clone(),
                 is_public: true,
             };
@@ -3001,6 +3920,7 @@ mod tests {
                     .expect("signature id"),
                 owner_item_id: item_id(&constructor).to_owned(),
                 input_type_ids: vec![authorized_output_type_id.clone()],
+                input_by_reference: vec![false],
                 output_type_id: witness_type_id.clone(),
                 is_public: false,
             };
@@ -3080,6 +4000,7 @@ mod tests {
                 .expect("signature id"),
                 owner_item_id: item_id(&executor).to_owned(),
                 input_type_ids: vec![witness_type_id.clone()],
+                input_by_reference: vec![false],
                 output_type_id: witness_type_id.clone(),
                 is_public: true,
             };
@@ -3193,7 +4114,15 @@ mod tests {
             facts: Vec<CompilerArchitectureFact>,
             unknowns: Vec<UnknownCompilerFact>,
         ) {
-            assert!(self.ir.units.iter().any(|unit| unit.package_name == package), "fixture unit");
+            let unit = self
+                .ir
+                .units
+                .iter()
+                .find(|unit| unit.package_name == package && unit.role != CompilerArchitectureRole::Test)
+                .expect("fixture production unit");
+            let row = self.ir.unit_memberships.iter_mut().find(|row| row.unit_id == unit.unit_id).expect("fixture row");
+            row.fact_ids.extend(facts.iter().map(|fact| fact.fact_id().to_owned()));
+            row.unknown_ids.extend(unknowns.iter().map(|unknown| unknown.unknown_id.clone()));
             self.ir.spans.extend(spans);
             self.ir.facts.extend(facts);
             self.ir.unknowns.extend(unknowns);
@@ -3248,12 +4177,13 @@ mod tests {
     }
 
     fn unit(package: &str, role: CompilerArchitectureRole) -> CompilationUnit {
-        CompilationUnit {
-            unit_id: octet_architecture_ir::canonical_identity("fixture-unit", &(package, role)).expect("unit id"),
+        let mut unit = CompilationUnit {
+            unit_id: String::new(),
             package_name: package.to_owned(),
             package_version: "0.1.0".to_owned(),
             target_name: package.to_owned(),
             target_kind: "lib".to_owned(),
+            source_path: format!("crates/{package}/src/lib.rs"),
             crate_types: vec!["rlib".to_owned()],
             target_triple: TARGET.to_owned(),
             features: Vec::new(),
@@ -3264,7 +4194,9 @@ mod tests {
             policy_blake3: HASH_A.to_owned(),
             source_blake3: octet_architecture_ir::canonical_identity("fixture-source", &package).expect("source id"),
             invocation_blake3: HASH_B.to_owned(),
-        }
+        };
+        unit.unit_id = octet_architecture_ir::compilation_unit_identity(&unit);
+        unit
     }
 
     fn span(path: &str) -> SourceSpan {
@@ -3320,8 +4252,9 @@ mod tests {
         };
         field_visibilities.clear();
         field_visibilities.push(visibility.to_owned());
-        fact_id.clear();
+        let previous = std::mem::take(fact_id);
         set_fact_id(fact);
+        rebind_fixture_fact(&mut ir.unit_memberships, &previous, fact.fact_id());
         ir.facts.sort_by(|left, right| left.fact_id().cmp(right.fact_id()));
     }
 
@@ -3347,8 +4280,9 @@ mod tests {
             panic!("witness shape expected");
         };
         mutate(field_type_definitions, implemented_traits);
-        fact_id.clear();
+        let previous = std::mem::take(fact_id);
         set_fact_id(fact);
+        rebind_fixture_fact(&mut ir.unit_memberships, &previous, fact.fact_id());
         ir.facts.sort_by(|left, right| left.fact_id().cmp(right.fact_id()));
     }
 
@@ -3375,7 +4309,9 @@ mod tests {
                 )
             })
             .expect("witness constructor item");
+        let previous = item.fact_id().to_owned();
         set_item_visibility(item, visibility);
+        rebind_fixture_fact(&mut ir.unit_memberships, &previous, item.fact_id());
         let safety = ir
             .facts
             .iter_mut()
@@ -3395,8 +4331,9 @@ mod tests {
             panic!("witness constructor safety expected");
         };
         *current = is_unsafe;
-        fact_id.clear();
+        let previous = std::mem::take(fact_id);
         set_fact_id(safety);
+        rebind_fixture_fact(&mut ir.unit_memberships, &previous, safety.fact_id());
         ir.facts.sort_by(|left, right| left.fact_id().cmp(right.fact_id()));
     }
 
@@ -3408,10 +4345,32 @@ mod tests {
                     if callee_definition == "outbound::FilesystemPort::publish"
             )
         });
+        let retained = ir.facts.iter().map(CompilerArchitectureFact::fact_id).collect::<BTreeSet<_>>();
+        for row in &mut ir.unit_memberships {
+            row.fact_ids.retain(|id| retained.contains(id.as_str()));
+        }
     }
 
     fn remove_executor_witness_parameter(ir: &mut CompilerArchitectureIr) {
-        let executor_item_id = ir
+        mutate_executor_signature(ir, |input_type_ids, input_by_reference| {
+            input_type_ids.clear();
+            input_by_reference.clear();
+        });
+    }
+
+    fn mutate_executor_signature(
+        ir: &mut CompilerArchitectureIr,
+        mutate: impl FnOnce(&mut Vec<String>, &mut Vec<bool>),
+    ) {
+        mutate_signature(ir, "outbound::FilesystemPort::publish", mutate);
+    }
+
+    fn mutate_signature(
+        ir: &mut CompilerArchitectureIr,
+        owner_path: &str,
+        mutate: impl FnOnce(&mut Vec<String>, &mut Vec<bool>),
+    ) {
+        let owner = ir
             .facts
             .iter()
             .find_map(|fact| match fact {
@@ -3419,10 +4378,10 @@ mod tests {
                     item_id,
                     qualified_path,
                     ..
-                } if qualified_path == "outbound::FilesystemPort::publish" => Some(item_id.clone()),
+                } if qualified_path == owner_path => Some(item_id.clone()),
                 _ => None,
             })
-            .expect("protected executor item");
+            .expect("signature owner item");
         let signature = ir
             .facts
             .iter_mut()
@@ -3430,21 +4389,23 @@ mod tests {
                 matches!(
                     fact,
                     CompilerArchitectureFact::Signature { owner_item_id, .. }
-                        if owner_item_id == &executor_item_id
+                        if owner_item_id == &owner
                 )
             })
-            .expect("protected executor signature");
+            .expect("owner signature");
         let CompilerArchitectureFact::Signature {
             fact_id,
             input_type_ids,
+            input_by_reference,
             ..
         } = signature
         else {
-            panic!("protected executor signature expected");
+            panic!("owner signature expected");
         };
-        input_type_ids.clear();
-        fact_id.clear();
+        mutate(input_type_ids, input_by_reference);
+        let previous = std::mem::take(fact_id);
         set_fact_id(signature);
+        rebind_fixture_fact(&mut ir.unit_memberships, &previous, signature.fact_id());
         ir.facts.sort_by(|left, right| left.fact_id().cmp(right.fact_id()));
     }
 
@@ -3474,8 +4435,9 @@ mod tests {
             panic!("receipt provenance expected");
         };
         mutate(argument_type_id, origin_definitions, status);
-        fact_id.clear();
+        let previous = std::mem::take(fact_id);
         set_fact_id(fact);
+        rebind_fixture_fact(&mut ir.unit_memberships, &previous, fact.fact_id());
         ir.facts.sort_by(|left, right| left.fact_id().cmp(right.fact_id()));
     }
 
@@ -3523,8 +4485,9 @@ mod tests {
             panic!("decision signature expected");
         };
         *current = output_type_id;
-        fact_id.clear();
+        let previous = std::mem::take(fact_id);
         set_fact_id(signature);
+        rebind_fixture_fact(&mut ir.unit_memberships, &previous, signature.fact_id());
         ir.facts.sort_by(|left, right| left.fact_id().cmp(right.fact_id()));
     }
 
@@ -3569,6 +4532,16 @@ mod tests {
             panic!("fixture item fact expected");
         };
         item_id
+    }
+
+    fn rebind_fixture_fact(rows: &mut [octet_architecture_ir::UnitFactMembership], previous: &str, current: &str) {
+        for row in rows {
+            for id in &mut row.fact_ids {
+                if id == previous {
+                    *id = current.to_owned();
+                }
+            }
+        }
     }
 
     fn set_fact_id(fact: &mut CompilerArchitectureFact) {

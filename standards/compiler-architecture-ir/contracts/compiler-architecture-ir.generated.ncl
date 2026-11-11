@@ -48,6 +48,7 @@ let Unit = {
   package_version | NonEmptyString,
   target_name | NonEmptyString,
   target_kind | NonEmptyString,
+  source_path | NonEmptyString,
   crate_types | Array NonEmptyString,
   target_triple | NonEmptyString,
   features | Array NonEmptyString,
@@ -58,6 +59,20 @@ let Unit = {
   policy_blake3 | Blake3,
   source_blake3 | Blake3,
   invocation_blake3 | Blake3,
+} in
+let CollectorUnit = {
+  rustc_crate_name | NonEmptyString,
+  manifest_dir | String,
+  source_path | NonEmptyString,
+  test_configuration | Bool,
+  source_roles | Array { source_scope | NonEmptyString, role | Role },
+  unit | Unit,
+} in
+let ValueFlowSelection = {
+  tracked_callee_definitions | Array NonEmptyString,
+  tracked_type_definitions | Array NonEmptyString,
+  root_origin_definitions | Array NonEmptyString,
+  propagation_definitions | Array NonEmptyString,
 } in
 let SourceOrigin = std.contract.from_predicate (fun value =>
   std.is_record value
@@ -103,8 +118,17 @@ let Issue = {
 } in
 {
   ArchitectureCollectionLimits = Limits,
+  CompilerArchitectureCollectorContext = {
+    schema_version | OneOf ["octet-compiler-architecture-collector-context/v3"],
+    workspace_root | NonEmptyString,
+    output_directory | NonEmptyString,
+    limits | Limits,
+    selected_units | Array CollectorUnit,
+    value_flow_selections | Array ValueFlowSelection,
+    non_claims | Array NonEmptyString,
+  },
   CompilerArchitectureShard = {
-    schema_version | OneOf ["octet-compiler-architecture-shard/v1"],
+    schema_version | OneOf ["octet-compiler-architecture-shard/v2"],
     shard_id | Blake3,
     unit | Unit,
     collection_status | CollectionStatus,
@@ -114,10 +138,11 @@ let Issue = {
     non_claims | Array NonEmptyString,
   },
   CompilerArchitectureIr = {
-    schema_version | OneOf ["octet-compiler-architecture-ir/v1"],
+    schema_version | OneOf ["octet-compiler-architecture-ir/v2"],
     architecture_ir_id | Blake3,
     policy_blake3 | Blake3,
     units | Array Unit,
+    unit_memberships | Array { unit_id | Blake3, fact_ids | Array Blake3, unknown_ids | Array Blake3 },
     spans | Array Span,
     facts | Array Fact,
     unknowns | Array Unknown,

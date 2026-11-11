@@ -44,6 +44,7 @@ pub(crate) fn evaluate(
         policy: &policy.policy,
         policy_source_blake3: &policy.source_blake3,
         policy_blake3: &policy.policy_blake3,
+        waiver_policy_blake3: &policy.waiver_policy_blake3,
         lint_phase_status,
         command_blake3: &command_blake3,
         cargo_graph: &prepared.cargo_graph,

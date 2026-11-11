@@ -1,6 +1,8 @@
 use rustc_errors::Applicability;
 use rustc_hir as hir;
 use rustc_hir::ExprKind;
+use rustc_hir::def::DefKind;
+use rustc_hir::def::Res;
 use rustc_lint::LateContext;
 use rustc_lint::LateLintPass;
 use rustc_lint::LintContext;
@@ -14,12 +16,14 @@ use rustc_span::sym;
 use crate::diagnostics::LintSuggestion;
 use crate::diagnostics::emit_tiger_style_lint;
 use crate::diagnostics::emit_tiger_style_lint_with_suggestion;
+use crate::source;
 use crate::test_context;
 
 declare_tool_lint! {
-    /// Detects `.unwrap()` and `.expect()` calls on `Option` and `Result`
-    /// in non-test code. These panic on failure, crashing the process
-    /// instead of propagating the error.
+    /// Detects `Option`/`Result` `unwrap` and `expect` in non-test code, through
+    /// method calls, UFCS calls such as `Option::expect(value, "..")`, and
+    /// function paths such as `map(Result::unwrap)`. These panic on failure,
+    /// crashing the process instead of propagating the error.
     pub tigerstyle::NO_UNWRAP,
     Warn,
     "`.unwrap()`/`.expect()` in production code"
@@ -150,7 +154,7 @@ fn same_receiver(lhs: &hir::Expr<'_>, rhs: &hir::Expr<'_>) -> bool {
 }
 
 fn guard_method_name(cx: &LateContext<'_>, receiver: &hir::Expr<'_>) -> Option<&'static str> {
-    let receiver_ty = cx.typeck_results().expr_ty(receiver);
+    let receiver_ty = cx.typeck_results().expr_ty_adjusted(receiver);
     if let ty::Adt(adt, _) = receiver_ty.kind() {
         let did = adt.did();
         if cx.tcx.is_diagnostic_item(sym::Option, did) {
@@ -207,7 +211,7 @@ fn has_same_branch_guard(cx: &LateContext<'_>, expr: &hir::Expr<'_>, receiver: &
 fn should_skip_unwrap<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx hir::Expr<'tcx>,
-    receiver: &'tcx hir::Expr<'tcx>,
+    receiver: Option<&'tcx hir::Expr<'tcx>>,
     name: &str,
 ) -> bool {
     if test_context::late_hir_id_is_in_test_context(cx, expr.hir_id, expr.span) {
@@ -218,34 +222,88 @@ fn should_skip_unwrap<'tcx>(
         return false;
     }
 
-    is_known_constructor_call(receiver)
-        || is_provably_infallible_literal_parse(cx, receiver)
-        || has_same_branch_guard(cx, expr, receiver)
+    // A bare `Option::unwrap` path has no receiver to prove `Some`/`Ok`.
+    receiver.is_some_and(|receiver| {
+        is_known_constructor_call(receiver)
+            || is_provably_infallible_literal_parse(cx, receiver)
+            || has_same_branch_guard(cx, expr, receiver)
+    })
+}
+
+/// Name of the `Option`/`Result` `unwrap` or `expect` method that a path such as
+/// `Result::unwrap`, `Option::<u32>::expect`, or `<Option<u32>>::unwrap` resolves to.
+/// Paths whose method segment the user did not spell are generated code.
+fn path_unwrap_name(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> Option<&'static str> {
+    let ExprKind::Path(qpath) = &expr.kind else {
+        return None;
+    };
+    let Res::Def(DefKind::AssocFn, did) = cx.typeck_results().qpath_res(qpath, expr.hir_id) else {
+        return None;
+    };
+    let name = match cx.tcx.item_name(did).as_str() {
+        "unwrap" => "unwrap",
+        "expect" => "expect",
+        _ => return None,
+    };
+    let impl_did = cx.tcx.inherent_impl_of_assoc(did)?;
+    if !is_option_or_result(cx, cx.tcx.type_of(impl_did).instantiate_identity()) {
+        return None;
+    }
+    let method_ident = match qpath {
+        hir::QPath::Resolved(_, path) => path.segments.last()?.ident,
+        hir::QPath::TypeRelative(_, segment) => segment.ident,
+    };
+    source::ident_is_spelled_at_its_span(cx.sess(), method_ident).then_some(name)
+}
+
+fn is_call_callee(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> bool {
+    matches!(
+        cx.tcx.parent_hir_node(expr.hir_id),
+        hir::Node::Expr(hir::Expr { kind: ExprKind::Call(callee, _), .. }) if callee.hir_id == expr.hir_id
+    )
+}
+
+/// The receiver (if any) and method name of an `unwrap`/`expect` use: method-call
+/// syntax, a UFCS call such as `Option::expect(value, "..")`, or a bare function
+/// path such as `map(Result::unwrap)`.
+fn unwrap_use<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx hir::Expr<'tcx>,
+) -> Option<(Option<&'tcx hir::Expr<'tcx>>, &'static str)> {
+    match &expr.kind {
+        ExprKind::MethodCall(segment, receiver, _args, _span) => {
+            let name = match segment.ident.name.as_str() {
+                "unwrap" => "unwrap",
+                "expect" => "expect",
+                _ => return None,
+            };
+            // `#[tokio::main]` re-spans its generated `.expect` at a user token.
+            if !source::ident_is_spelled_at_its_span(cx.sess(), segment.ident) {
+                return None;
+            }
+            // Only fire when the receiver is Option or Result. Use the adjusted type
+            // so auto-derefed receivers such as `&Option<T>` are covered too.
+            is_option_or_result(cx, cx.typeck_results().expr_ty_adjusted(receiver)).then_some((Some(*receiver), name))
+        }
+        ExprKind::Call(callee, [receiver, ..]) => path_unwrap_name(cx, callee).map(|name| (Some(receiver), name)),
+        // The callee of a UFCS call is reported with the call above.
+        ExprKind::Path(_) if !is_call_callee(cx, expr) => path_unwrap_name(cx, expr).map(|name| (None, name)),
+        _ => None,
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for NoUnwrap {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx hir::Expr<'tcx>) {
-        let ExprKind::MethodCall(segment, receiver, _args, _span) = &expr.kind else {
+        let Some((receiver, name)) = unwrap_use(cx, expr) else {
             return;
         };
-
-        let name = segment.ident.name.as_str();
-        if name != "unwrap" && name != "expect" {
-            return;
-        }
-
-        // Only fire when the receiver is Option or Result
-        let receiver_ty = cx.typeck_results().expr_ty(receiver);
-        if !is_option_or_result(cx, receiver_ty) {
-            return;
-        }
 
         if should_skip_unwrap(cx, expr, receiver, name) {
             return;
         }
 
         let message = format!("`.{name}()` in production code will panic on failure");
-        if let Some(suggestion) = unwrap_suggestion(cx, expr, receiver) {
+        if let Some(suggestion) = receiver.and_then(|receiver| unwrap_suggestion(cx, expr, receiver)) {
             emit_tiger_style_lint_with_suggestion(cx, NO_UNWRAP, expr.span, message, "no_unwrap", suggestion);
         } else {
             emit_tiger_style_lint(cx, NO_UNWRAP, expr.span, message, "no_unwrap");

@@ -1,10 +1,12 @@
 # Octet Repo Quick Reference
 
-Compact map for common work in `/path/to/git/octet` (Octet repo checkout).
+Compact map for common work in `~/git/octet` (Octet repo checkout).
 
-## Always-start commands
+## Start with the changed area
 
-Run Rust work inside nix devshell:
+Read `AGENTS.md` first. Then read the relevant `README.md` passages and sources for the selected area. Use the source lists as maps, not mandatory full-file reading lists. Expand source reads only for affected contracts or unresolved questions.
+
+Run Rust commands inside the Nix devshell. This example applies to code checks, not every task:
 
 ```bash
 nix develop -c bash -c 'cargo check'
@@ -18,9 +20,17 @@ trap 'rm -rf "$tmp_target"' EXIT
 CARGO_TARGET_DIR="$tmp_target" nix develop -c bash -c 'cargo test --lib'
 ```
 
-## Most useful verification commands
+## Verification commands by area
 
-### General
+Run all repository-required gates, including strict gates. Do not replace required gates with focused checks.
+
+For prose-only changes, use source review and applicable document checks unless repository policy explicitly requires more.
+
+For code changes, run the smallest relevant baseline before edits. After edits, rerun the affected checks. Use the engine commands for runner changes.
+
+### Code and full-repository checks
+
+Select code checks for the affected source. When repository policy or the change requires full-repository verification, run `nix flake check`.
 
 ```bash
 nix develop -c bash -c 'cargo check'
@@ -29,6 +39,8 @@ nix flake check
 ```
 
 ### UI harness
+
+For lint or UI changes, run the required ignored UI rail. For structured fixes, also run the autofix rail. For intended snapshot changes, use the `BLESS=1` command.
 
 ```bash
 nix develop -c bash -c 'cargo test --test ui ui -- --ignored --nocapture'
@@ -110,7 +122,7 @@ Read:
 - `docs/downstream-rollout.md`
 - `templates/dylint.toml`
 - `README.md`
-- `flake.nix`
+- relevant `flake.nix` sections for Nix consumer-path changes
 - archived evidence paths cited by docs before changing claims
 
 Current consumer path:

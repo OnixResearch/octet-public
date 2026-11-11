@@ -24,7 +24,7 @@ pub struct ForeignEnumCatchAll;
 impl_lint_pass!(ForeignEnumCatchAll => [FOREIGN_ENUM_CATCH_ALL]);
 
 fn enum_type<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx hir::Expr<'tcx>) -> Option<rustc_middle::ty::AdtDef<'tcx>> {
-    let ty::Adt(adt, _) = cx.typeck_results().expr_ty(expr).kind() else {
+    let ty::Adt(adt, _) = cx.typeck_results().expr_ty(expr).peel_refs().kind() else {
         return None;
     };
     adt.is_enum().then_some(*adt)

@@ -15,13 +15,13 @@ LL |     x as u32
    |     ^^^^^^^^
    |
    = help: Tiger Style (Safe Narrowing): narrow integers with checked conversions instead of `as` Example: let small = u32::try_from(value)?;
-   = note: structured suggestion applicability: MaybeIncorrect
+   = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Safe Narrowing / Conversions
    = note: `#[warn(tigerstyle::unchecked_narrowing)]` on by default
 help: replace with `u32::try_from(...)`
    |
 LL -     x as u32
-LL +     u32::try_from(x)?
+LL +     u32::try_from(x).unwrap_or_else(|_| /* handle out-of-range value */)
    |
 
 warning: 2 warnings emitted

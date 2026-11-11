@@ -35,7 +35,7 @@ const LITTLE_ENDIAN: &str = "little";
 const BIG_ENDIAN: &str = "big";
 const THEOREM_DECLARATION_PREFIX: &str = "theorem ";
 const THEOREM_BODY_SEPARATOR: &str = ":=";
-const THEOREM_TYPE_SEPARATOR: &str = ":";
+const THEOREM_TYPE_SEPARATOR: char = ':';
 const VACUOUS_THEOREM_IDENTIFIER: &str = "True";
 const FORBIDDEN_THEOREM_DECLARATIONS: &[&str] = &["admit", "sorry"];
 const AENEAS_PROVIDER_PROFILE_JSON: &str =
@@ -274,12 +274,9 @@ pub fn validate_charon_extraction_contract(
         &observed.start_from,
         &reviewed.start_from,
     );
-    push_contract_mismatch(
-        &mut diagnostics,
-        "extraction_policy.include_rules",
-        &observed.include_rules,
-        &reviewed.include_rules,
-    );
+    // The reviewed profile's `include_rules` are recorded but not applied by the executed Charon
+    // argv, so the observed rules are recorded without comparison until the profile owner decides
+    // whether to pass them to Charon or to re-key the profile.
     push_contract_mismatch(
         &mut diagnostics,
         "extraction_policy.exclude_rules",
@@ -352,6 +349,7 @@ struct AeneasProviderProfile {
     ocaml_toolchain: String,
     lean_toolchain: String,
     aeneas_lean_library: String,
+    environment_allowlist: Vec<String>,
     extraction_policy: CharonExtractionPolicy,
 }
 
@@ -371,6 +369,15 @@ fn validate_aeneas_provider_pins(payload: &AeneasLeanProofPayload, reviewed: &Ae
         "aeneas_lean_library",
         &payload.aeneas_lean_library,
         &reviewed.aeneas_lean_library,
+    );
+    // The shell rebuilds the child environment only from the reviewed profile allowlist, so a
+    // receipt naming any other allowlist did not record what ran. Limits are not pinned here:
+    // rails may raise the profile's default limits, and the receipt records the enforced values.
+    push_contract_mismatch(
+        &mut diagnostics,
+        "environment_allowlist",
+        &payload.environment_allowlist,
+        &reviewed.environment_allowlist,
     );
     diagnostics
 }
@@ -447,17 +454,43 @@ pub struct AeneasTheoremAdequacy {
     pub forbidden_declarations: Vec<String>,
 }
 
+/// Return the name of the first `theorem` declaration in a theorem source.
+///
+/// This is the theorem that [`assess_aeneas_theorem_source`] assesses.
+#[must_use]
+pub fn aeneas_theorem_name(source: &str) -> Option<&str> {
+    named_theorem_declaration(source).map(|(name, _)| name)
+}
+
+/// Find the first `theorem` declaration and its header text before `:=`.
+///
+/// The header joins the declaration's lines up to `:=`; it is `None` when the
+/// declaration reaches the next `theorem` or the end of the source without `:=`.
+fn named_theorem_declaration(source: &str) -> Option<(&str, Option<String>)> {
+    let mut lines = source.lines();
+    let declaration = lines.find_map(|line| line.trim_start().strip_prefix(THEOREM_DECLARATION_PREFIX))?;
+    let name = declaration.split_whitespace().next()?;
+    let continuation = lines.take_while(|line| !line.trim_start().starts_with(THEOREM_DECLARATION_PREFIX));
+    let mut header = String::new();
+    for line in std::iter::once(declaration).chain(continuation) {
+        if let Some((before_body, _)) = line.split_once(THEOREM_BODY_SEPARATOR) {
+            header.push_str(before_body);
+            return Some((name, Some(header)));
+        }
+        header.push_str(line);
+        header.push('\n');
+    }
+    Some((name, None))
+}
+
 /// Assess a bounded, already-loaded theorem source before provider admission.
 // r[impl octet.aeneas_lean_proof_rail.theorem_adequacy]
 #[must_use]
 pub fn assess_aeneas_theorem_source(source: &str) -> AeneasTheoremAdequacy {
-    let statement = source.lines().find_map(|line| {
-        let declaration = line.trim_start().strip_prefix(THEOREM_DECLARATION_PREFIX)?;
-        let header = declaration.split_once(THEOREM_BODY_SEPARATOR)?.0;
-        header.rsplit_once(THEOREM_TYPE_SEPARATOR).map(|(_, value)| value.trim())
-    });
+    let header = named_theorem_declaration(source).and_then(|(_, header)| header);
+    let statement = header.as_deref().and_then(theorem_statement);
     let decision = match statement {
-        Some(value) if true_style_statement(value) => AeneasTheoremAdequacyDecision::Vacuous,
+        Some(value) if true_style_statement(strip_leading_binders(value)) => AeneasTheoremAdequacyDecision::Vacuous,
         Some(value) if !value.is_empty() => AeneasTheoremAdequacyDecision::NonVacuous,
         _ => AeneasTheoremAdequacyDecision::Rejected,
     };
@@ -474,6 +507,82 @@ pub fn assess_aeneas_theorem_source(source: &str) -> AeneasTheoremAdequacy {
         decision,
         forbidden_declarations,
     }
+}
+
+/// Return the theorem type: the text after the first `:` outside the declaration's binders.
+fn theorem_statement(header: &str) -> Option<&str> {
+    let separator = top_level_char_index(header, THEOREM_TYPE_SEPARATOR)?;
+    Some(header[separator + THEOREM_TYPE_SEPARATOR.len_utf8()..].trim())
+}
+
+/// Strip leading `∀ …,` quantifiers and `(…) →` binder or premise groups.
+///
+/// Both keep the statement trivially provable when the remaining conclusion is `True`-style.
+fn strip_leading_binders(statement: &str) -> &str {
+    let mut remaining = statement.trim();
+    loop {
+        let stripped = if let Some(body) = strip_universal_quantifier(remaining) {
+            top_level_char_index(body, ',').map(|comma| &body[comma + ','.len_utf8()..])
+        } else {
+            strip_leading_arrow_group(remaining)
+        };
+        match stripped {
+            Some(rest) => remaining = rest.trim(),
+            None => return remaining,
+        }
+    }
+}
+
+fn strip_universal_quantifier(statement: &str) -> Option<&str> {
+    statement.strip_prefix('∀').or_else(|| {
+        statement
+            .strip_prefix("forall")
+            .filter(|rest| rest.starts_with(|character: char| character.is_whitespace() || opening_bracket(character)))
+    })
+}
+
+fn strip_leading_arrow_group(statement: &str) -> Option<&str> {
+    if !statement.starts_with(opening_bracket) {
+        return None;
+    }
+    let mut depth = 0_usize;
+    let mut group_end = None;
+    for (index, character) in statement.char_indices() {
+        if opening_bracket(character) {
+            depth += 1;
+        } else if closing_bracket(character) {
+            depth = depth.saturating_sub(1);
+            if depth == 0 {
+                group_end = Some(index + character.len_utf8());
+                break;
+            }
+        }
+    }
+    let rest = statement[group_end?..].trim_start();
+    rest.strip_prefix('→').or_else(|| rest.strip_prefix("->"))
+}
+
+/// Return the byte index of the first `target` outside `()`, `[]`, `{}`, `⦃⦄`, and `⟨⟩`.
+fn top_level_char_index(text: &str, target: char) -> Option<usize> {
+    let mut depth = 0_usize;
+    for (index, character) in text.char_indices() {
+        if opening_bracket(character) {
+            depth += 1;
+        } else if closing_bracket(character) {
+            depth = depth.saturating_sub(1);
+        } else if depth == 0 && character == target {
+            return Some(index);
+        }
+    }
+    None
+}
+
+fn opening_bracket(character: char) -> bool {
+    matches!(character, '(' | '[' | '{' | '⦃' | '⟨')
+}
+
+fn closing_bracket(character: char) -> bool {
+    matches!(character, ')' | ']' | '}' | '⦄' | '⟩')
 }
 
 fn true_style_statement(statement: &str) -> bool {
@@ -1807,7 +1916,6 @@ mod tests {
             "mir_start_stage",
             "drop_policy",
             "start_from",
-            "include_rules",
             "exclude_rules",
             "opaque_rules",
             "transformation_settings",
@@ -1818,6 +1926,10 @@ mod tests {
                 "missing diagnostic for {field}: {diagnostics:?}"
             );
         }
+        assert!(
+            !diagnostics.iter().any(|diagnostic| diagnostic.contains("include_rules")),
+            "include_rules are recorded, not compared: {diagnostics:?}"
+        );
     }
 
     // r[verify octet.aeneas_lean_proof_rail.provider_contract]
@@ -1831,6 +1943,20 @@ mod tests {
         assert!(
             diagnostics.iter().any(|diagnostic| diagnostic.contains("charon_revision drifted")),
             "wrong provider pin must fail closed: {diagnostics:?}"
+        );
+    }
+
+    // r[verify octet.aeneas_lean_proof_rail.safe_execution]
+    #[test]
+    fn aeneas_payload_rejects_environment_allowlist_drift_from_reviewed_profile() {
+        let mut payload = valid_aeneas_payload();
+        payload.environment_allowlist.push("AWS_SECRET_ACCESS_KEY".to_owned());
+
+        let diagnostics = validate_aeneas_lean_payload(&payload);
+
+        assert!(
+            diagnostics.iter().any(|diagnostic| diagnostic.contains("environment_allowlist")),
+            "an allowlist wider than the reviewed profile must fail closed: {diagnostics:?}"
         );
     }
 
@@ -2071,7 +2197,7 @@ mod tests {
                 stdout_max_bytes: TEST_LOG_MAX_BYTES,
                 stderr_max_bytes: TEST_LOG_MAX_BYTES,
             },
-            environment_allowlist: vec!["PATH".to_owned()],
+            environment_allowlist: profile.environment_allowlist,
             extraction_policy: profile.extraction_policy,
             assumption_policy: AeneasAssumptionPolicy {
                 external_models: vec!["none".to_owned()],
@@ -2160,6 +2286,55 @@ mod tests {
         let forbidden = assess_aeneas_theorem_source("theorem admitted : Nat := by sorry");
         assert_eq!(forbidden.decision, AeneasTheoremAdequacyDecision::NonVacuous);
         assert_eq!(forbidden.forbidden_declarations, vec!["sorry".to_owned()]);
+    }
+
+    // r[verify octet.aeneas_lean_proof_rail.theorem_adequacy]
+    #[test]
+    fn aeneas_theorem_source_assessment_reads_multi_line_named_theorem() {
+        let named = "theorem named_vacuous (x : Nat) :\n    True := by\n  trivial\n";
+        let alone = assess_aeneas_theorem_source(named);
+        assert_eq!(alone.decision, AeneasTheoremAdequacyDecision::Vacuous);
+
+        let with_helper = format!("{named}\ntheorem helper (x : Nat) : x = x := by rfl\n");
+        let followed = assess_aeneas_theorem_source(&with_helper);
+        assert_eq!(followed.decision, AeneasTheoremAdequacyDecision::Vacuous);
+
+        let non_vacuous =
+            "theorem named_model (x : Nat)\n    : x + 0 = x := by\n  simp\n\ntheorem helper : True := by trivial\n";
+        let assessed = assess_aeneas_theorem_source(non_vacuous);
+        assert_eq!(assessed.decision, AeneasTheoremAdequacyDecision::NonVacuous);
+
+        let unterminated =
+            "theorem named_missing_body (x : Nat) : x = x\n\ntheorem helper (x : Nat) : x = x := by rfl\n";
+        let rejected = assess_aeneas_theorem_source(unterminated);
+        assert_eq!(rejected.decision, AeneasTheoremAdequacyDecision::Rejected);
+    }
+
+    // r[verify octet.aeneas_lean_proof_rail.theorem_adequacy]
+    #[test]
+    fn aeneas_theorem_source_assessment_sees_through_binder_colons() {
+        for source in [
+            "theorem t : ∀ n : Nat, True := fun _ => trivial",
+            "theorem t : (n : Nat) → True := fun _ => trivial",
+            "theorem t : forall (n : Nat) (m : Nat), True := fun _ _ => trivial",
+            "theorem t : ∀ n, ∀ m : Nat, (h : n = m) -> True := fun _ _ _ => trivial",
+            "theorem t {α : Type} (xs : List α) : ∀ x ∈ xs, True := fun _ _ => trivial",
+            "theorem t\n    (n : Nat) :\n    ∀ m : Nat, True ∧ True := by\n  simp\n",
+        ] {
+            let assessed = assess_aeneas_theorem_source(source);
+            assert_eq!(assessed.decision, AeneasTheoremAdequacyDecision::Vacuous, "source: {source}");
+        }
+
+        for source in [
+            "theorem t : ∀ n : Nat, n + 0 = n := by simp",
+            "theorem t : (n : Nat) → n = n := fun _ => rfl",
+            "theorem t {α : Type} (xs : List α) : (xs.map id : List α) = xs := by simp",
+            "theorem t : ∀ n : Nat, True ∧ n = n := by simp",
+            "theorem t : (True → False) → False := fun h => h trivial",
+        ] {
+            let assessed = assess_aeneas_theorem_source(source);
+            assert_eq!(assessed.decision, AeneasTheoremAdequacyDecision::NonVacuous, "source: {source}");
+        }
     }
 
     // r[verify octet.aeneas_lean_proof_rail.theorem_adequacy]

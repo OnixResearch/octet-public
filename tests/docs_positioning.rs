@@ -17,6 +17,7 @@ const README_DOC: &str = "README.md";
 const VERUS_README_DOC: &str = "verus/README.md";
 const CHECKED_CONTRACT_ANCHOR: &str = "docs/trust-boundary-evidence.md#checked-contract-ladder";
 const VERUS_PROOF_PATH_ANCHOR: &str = "docs/trust-boundary-evidence.md#verus-proof-path-lane";
+const DEFAULT_DENY_POSTURE_DOC: &str = "docs/default-deny-gate-posture.md";
 
 #[test]
 fn checked_path_positioning_is_visible_in_primary_docs() {
@@ -45,6 +46,28 @@ fn checked_path_positioning_is_visible_in_primary_docs() {
         "evidence artifacts",
         "consumer CI or release gate",
     ]);
+}
+
+#[test]
+fn default_deny_posture_names_only_implemented_controls() {
+    let posture = read_repo_text(DEFAULT_DENY_POSTURE_DOC);
+
+    assert_required_terms(&posture, &["templates/octet-check.sh", "cargo octet check", "templates/ci-gate.yml"]);
+    for unimplemented in [
+        "--allow-style-violations",
+        "OCTET_STYLE_GATE_DISABLE",
+        "!cargo octet",
+        "templates/cargo-alias.toml",
+    ] {
+        assert!(
+            !posture.contains(unimplemented),
+            "{DEFAULT_DENY_POSTURE_DOC} must not describe unimplemented control `{unimplemented}`"
+        );
+    }
+    assert!(
+        !Path::new(env!("CARGO_MANIFEST_DIR")).join("templates/cargo-alias.toml").exists(),
+        "templates/cargo-alias.toml used a `!` shell alias that Cargo does not support"
+    );
 }
 
 #[test]

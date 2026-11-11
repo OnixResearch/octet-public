@@ -1,5 +1,5 @@
 warning: struct `Tracker` has 2 lock fields without documented ordering
-  --> $DIR/multi_lock_ordering.rs:7:1
+  --> $DIR/multi_lock_ordering.rs:8:1
    |
 LL | / struct Tracker {
 LL | |     count: Mutex<u64>,
@@ -23,7 +23,7 @@ LL +     // Lock order: <document acquisition order for 2 locks>
    |
 
 warning: struct `AliasedTracker` has 2 lock fields without documented ordering
-  --> $DIR/multi_lock_ordering.rs:20:1
+  --> $DIR/multi_lock_ordering.rs:21:1
    |
 LL | / struct AliasedTracker {
 LL | |     count: Guard<u64>,
@@ -41,7 +41,7 @@ LL +     // Lock order: <document acquisition order for 2 locks>
    |
 
 warning: struct `AtomicsAndLocks` has 2 lock fields without documented ordering
-  --> $DIR/multi_lock_ordering.rs:26:1
+  --> $DIR/multi_lock_ordering.rs:27:1
    |
 LL | / struct AtomicsAndLocks {
 LL | |     // Memory ordering is handled by a separate atomic flag.
@@ -59,5 +59,96 @@ LL ~ struct AtomicsAndLocks {
 LL +     // Lock order: <document acquisition order for 2 locks>
    |
 
-warning: 3 warnings emitted
+warning: struct `DetachedCommentTracker` has 2 lock fields without documented ordering
+  --> $DIR/multi_lock_ordering.rs:59:1
+   |
+LL | / struct DetachedCommentTracker {
+LL | |     count: Mutex<u64>,
+LL | |     state: Mutex<u32>,
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Lock Ordering): document and preserve one lock acquisition order across the codebase Example: // Lock order: state -> peer -> metrics
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Lock Ordering
+help: add lock ordering documentation
+   |
+LL ~ struct DetachedCommentTracker {
+LL +     // Lock order: <document acquisition order for 2 locks>
+   |
+
+warning: struct `SharedTracker` has 2 lock fields without documented ordering
+  --> $DIR/multi_lock_ordering.rs:72:1
+   |
+LL | / struct SharedTracker {
+LL | |     count: std::sync::Arc<Mutex<u64>>,
+LL | |     state: std::sync::Arc<std::sync::RwLock<u32>>,
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Lock Ordering): document and preserve one lock acquisition order across the codebase Example: // Lock order: state -> peer -> metrics
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Lock Ordering
+help: add lock ordering documentation
+   |
+LL ~ struct SharedTracker {
+LL +     // Lock order: <document acquisition order for 2 locks>
+   |
+
+warning: struct `ClockTracker` has 2 lock fields without documented ordering
+  --> $DIR/multi_lock_ordering.rs:78:1
+   |
+LL | / struct ClockTracker {
+LL | |     // Clock ordering follows the wall-clock source.
+LL | |     count: Mutex<u64>,
+LL | |     state: Mutex<u32>,
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Lock Ordering): document and preserve one lock acquisition order across the codebase Example: // Lock order: state -> peer -> metrics
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Lock Ordering
+help: add lock ordering documentation
+   |
+LL ~ struct ClockTracker {
+LL +     // Lock order: <document acquisition order for 2 locks>
+   |
+
+warning: struct `RecorderTracker` has 2 lock fields without documented ordering
+  --> $DIR/multi_lock_ordering.rs:86:1
+   |
+LL | / struct RecorderTracker {
+LL | |     count: Mutex<u64>,
+LL | |     state: Mutex<u32>,
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Lock Ordering): document and preserve one lock acquisition order across the codebase Example: // Lock order: state -> peer -> metrics
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Lock Ordering
+help: add lock ordering documentation
+   |
+LL ~ struct RecorderTracker {
+LL +     // Lock order: <document acquisition order for 2 locks>
+   |
+
+warning: struct `DeadlockNoteTracker` has 2 lock fields without documented ordering
+  --> $DIR/multi_lock_ordering.rs:122:1
+   |
+LL | / struct DeadlockNoteTracker {
+LL | |     count: Mutex<u64>,
+LL | |     state: Mutex<u32>,
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Lock Ordering): document and preserve one lock acquisition order across the codebase Example: // Lock order: state -> peer -> metrics
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Lock Ordering
+help: add lock ordering documentation
+   |
+LL ~ struct DeadlockNoteTracker {
+LL +     // Lock order: <document acquisition order for 2 locks>
+   |
+
+warning: 8 warnings emitted
 

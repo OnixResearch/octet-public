@@ -19,3 +19,9 @@ nix develop -c bash -c 'cargo test -p valence-core evidence_index_law -- --nocap
 | Standalone `valence-core` evidence codebase index | Records and diagnostics remain deterministically ordered. | Every generated evidence-index law case. | shared | Ordering assertions run on positive and negative generated cases. |
 
 Concrete examples, UI fixtures, golden output, transcript evidence, and Nix rails remain authoritative for user-visible behavior. Law tests only assert pure-core invariants that should survive refactors.
+
+## Boundary of the law doctrine
+
+Law and property tests over a pure core do not close the proof-to-implementation boundary. A law proves an invariant of a deterministic function; the failures named in the [proof-to-implementation gap](proof-implementation-gap.md) class are properties of the running system's scheduling, failure, and extension behavior, and they need system-level interleaving, fault-injection, and extension-conformance testing.
+
+Do not present a law suite, a Hegel property run, or a verified model as evidence that a deployed implementation is correct. A verified model is not a verified implementation.

@@ -21,6 +21,7 @@ use model::PROFILE_ID;
 pub(crate) use model::PROJECTION_ARTIFACT;
 pub(crate) use model::RAW_SNAPSHOT_ARTIFACT;
 use model::RECORDED_ONLY_ROLE;
+use model::SemanticComparison;
 use model::SemanticFinding;
 pub(crate) use shell::execute_from_profile;
 
@@ -94,16 +95,7 @@ pub(crate) fn evaluate_envelope(text: &str) -> CharonSemanticEvaluation {
     };
     let mut findings = core_output.findings;
     if let Some(comparison) = &comparison {
-        findings.extend(comparison.rows.iter().filter(|row| row.status != "agree").map(|row| SemanticFinding {
-            family: "semantic-comparison".to_owned(),
-            severity: "manual_review".to_owned(),
-            message: format!(
-                "{} {} {}: Charon={:?}, parent={:?}",
-                row.parent_authority, row.status, row.fact, row.charon_value, row.parent_value
-            ),
-            file: None,
-            line: None,
-        }));
+        findings.extend(comparison_findings(comparison));
     }
     findings.sort_by(|left, right| {
         (&left.family, &left.message, &left.file, left.line).cmp(&(
@@ -144,6 +136,19 @@ pub(crate) fn evaluate_envelope(text: &str) -> CharonSemanticEvaluation {
         diagnostics: Vec::new(),
         findings,
     }
+}
+
+fn comparison_findings(comparison: &SemanticComparison) -> impl Iterator<Item = SemanticFinding> + '_ {
+    comparison.rows.iter().filter(|row| row.status != "agree").map(|row| SemanticFinding {
+        family: "semantic-comparison".to_owned(),
+        severity: "manual_review".to_owned(),
+        message: format!(
+            "{} {} {}: Charon={:?}, parent={:?}",
+            row.parent_authority, row.status, row.fact, row.charon_value, row.parent_value
+        ),
+        file: None,
+        line: None,
+    })
 }
 
 pub(crate) fn validate_details(details: &CharonSemanticReceiptDetails, non_claims: &[String]) -> Vec<String> {

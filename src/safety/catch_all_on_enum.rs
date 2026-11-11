@@ -8,6 +8,8 @@ use rustc_lint::LintContext;
 use rustc_middle::ty;
 use rustc_session::declare_lint_pass;
 use rustc_session::declare_tool_lint;
+use rustc_span::def_id::DefId;
+use rustc_span::sym;
 
 use crate::diagnostics::LintSuggestion;
 use crate::diagnostics::emit_tiger_style_lint;
@@ -17,7 +19,8 @@ declare_tool_lint! {
     /// Detects `match` over enum types where the last arm is a wildcard (`_`)
     /// returning a "deny" value: `false`, `None`, `Err(...)`, or `0`. When
     /// new variants are added, the wildcard silently handles them instead of
-    /// forcing an explicit decision.
+    /// forcing an explicit decision. `Option` and `Result` are skipped because
+    /// they cannot gain variants.
     pub tigerstyle::CATCH_ALL_ON_ENUM,
     Warn,
     "catch-all wildcard on enum match returns deny value"
@@ -100,9 +103,14 @@ impl<'tcx> LateLintPass<'tcx> for CatchAllOnEnum {
             return;
         };
 
-        // Check if the scrutinee is an enum type
-        let scrutinee_ty = cx.typeck_results().expr_ty(scrutinee);
-        if !matches!(scrutinee_ty.kind(), ty::Adt(adt, _) if adt.is_enum()) {
+        // Check if the scrutinee is an enum type. Peel references so that
+        // `match self { .. }` in a `&self` method (scrutinee `&Enum`) counts;
+        // default binding modes let the arm patterns name the variants.
+        let scrutinee_ty = cx.typeck_results().expr_ty(scrutinee).peel_refs();
+        let ty::Adt(adt, _) = scrutinee_ty.kind() else {
+            return;
+        };
+        if !adt.is_enum() || is_closed_std_enum(cx, *adt) {
             return;
         }
 
@@ -126,7 +134,7 @@ impl<'tcx> LateLintPass<'tcx> for CatchAllOnEnum {
         }
 
         let message = "catch-all `_` on enum match returns deny value — new variants will be silently handled";
-        if let Some(suggestion) = expand_wildcard_suggestion(cx, scrutinee, last_arm) {
+        if let Some(suggestion) = expand_wildcard_suggestion(cx, *adt, arms) {
             emit_tiger_style_lint_with_suggestion(
                 cx,
                 CATCH_ALL_ON_ENUM,
@@ -141,15 +149,69 @@ impl<'tcx> LateLintPass<'tcx> for CatchAllOnEnum {
     }
 }
 
+/// `Option` and `Result` have a fixed variant set, so a catch-all over them can
+/// never hide a variant added later.
+fn is_closed_std_enum(cx: &LateContext<'_>, adt: ty::AdtDef<'_>) -> bool {
+    cx.tcx.is_diagnostic_item(sym::Option, adt.did()) || cx.tcx.is_diagnostic_item(sym::Result, adt.did())
+}
+
+/// Whether `pat` matches every value it can be given.
+fn is_irrefutable(pat: &hir::Pat<'_>) -> bool {
+    match pat.kind {
+        PatKind::Wild | PatKind::Binding(_, _, _, None) => true,
+        PatKind::Binding(_, _, _, Some(inner)) | PatKind::Ref(inner, ..) | PatKind::Box(inner) => is_irrefutable(inner),
+        PatKind::Tuple(elements, _) => elements.iter().all(is_irrefutable),
+        _ => false,
+    }
+}
+
+/// Collect the variants that `pat` matches in full, such as `E::A`, `E::B(_)`,
+/// or `E::C { .. }`. A variant matched only for some field values (`E::B(0)`)
+/// is not collected.
+fn collect_covered_variants(cx: &LateContext<'_>, pat: &hir::Pat<'_>, covered: &mut Vec<DefId>) {
+    let (qpath, hir_id) = match &pat.kind {
+        PatKind::Or(alternatives) => {
+            for alternative in *alternatives {
+                collect_covered_variants(cx, alternative, covered);
+            }
+            return;
+        }
+        PatKind::Binding(_, _, _, Some(inner)) | PatKind::Ref(inner, ..) => {
+            collect_covered_variants(cx, inner, covered);
+            return;
+        }
+        PatKind::TupleStruct(qpath, fields, _) if fields.iter().all(is_irrefutable) => (qpath, pat.hir_id),
+        PatKind::Struct(qpath, fields, _) if fields.iter().all(|field| is_irrefutable(field.pat)) => {
+            (qpath, pat.hir_id)
+        }
+        PatKind::Expr(hir::PatExpr {
+            kind: hir::PatExprKind::Path(qpath),
+            hir_id,
+            ..
+        }) => (qpath, *hir_id),
+        _ => return,
+    };
+    match cx.qpath_res(qpath, hir_id) {
+        hir::def::Res::Def(hir::def::DefKind::Variant, variant_id) => covered.push(variant_id),
+        hir::def::Res::Def(hir::def::DefKind::Ctor(hir::def::CtorOf::Variant, _), ctor_id) => {
+            covered.push(cx.tcx.parent(ctor_id));
+        }
+        _ => {}
+    }
+}
+
+/// Expand the trailing wildcard of `arms` into one placeholder arm per variant
+/// that no earlier unguarded arm already matches in full.
 fn expand_wildcard_suggestion(
     cx: &LateContext<'_>,
-    scrutinee: &hir::Expr<'_>,
-    last_arm: &hir::Arm<'_>,
+    adt: ty::AdtDef<'_>,
+    arms: &[hir::Arm<'_>],
 ) -> Option<LintSuggestion> {
-    let scrutinee_ty = cx.typeck_results().expr_ty(scrutinee);
-    let ty::Adt(adt, _) = scrutinee_ty.kind() else {
-        return None;
-    };
+    let (last_arm, earlier_arms) = arms.split_last()?;
+    let mut covered = Vec::new();
+    for arm in earlier_arms.iter().filter(|arm| arm.guard.is_none()) {
+        collect_covered_variants(cx, arm.pat, &mut covered);
+    }
 
     let sm = cx.sess().source_map();
     let indent_pos = sm.lookup_char_pos(last_arm.span.lo());
@@ -157,7 +219,7 @@ fn expand_wildcard_suggestion(
 
     let type_name = cx.tcx.def_path_str(adt.did());
 
-    let variants: Vec<_> = adt.variants().iter().collect();
+    let variants: Vec<_> = adt.variants().iter().filter(|variant| !covered.contains(&variant.def_id)).collect();
     let mut arm_lines = Vec::new();
     for (i, variant) in variants.iter().enumerate() {
         let variant_name = variant.name.as_str();

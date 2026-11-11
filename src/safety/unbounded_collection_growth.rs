@@ -108,6 +108,18 @@ fn is_supported_collection_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     }
 }
 
+/// Supported collections that also provide `with_capacity`; `BTreeMap` does not.
+fn collection_ty_has_with_capacity(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
+    let ty::Adt(adt, _) = ty.peel_refs().kind() else {
+        return false;
+    };
+    let path = cx.get_def_path(adt.did());
+
+    path_ends_with(&path, &["vec", "Vec"])
+        || path_ends_with(&path, &["vec_deque", "VecDeque"])
+        || path_ends_with(&path, &["map", "HashMap"])
+}
+
 fn classify_collection_init(cx: &LateContext<'_>, local_ty: Ty<'_>, init: &hir::Expr<'_>) -> Option<InitKind> {
     if !is_supported_collection_ty(cx, local_ty) {
         return None;
@@ -227,15 +239,19 @@ fn condition_allows_growth(cx: &LateContext<'_>, cond: &hir::Expr<'_>, local_id:
     }
 }
 
+/// True when the collection is bounded whenever `cond` is false, i.e.
+/// `condition_allows_growth(!cond)`. Growth after `if cond { break; }` or in
+/// the `else` branch of `if cond` only runs when `cond` is false, so `a && b`
+/// blocks only when both sides block, while `a || b` blocks when either does.
 fn condition_blocks_growth(cx: &LateContext<'_>, cond: &hir::Expr<'_>, local_id: hir::HirId) -> bool {
     let cond = peel_transparent_expr(cond);
     match &cond.kind {
         ExprKind::Binary(op, lhs, rhs) => match op.node {
             hir::BinOpKind::And => {
-                condition_blocks_growth(cx, lhs, local_id) || condition_blocks_growth(cx, rhs, local_id)
+                condition_blocks_growth(cx, lhs, local_id) && condition_blocks_growth(cx, rhs, local_id)
             }
             hir::BinOpKind::Or => {
-                condition_blocks_growth(cx, lhs, local_id) && condition_blocks_growth(cx, rhs, local_id)
+                condition_blocks_growth(cx, lhs, local_id) || condition_blocks_growth(cx, rhs, local_id)
             }
             _ => comparison_blocks_growth(cx, op.node, lhs, rhs, local_id),
         },
@@ -304,6 +320,11 @@ impl<'tcx> Visitor<'tcx> for GuaranteedReservationFinder<'_, 'tcx> {
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
         let expr = peel_transparent_expr(expr);
         match &expr.kind {
+            // `v.try_reserve(n)?` lowers to a `TryDesugar` match whose scrutinee always runs.
+            ExprKind::Match(scrutinee, _, hir::MatchSource::TryDesugar(_)) => {
+                self.visit_expr(scrutinee);
+                return;
+            }
             ExprKind::Closure { .. } | ExprKind::If(..) | ExprKind::Match(..) | ExprKind::Loop(..) => return,
             ExprKind::MethodCall(segment, receiver, _args, _) => {
                 if is_reservation_method(segment.ident.name.as_str())
@@ -417,7 +438,9 @@ fn collect_candidate_bindings_before_loop<'tcx>(
                 match classify_collection_init(cx, local_ty, init) {
                     Some(InitKind::Empty) => {
                         candidates.insert(local_id);
-                        init_spans.insert(local_id, init.span);
+                        if collection_ty_has_with_capacity(cx, local_ty) {
+                            init_spans.insert(local_id, init.span);
+                        }
                     }
                     Some(InitKind::Reserved) => {
                         candidates.remove(&local_id);
@@ -486,7 +509,6 @@ impl<'tcx> Visitor<'tcx> for LoopBodyAnalyzer<'_, 'tcx> {
         let expr = peel_transparent_expr(expr);
         match &expr.kind {
             ExprKind::Closure { .. } => return,
-            ExprKind::Loop(..) if !expr.span.from_expansion() => return,
             ExprKind::If(cond, then_expr, else_expr) => {
                 let saved_guarded = self.guarded.clone();
                 let saved_reserved = self.reserved.clone();

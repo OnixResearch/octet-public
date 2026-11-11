@@ -1,0 +1,6 @@
+warning: ignoring legacy `[slotcar]` section in `dylint.toml` because `[octet]` takes precedence; move its settings into `[octet]`
+
+warning: ignoring legacy `[tigerstyle]` section in `dylint.toml` because `[octet]` takes precedence; move its settings into `[octet]`
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,16 @@
+{
+  "schema_version": "cairn.semantic-review.metrics-regression-registry.v1",
+  "categories": [
+    {
+      "code": "omission|tasks|auto-fix",
+      "metrics_class": "omission",
+      "metrics_stage": "tasks",
+      "metrics_source": "manual",
+      "requirement_id": "cairn.semantic_review.review_metrics_regression_rail.downstream_category_ownership",
+      "guidance_anchor": "review-metrics-auto-fix",
+      "positive_fixture": "fixtures/positive/tasks.md",
+      "negative_fixture": "fixtures/negative/tasks.md",
+      "evidence_ref": "metrics-snapshot-2026-05-23"
+    }
+  ]
+}

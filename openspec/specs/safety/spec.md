@@ -124,6 +124,20 @@ The lint MUST match by resolved function identity or definition path, not only
 by the public re-export spelling that appears in source.
 
 The lint MUST suggest using the bounded alternative with explicit capacity.
+A structured rewrite MUST name a bounded constructor that exists: when the
+callee's last path segment is the original constructor name and its written
+module prefix resolves to a module that exports the bounded sibling (such as
+`std::sync::mpsc` or a `use tokio::sync::mpsc as q;` alias), only that segment
+is renamed. Otherwise (a bare imported name, a local re-export module that does
+not export the sibling, or an aliased callee) the rewrite spells the bounded
+constructor through the extern-crate module path of a `use` of the constructor,
+aliased or not, and is omitted when no such path is available.
+
+#### Scenario: Bare imported constructor is spelled through its crate path
+
+- GIVEN `use crossbeam::channel::unbounded;` and `let (tx, rx) = unbounded::<u8>();`
+- WHEN the lint runs
+- THEN the rewrite names `crossbeam::channel::bounded`, not a bare `bounded`
 
 #### Scenario: Tokio unbounded channel
 
@@ -167,6 +181,11 @@ reviewable.
 A finite loop bound that is not expressed through the same binding's local
 reservation or `len`/`capacity` check does NOT suppress the lint.
 
+A guard only counts when it bounds every path that reaches the growth site.
+Growth after `if cond { break; }`, or in the `else` branch of `if cond`, runs
+when `cond` is false, so `a || b` bounds it when either side does and `a && b`
+bounds it only when both sides do.
+
 #### Scenario: Push in loop without capacity
 
 - GIVEN:
@@ -206,6 +225,33 @@ reservation or `len`/`capacity` check does NOT suppress the lint.
   inside a loop
 - WHEN the lint runs
 - THEN it does NOT fire
+
+#### Scenario: Break guard joined with `||` bounds later growth
+
+- GIVEN:
+  ```rust
+  let mut items = Vec::new();
+  loop {
+      if items.len() >= limit || shutdown() { break; }
+      items.push(read_item());
+  }
+  ```
+- WHEN the lint runs
+- THEN it does NOT fire
+
+#### Scenario: Break guard joined with `&&` does not bound later growth
+
+- GIVEN:
+  ```rust
+  let mut items = Vec::new();
+  loop {
+      if items.len() >= limit && keep_going() { break; }
+      items.push(read_item());
+  }
+  ```
+- WHEN the lint runs
+- THEN it warns, because the push still runs past `limit` when `keep_going()`
+  is false
 
 ### Requirement: Sentinel Fallback Detection
 
@@ -293,16 +339,22 @@ The lint MUST NOT fire in the repo's supported test contexts.
 
 The system MUST support a narrow temporary-stub escape hatch for `todo!()` via
 `#[allow(tigerstyle::no_todo)]` and the supported bare compatibility spelling
-`#[allow(no_todo)]`.
+`#[allow(no_todo)]`. `#[expect(tigerstyle::no_todo)]` and `#[expect(no_todo)]`
+are the same escape hatch and follow every rule below; when one covers a
+`todo!()` stub, `no_todo` is still emitted so rustc counts the expectation as
+fulfilled and suppresses it.
 
 The system MUST register `unjustified_no_todo_allow` as a warn-by-default
 safety lint in canonical tool-scoped form, while the repo's current bare alias
 path continues to resolve the supported bare source/config spellings.
 
 The system MUST NOT fire either `no_todo` or `unjustified_no_todo_allow` when a
-`todo!()` call sits inside a function or block explicitly allowed with either
+`todo!()` call sits under a node explicitly allowed with either
 `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` and an adjacent
-justification comment.
+justification comment. The escape hatch is audited on every node where rustc
+applies a lint-level attribute: items, blocks, `let` and expression
+statements, closures and other expressions, match arms, and the crate root
+(`#![allow(no_todo)]`).
 
 For this rule, an adjacent justification comment is a `// ...` comment on the
 same line as the allow attribute or on the immediately preceding non-empty
@@ -314,8 +366,8 @@ The system MUST warn via `unjustified_no_todo_allow` when any of these hold:
 - `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` appears around
   `panic!()`, `unimplemented!()`, or `unreachable!()` instead of a `todo!()`
   stub
-- `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` remains on an item or
-  block after the covered `todo!()` stub is gone
+- `#[allow(tigerstyle::no_todo)]` or `#[allow(no_todo)]` remains on any such
+  node after the covered `todo!()` stub is gone
 - `cfg_attr(...)` expands into one of those supported direct allow attrs on a
   covered item or block, and the resulting expanded attr is unjustified or
   orphaned
@@ -355,6 +407,22 @@ The system MUST warn via `unjustified_no_todo_allow` when any of these hold:
 - WHEN the lint suite runs
 - THEN `unjustified_no_todo_allow` applies the same justification and orphan
   checks to that expanded attr
+
+#### Scenario: statement, closure, match-arm, and crate-level allows are audited
+
+- GIVEN `#[allow(no_todo)]` on a `let` statement, closure, or match arm, or
+  `#![allow(no_todo)]` at the crate root, covering a `todo!()` stub
+- WHEN the lint suite runs
+- THEN `unjustified_no_todo_allow` applies the same justification and orphan
+  checks as for a function or block allow
+
+#### Scenario: `no_todo` expect is audited like an allow
+
+- GIVEN `#[expect(no_todo)] fn stub() { todo!(...) }`
+- WHEN the lint suite runs
+- THEN `unjustified_no_todo_allow` warns unless an adjacent `//`
+  justification comment is present
+- AND rustc does not report the expectation as unfulfilled
 
 ### Requirement: Public Tiger Style Assertion Review Guide
 
@@ -959,9 +1027,9 @@ and block completion until the docs are corrected.
 
 The lint MUST be able to warn when normal Rust public APIs expose `unsafe fn` directly instead of containing the unsafe operation behind a safe public wrapper and a small private unsafe helper.
 
-The first implementation MUST cover public free functions and public inherent methods declared `unsafe fn` when the signature uses the normal Rust ABI.
+The first implementation MUST cover public free functions and public inherent methods declared `unsafe fn` when the signature uses the normal Rust ABI. "Public" means exported from the crate (effective visibility): a `pub` item at the crate root or re-exported through public paths is public, while a `pub` item on a private type or in a private module that is not re-exported is not.
 
-The lint MUST NOT warn on private unsafe functions, trait-dictated methods, FFI or exported `extern` shims, macro-generated signatures, or test-context fixtures in the first implementation scope.
+The lint MUST NOT warn on private or restricted-visibility unsafe functions (including `pub` items that are not exported from the crate), trait-dictated methods, FFI or exported `extern` shims, macro-generated signatures, or test-context fixtures in the first implementation scope.
 
 The lint MUST emit advisory or warning-level diagnostics without a machine-applicable suggestion because removing `unsafe` or wrapping the API requires human review of the safety contract.
 
@@ -983,6 +1051,12 @@ The lint MUST emit advisory or warning-level diagnostics without a machine-appli
 - WHEN the lint runs
 - THEN it does NOT warn because the unsafe obligation is contained inside the module boundary
 
+#### Scenario: Unexported pub unsafe function is accepted [r[public-unsafe-api-lint.scenario.unexported-pub-accepted]]
+
+- GIVEN `mod raw { pub unsafe fn read_raw(ptr: *const u8) -> u8 { ... } }` with no public re-export, or `pub unsafe fn` on a private type
+- WHEN the lint runs
+- THEN it does NOT warn because the function is not exported from the crate
+
 #### Scenario: FFI shim is accepted [r[public-unsafe-api-lint.scenario.ffi-shim-accepted]]
 
 - GIVEN `pub unsafe extern "C" fn exported(ptr: *const u8) -> u8 { ... }`
@@ -1001,8 +1075,10 @@ The system MUST provide a warn-by-default safety lint named `drop_must_use`.
 
 The lint MUST warn when user code explicitly calls `drop(expr)` where `expr` has a must-use obligation, including:
 
-- values whose type carries `#[must_use]`, such as `Result`
+- values whose type carries `#[must_use]`, such as `Result`, unless that type has a destructor (`Drop` impl)
 - calls whose callee return value carries `#[must_use]`
+
+A type's own `#[must_use]` is not a must-use obligation for `drop` when the type has a destructor: such types are RAII guards (for example `MutexGuard`, `RwLockReadGuard`, `RwLockWriteGuard`), and `drop(guard)` runs the destructor early, which is the idiomatic way to release them.
 
 The lint MUST NOT warn for ordinary non-must-use values.
 
@@ -1019,6 +1095,18 @@ The lint MUST NOT warn in the repo's supported test contexts, including `#[cfg(t
 - GIVEN production code that calls `drop(buffer)` where `buffer` has no must-use obligation
 - WHEN the lint runs
 - THEN `drop_must_use` does NOT fire
+
+#### Scenario: Dropped RAII guard [r[drop-must-use-detection.scenario.raii-guard]]
+
+- GIVEN production code that calls `drop(guard)` where `guard` is a `MutexGuard` or `RwLock` read/write guard
+- WHEN the lint runs
+- THEN `drop_must_use` does NOT fire, because the guard type's destructor releases the lock
+
+#### Scenario: Dropped must-use token without destructor [r[drop-must-use-detection.scenario.must-use-token]]
+
+- GIVEN production code that calls `drop(token)` where `token`'s type is `#[must_use]` and has no `Drop` impl
+- WHEN the lint runs
+- THEN `drop_must_use` warns that the must-use value is being explicitly discarded
 
 #### Scenario: Dropped must-use return value [r[drop-must-use-detection.scenario.must-use-return-value]]
 
@@ -1073,3 +1161,73 @@ The lint MUST NOT warn when the fallback is propagated, handled through `match`,
 - WHEN the lint runs
 - THEN `fallible_int_fallback` does NOT fire
 
+
+### Requirement: Match Arm Zero Guards For Unchecked Division
+
+The `unchecked_division` lint MUST accept a `match` arm as a zero guard for a division in that arm's body when either:
+
+- the arm's guard implies the divisor is nonzero, by the same rules as an enclosing `if` condition
+- an earlier arm without a guard matches the integer literal `0` (alone or in an or-pattern), and the divisor is the scrutinee itself or the arm's plain binding of the scrutinee
+
+The lint MUST keep flagging the division when the earlier arm matches another value, when the earlier `0` arm has a guard, when the arm guard checks a different value, or when the division sits in the arm guard rather than the arm body.
+
+#### Scenario: Earlier zero arm guards a binding arm
+
+- GIVEN production code `match n { 0 => None, d => Some(total / d) }`
+- WHEN the lint runs
+- THEN `unchecked_division` does NOT fire
+
+#### Scenario: Arm guard proves the divisor nonzero
+
+- GIVEN production code `match n { d if d != 0 => total / d, _ => 0 }`
+- WHEN the lint runs
+- THEN `unchecked_division` does NOT fire
+
+#### Scenario: Earlier arm excludes a nonzero value
+
+- GIVEN production code `match n { 1 => total, d => total / d }`
+- WHEN the lint runs
+- THEN `unchecked_division` warns that `d` is divided without a zero check
+
+### Requirement: Compound Assertion Reads The Parsed Condition
+
+The `compound_assertion` lint MUST decide whether an `assert!` condition is compound from the parsed condition's top-level `&&` or `||` operator, not from its source text. A `&&` token that is part of an operand, such as the double reference in `assert!(item == &&expected)`, MUST NOT be reported as a conjunction.
+
+The `MachineApplicable` split MUST cut the source text only at the spans of the top-level operators, so each emitted `assert!` holds one complete operand. When any clause holds a `//` or `/* */` comment outside string and char literals, the lint MUST still warn but MUST NOT offer the split.
+
+#### Scenario: Double reference is not a conjunction
+
+- GIVEN production code `assert!(item == &&expected);`
+- WHEN the lint runs
+- THEN `compound_assertion` does NOT fire
+
+#### Scenario: Conjunction with a double-reference operand splits cleanly
+
+- GIVEN production code `assert!(item == &&expected && ready);`
+- WHEN tigerstyle emits the structured suggestion
+- THEN the suggestion rewrites it to `assert!(item == &&expected);` followed by `assert!(ready);`
+- AND the rewritten code compiles
+
+#### Scenario: Commented clause gets no split
+
+- GIVEN production code `assert!(ready // set by init` on one line followed by `&& done);` on the next
+- WHEN the lint runs
+- THEN `compound_assertion` warns without a structured suggestion
+
+### Requirement: Catch-All On Enum Scope And Suggestion
+
+The `catch_all_on_enum` lint MUST NOT fire on matches over `Option` or `Result`, because those enums cannot gain variants.
+
+When the lint suggests expanding the wildcard, the suggestion MUST list only the variants that no earlier arm without a guard matches in full. A variant that an earlier arm matches only for some field values, or only under a guard, MUST stay in the suggestion.
+
+#### Scenario: Result catch-all is not flagged
+
+- GIVEN production code `match res { Ok(v) => v, _ => 0 }`
+- WHEN the lint runs
+- THEN `catch_all_on_enum` does NOT fire
+
+#### Scenario: Suggestion omits variants already handled
+
+- GIVEN production code `match p { Permission::Read => true, _ => false }` over an enum with variants `Read`, `Write`, and `Admin`
+- WHEN the lint runs
+- THEN `catch_all_on_enum` warns and suggests arms for `Permission::Write` and `Permission::Admin` only

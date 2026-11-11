@@ -11,6 +11,7 @@ const SHIPPED_CATALOG_JSON: &str = include_str!("../../standards/clippy-restrict
 const SUPPORTED_LINTS: &[&str] = &[
     "dbg_macro",
     "exit",
+    "fn_params_excessive_bools",
     "host_endian_bytes",
     "iter_over_hash_type",
     "mem_forget",
@@ -221,7 +222,12 @@ fn profile_diagnostics(profile: &ClippyRestrictionProfile) -> Vec<String> {
 mod tests {
     use super::*;
 
-    const EXPECTED_PROFILE_IDS: &[&str] = &["canonical-determinism", "production-safety", "shell-boundary-inventory"];
+    const EXPECTED_PROFILE_IDS: &[&str] = &[
+        "boolean-api-modeling",
+        "canonical-determinism",
+        "production-safety",
+        "shell-boundary-inventory",
+    ];
 
     #[test]
     fn shipped_catalog_selects_bounded_profiles_and_builds_exact_commands() {
@@ -231,12 +237,19 @@ mod tests {
         assert_eq!(profile_ids, EXPECTED_PROFILE_IDS);
 
         let production = select_profile(&catalog, "production-safety").expect("production profile");
+        let boolean_api = select_profile(&catalog, "boolean-api-modeling").expect("boolean API co-report profile");
         let canonical = select_profile(&catalog, "canonical-determinism").expect("canonical profile");
         let production_command = command_argv(&production);
         assert_eq!(production.lint_level, ClippyLintLevel::Deny);
         assert!(production.lints.iter().any(|lint| lint == "mem_forget"));
         assert!(canonical.lints.iter().any(|lint| lint == "host_endian_bytes"));
         assert!(canonical.lints.iter().any(|lint| lint == "iter_over_hash_type"));
+        assert_eq!(boolean_api.lint_level, ClippyLintLevel::Warn);
+        assert!(
+            command_argv(&boolean_api)
+                .windows(2)
+                .any(|pair| pair == ["-W", "clippy::fn_params_excessive_bools"])
+        );
         let expected_prefix = [
             "cargo",
             "clippy",
@@ -291,7 +304,10 @@ mod tests {
         let catalog = shipped_catalog().expect("shipped catalog");
         let unknown = select_profile(&catalog, "missing").expect_err("unknown profile should fail");
         assert!(unknown.contains("unknown Clippy restriction profile `missing`"));
-        assert!(unknown.contains("canonical-determinism, production-safety, shell-boundary-inventory"));
+        assert!(
+            unknown
+                .contains("boolean-api-modeling, canonical-determinism, production-safety, shell-boundary-inventory")
+        );
 
         let profile = select_profile(&catalog, "production-safety").expect("production profile");
         let mut details = receipt_details(&profile).expect("receipt details");

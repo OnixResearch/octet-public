@@ -41,6 +41,12 @@ pub use model::CorpusFixture;
 pub use model::DecisionReceipt;
 pub use model::PilotProfile;
 
+/// Loads the embedded MIRAI pilot policy after checking its pinned identities.
+///
+/// # Errors
+///
+/// Returns an error when the embedded policy or corpus identity drifts, fails to
+/// parse, uses an unsupported schema, or fails policy validation.
 pub fn selected_policy() -> Result<PilotProfile, String> {
     if prefixed_identity(POLICY_JSON.as_bytes()) != POLICY_IDENTITY {
         return Err("embedded MIRAI pilot policy identity drifted".to_owned());
@@ -66,6 +72,12 @@ pub fn selected_policy() -> Result<PilotProfile, String> {
     }
 }
 
+/// Parses and validates a MIRAI pilot decision receipt against the embedded policy.
+///
+/// # Errors
+///
+/// Returns every diagnostic when the receipt is malformed JSON, the embedded
+/// policy cannot be loaded, or the receipt fails validation.
 pub fn parse_decision(text: &str) -> Result<DecisionReceipt, Vec<String>> {
     let receipt: DecisionReceipt =
         serde_json::from_str(text).map_err(|error| vec![format!("parse MIRAI pilot decision receipt: {error}")])?;
@@ -78,10 +90,12 @@ pub fn parse_decision(text: &str) -> Result<DecisionReceipt, Vec<String>> {
     }
 }
 
+#[must_use]
 pub fn prefixed_identity(bytes: &[u8]) -> String {
     format!("b3:{}", blake3::hash(bytes).to_hex())
 }
 
+#[must_use]
 pub fn is_b3_identity(value: &str) -> bool {
     value.strip_prefix("b3:").is_some_and(|hex| {
         hex.len() == blake3::OUT_LEN * 2

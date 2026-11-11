@@ -52,7 +52,7 @@ r[octet.purity_effect_lints.ambient_random.flags_random]
 
 r[octet.purity_effect_lints.ambient_random.allows_injected_randomness]
 
-- GIVEN code receives an RNG trait object, seed value, nonce bytes, or generated identifier as an explicit input
+- GIVEN code receives an RNG trait object, seed value, nonce bytes, or generated identifier as an explicit input, or builds a generator from an explicit seed such as `fastrand::Rng::with_seed(seed)`
 - WHEN the lint runs
 - THEN `ambient_random` MUST NOT emit for that source shape.
 
@@ -74,14 +74,14 @@ r[octet.purity_effect_lints.global_state_in_core.flags_global]
 
 - GIVEN a Rust source file is inside a configured core source scope
 - WHEN it declares `static mut`, thread-local state, lazy initialization state, a global lock, or a global atomic value
-- THEN `global_state_in_core` MUST emit a diagnostic at the declaration.
+- THEN `global_state_in_core` MUST emit one diagnostic at the declaration, not again at an enclosing module or function.
 - AND the diagnostic MUST recommend explicit state threading or shell-owned state storage.
 
 #### Scenario: Explicit or immutable state stays clean
 
 r[octet.purity_effect_lints.global_state_in_core.allows_explicit_state]
 
-- GIVEN core code uses `const`, immutable static data without interior mutability, or explicit state parameters and return values
+- GIVEN core code uses `const`, immutable static data without interior mutability, `'static` lifetimes or borrows, local lock or atomic values, or explicit state parameters and return values
 - WHEN the lint runs
 - THEN `global_state_in_core` MUST NOT emit for that source shape.
 
@@ -271,6 +271,8 @@ r[octet.purity_effect_lints.nondeterministic_output.catalog]
 
 r[octet.purity_effect_lints.pure_attr_contract] Octet MUST provide a `pure_attr_contract` lint that enforces direct-effect purity checks for functions marked with Octet's recognized pure-function marker.
 
+A function or closure carries a recognized marker only when its own HIR attributes include an attribute whose path ends in the marker name (`pure` or `zero_alloc`) under any tool prefix. Markers on nested items or closures inside the body, and marker text in string literals, comments, or doc attributes, MUST NOT mark the enclosing function.
+
 #### Scenario: Marked impure function is flagged
 
 r[octet.purity_effect_lints.pure_attr_contract.flags_marked_impurity]
@@ -305,7 +307,7 @@ r[octet.purity_effect_lints.resource_return_from_core] Octet MUST provide a `res
 r[octet.purity_effect_lints.resource_return_from_core.flags_resource_return]
 
 - GIVEN a function is declared inside a configured core source scope
-- WHEN its return type contains a known file, socket, process, command, task, channel, connection, or external-client handle
+- WHEN its resolved return type contains a known file, socket, process, command, task, channel, connection, or external-client handle type, including through type aliases, wrappers such as `Result` or tuples, and `async fn` outputs
 - THEN `resource_return_from_core` MUST emit a diagnostic at the return type.
 - AND the diagnostic MUST recommend returning domain values, command descriptions, or plans that a shell executes.
 
@@ -313,7 +315,7 @@ r[octet.purity_effect_lints.resource_return_from_core.flags_resource_return]
 
 r[octet.purity_effect_lints.resource_return_from_core.allows_descriptions]
 
-- GIVEN shell code returns resource handles or core code returns command-description enums, serializable plans, domain values, or port-independent data
+- GIVEN shell code returns resource handles or core code returns command-description enums, serializable plans, domain values, or port-independent data, including domain types whose names merely contain resource words such as `FileId`, `ClientId`, a local `Command` enum, or `std::net::SocketAddr`
 - WHEN the lint runs
 - THEN `resource_return_from_core` MUST NOT emit for that source shape.
 
@@ -400,3 +402,25 @@ r[octet.purity_effect_lints.zero_alloc_attr_contract.catalog]
 - GIVEN `zero_alloc_attr_contract` is registered
 - WHEN metadata and fixture freshness validation runs
 - THEN README, lint reference, metadata, fixture manifests, default-level snapshots, marker syntax docs, and downstream rollout guidance MUST include the lint identity and default level.
+
+### Requirement: Conservative primitive HIR const subset
+
+r[octet.purity_effect_lints.missing_const_fn.hir_subset] `missing_const_fn` MUST require a free-function body in a conservative primitive-valued HIR subset in addition to existing source guardrails. Calls, method calls, closures, type-dependent operators, methods, and unsupported constructs MUST NOT be treated as const-compatible merely because source contains arithmetic, comparisons, or match tokens. This is advisory subset evidence, not a full compiler const proof.
+
+#### Scenario: Primitive arithmetic remains reportable
+
+- GIVEN a private free helper multiplying a primitive integer by a constant
+- WHEN the const lint runs
+- THEN it emits the existing advisory diagnostic.
+
+#### Scenario: Non-const parsing and calls remain clean
+
+- GIVEN private helpers that compare values but also call string iterators, closures, split_once, parse, arbitrary functions, or overloaded addition
+- WHEN the const lint runs
+- THEN it emits no const advisory for those helpers.
+
+#### Scenario: Trait method remains clean
+
+- GIVEN a trait implementation method whose body performs primitive arithmetic
+- WHEN the const lint runs
+- THEN it emits no const advisory for that method.

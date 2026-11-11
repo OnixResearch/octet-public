@@ -1,0 +1,37 @@
+{
+  "schema": "cairn.agent-completion.v2",
+  "repository_id": "onixresearch/cairn",
+  "registry_id": "cairn-release-checks",
+  "registry_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "selection_hash": "b9da53c190687f8ff0bf2a465d6823056328363c7aa4b73f97ee0a10ff158581",
+  "policy_hash": "2c0b44345b9d2e2b3eff5fa7db7a14b9681c6bfcf7a4bb651f13bcadc1f91757",
+  "final_subject_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "required_checks": [
+    {
+      "check_id": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace"
+      ],
+      "command_hash": "108c657f5483b5a83731f413b62146dece87980abb850a1019b643bc9b37a55f",
+      "prerequisites": []
+    },
+    {
+      "check_id": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "command_hash": "6abfeda462ce5dc98d1aac663c2de398f51bebd75a38bdbb7d01eba912df44e8",
+      "prerequisites": [
+        "tests"
+      ]
+    }
+  ]
+}

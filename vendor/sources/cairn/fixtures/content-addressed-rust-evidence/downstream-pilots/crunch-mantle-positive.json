@@ -1,0 +1,14 @@
+{
+  "schema": "octet.downstream-pilot.v1",
+  "pilot_hash": "ada04eb264531a3cfc0e51b3ebab80f736cf576b53adf03f2829c89e319f5aea",
+  "pilot_kind": "crunch-mantle",
+  "evidence_object_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+  "source_object_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+  "checker_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+  "input_evidence_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+  "bounded_claim_class": "checker-evidence-linkage",
+  "non_claims": {
+    "build_correctness": "none",
+    "distributed_execution_correctness": "none"
+  }
+}

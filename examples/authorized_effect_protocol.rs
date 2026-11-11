@@ -40,7 +40,7 @@ fn decide_publication(authority: ActorAuthority, plan_id: PublicationPlanId) -> 
     if !authority.may_publish {
         return PublicationDecision::Denied;
     }
-    let authorized = AuthorizedPublication(PublicationPlanId(plan_id.0));
+    let authorized = AuthorizedPublication(plan_id);
     PublicationDecision::Authorized {
         plan: PublicationPlan {
             id: PublicationPlanId(authorized.0.0),

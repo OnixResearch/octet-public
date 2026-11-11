@@ -1,4 +1,12 @@
-use super::*;
+use super::FileIdentity;
+use super::PROFILE_IDENTITY;
+use super::ProducerSummary;
+use super::Profile;
+use super::REQUEST_SCHEMA;
+use super::prefixed_identity;
+use super::profile_validation;
+use super::request;
+use super::safe_read;
 
 const CARGO_HOME_ROOT: &str = ".octet/hegel-cargo-home";
 const TEMP_ROOT: &str = ".octet/hegel-tmp";
@@ -26,7 +34,7 @@ pub struct RunObservation {
 }
 
 pub fn run(workspace_root: &std::path::Path, profile: &Profile) -> Result<RunObservation, String> {
-    run_with(workspace_root, profile, production_tools()?)
+    run_with(workspace_root, profile, &production_tools()?)
 }
 
 pub fn production_tools() -> Result<RuntimeTools, String> {
@@ -41,7 +49,7 @@ pub fn production_tools() -> Result<RuntimeTools, String> {
 pub fn run_with(
     workspace_root: &std::path::Path,
     profile: &Profile,
-    tools: RuntimeTools,
+    tools: &RuntimeTools,
 ) -> Result<RunObservation, String> {
     reject_profile_drift(profile)?;
     let workspace_root = std::fs::canonicalize(workspace_root)
@@ -67,7 +75,7 @@ pub fn run_with(
             args,
             current_dir: workspace_root.clone(),
             environment_mode: bounded_exec::EnvironmentMode::Clear,
-            environment: explicit_environment(&workspace_root, &tools, &measured, profile),
+            environment: explicit_environment(&workspace_root, tools, &measured, profile),
             input: bounded_exec::Input::Null,
         },
         limits: bounded_exec::ExecutionLimits {
@@ -201,6 +209,10 @@ fn explicit_environment(
         ("LD_LIBRARY_PATH".into(), tools.library_path.clone()),
         ("CI".into(), "1".into()),
         ("OCTET_HEGEL_OUTPUT".into(), workspace_root.join(&profile.summary_path).into_os_string()),
+        (
+            "OCTET_HEGEL_COUNTEREXAMPLE".into(),
+            workspace_root.join(&profile.counterexample_path).into_os_string(),
+        ),
         ("OCTET_HEGEL_PROFILE_IDENTITY".into(), PROFILE_IDENTITY.into()),
         ("OCTET_HEGEL_SOURCE_IDENTITY".into(), measured.source_manifest_identity.clone().into()),
         ("OCTET_HEGEL_GENERATOR_IDENTITY".into(), measured.generator_manifest_identity.clone().into()),

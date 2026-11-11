@@ -1,0 +1,12 @@
+[package]
+name = "artifact-transfer-core"
+description = "Pure chunk geometry and explicit digest identity for artifact transfer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

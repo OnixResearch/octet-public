@@ -15,7 +15,10 @@ let contracts = import "../../contracts.ncl" in
   status = "passed",
   warnings = [],
   errors = [],
-  verification_commands = [{ command = "nix run .#octet-policy-validate", status = "passed" }],
+  verification_commands = [
+    { command = "nix run .#octet-policy-validate", status = "passed" },
+    { command = "nix flake check", status = "recorded" },
+  ],
   verification_evidence = [{ path = "openspec/evidence/focused-checks.txt", blake3 = "0123456789abcdef" }],
   raw_log_path = "logs/debug.log",
 } | contracts.AcceptanceReceipt

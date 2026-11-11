@@ -5,6 +5,9 @@ edition = "2024"
 license = "AGPL-3.0-or-later"
 publish = false
 description = "Pure compiler architecture evidence model and normalizer for Octet"
+repository = "https://github.com/OnixResearch/octet"
+homepage = "https://octet.dev"
+readme = "../../README.md"
 
 [lib]
 name = "octet_architecture_ir"

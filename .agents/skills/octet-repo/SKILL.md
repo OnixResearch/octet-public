@@ -1,7 +1,7 @@
 ---
 name: octet-repo
-description: Work in the Octet repo at /path/to/git/octet. Use when adding or changing lints, diagnostics, config, UI fixtures, cargo-octet engine code, downstream rollout docs/templates, or OpenSpec evidence in this workspace.
-compatibility: Project-specific skill for /path/to/git/octet (Octet repo checkout). Assumes nix devshell, nightly rustc_private tooling, Dylint, and OpenSpec.
+description: Work in the Octet repo at ~/git/octet. Use when adding or changing lints, diagnostics, config, UI fixtures, cargo-octet engine code, downstream rollout docs/templates, or OpenSpec evidence in this workspace.
+compatibility: Project-specific skill for ~/git/octet (Octet repo checkout). Assumes nix devshell, nightly rustc_private tooling, Dylint, and OpenSpec.
 ---
 
 # Octet Repo
@@ -37,12 +37,9 @@ Interpret first arg as target area. Second arg, when present, is the lint, fixtu
 
 ## First pass
 
-Before editing:
-- read `AGENTS.md`
-- read `README.md`
-- read `Cargo.toml`
-- read `src/lib.rs`
-- read files in the target area
+Read `AGENTS.md` first. Then read the relevant `README.md` passages and files for the selected area.
+
+Use the area guides as source maps, not mandatory full-file reading lists. Read `Cargo.toml` for workspace or dependency questions. Read `src/lib.rs` for lint inventory or registration questions. Expand source reads only for affected contracts or unresolved questions.
 
 Always run Rust commands inside the nix devshell here. Plain `cargo` outside the shell can miss rustc-private and OpenSSL/pkg-config setup.
 
@@ -227,15 +224,28 @@ Repo-local rules:
 
 ## Verification
 
-Default targeted checks:
+Select checks by the changed area. Run all repository-required gates, including strict gates. Do not replace required gates with focused checks.
+
+For prose-only changes, use source review and applicable document checks unless repository policy explicitly requires more.
+
+For code changes, start with the smallest relevant baseline before edits. After edits, rerun the affected checks. Use package-targeted commands for runner changes.
+
+Code check commands:
 
 ```bash
 nix develop -c bash -c 'cargo check'
 nix develop -c bash -c 'cargo test --lib'
+```
+
+For lint or UI changes, run the required UI rail:
+
+```bash
 nix develop -c bash -c 'cargo test --test ui ui -- --ignored --nocapture'
 ```
 
-When full repo proof matters:
+For structured fixes, also run the autofix rail in the `lint` guide.
+
+When repository policy or the change requires full-repository verification, run:
 
 ```bash
 nix flake check

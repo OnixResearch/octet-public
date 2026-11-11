@@ -1,10 +1,14 @@
 // r[impl octet.benchmark_evidence.resource_observation]
-use super::*;
+use super::AllocationObservation;
+use super::CopyObservation;
+use super::ResourceSummary;
+use super::prefixed_identity;
 
 const BLAKE3_PREFIX: &str = "b3:";
 const BLAKE3_HEX_LENGTH: usize = 64;
 const COPY_INTRINSIC: &str = "@llvm.memcpy";
 const LENGTH_TYPES: [&str; 2] = ["i64", "i32"];
+const CALL_INSTRUCTIONS: [&str; 2] = ["call", "invoke"];
 
 pub(super) fn summarize(
     allocations: &[AllocationObservation],
@@ -15,42 +19,34 @@ pub(super) fn summarize(
     let mut allocation_events = 0_u64;
     let mut allocated_bytes = 0_u64;
     for observation in allocations {
-        allocation_events = match allocation_events.checked_add(observation.allocation_events) {
-            Some(value) => value,
-            None => {
-                diagnostics.push("benchmark allocation event total overflowed".to_owned());
-                allocation_events
-            }
-        };
-        allocated_bytes = match allocated_bytes.checked_add(observation.allocated_bytes) {
-            Some(value) => value,
-            None => {
-                diagnostics.push("benchmark allocated-byte total overflowed".to_owned());
-                allocated_bytes
-            }
-        };
+        if let Some(value) = allocation_events.checked_add(observation.allocation_events) {
+            allocation_events = value;
+        } else {
+            diagnostics.push("benchmark allocation event total overflowed".to_owned());
+        }
+        if let Some(value) = allocated_bytes.checked_add(observation.allocated_bytes) {
+            allocated_bytes = value;
+        } else {
+            diagnostics.push("benchmark allocated-byte total overflowed".to_owned());
+        }
     }
     let mut known_copy_bytes = 0_u64;
     let mut unknown_copy_length_count = 0_usize;
     for observation in copies {
         match observation.constant_length_bytes {
             Some(length) => {
-                known_copy_bytes = match known_copy_bytes.checked_add(length) {
-                    Some(value) => value,
-                    None => {
-                        diagnostics.push("benchmark known copy-byte total overflowed".to_owned());
-                        known_copy_bytes
-                    }
-                };
+                if let Some(value) = known_copy_bytes.checked_add(length) {
+                    known_copy_bytes = value;
+                } else {
+                    diagnostics.push("benchmark known copy-byte total overflowed".to_owned());
+                }
             }
             None => {
-                unknown_copy_length_count = match unknown_copy_length_count.checked_add(1) {
-                    Some(value) => value,
-                    None => {
-                        diagnostics.push("benchmark unknown copy-site count overflowed".to_owned());
-                        unknown_copy_length_count
-                    }
-                };
+                if let Some(value) = unknown_copy_length_count.checked_add(1) {
+                    unknown_copy_length_count = value;
+                } else {
+                    diagnostics.push("benchmark unknown copy-site count overflowed".to_owned());
+                }
             }
         }
     }
@@ -88,7 +84,7 @@ pub(super) fn scan_llvm_copy_sites(
     let llvm_artifact_identity = prefixed_identity(llvm_text.as_bytes());
     let mut observations = Vec::new();
     for (line_index, line) in llvm_text.lines().enumerate() {
-        if !line.contains(COPY_INTRINSIC) {
+        if !is_copy_call(line) {
             continue;
         }
         let site_id = copy_site_identity(&llvm_artifact_identity, line_index, line)?;
@@ -164,19 +160,22 @@ fn validate_copies(observations: &[CopyObservation]) -> Vec<String> {
     diagnostics
 }
 
+fn is_copy_call(line: &str) -> bool {
+    line.find(COPY_INTRINSIC)
+        .and_then(|intrinsic| line.get(..intrinsic))
+        .is_some_and(|prefix| prefix.split_ascii_whitespace().any(|token| CALL_INSTRUCTIONS.contains(&token)))
+}
+
 fn copy_length(line: &str) -> Option<u64> {
     let intrinsic = line.find(COPY_INTRINSIC)?;
     let suffix = line.get(intrinsic..)?;
     let tokens: Vec<&str> = suffix.split_ascii_whitespace().collect();
-    for pair in tokens.windows(LENGTH_TYPES.len()) {
-        if LENGTH_TYPES.contains(&pair[0]) {
-            let value = pair[1].trim_matches(|character: char| !character.is_ascii_digit());
-            if !value.is_empty() {
-                return value.parse().ok();
-            }
-        }
+    let pair = tokens.windows(LENGTH_TYPES.len()).find(|pair| LENGTH_TYPES.contains(&pair[0]))?;
+    let value = pair[1].strip_suffix(',').unwrap_or(pair[1]);
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
     }
-    None
+    value.parse().ok()
 }
 
 fn copy_site_identity(artifact_identity: &str, line_index: usize, line: &str) -> Result<String, String> {

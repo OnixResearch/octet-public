@@ -22,5 +22,86 @@ LL +     let predicate_4 = d;
 LL ~     if predicate_1 && predicate_2 && predicate_3 && predicate_4 {
    |
 
-warning: 1 warning emitted
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:21:8
+   |
+LL |     if a && count > limit && !b && count != limit {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Condition Decomposition
+help: extract conditions into named predicates
+   |
+LL ~     let predicate_1 = a;
+LL +     let predicate_2 = count > limit;
+LL +     let predicate_3 = !b;
+LL +     let predicate_4 = count != limit;
+LL ~     if predicate_1 && predicate_2 && predicate_3 && predicate_4 {
+   |
+
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:29:8
+   |
+LL |     if a && (b || c) && d && e {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Condition Decomposition
+help: extract conditions into named predicates
+   |
+LL ~     let predicate_1 = a;
+LL +     let predicate_2 = (b || c);
+LL +     let predicate_3 = d;
+LL +     let predicate_4 = e;
+LL ~     if predicate_1 && predicate_2 && predicate_3 && predicate_4 {
+   |
+
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:37:8
+   |
+LL |     if a && b || c && d {
+   |        ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: see Tiger Style guide: Condition Decomposition
+
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:45:8
+   |
+LL |     if !values.is_empty() && values[0] == 1 && a && b {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: see Tiger Style guide: Condition Decomposition
+
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:55:15
+   |
+LL |     } else if a && b && c && d {
+   |               ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: see Tiger Style guide: Condition Decomposition
+
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:63:20
+   |
+LL |     let value = if a && b && c && d { 1 } else { 0 };
+   |                    ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: see Tiger Style guide: Condition Decomposition
+
+warning: condition has 3 boolean operators
+  --> $DIR/compound_condition.rs:69:8
+   |
+LL |     if let Some(_) = value && a && b && c {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Condition Decomposition): break multi-part conditions into named predicates or nested guards Example: if is_leader { if has_quorum { ... } }
+   = note: see Tiger Style guide: Condition Decomposition
+
+warning: 8 warnings emitted
 

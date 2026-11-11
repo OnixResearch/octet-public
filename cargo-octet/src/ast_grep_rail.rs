@@ -18,12 +18,14 @@ const CODEMOD_MODE_DRY_RUN: &str = "dry-run-only";
 const CODEMOD_MODE_INTERACTIVE: &str = "interactive";
 const INVENTORY_LANE: &str = "inventory";
 const ERROR_SEVERITY: &str = "error";
+const SEVERITY_POSTURES: &[&str] = &[INVENTORY_LANE, "advisory", "warning", ERROR_SEVERITY];
+const PROMOTION_LANES: &[&str] = &[INVENTORY_LANE, "advisory", "warning", ERROR_SEVERITY, "migration"];
 const SOURCE_COORDINATE_OFFSET: u64 = 1;
 const MINIMUM_SOURCE_COORDINATE: u64 = 1;
 const SUCCESS_EXIT_CODE: i32 = 0;
 const BLAKE3_IDENTITY_PREFIX: &str = "b3:";
 const BLAKE3_HEX_LENGTH: usize = 64;
-const BUNDLE_IDENTITY_DOMAIN: &[u8] = b"octet-ast-grep-rule-bundle/v1\0";
+const BUNDLE_IDENTITY_DOMAIN: &[u8] = b"octet-ast-grep-rule-bundle/v2\0";
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub(crate) struct AstGrepProfile {
@@ -56,6 +58,9 @@ pub(crate) struct AstGrepScanScope {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub(crate) struct AstGrepPromotionLane {
     pub(crate) lane: String,
+    /// Declared lane policy, recorded in receipts. Receipt status fails only on
+    /// `error`-severity findings; the structural-rails spec does not make a
+    /// blocking lane override finding severity.
     pub(crate) blocking: bool,
 }
 
@@ -156,6 +161,16 @@ pub(crate) fn validate_profile(profile: &AstGrepProfile) -> Vec<String> {
     validate_path("sgconfig_path", &profile.sgconfig_path, &mut diagnostics);
     validate_paths("bundle_inputs", &profile.bundle_inputs, &mut diagnostics);
     validate_paths("scan_scope.paths", &profile.scan_scope.paths, &mut diagnostics);
+    if profile.scan_scope.globs.iter().any(|glob| glob.trim().is_empty()) {
+        diagnostics.push("ast-grep scan_scope.globs must not contain empty globs".to_owned());
+    }
+    if !SEVERITY_POSTURES.contains(&profile.severity_posture.as_str()) {
+        diagnostics.push(format!(
+            "ast-grep severity_posture `{}` is not one of {}",
+            profile.severity_posture,
+            SEVERITY_POSTURES.join(", ")
+        ));
+    }
     if !profile.bundle_inputs.iter().any(|path| path == &profile.sgconfig_path) {
         diagnostics.push("ast-grep bundle_inputs must include sgconfig_path".to_owned());
     }
@@ -203,18 +218,44 @@ pub(crate) fn compute_bundle_identity(
 
     let mut hasher = blake3::Hasher::new();
     hasher.update(BUNDLE_IDENTITY_DOMAIN);
+    update_hash_count(&mut hasher, profile.bundle_inputs.len()).map_err(|error| vec![error])?;
     for path in &profile.bundle_inputs {
         let bytes = &files[path];
         update_hash_field(&mut hasher, path.as_bytes()).map_err(|error| vec![error])?;
         update_hash_field(&mut hasher, bytes).map_err(|error| vec![error])?;
     }
+    update_hash_count(&mut hasher, profile.scan_scope.paths.len()).map_err(|error| vec![error])?;
     for path in &profile.scan_scope.paths {
         update_hash_field(&mut hasher, path.as_bytes()).map_err(|error| vec![error])?;
     }
+    update_hash_count(&mut hasher, profile.scan_scope.globs.len()).map_err(|error| vec![error])?;
     for glob in &profile.scan_scope.globs {
         update_hash_field(&mut hasher, glob.as_bytes()).map_err(|error| vec![error])?;
     }
     Ok(format!("{BLAKE3_IDENTITY_PREFIX}{}", hasher.finalize().to_hex()))
+}
+
+/// Rejects an imported scan envelope whose embedded profile is not the checked-in one.
+///
+/// The caller has already verified the checked-in rule files against
+/// `checked.bundle_identity`. Evaluation reads the tool version, rule coverage,
+/// promotion lanes, severity posture, codemod policy, and non-claims from the
+/// envelope's embedded profile, and the bundle identity binds none of them, so
+/// the whole embedded profile must equal the checked one. Run mode embeds the
+/// checked profile verbatim. Envelopes that do not parse or carry an invalid
+/// profile are left to [`evaluate_envelope`], which fails the receipt with
+/// those diagnostics.
+pub(crate) fn verify_envelope_bundle(text: &str, checked: &AstGrepProfile) -> Result<(), String> {
+    let Ok(envelope) = serde_json::from_str::<AstGrepScanEnvelope>(text) else {
+        return Ok(());
+    };
+    if !validate_profile(&envelope.profile).is_empty() || envelope.profile == *checked {
+        return Ok(());
+    }
+    Err(format!(
+        "stale ast-grep scan envelope; its embedded profile (rule bundle `{}`) differs from the checked-in profile (rule bundle `{}`); capture a fresh scan receipt",
+        envelope.profile.bundle_identity, checked.bundle_identity
+    ))
 }
 
 pub(crate) fn scan_command_argv(profile: &AstGrepProfile) -> Vec<String> {
@@ -342,8 +383,12 @@ fn validate_promotion_lanes(profile: &AstGrepProfile, diagnostics: &mut Vec<Stri
     }
     let mut lane_names = BTreeSet::new();
     for lane in &profile.promotion_lanes {
-        if lane.lane.trim().is_empty() {
-            diagnostics.push("ast-grep promotion lane must not be empty".to_owned());
+        if !PROMOTION_LANES.contains(&lane.lane.as_str()) {
+            diagnostics.push(format!(
+                "ast-grep promotion lane `{}` is not one of {}",
+                lane.lane,
+                PROMOTION_LANES.join(", ")
+            ));
         }
         if !lane_names.insert(lane.lane.as_str()) {
             diagnostics.push(format!("duplicate ast-grep promotion lane `{}`", lane.lane));
@@ -410,9 +455,14 @@ fn validate_bundle_identity(identity: &str, diagnostics: &mut Vec<String>) {
 }
 
 fn update_hash_field(hasher: &mut blake3::Hasher, bytes: &[u8]) -> Result<(), String> {
-    let length = u64::try_from(bytes.len()).map_err(|_| "ast-grep bundle field length exceeds u64".to_owned())?;
-    hasher.update(&length.to_le_bytes());
+    update_hash_count(hasher, bytes.len())?;
     hasher.update(bytes);
+    Ok(())
+}
+
+fn update_hash_count(hasher: &mut blake3::Hasher, count: usize) -> Result<(), String> {
+    let count = u64::try_from(count).map_err(|_| "ast-grep bundle field length exceeds u64".to_owned())?;
+    hasher.update(&count.to_le_bytes());
     Ok(())
 }
 
@@ -622,6 +672,28 @@ mod tests {
     }
 
     #[test]
+    fn profile_rejects_values_outside_the_nickel_contract() {
+        let mut profile = valid_profile();
+        profile.severity_posture = "blocking".to_owned();
+        profile.promotion_lanes[1].lane = "experimental".to_owned();
+        profile.rule_coverage[0].lane = "experimental".to_owned();
+        profile.scan_scope.globs.push(String::new());
+
+        let diagnostics = validate_profile(&profile);
+
+        assert!(
+            diagnostics.iter().any(|diagnostic| diagnostic.contains("severity_posture `blocking`")),
+            "{diagnostics:?}"
+        );
+        assert!(
+            diagnostics.iter().any(|diagnostic| diagnostic.contains("promotion lane `experimental`")),
+            "{diagnostics:?}"
+        );
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("scan_scope.globs")), "{diagnostics:?}");
+        assert!(validate_profile(&valid_profile()).is_empty());
+    }
+
+    #[test]
     fn bundle_identity_changes_with_rule_bytes_or_scope() {
         let profile = valid_profile();
         let mut files = BTreeMap::from([
@@ -637,6 +709,23 @@ mod tests {
 
         assert_ne!(first, second);
         assert_ne!(second, third);
+    }
+
+    #[test]
+    fn bundle_identity_binds_scan_scope_sections() {
+        let profile = valid_profile();
+        let files = BTreeMap::from([
+            ("standards/ast-grep/sgconfig.yml".to_owned(), b"config".to_vec()),
+            ("standards/ast-grep/rules/unsafe.yml".to_owned(), b"rule".to_vec()),
+        ]);
+        let original = compute_bundle_identity(&profile, &files).expect("valid bundle");
+        let mut moved = profile;
+        let glob = moved.scan_scope.globs.remove(0);
+        moved.scan_scope.paths.push(glob);
+
+        let observed = compute_bundle_identity(&moved, &files).expect("moved scope entry");
+
+        assert_ne!(original, observed, "moving a glob into scan paths changes the scan and its identity");
     }
 
     #[test]

@@ -43,5 +43,34 @@ LL |         permits: std::sync::atomic::AtomicUsize::new(0),
    = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
-warning: 4 warnings emitted
+warning: core scope owns interior mutability; prefer explicit state transitions or shell-owned synchronization
+  --> $DIR/interior_mutability_in_core/interior_mutability_in_core.rs:13:1
+   |
+LL | / fn build_wrapped_state() -> (Option<std::cell::Cell<u64>>, std::sync::Arc<std::sync::Mutex<u64>>) {
+LL | |     (Some(std::cell::Cell::new(0)), std::sync::Arc::new(std::sync::Mutex::new(0)))
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope constructs an interior-mutability primitive; keep synchronization in the shell
+  --> $DIR/interior_mutability_in_core/interior_mutability_in_core.rs:14:11
+   |
+LL |     (Some(std::cell::Cell::new(0)), std::sync::Arc::new(std::sync::Mutex::new(0)))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core scope constructs an interior-mutability primitive; keep synchronization in the shell
+  --> $DIR/interior_mutability_in_core/interior_mutability_in_core.rs:14:57
+   |
+LL |     (Some(std::cell::Cell::new(0)), std::sync::Arc::new(std::sync::Mutex::new(0)))
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): keep synchronization and interior mutability in the shell; model core updates as explicit state transitions Example: fn apply(state: State, command: Command) -> State
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 7 warnings emitted
 

@@ -1,14 +1,27 @@
-use super::*;
+use super::Counts;
+use super::MetricCount;
+use super::NATIVE_SCHEMA;
+use super::NativeReport;
+use super::PROFILE_IDENTITY;
+use super::Profile;
+use super::SOURCE_IDENTITY_PREFIX;
+use super::comparison;
+use super::prefixed_identity;
 
 const SUPPORTED_NATIVE_TYPE: &str = "llvm.coverage.json.export";
-const SUPPORTED_NATIVE_VERSION: &str = "2.0.1";
+// 2.0.1 matched the archived cargo-llvm-cov 0.8.3 probe; 3.1.0 is what cargo-llvm-cov 0.8.3 emits
+// with the pinned nightly-2026-03-21 LLVM tools. Both carry the same `data[0].files[].filename` and
+// `data[0].totals.{lines,branches,functions,regions}.{covered,count}` fields that normalization
+// reads.
+const SUPPORTED_NATIVE_VERSIONS: [&str; 2] = ["2.0.1", "3.1.0"];
 const ADJACENT_PATH_COUNT: usize = 2;
 const HEX_CHARACTERS_PER_BYTE: usize = 2;
+const BRANCH_METRIC: &str = "branches";
+const NO_BRANCH_COUNTS_DIAGNOSTIC: &str = "coverage native report has no branch counts; run cargo llvm-cov with `--branch` so the branches metric is measured";
 
 pub(super) fn normalize(text: &str, profile: &Profile, source_identity: &str) -> Result<NativeReport, Vec<String>> {
-    let report_bytes = match u64::try_from(text.len()) {
-        Ok(value) => value,
-        Err(_) => return Err(vec!["coverage report byte count does not fit u64".to_owned()]),
+    let Ok(report_bytes) = u64::try_from(text.len()) else {
+        return Err(vec!["coverage report byte count does not fit u64".to_owned()]);
     };
     if report_bytes > profile.max_report_bytes {
         return Err(vec!["coverage report exceeds profile byte limit".to_owned()]);
@@ -30,7 +43,7 @@ pub(super) fn normalize(text: &str, profile: &Profile, source_identity: &str) ->
     let totals = data[0].get("totals").ok_or_else(|| vec!["coverage native report is missing totals".to_owned()])?;
     let counts = Counts {
         lines: metric(totals, "lines")?,
-        branches: metric(totals, "branches")?,
+        branches: metric(totals, BRANCH_METRIC)?,
         functions: metric(totals, "functions")?,
         regions: metric(totals, "regions")?,
     };
@@ -56,7 +69,7 @@ fn validate_header(value: &serde_json::Value) -> Result<(), Vec<String>> {
         return Err(vec!["coverage native report type is unsupported".to_owned()]);
     }
     let observed_version = value.get("version").and_then(serde_json::Value::as_str);
-    if observed_version != Some(SUPPORTED_NATIVE_VERSION) {
+    if !observed_version.is_some_and(|version| SUPPORTED_NATIVE_VERSIONS.contains(&version)) {
         return Err(vec!["coverage native report version is unsupported".to_owned()]);
     }
     Ok(())
@@ -98,6 +111,9 @@ fn metric(totals: &serde_json::Value, name: &str) -> Result<MetricCount, Vec<Str
         .get("count")
         .and_then(serde_json::Value::as_u64)
         .ok_or_else(|| vec![format!("coverage native report {name} total count is missing")])?;
+    if name == BRANCH_METRIC && total == 0 {
+        return Err(vec![NO_BRANCH_COUNTS_DIAGNOSTIC.to_owned()]);
+    }
     let percentage_basis_points =
         comparison::basis_points(covered, total).map_err(|error| vec![format!("{name}: {error}")])?;
     Ok(MetricCount {

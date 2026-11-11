@@ -285,9 +285,12 @@ let rules_valid = fun policy =>
   && !has_duplicates (policy.capability_classifications |> std.array.map (fun item => item.family))
   && !has_duplicates (policy.outbound_effects |> std.array.map (fun item => item.family))
   && std.array.all (fun item =>
-    std.array.elem (role_for_source item.executor_scope policy.roles) [
-      "application-shell", "outbound-adapter", "composition-root",
-    ]
+    std.array.elem (role_for_source item.executor_scope policy.roles) (
+      if item.authority == "protected" then
+        ["outbound-adapter"]
+      else
+        ["application-shell", "outbound-adapter", "composition-root"]
+    )
     && std.array.length item.executor_methods > 0
     && (
       if item.authority == "unprotected" then item.protected == null else

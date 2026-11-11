@@ -1,12 +1,31 @@
 let contracts = import "contracts.ncl" in
 {
   schema_version = "octet-strict-rust-profiles/v1",
+  boolean_api_policy = {
+    public_scope = ["free-function", "inherent-method", "crate-owned-trait"],
+    private_min_direct_bool_parameters = 2,
+    parameter_type = "direct-bool",
+    skip_expansions = true,
+    skip_external_trait_impls = true,
+    exception_attribute = "local-expect",
+    exception_reason_required = true,
+    exception_owner_required = true,
+    broad_suppression = "deny",
+    finding_baseline = "deny",
+    warning_budget = "deny",
+    unknown_scope = "deny",
+    non_claims = [
+      "Covered signature shapes do not prove valid state modeling or API correctness.",
+      "A Clippy co-report remains independent evidence and does not replace this lint.",
+    ],
+  },
   profiles = [
     {
       profile_id = "robust",
       summary = "Explicit failure, checked conversion and arithmetic, reviewable unsafe APIs, and governed suppressions for Rust-compatible code.",
       required_lints = [
         "unjustified_allow",
+        "raw_bool_parameter",
         "ignored_result",
         "drop_must_use",
         "fallible_int_fallback",
@@ -36,6 +55,7 @@ let contracts = import "contracts.ncl" in
       summary = "Robust checks plus bounded control flow, allocation, collections, channels, task lifecycle, lock ordering, and platform-width boundaries.",
       required_lints = [
         "unjustified_allow",
+        "raw_bool_parameter",
         "magic_number",
         "unbounded_loop",
         "multi_lock_ordering",
@@ -79,6 +99,7 @@ let contracts = import "contracts.ncl" in
       summary = "Robust checks plus configured core boundaries for ambient inputs, platform effects, state, observability, spawning, allocation, and deterministic output.",
       required_lints = [
         "unjustified_allow",
+        "raw_bool_parameter",
         "magic_number",
         "unbounded_loop",
         "verified_purity",

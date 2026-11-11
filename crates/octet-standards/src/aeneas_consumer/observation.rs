@@ -194,18 +194,19 @@ fn validate_llbc(item: &super::model::SelectedItem, input: &ObservationInput<'_>
             file["name"]["Local"] == item.source_file && file["contents"].as_str() == Some(input.source_text)
         })
     });
-    let function_match = translated["fun_decls"].as_array().is_some_and(|functions| {
-        functions
-            .iter()
-            .filter(|function| {
-                function["item_meta"]["source_text"]
-                    .as_str()
-                    .is_some_and(|source| source.trim_end() == input.source_text.trim_end())
-                    && function["item_meta"]["span"]["data"]["beg"]["line"] == item.begin_line
-                    && function["item_meta"]["span"]["data"]["end"]["line"] == item.end_line
-            })
-            .count()
-            == 1
+    let selected_text = selected_lines(input.source_text, item.begin_line, item.end_line).map(str::trim);
+    let function_match = selected_text.is_some_and(|selected_text| {
+        translated["fun_decls"].as_array().is_some_and(|functions| {
+            functions
+                .iter()
+                .filter(|function| {
+                    function["item_meta"]["source_text"].as_str().is_some_and(|source| source.trim() == selected_text)
+                        && function["item_meta"]["span"]["data"]["beg"]["line"] == item.begin_line
+                        && function["item_meta"]["span"]["data"]["end"]["line"] == item.end_line
+                })
+                .count()
+                == 1
+        })
     });
     if value["has_errors"] != false {
         diagnostics.push("Aeneas consumer LLBC reports extraction errors".to_owned());
@@ -218,6 +219,31 @@ fn validate_llbc(item: &super::model::SelectedItem, input: &ObservationInput<'_>
     }
 }
 
+/// Return the one-based inclusive line range `begin_line..=end_line` of `text`.
+fn selected_lines(text: &str, begin_line: u64, end_line: u64) -> Option<&str> {
+    let (start, end) = selected_line_range(text, begin_line, end_line)?;
+    text.get(start..end)
+}
+
+/// Return the byte range of the one-based inclusive line range `begin_line..=end_line` of `text`,
+/// including the final line terminator when present.
+pub(crate) fn selected_line_range(text: &str, begin_line: u64, end_line: u64) -> Option<(usize, usize)> {
+    let begin_index = usize::try_from(begin_line).ok()?.checked_sub(1)?;
+    let end_index = usize::try_from(end_line).ok()?.checked_sub(1)?;
+    let mut offset = 0;
+    let mut start = None;
+    for (index, line) in text.split_inclusive('\n').enumerate() {
+        if index == begin_index {
+            start = Some(offset);
+        }
+        offset += line.len();
+        if index == end_index {
+            return Some((start?, offset));
+        }
+    }
+    None
+}
+
 fn generated_declaration_present(generated_name: &str, text: &str) -> bool {
     text.lines().any(|line| line.trim_start().starts_with(&format!("def {generated_name} ")))
         || generated_name.rsplit_once('.').is_some_and(|(namespace, declaration)| {
@@ -227,17 +253,18 @@ fn generated_declaration_present(generated_name: &str, text: &str) -> bool {
 }
 
 fn stage_artifacts(input: &ObservationInput<'_>) -> Vec<ConsumerArtifactIdentity> {
-    [
-        ("rust-source", input.source_text),
-        ("llbc", input.llbc_text),
-        ("translation-manifest", input.translation_text),
-        ("generated-lean", input.generated_lean_text),
-        ("maintained-theorem", input.theorem_text),
-    ]
-    .into_iter()
-    .map(|(role, text)| ConsumerArtifactIdentity {
-        role: role.to_owned(),
-        blake3: super::prefixed_identity(text.as_bytes()),
-    })
-    .collect()
+    super::STAGE_ARTIFACT_ROLES
+        .into_iter()
+        .zip([
+            input.source_text,
+            input.llbc_text,
+            input.translation_text,
+            input.generated_lean_text,
+            input.theorem_text,
+        ])
+        .map(|(role, text)| ConsumerArtifactIdentity {
+            role: role.to_owned(),
+            blake3: super::prefixed_identity(text.as_bytes()),
+        })
+        .collect()
 }

@@ -1,0 +1,55 @@
+{
+  "profiles": [
+    {
+      "architecture": "x86_64",
+      "companion_match": "build-id",
+      "debug_format": "dwarf",
+      "non_claims": [
+        "Binary debug-map evidence records bounded ELF/DWARF linkage only and does not prove source-to-binary semantic equivalence, compiler correctness, or behavioral correctness",
+        "Demangled symbol text is display metadata and is not a canonical function identity",
+        "Raw binary-local addresses are not stable cross-build function identities",
+        "Binary debug-map evidence is optional and not part of starter cargo octet check",
+        "Binary debug-map evidence does not prove requirement satisfaction or release eligibility"
+      ],
+      "object_format": "elf",
+      "profile_id": "elf-dwarf-v1",
+      "required_sections": [
+        ".debug_abbrev",
+        ".debug_info",
+        ".debug_line"
+      ],
+      "resource_limits": {
+        "max_binary_bytes": 8388608,
+        "max_debug_bytes": 8388608,
+        "max_frames": 4096,
+        "max_line_rows": 65536,
+        "max_path_bytes": 512,
+        "max_ranges": 8192,
+        "max_rows": 4096,
+        "max_sections": 128,
+        "max_symbols": 4096,
+        "max_units": 16
+      },
+      "severity": {
+        "ambiguous_function": "error",
+        "malformed": "error",
+        "resource_limit": "error",
+        "stale_span": "error",
+        "unmapped_path": "error",
+        "unsupported": "error",
+        "wrong_companion": "error"
+      },
+      "source_roots": [
+        {
+          "build_root": "/build/octet-binary-debug-map",
+          "repository_root": "crates/binary-debug-map-fixture"
+        }
+      ],
+      "strict_linkage": true,
+      "summary": "Bounded ELF/DWARF symbol-to-source linkage over supplied bytes with explicit source-root mappings.",
+      "unmapped_path_policy": "fail",
+      "verification_role": "recorded_only"
+    }
+  ],
+  "schema_version": "octet-binary-debug-map-profiles/v1"
+}

@@ -1,6 +1,22 @@
 use std::collections::BTreeSet;
 
-use super::*;
+use super::Evaluation;
+use super::FileIdentity;
+use super::LAW_CATALOG_IDENTITY;
+use super::PROFILE_ID;
+use super::PROFILE_IDENTITY;
+use super::ProducerSummary;
+use super::Profile;
+use super::RECEIPT_SCHEMA;
+use super::REQUIRED_NON_CLAIM;
+use super::ReceiptDetails;
+use super::SUMMARY_SCHEMA;
+use super::law_catalog;
+use super::normalize_issue_codes;
+use super::prefixed_identity;
+use super::profile_validation;
+use super::projection_bytes;
+use super::request;
 
 const EXPECTED_COMMAND: [&str; 12] = [
     "cargo",
@@ -203,7 +219,8 @@ fn validate_summary(summary: &ProducerSummary, input: &request::Input, profile: 
 
 fn validate_b3(value: &str, label: &str, diagnostics: &mut Vec<String>) {
     let valid = value.strip_prefix("b3:").is_some_and(|hex| {
-        hex.len() == blake3::OUT_LEN * 2 && hex.bytes().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+        hex.len() == blake3::OUT_LEN * 2
+            && hex.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
     });
     if !valid {
         diagnostics.push(format!("{label} identity is not canonical BLAKE3"));

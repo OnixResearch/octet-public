@@ -1,0 +1,108 @@
+{
+  "schema": "octet.function-address.v1",
+  "schema_version": 1,
+  "receipt_class": "function-address-receipt",
+  "mode": "observe",
+  "domain": "octet.function-address.v1",
+  "canonicalizer": "octet-source-token-function-address-v1",
+  "producer": {
+    "name": "octet",
+    "role": "rust-source-shape-producer"
+  },
+  "tool": "0.1.0",
+  "source_envelopes": [
+    {
+      "path": "src/lib.rs",
+      "language": "rust",
+      "source_identity": "b3:60e2cbf9f16cdb87ba919678f75a6f129b796ed70c2eca79ef946165224b4ba0"
+    }
+  ],
+  "records": [
+    {
+      "path": "src/lib.rs",
+      "name": "add_checked",
+      "line": 1,
+      "column": 1,
+      "start_byte": 0,
+      "end_byte": 88,
+      "function_address": "b3:5ce6a7fbfb0c82e5738dd2368906bc0f9acb302d98622fddf16b17b06e8236cb",
+      "normalized_body_hash": "b3:7454900ff0a8bf6eaf9bde47277c9d5eb4b693bda266b10ed324742113184449",
+      "dependency_set_hash": "b3:0cc62ba8ae905a70e8f157b0b81bc6faf1b2e535f1d09ee723e734a4d786971c",
+      "dependency_identity_kind": "source-token-set",
+      "dependency_identity_status": "source-scanner-token-set",
+      "source_identity": "b3:60e2cbf9f16cdb87ba919678f75a6f129b796ed70c2eca79ef946165224b4ba0",
+      "review": null,
+      "evidence": null,
+      "caveats": []
+    }
+  ],
+  "diagnostic_count": 1,
+  "kamacite_projection": {
+    "artifact_class": "function-address-receipt",
+    "compatibility_projection": "kamacite.function-address-receipt.v1.compat-json",
+    "canonical_identity_owner": "kamacite-preserves-bytes",
+    "identity_algorithm": "blake3"
+  },
+  "preserves_handoff": {
+    "contract": "octet-to-kamacite-function-address-v1",
+    "canonical_identity_owner": "kamacite-preserves-bytes",
+    "json_projection_role": "operator-debug-compatibility-projection",
+    "rust_reparse_required": "not-required",
+    "span_recomputation_required": "not-required",
+    "required_record_fields": [
+      "path",
+      "name",
+      "start_byte",
+      "end_byte",
+      "function_address",
+      "dependency_set_hash",
+      "dependency_identity_kind",
+      "source_identity"
+    ]
+  },
+  "evidence_chain_handoff": {
+    "schema": "octet.evidence-chain.producer-handoff.v1",
+    "evidence_kind": "function-address",
+    "producer": {
+      "name": "octet",
+      "role": "rust-source-shape-producer",
+      "tool_version": "0.1.0"
+    },
+    "run_identity": "b3:1f5c325f4937ab185fe9efde42a135d7369cf8375ede7e93b1ff08ad191085a2",
+    "policy_hash": "b3:3fe159f078bba5dc6df670101f9ee05737b0e51f6461f53d71d1e93594aa3fb6",
+    "profile_hash": "b3:04b1a115354ddcb906d1754b86d11d51f76c65b75d4cbce637b05a49e62d020a",
+    "canonical_authority": "kamacite-preserves-bytes",
+    "canonical_roots": [
+      {
+        "kind": "function-address-record-root",
+        "digest": "b3:ff19f4b699803234871f4285c610ee0c97062671860e86a36625be34c5ef2ee5"
+      }
+    ],
+    "parent_links": [
+      {
+        "kind": "source-envelope",
+        "digest": "b3:60e2cbf9f16cdb87ba919678f75a6f129b796ed70c2eca79ef946165224b4ba0"
+      }
+    ],
+    "projections": [
+      {
+        "kind": "compatibility-json",
+        "artifact": "function-addresses.json",
+        "digest": "b3:ff19f4b699803234871f4285c610ee0c97062671860e86a36625be34c5ef2ee5",
+        "authority": "non-authoritative-projection"
+      }
+    ],
+    "non_claims": [
+      "not Rust semantic correctness",
+      "not compiler correctness",
+      "not whole-program safety",
+      "not release eligibility"
+    ]
+  },
+  "non_claims": [
+    "not Rust semantic correctness",
+    "not compiler correctness",
+    "not whole-program safety",
+    "not release eligibility"
+  ]
+}

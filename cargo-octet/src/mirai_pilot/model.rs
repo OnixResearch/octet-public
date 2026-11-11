@@ -79,6 +79,8 @@ pub struct ComparisonParents {
     pub source_token_catalog: String,
 }
 
+// `criterion_id` is a serialized policy JSON key; renaming the field would change the wire format.
+#[allow(clippy::struct_field_names)]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Criterion {
     pub criterion_id: String,

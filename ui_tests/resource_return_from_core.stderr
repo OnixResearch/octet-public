@@ -21,5 +21,71 @@ LL | | }
    = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
-warning: 2 warnings emitted
+warning: core function returns concrete resource `File`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:15:1
+   |
+LL | / fn open_with_request_in_core() -> (ResourceRequest, std::fs::File) {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core function returns concrete resource `File`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:19:1
+   |
+LL | / fn open_port_file_in_core() -> PortFile {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core function returns concrete resource `TcpStream`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:23:1
+   |
+LL | / fn connect_in_core() -> std::io::Result<std::net::TcpStream> {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core function returns concrete resource `Command`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:27:1
+   |
+LL | / fn build_process_in_core() -> std::process::Command {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core function returns concrete resource `Receiver`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:31:1
+   |
+LL | / fn subscribe_in_core() -> std::sync::mpsc::Receiver<u8> {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: core function returns concrete resource `File`; return a command description or domain value instead
+  --> $DIR/resource_return_from_core/resource_return_from_core.rs:35:1
+   |
+LL | / async fn open_async_in_core() -> std::fs::File {
+LL | |     loop {}
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Functional Core): return command descriptions, domain values, or injected ports from core scopes instead of concrete resource handles Example: fn plan_download(input: Input) -> DownloadCommand
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 8 warnings emitted
 

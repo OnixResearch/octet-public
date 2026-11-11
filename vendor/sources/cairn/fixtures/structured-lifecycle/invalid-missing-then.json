@@ -1,0 +1,24 @@
+{
+  "schema": "cairn.structured-lifecycle.bundle.v1",
+  "specs": [
+    {
+      "id": "structured-lifecycle",
+      "purpose": "Invalid fixture",
+      "requirements": [
+        {
+          "id": "cairn.structured.fixture.invalid",
+          "strength": "MUST",
+          "statement": "reject invalid structured lifecycle source",
+          "scenarios": [
+            {
+              "id": "missing_then",
+              "given": ["an invalid lifecycle bundle"],
+              "when": ["Cairn validates it"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "changes": []
+}

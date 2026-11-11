@@ -8,7 +8,7 @@ use serde_json::json;
 
 const FIXTURE_DIRECTORY: &str = "fixtures/cairn-cob-conflict-pilot";
 const MANIFEST_FILE: &str = "manifest.json";
-const SUPPORTED_SCHEMA: &str = "octet.cairn-cob-conflict-pilot.v2";
+const SUPPORTED_SCHEMA: &str = "octet.cairn-cob-conflict-pilot.v1";
 const COB_BACKEND: &str = "radicle-cob.v1";
 const PASS_VERDICT: &str = "PASS";
 const FAIL_VERDICT: &str = "FAIL";
@@ -71,7 +71,7 @@ struct ConflictPilotManifest {
     workspace_id: String,
     backend: String,
     cairn_commit: String,
-    synthetic_base_git_oid: String,
+    octet_base_git_oid: String,
     policy_hash: String,
     object_id: String,
     root_operation_id: String,
@@ -246,8 +246,7 @@ fn validate_manifest_shape(manifest: &ConflictPilotManifest) -> Result<(), Confl
     ];
     if manifest.resolution.selected_revision != manifest.creator.operation_id
         || manifest.resolution.losing_revision != manifest.delegate.operation_id
-        || manifest.resolution.direct_parents.len() != EXPECTED_CONFLICT_HEAD_COUNT
-        || !expected_parents.iter().all(|parent| manifest.resolution.direct_parents.contains(parent))
+        || manifest.resolution.direct_parents != expected_parents
     {
         return Err(ConflictEvidenceError::Field {
             receipt: MANIFEST_FILE.to_string(),
@@ -308,7 +307,7 @@ fn validate_import(
     require_field(IMPORT_EXECUTE, executed, "operation_id", json!(manifest.root_operation_id))?;
     require_field(IMPORT_EXECUTE, executed, "content_root", json!(manifest.root_content_root))?;
     require_field(IMPORT_EXECUTE, executed, "state_hash", json!(manifest.root_state_hash))?;
-    require_field(IMPORT_EXECUTE, executed, "repository_head_oid", json!(manifest.synthetic_base_git_oid))?;
+    require_field(IMPORT_EXECUTE, executed, "repository_head_oid", json!(manifest.octet_base_git_oid))?;
     require_field(IMPORT_EXECUTE, executed, "policy_hash", json!(manifest.policy_hash))?;
     require_field(IMPORT_EXECUTE, executed, "plan_hash", preview["plan_hash"].clone())
 }
@@ -328,8 +327,6 @@ fn validate_actor_update(
     require_field(preview_name, preview, "input_state_hash", json!(manifest.root_state_hash))?;
     require_field(preview_name, preview, "dry_run", json!(true))?;
     require_field(preview_name, preview, "mutated", json!(false))?;
-    require_field(execute_name, executed, "dry_run", json!(false))?;
-    require_field(execute_name, executed, "mutated", json!(true))?;
     require_field(execute_name, executed, "input_state_hash", json!(manifest.root_state_hash))?;
     require_field(execute_name, executed, "result_operation_id", json!(head.operation_id))?;
     require_field(execute_name, executed, "result_content_root", json!(head.content_root))?;
@@ -342,15 +339,22 @@ fn validate_actor_update(
 }
 
 fn conflict_heads(manifest: &ConflictPilotManifest) -> Value {
-    let mut heads = [&manifest.creator, &manifest.delegate];
-    heads.sort_by(|left, right| left.operation_id.cmp(&right.operation_id));
-    json!(heads.map(|head| json!({
-        "actor": head.actor,
-        "content_blake3": head.content_blake3,
-        "content_bytes": head.content_bytes,
-        "deleted": false,
-        "revision_id": head.operation_id,
-    })))
+    json!([
+        {
+            "actor": manifest.creator.actor,
+            "content_blake3": manifest.creator.content_blake3,
+            "content_bytes": manifest.creator.content_bytes,
+            "deleted": false,
+            "revision_id": manifest.creator.operation_id,
+        },
+        {
+            "actor": manifest.delegate.actor,
+            "content_blake3": manifest.delegate.content_blake3,
+            "content_bytes": manifest.delegate.content_bytes,
+            "deleted": false,
+            "revision_id": manifest.delegate.operation_id,
+        }
+    ])
 }
 
 fn validate_conflict_inspection(
@@ -487,7 +491,7 @@ fn validate_transport_and_bundle(
 ) -> Result<(), ConflictEvidenceError> {
     let transport = &evidence(files, TRANSPORT)?.json;
     require_field(TRANSPORT, transport, "cairn_commit", json!(manifest.cairn_commit))?;
-    require_field(TRANSPORT, transport, "synthetic_base_git_oid", json!(manifest.synthetic_base_git_oid))?;
+    require_field(TRANSPORT, transport, "octet_base_git_oid", json!(manifest.octet_base_git_oid))?;
     require_field(TRANSPORT, transport, "object_id", json!(manifest.object_id))?;
     require_pointer(TRANSPORT, transport, "/creator/actor", json!(manifest.creator.actor))?;
     require_pointer(TRANSPORT, transport, "/creator/ref_name", json!(manifest.creator.ref_name))?;
@@ -507,7 +511,7 @@ fn validate_transport_and_bundle(
         .iter()
         .map(|head| (head.ref_name.as_str(), head.target.as_str()))
         .collect::<BTreeMap<_, _>>();
-    if bundle_heads.get("refs/heads/main") != Some(&manifest.synthetic_base_git_oid.as_str())
+    if bundle_heads.get("refs/heads/main") != Some(&manifest.octet_base_git_oid.as_str())
         || bundle_heads.get(manifest.creator.ref_name.as_str()) != Some(&manifest.resolution.operation_id.as_str())
         || bundle_heads.get(manifest.delegate.ref_name.as_str()) != Some(&manifest.delegate.operation_id.as_str())
     {

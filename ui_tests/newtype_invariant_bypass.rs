@@ -21,7 +21,33 @@ impl Deref for CheckedToken {
     }
 }
 
+// A second registered `CheckedToken` whose bypasses go through borrowed views
+// of the `String` representation.
+mod borrowed_views {
+    use std::ops::Deref;
+
+    pub struct CheckedToken(String);
+
+    // Should warn: `From<&str>` copies unchecked borrowed input into raw storage.
+    impl From<&str> for CheckedToken {
+        fn from(value: &str) -> Self {
+            Self(value.to_owned())
+        }
+    }
+
+    // Should warn: `Target = str` exposes the raw storage's borrowed view.
+    impl Deref for CheckedToken {
+        type Target = str;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+}
+
 fn main() {
     let token = CheckedToken::from(String::new());
     let _ = token.len();
+    let view = borrowed_views::CheckedToken::from("token");
+    let _ = view.len();
 }

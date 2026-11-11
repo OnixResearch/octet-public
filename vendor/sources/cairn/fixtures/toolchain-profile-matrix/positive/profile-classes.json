@@ -1,0 +1,14 @@
+{
+  "policy_hash": "policy-fixture",
+  "matrix": {
+    "schema_version": "cairn.toolchain-profile-matrix.v1",
+    "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"],
+    "profiles": [
+      {"repo": "cairn", "profile_id": "cairn.dev", "purpose": "dev", "toolchain_pins": ["fenix-2026-07-01", "onix-nix"], "commands": ["cargo test --workspace"], "expected_artifacts": ["test-receipt"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]},
+      {"repo": "cairn", "profile_id": "cairn.ci", "purpose": "ci", "toolchain_pins": ["fenix-2026-07-01", "onix-nix"], "commands": ["nix flake check"], "expected_artifacts": ["ci-receipt"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]},
+      {"repo": "cairn", "profile_id": "cairn.release", "purpose": "release", "toolchain_pins": ["fenix-2026-07-01", "onix-nix"], "commands": ["cairn release-readiness --root ."], "expected_artifacts": ["release-readiness"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]},
+      {"repo": "cairn", "profile_id": "cairn.proof", "purpose": "proof", "toolchain_pins": ["verus", "fenix-2026-07-01"], "commands": ["cairn traceability coverage --root ."], "expected_artifacts": ["proof-receipt"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]},
+      {"repo": "cairn", "profile_id": "cairn.compat", "purpose": "compatibility", "toolchain_pins": ["onix-nix"], "commands": ["cairn policy export --check"], "expected_artifacts": ["compatibility-receipt"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]}
+    ]
+  }
+}

@@ -95,7 +95,7 @@ impl<'tcx> LateLintPass<'tcx> for PublicUnsafeApi {
         };
 
         let facts = PublicUnsafeApiFacts {
-            visibility: if cx.tcx.visibility(item.owner_id.def_id).is_public() {
+            visibility: if cx.effective_visibilities.is_exported(item.owner_id.def_id) {
                 ApiVisibility::Public
             } else {
                 ApiVisibility::Private
@@ -127,7 +127,7 @@ impl<'tcx> LateLintPass<'tcx> for PublicUnsafeApi {
 
         let def_id = impl_item.owner_id.def_id;
         let facts = PublicUnsafeApiFacts {
-            visibility: if cx.tcx.visibility(def_id).is_public() {
+            visibility: if cx.effective_visibilities.is_exported(def_id) {
                 ApiVisibility::Public
             } else {
                 ApiVisibility::Private

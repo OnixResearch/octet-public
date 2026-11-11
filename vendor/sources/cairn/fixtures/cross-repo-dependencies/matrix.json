@@ -1,0 +1,198 @@
+{
+  "negative_classes": [
+    "missing",
+    "stale_policy",
+    "stale_subject",
+    "wrong_repo",
+    "wrong_change",
+    "wrong_kind",
+    "unsupported_kind",
+    "unsafe_diagnostic",
+    "receipt_hash_mismatch"
+  ],
+  "non_pass_statuses": [
+    "failed",
+    "blocked",
+    "skipped",
+    "deferred",
+    "timed_out",
+    "dry_run",
+    "cancelled",
+    "infrastructure_failed",
+    "malformed",
+    "unsupported",
+    "unknown",
+    "stale"
+  ],
+  "positive": [
+    {
+      "dependency": {
+        "change": "canonical-evidence",
+        "expected_policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expected_status": "pass",
+        "expected_subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "id": "valence-proposal_gate",
+        "non_claims": [
+          "dependency satisfaction proves presented receipt linkage only",
+          "dependency satisfaction does not prove upstream correctness or remote trust",
+          "dependency satisfaction does not prove downstream integration correctness or release eligibility"
+        ],
+        "repo": "valence",
+        "requires": "proposal_gate"
+      },
+      "evidence": {
+        "change": "canonical-evidence",
+        "diagnostic_summary": "current passing upstream receipt",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt_kind": "proposal_gate",
+        "repo": "valence",
+        "schema": "cairn.cross-repo-receipt-summary.v1",
+        "status": "pass",
+        "subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "dependency": {
+        "change": "canonical-evidence",
+        "expected_policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expected_status": "pass",
+        "expected_subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "id": "valence-design_gate",
+        "non_claims": [
+          "dependency satisfaction proves presented receipt linkage only",
+          "dependency satisfaction does not prove upstream correctness or remote trust",
+          "dependency satisfaction does not prove downstream integration correctness or release eligibility"
+        ],
+        "repo": "valence",
+        "requires": "design_gate"
+      },
+      "evidence": {
+        "change": "canonical-evidence",
+        "diagnostic_summary": "current passing upstream receipt",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt_kind": "design_gate",
+        "repo": "valence",
+        "schema": "cairn.cross-repo-receipt-summary.v1",
+        "status": "pass",
+        "subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "dependency": {
+        "change": "canonical-evidence",
+        "expected_policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expected_status": "pass",
+        "expected_subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "id": "valence-tasks_gate",
+        "non_claims": [
+          "dependency satisfaction proves presented receipt linkage only",
+          "dependency satisfaction does not prove upstream correctness or remote trust",
+          "dependency satisfaction does not prove downstream integration correctness or release eligibility"
+        ],
+        "repo": "valence",
+        "requires": "tasks_gate"
+      },
+      "evidence": {
+        "change": "canonical-evidence",
+        "diagnostic_summary": "current passing upstream receipt",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt_kind": "tasks_gate",
+        "repo": "valence",
+        "schema": "cairn.cross-repo-receipt-summary.v1",
+        "status": "pass",
+        "subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "dependency": {
+        "change": "canonical-evidence",
+        "expected_policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expected_status": "pass",
+        "expected_subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "id": "valence-validation_receipt",
+        "non_claims": [
+          "dependency satisfaction proves presented receipt linkage only",
+          "dependency satisfaction does not prove upstream correctness or remote trust",
+          "dependency satisfaction does not prove downstream integration correctness or release eligibility"
+        ],
+        "repo": "valence",
+        "requires": "validation_receipt"
+      },
+      "evidence": {
+        "change": "canonical-evidence",
+        "diagnostic_summary": "current passing upstream receipt",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt_kind": "validation_receipt",
+        "repo": "valence",
+        "schema": "cairn.cross-repo-receipt-summary.v1",
+        "status": "pass",
+        "subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "dependency": {
+        "change": "canonical-evidence",
+        "expected_policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expected_status": "pass",
+        "expected_subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "id": "valence-sync_receipt",
+        "non_claims": [
+          "dependency satisfaction proves presented receipt linkage only",
+          "dependency satisfaction does not prove upstream correctness or remote trust",
+          "dependency satisfaction does not prove downstream integration correctness or release eligibility"
+        ],
+        "repo": "valence",
+        "requires": "sync_receipt"
+      },
+      "evidence": {
+        "change": "canonical-evidence",
+        "diagnostic_summary": "current passing upstream receipt",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt_kind": "sync_receipt",
+        "repo": "valence",
+        "schema": "cairn.cross-repo-receipt-summary.v1",
+        "status": "pass",
+        "subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "dependency": {
+        "change": "canonical-evidence",
+        "expected_policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expected_status": "pass",
+        "expected_subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "id": "valence-archive_receipt",
+        "non_claims": [
+          "dependency satisfaction proves presented receipt linkage only",
+          "dependency satisfaction does not prove upstream correctness or remote trust",
+          "dependency satisfaction does not prove downstream integration correctness or release eligibility"
+        ],
+        "repo": "valence",
+        "requires": "archive_receipt"
+      },
+      "evidence": {
+        "change": "canonical-evidence",
+        "diagnostic_summary": "current passing upstream receipt",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt_kind": "archive_receipt",
+        "repo": "valence",
+        "schema": "cairn.cross-repo-receipt-summary.v1",
+        "status": "pass",
+        "subject_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    }
+  ],
+  "schema": "cairn.cross-repo-dependency-fixture-matrix.v1"
+}

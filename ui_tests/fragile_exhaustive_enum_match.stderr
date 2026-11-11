@@ -16,5 +16,29 @@ LL | #![warn(fragile_exhaustive_enum_match)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: `#[warn(tigerstyle::fragile_exhaustive_enum_match)]` implied by `#[warn(fragile_exhaustive_enum_match)]`
 
-warning: 1 warning emitted
+warning: same-crate enum `LocalState` is matched exhaustively without a fallback; adding a variant will force this site to change
+  --> $DIR/fragile_exhaustive_enum_match.rs:17:9
+   |
+LL | /         match self {
+LL | |             LocalState::Ready => true,
+LL | |             LocalState::Closed => false,
+LL | |         }
+   | |_________^
+   |
+   = help: Tiger Style (Open/Closed Boundaries): avoid fragile same-crate exhaustive enum matches unless the enum is deliberately sealed Example: #[octet::sealed_enum] enum State { Ready, Closed }
+   = note: see Tiger Style guide: Enum Matches / Local Evolution
+
+warning: same-crate enum `DocumentedState` is matched exhaustively without a fallback; adding a variant will force this site to change
+  --> $DIR/fragile_exhaustive_enum_match.rs:31:5
+   |
+LL | /     match state {
+LL | |         DocumentedState::Open => true,
+LL | |         DocumentedState::Shut => false,
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Open/Closed Boundaries): avoid fragile same-crate exhaustive enum matches unless the enum is deliberately sealed Example: #[octet::sealed_enum] enum State { Ready, Closed }
+   = note: see Tiger Style guide: Enum Matches / Local Evolution
+
+warning: 3 warnings emitted
 

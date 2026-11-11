@@ -2,6 +2,10 @@
 
 let NonEmptyString = std.contract.from_predicate (fun value => std.string.length value > 0) in
 let Status = std.contract.from_predicate (fun value => value == "passed" || value == "failed" || value == "blocked") in
+# Verification commands may also be `recorded`: listed for replay but not executed by the emitting run.
+let CommandStatus = std.contract.from_predicate (fun value =>
+  value == "passed" || value == "failed" || value == "blocked" || value == "recorded"
+) in
 let DigestAlgorithm = std.contract.from_predicate (fun value => value == "blake3") in
 let Digest = {
   algorithm | DigestAlgorithm,
@@ -22,7 +26,7 @@ let Artifact = {
 } in
 let VerificationCommand = {
   command | NonEmptyString,
-  status | Status,
+  status | CommandStatus,
 } in
 let ReceiptEvidence = {
   path | NonEmptyString,

@@ -1,0 +1,18 @@
+error: `timeout` looks like a raw numeric quantity but has no unit suffix
+  --> $DIR/numeric_units_cli_deny_custom/numeric_units_cli_deny_custom.rs:4:9
+   |
+LL |     let timeout = 5000;
+   |         ^^^^^^^
+   |
+   = help: Tiger Style (Unit Suffixes): use a nominal unit type or put the unit in the name of raw numeric quantities Example: timeout_ms
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Unit Suffixes
+   = note: `-D tigerstyle::numeric-units` implied by `-D numeric-units`
+   = help: to override `-D numeric-units` add `#[allow(tigerstyle::numeric_units)]`
+help: rename with an explicit unit suffix like `_ms`, `_secs`, or `_bytes`
+   |
+LL |     let timeout_<unit> = 5000;
+   |                +++++++
+
+error: aborting due to 1 previous error
+

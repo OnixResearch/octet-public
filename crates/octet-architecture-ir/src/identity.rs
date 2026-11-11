@@ -12,10 +12,20 @@ pub fn framed_blake3(domain: &str, fields: &[&[u8]]) -> String {
     hasher.finalize().to_hex().to_string()
 }
 
+/// Serialize a value as the canonical JSON bytes used by architecture identities.
+///
+/// # Errors
+///
+/// Returns an error when the value cannot be serialized as JSON.
 pub fn canonical_json<T: Serialize>(value: &T) -> Result<Vec<u8>, String> {
     serde_json::to_vec(value).map_err(|error| format!("serialize canonical architecture value: {error}"))
 }
 
+/// Compute a domain-separated BLAKE3 identity over a value's canonical JSON bytes.
+///
+/// # Errors
+///
+/// Returns an error when the value cannot be serialized as JSON.
 pub fn canonical_identity<T: Serialize>(domain: &str, value: &T) -> Result<String, String> {
     let bytes = canonical_json(value)?;
     Ok(framed_blake3(domain, &[&bytes]))

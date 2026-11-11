@@ -1,0 +1,25 @@
+{
+  "schema": "cairn.structured-lifecycle.bundle.v1",
+  "specs": [
+    {
+      "id": "structured lifecycle",
+      "purpose": "Invalid fixture with malformed id",
+      "requirements": [
+        {
+          "id": "cairn.structured.fixture.malformed_id",
+          "strength": "MUST",
+          "statement": "reject malformed structured lifecycle ids",
+          "scenarios": [
+            {
+              "id": "malformed_id",
+              "given": ["a lifecycle bundle with an id containing whitespace"],
+              "when": ["Cairn validates it"],
+              "then": ["the bundle is rejected"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "changes": []
+}

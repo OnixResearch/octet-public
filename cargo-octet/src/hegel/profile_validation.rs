@@ -1,6 +1,10 @@
 use std::collections::BTreeSet;
 
-use super::*;
+use super::LAW_CATALOG_SCHEMA;
+use super::PROFILE_ID;
+use super::Profile;
+use super::REQUIRED_NON_CLAIM;
+use super::law_catalog;
 
 const EXPECTED_COMMAND: [&str; 12] = [
     "cargo",

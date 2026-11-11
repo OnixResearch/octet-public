@@ -1,5 +1,5 @@
 warning: non-trait import `Addr` hides the owner path; prefer the qualified path at the use site
-  --> $DIR/non_trait_imports.rs:14:1
+  --> $DIR/non_trait_imports.rs:24:1
    |
 LL | use crate::addr::Addr;
    | ^^^^^^^^^^^^^^^^^^^^^^
@@ -8,5 +8,14 @@ LL | use crate::addr::Addr;
    = note: see Tiger Style guide: Naming
    = note: `#[warn(tigerstyle::non_trait_imports)]` on by default
 
-warning: 1 warning emitted
+warning: non-trait import `Registry` hides the owner path; prefer the qualified path at the use site
+  --> $DIR/non_trait_imports.rs:27:1
+   |
+LL | use crate::registry::Registry;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+   = note: see Tiger Style guide: Naming
+
+warning: 2 warnings emitted
 

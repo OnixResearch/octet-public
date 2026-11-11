@@ -1,0 +1,54 @@
+error: `#[warn(...)]` without justification comment
+  --> $DIR/strict_profile_governance_custom/strict_profile_warn_floor.rs:3:1
+   |
+LL | #![warn(no_unwrap)]
+   | ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+   = note: `-D tigerstyle::unjustified-allow` implied by `-D unjustified-allow`
+   = help: to override `-D unjustified-allow` add `#[allow(tigerstyle::unjustified_allow)]`
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+error: `#[warn(...)]` without justification comment
+  --> $DIR/strict_profile_governance_custom/strict_profile_warn_floor.rs:20:1
+   |
+LL | #[warn(tigerstyle::no_panic)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/strict_profile_governance_custom/strict_profile_warn_floor.rs:15:6
+   |
+LL |     *values.first().unwrap()
+   |      ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+note: the lint level is defined here
+  --> $DIR/strict_profile_governance_custom/strict_profile_warn_floor.rs:13:8
+   |
+LL | #[warn(tigerstyle::no_unwrap)]
+   |        ^^^^^^^^^^^^^^^^^^^^^
+help: propagate the error with `?` instead of panicking
+   |
+LL -     *values.first().unwrap()
+LL +     *values.first()?
+   |
+
+error: aborting due to 2 previous errors; 1 warning emitted
+

@@ -10,6 +10,12 @@ fn silent_allow() {
     let _v: Vec<u8> = Vec::new();
 }
 
+#[allow(zero_alloc_attr_contract)]
+fn silent_bare_allow() {
+    let _v: Vec<u8> = Vec::new();
+}
+
 fn main() {
     silent_allow();
+    silent_bare_allow();
 }

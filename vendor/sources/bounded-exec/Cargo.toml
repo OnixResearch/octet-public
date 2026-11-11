@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/bounded-exec-core",
+  "crates/bounded-exec",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "AGPL-3.0-or-later"
+repository = "https://git.onix.computer/z2CpqLFpdP36fZXYUK5ZNWxMibpCo.git"
+publish = false
+
+[workspace.dependencies]
+blake3 = { version = "1.8.2", default-features = false }
+bounded-exec-core = { path = "crates/bounded-exec-core" }
+nix = { version = "0.30.1", default-features = false, features = ["process", "signal"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+module_name_repetitions = "allow"

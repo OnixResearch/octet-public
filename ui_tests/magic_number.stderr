@@ -13,5 +13,50 @@ LL | #![deny(magic_number)]
    |         ^^^^^^^^^^^^
    = note: `#[deny(tigerstyle::magic_number)]` implied by `#[deny(magic_number)]`
 
-error: aborting due to 1 previous error
+error: inline numeric literal should be extracted into a named constant or configuration field
+  --> $DIR/magic_number.rs:43:25
+   |
+LL |     if retry_attempts > 5 {
+   |                         ^
+   |
+   = help: Tiger Style (Named Constants): extract policy thresholds and domain values into named constants or configuration fields Example: const RECONNECT_TIMEOUT_MS: u64 = 30_000;
+   = note: see Tiger Style guide: Explicit Defaults / Named Constants
+
+error: inline numeric literal should be extracted into a named constant or configuration field
+  --> $DIR/magic_number.rs:62:27
+   |
+LL |     if state.elapsed_ms > 30_000 {
+   |                           ^^^^^^
+   |
+   = help: Tiger Style (Named Constants): extract policy thresholds and domain values into named constants or configuration fields Example: const RECONNECT_TIMEOUT_MS: u64 = 30_000;
+   = note: see Tiger Style guide: Explicit Defaults / Named Constants
+
+error: inline numeric literal should be extracted into a named constant or configuration field
+  --> $DIR/magic_number.rs:66:31
+   |
+LL |     if state.retry_attempts > 5 {
+   |                               ^
+   |
+   = help: Tiger Style (Named Constants): extract policy thresholds and domain values into named constants or configuration fields Example: const RECONNECT_TIMEOUT_MS: u64 = 30_000;
+   = note: see Tiger Style guide: Explicit Defaults / Named Constants
+
+error: inline numeric literal should be extracted into a named constant or configuration field
+  --> $DIR/magic_number.rs:70:30
+   |
+LL |     if state.retry_limit() > 7 {
+   |                              ^
+   |
+   = help: Tiger Style (Named Constants): extract policy thresholds and domain values into named constants or configuration fields Example: const RECONNECT_TIMEOUT_MS: u64 = 30_000;
+   = note: see Tiger Style guide: Explicit Defaults / Named Constants
+
+error: inline numeric literal should be extracted into a named constant or configuration field
+  --> $DIR/magic_number.rs:86:42
+   |
+LL |     let retry_delay_ms = if elapsed_ms > 30_000 { 50 } else { 10 };
+   |                                          ^^^^^^
+   |
+   = help: Tiger Style (Named Constants): extract policy thresholds and domain values into named constants or configuration fields Example: const RECONNECT_TIMEOUT_MS: u64 = 30_000;
+   = note: see Tiger Style guide: Explicit Defaults / Named Constants
+
+error: aborting due to 6 previous errors
 

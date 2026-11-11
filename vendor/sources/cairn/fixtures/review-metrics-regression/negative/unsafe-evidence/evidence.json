@@ -1,0 +1,18 @@
+{
+  "schema_version": "cairn.semantic-review.metrics-regression-evidence-boundary.v1",
+  "evidence": [
+    {
+      "ref": "metrics-snapshot-2026-05-23",
+      "category_code": "omission|tasks|auto-fix",
+      "metrics_class": "omission",
+      "metrics_stage": "tasks",
+      "metrics_source": "manual",
+      "provenance": {
+        "path": ".cairn/changes/example/evidence/metrics-snapshot.md",
+        "sanitized": true
+      },
+      "summary": "raw transcript included",
+      "api_key": "[REDACTED]"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 #![feature(register_tool)]
 #![register_tool(tigerstyle)]
 #![warn(tigerstyle::nondeterministic_output)]
+#![allow(non_trait_imports, reason = "fixture targets another lint; the import and path-naming lints have their own fixtures")]
 
 use std::collections::HashMap;
 

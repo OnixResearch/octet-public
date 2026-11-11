@@ -1,5 +1,42 @@
+error: system time access in verified module
+  --> $DIR/verified/verified_purity.rs:5:5
+   |
+LL | use std::time::Instant;
+   |     ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+   = note: `#[deny(tigerstyle::verified_purity)]` on by default
+
+error: I/O operation in verified module
+  --> $DIR/verified/verified_purity.rs:7:5
+   |
+LL | use std::fs::File;
+   |     ^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: I/O operation in verified module
+  --> $DIR/verified/verified_purity.rs:9:11
+   |
+LL | use std::{fs, time::SystemTime};
+   |           ^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: system time access in verified module
+  --> $DIR/verified/verified_purity.rs:9:15
+   |
+LL | use std::{fs, time::SystemTime};
+   |               ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
 error: async function in verified module
-  --> $DIR/verified/verified_purity.rs:3:1
+  --> $DIR/verified/verified_purity.rs:11:1
    |
 LL | / pub async fn impure_async() {
 LL | |     // Should error: async fn in verified module
@@ -8,7 +45,97 @@ LL | | }
    |
    = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
    = note: see Tiger Style guide: Verified Module Purity
-   = note: `#[deny(tigerstyle::verified_purity)]` on by default
 
-error: aborting due to 1 previous error
+error: async function in verified module
+  --> $DIR/verified/verified_purity.rs:32:5
+   |
+LL |     async fn sync_remote(&self) {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: async function in verified module
+  --> $DIR/verified/verified_purity.rs:37:5
+   |
+LL |     async fn load(&self) -> u64;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: async block in verified module
+  --> $DIR/verified/verified_purity.rs:42:5
+   |
+LL |     async move { 1 }
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: system time access in verified module
+  --> $DIR/verified/verified_purity.rs:56:9
+   |
+LL |         time::Instant::now()
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: system time access in verified module
+  --> $DIR/verified/verified_purity.rs:71:9
+   |
+LL |         SystemTime::now()
+   |         ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+warning: direct system clock read in production code
+  --> $DIR/verified/verified_purity.rs:21:5
+   |
+LL |     Instant::now()
+   |     ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): pass time into core logic or isolate clock reads in a shell-boundary helper with a narrow allow reason Example: #[allow(tigerstyle::ambient_clock, reason = "shell boundary clock read")] fn read_now() -> Instant { Instant::now() }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+   = note: `#[warn(tigerstyle::ambient_clock)]` on by default
+help: inject time as a parameter instead of reading the system clock
+   |
+LL -     Instant::now()
+LL +     /* inject time parameter */
+   |
+
+warning: direct system clock read in production code
+  --> $DIR/verified/verified_purity.rs:56:9
+   |
+LL |         time::Instant::now()
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): pass time into core logic or isolate clock reads in a shell-boundary helper with a narrow allow reason Example: #[allow(tigerstyle::ambient_clock, reason = "shell boundary clock read")] fn read_now() -> Instant { Instant::now() }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: inject time as a parameter instead of reading the system clock
+   |
+LL -         time::Instant::now()
+LL +         /* inject time parameter */
+   |
+
+warning: direct system clock read in production code
+  --> $DIR/verified/verified_purity.rs:71:9
+   |
+LL |         SystemTime::now()
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): pass time into core logic or isolate clock reads in a shell-boundary helper with a narrow allow reason Example: #[allow(tigerstyle::ambient_clock, reason = "shell boundary clock read")] fn read_now() -> Instant { Instant::now() }
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+help: inject time as a parameter instead of reading the system clock
+   |
+LL -         SystemTime::now()
+LL +         /* inject time parameter */
+   |
+
+error: aborting due to 10 previous errors; 3 warnings emitted
 

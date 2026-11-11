@@ -4,25 +4,36 @@ extern crate rustc_abi;
 extern crate rustc_ast;
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_hir_typeck;
+extern crate rustc_infer;
+extern crate rustc_lexer;
 extern crate rustc_lint;
 extern crate rustc_middle;
 extern crate rustc_session;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 mod architecture_collector;
+mod cast_suggestion;
 mod concurrency;
 pub mod config;
 mod diagnostics;
+mod durability;
+mod markers;
 mod naming;
 mod performance;
 mod purity;
 mod safety;
+mod source;
 mod structure;
 mod test_context;
 
 use config::Config;
 
 dylint_linting::dylint_library!();
+
+/// Extra rustc flags the Dylint driver reads from the environment.
+const DYLINT_RUSTFLAGS_ENV: &str = "DYLINT_RUSTFLAGS";
 
 pub(crate) struct LintInventoryEntry {
     pub name: &'static str,
@@ -78,14 +89,32 @@ fn apply_lint_level_overrides(sess: &rustc_session::Session, cfg: &Config) {
     // SAFETY: rustc calls `register_lints` during lint-store initialization,
     // before lint levels are computed from `sess.opts.lint_opts`. The API only
     // provides `&Session`, so the only way to feed config-owned per-lint levels
-    // into rustc's normal lint-level machinery is to append to `lint_opts`
-    // through a raw pointer at this setup point.
+    // into rustc's normal lint-level machinery is to edit `lint_opts` through a
+    // raw pointer at this setup point.
     unsafe {
-        for lint in LINT_INVENTORY {
-            if let Some(level) = cfg.lint_level(lint.name) {
-                (*opts).lint_opts.push((lint.name.to_owned(), level.rustc_level()));
-            }
-        }
+        cfg.merge_into_lint_opts(&mut (*opts).lint_opts);
+    }
+}
+
+/// Keeps the Boolean API suppression guard scheduled under an explicit deny.
+///
+/// rustc skips a late pass whose lints a crate allows, and a source
+/// `#![allow(warnings)]` or `#![allow(raw_bool_parameter_suppression)]` would
+/// otherwise hide the guard's unconditional errors. `force-warn` cannot be
+/// lowered by a source attribute. This runs after the profile-floor weakening
+/// check, so the internal option is not mistaken for a caller weakening.
+#[allow(invalid_reference_casting)]
+fn apply_boolean_guard_scheduling(sess: &rustc_session::Session, cfg: &Config) {
+    if cfg.lint_level("raw_bool_parameter_suppression") != Some(config::LintLevel::Deny) {
+        return;
+    }
+    let opts = std::ptr::addr_of!(sess.opts).cast_mut();
+
+    // SAFETY: rustc calls `register_lints` during lint-store initialization,
+    // before lint levels are computed. The same setup-point contract that
+    // `apply_lint_level_overrides` documents applies here.
+    unsafe {
+        (*opts).lint_opts.push(("raw_bool_parameter_suppression".to_owned(), rustc_lint::Level::ForceWarn));
     }
 }
 
@@ -97,6 +126,51 @@ fn lint_id_for_name(lint_name: &str) -> rustc_lint::LintId {
     rustc_lint::LintId::of(entry.lint)
 }
 
+/// Command-line lint options that would keep a selected strict-profile floor
+/// lint below `deny`.
+///
+/// The floor is a `-D` placed after every other lint option, which beats
+/// `-A` and `-W`. rustc never lets a later level override `--force-warn`, and
+/// `--cap-lints` lowers every level after the fact, so those fail closed.
+fn profile_floor_weakenings(
+    cfg: &Config,
+    lint_cap: Option<rustc_lint::Level>,
+    lint_opts: &[(String, rustc_lint::Level)],
+    lint_store: &rustc_lint::LintStore,
+) -> Vec<String> {
+    let Some(profile_id) = cfg.strict_profile_id() else {
+        return Vec::new();
+    };
+    let capped = lint_cap.filter(|cap| *cap < rustc_lint::Level::Deny).map(|cap| {
+        format!(
+            "strict profile `{profile_id}` requires its lints at `deny`, but `--cap-lints {}` caps them lower; remove the flag",
+            cap.as_str()
+        )
+    });
+    let floor = cfg
+        .profile_floor_lints()
+        .map(|lint_name| (lint_name, lint_id_for_name(lint_name)))
+        .collect::<Vec<_>>();
+    let force_warned = lint_opts
+        .iter()
+        .filter(|(_name, level)| *level == rustc_lint::Level::ForceWarn)
+        .filter_map(|(option_name, _level)| {
+            let covered = lint_store.find_lints(option_name)?;
+            let weakened = floor
+                .iter()
+                .filter(|(_lint_name, lint_id)| covered.contains(lint_id))
+                .map(|(lint_name, _lint_id)| format!("`{lint_name}`"))
+                .collect::<Vec<_>>();
+            (!weakened.is_empty()).then(|| {
+                format!(
+                    "strict profile `{profile_id}` requires {} at `deny`, but `--force-warn {option_name}` keeps it a warning; remove the flag",
+                    weakened.join(", ")
+                )
+            })
+        });
+    capped.into_iter().chain(force_warned).collect()
+}
+
 fn register_no_todo_bundle(lint_store: &mut rustc_lint::LintStore, cfg: &Config) {
     let emit_no_todo = !cfg.lint_is_disabled("no_todo");
     let emit_unjustified_allow = !cfg.lint_is_disabled("unjustified_no_todo_allow");
@@ -104,8 +178,12 @@ fn register_no_todo_bundle(lint_store: &mut rustc_lint::LintStore, cfg: &Config)
         return;
     }
 
-    lint_store
-        .register_late_pass(move |_| Box::new(safety::no_todo::NoTodo::new(emit_no_todo, emit_unjustified_allow)));
+    lint_store.register_late_pass(move |_| {
+        Box::new(safety::no_todo::NoTodo::new(safety::no_todo::NoTodoLintSelection {
+            todo: emit_no_todo,
+            unjustified_allow: emit_unjustified_allow,
+        }))
+    });
 }
 
 fn register_domain_groups(lint_store: &mut rustc_lint::LintStore, cfg: &Config) {
@@ -138,7 +216,7 @@ lint_inventory! {
     // Early passes (post-expansion, syntax-only).
     // compound_assertion detects the expanded `if !(a && b) { panic(..) }` pattern.
     "compound_assertion", safety::compound_assertion::COMPOUND_ASSERTION => |lint_store, _cfg| {
-        lint_store.register_early_pass(|| Box::new(safety::compound_assertion::CompoundAssertion));
+        lint_store.register_early_pass(|| Box::new(safety::compound_assertion::CompoundAssertion::default()));
     },
     "function_length", structure::function_length::FUNCTION_LENGTH => |lint_store, cfg| {
         let fl_max = cfg.function_length_max;
@@ -182,13 +260,14 @@ lint_inventory! {
         lint_store.register_late_pass(|_| Box::new(safety::unbounded_loop::UnboundedLoop));
     },
     "compound_condition", structure::compound_condition::COMPOUND_CONDITION => |lint_store, _cfg| {
-        lint_store.register_early_pass(|| Box::new(structure::compound_condition::CompoundCondition));
+        lint_store.register_early_pass(|| Box::new(structure::compound_condition::CompoundCondition::default()));
     },
     "verified_purity", purity::verified_purity::VERIFIED_PURITY => |lint_store, _cfg| {
-        lint_store.register_early_pass(|| Box::new(purity::verified_purity::VerifiedPurity));
+        lint_store.register_early_pass(|| Box::new(purity::verified_purity::VerifiedPurity::default()));
     },
-    "unjustified_allow", structure::unjustified_allow::UNJUSTIFIED_ALLOW => |lint_store, _cfg| {
-        lint_store.register_early_pass(|| Box::new(structure::unjustified_allow::UnjustifiedAllow));
+    "unjustified_allow", structure::unjustified_allow::UNJUSTIFIED_ALLOW => |lint_store, cfg| {
+        let pass = structure::unjustified_allow::UnjustifiedAllow::for_profile_floor(cfg.profile_floor_lints());
+        lint_store.register_early_pass(move || Box::new(pass.clone()));
     },
     "nested_conditionals", structure::nested_conditionals::NESTED_CONDITIONALS => |lint_store, cfg| {
         let nc_max = cfg.nesting_max_depth;
@@ -238,13 +317,27 @@ lint_inventory! {
         let max_parameters = cfg.max_parameters;
         lint_store.register_late_pass(move |_| Box::new(structure::too_many_parameters::TooManyParameters::new(max_parameters)));
     },
+    "raw_bool_parameter", structure::raw_bool_parameter::RAW_BOOL_PARAMETER => |lint_store, _cfg| {
+        lint_store.register_late_pass(|_| Box::new(structure::raw_bool_parameter::RawBoolParameter));
+    },
+    "raw_bool_parameter_suppression", structure::raw_bool_parameter_suppression::RAW_BOOL_PARAMETER_SUPPRESSION => |lint_store, cfg| {
+        let enforcement = if cfg.lint_level("raw_bool_parameter_suppression") == Some(config::LintLevel::Deny) {
+            structure::raw_bool_parameter_suppression::Enforcement::StrictAll
+        } else {
+            structure::raw_bool_parameter_suppression::Enforcement::Advisory
+        };
+        lint_store.register_late_pass(move |_| {
+            Box::new(structure::raw_bool_parameter_suppression::RawBoolParameterSuppression::new(enforcement))
+        });
+    },
     "fat_trait", structure::fat_trait::FAT_TRAIT => |lint_store, cfg| {
         let max_methods = cfg.trait_method_max;
         lint_store.register_late_pass(move |_| Box::new(structure::fat_trait::FatTrait::new(max_methods)));
     },
     "concrete_construction_in_core", structure::concrete_construction_in_core::CONCRETE_CONSTRUCTION_IN_CORE => |lint_store, cfg| {
         let core_source_scopes = cfg.core_source_scopes.clone();
-        lint_store.register_late_pass(move |_| Box::new(structure::concrete_construction_in_core::ConcreteConstructionInCore::new(core_source_scopes.clone())));
+        let core_value_provider_types = cfg.core_value_provider_types.clone();
+        lint_store.register_late_pass(move |_| Box::new(structure::concrete_construction_in_core::ConcreteConstructionInCore::new(core_source_scopes.clone(), core_value_provider_types.clone())));
     },
     "type_accumulation", structure::type_accumulation::TYPE_ACCUMULATION => |lint_store, cfg| {
         let impl_blocks_max = cfg.impl_blocks_max;
@@ -385,7 +478,7 @@ lint_inventory! {
         lint_store.register_late_pass(|_| Box::new(safety::no_unwrap::NoUnwrap));
     },
     "no_panic", safety::no_panic::NO_PANIC => |lint_store, _cfg| {
-        lint_store.register_late_pass(|_| Box::new(safety::no_panic::NoPanic));
+        lint_store.register_late_pass(|_| Box::new(safety::no_panic::NoPanic::default()));
     },
     "public_unsafe_api", safety::public_unsafe_api::PUBLIC_UNSAFE_API => |lint_store, _cfg| {
         lint_store.register_late_pass(|_| Box::new(safety::public_unsafe_api::PublicUnsafeApi));
@@ -400,12 +493,31 @@ lint_inventory! {
     "no_recursion", safety::no_recursion::NO_RECURSION => |lint_store, _cfg| {
         lint_store.register_late_pass(|_| Box::new(safety::no_recursion::NoRecursion));
     },
+    "discarded_sync_result", durability::discard::DISCARDED_SYNC_RESULT => |lint_store, cfg| {
+        let context = durability::Context::from_config(cfg);
+        lint_store.register_late_pass(move |_| Box::new(durability::discard::SyncDiscard::new(context.clone())));
+    },
+    "flush_only_durability", durability::flush::FLUSH_ONLY_DURABILITY => |lint_store, cfg| {
+        let context = durability::Context::from_config(cfg);
+        lint_store.register_late_pass(move |_| Box::new(durability::flush::FlushOnly::new(context.clone())));
+    },
+    "retry_sync_after_error", durability::retry::RETRY_SYNC_AFTER_ERROR => |lint_store, cfg| {
+        let context = durability::Context::from_config(cfg);
+        lint_store.register_late_pass(move |_| Box::new(durability::retry::RetryAfterError::new(context.clone())));
+    },
 }
 
 #[unsafe(no_mangle)]
 pub extern "Rust" fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
     dylint_linting::init_config(sess);
-    let cfg = config::load(sess);
+    let durability_catalog = match octet_lint_metadata::durability::load_durability_catalog() {
+        Ok(catalog) => catalog,
+        Err(error) => {
+            sess.dcx().err(format!("load embedded durability catalog: {error}"));
+            return;
+        }
+    };
+    let cfg = config::load(sess, &durability_catalog);
     let nominal_domain_catalog = match octet_lint_metadata::nominal_domain::load_nominal_domain_catalog() {
         Ok(catalog) => catalog,
         Err(error) => {
@@ -416,7 +528,22 @@ pub extern "Rust" fn register_lints(sess: &rustc_session::Session, lint_store: &
     apply_lint_level_overrides(sess, &cfg);
     register_inventory(lint_store, &cfg, &nominal_domain_catalog);
     register_no_todo_bundle(lint_store, &cfg);
-    match architecture_collector::active_collector() {
+    // Cargo rebuilds a workspace unit when a recorded value changes. The collector context switches
+    // between lint-only and architecture runs, so the collector always gets a compilation to
+    // observe. The strict-profile selection and the Dylint driver's `DYLINT_RUSTFLAGS` (which the
+    // deny-all hook uses) change lint levels only inside rustc and are not recorded by Cargo or the
+    // driver, so without them a cached unit would replay warnings that the new levels deny.
+    for variable in [
+        octet_architecture_ir::COMPILER_ARCHITECTURE_COLLECTOR_CONTEXT_ENV,
+        octet_lint_metadata::strict_profile::STRICT_PROFILE_ENV,
+        DYLINT_RUSTFLAGS_ENV,
+    ] {
+        let value = std::env::var(variable).ok();
+        sess.env_depinfo
+            .lock()
+            .insert((rustc_span::Symbol::intern(variable), value.as_deref().map(rustc_span::Symbol::intern)));
+    }
+    match architecture_collector::active_collector(sess) {
         Ok(Some(collector)) => {
             if let Err(error) = architecture_collector::validate_compiler_session(sess, &collector) {
                 sess.dcx().err(error);
@@ -432,6 +559,15 @@ pub extern "Rust" fn register_lints(sess: &rustc_session::Session, lint_store: &
     }
     register_domain_groups(lint_store, &cfg);
     register_compatibility_aliases(lint_store, &cfg);
+    for weakening in profile_floor_weakenings(&cfg, sess.opts.lint_cap, &sess.opts.lint_opts, lint_store) {
+        sess.dcx().err(weakening);
+    }
+    apply_boolean_guard_scheduling(sess, &cfg);
+    if let Some(guard) = cfg.strict_profile_id().and_then(|profile_id| {
+        structure::unjustified_allow::SuppressionGovernanceGuard::for_profile(profile_id, cfg.profile_floor_lints())
+    }) {
+        lint_store.register_early_pass(move || Box::new(guard.clone()));
+    }
 }
 
 #[cfg(test)]
@@ -446,6 +582,7 @@ mod tests {
     use super::LINT_INVENTORY;
     use super::default_level_name;
     use super::lint_id_for_name;
+    use super::profile_floor_weakenings;
     use super::register_compatibility_aliases;
     use super::register_domain_groups;
     use super::register_inventory;
@@ -1259,6 +1396,53 @@ mod tests {
             .collect()
     }
 
+    fn force_warn(name: &str) -> Vec<(String, rustc_lint::Level)> {
+        vec![(name.to_owned(), rustc_lint::Level::ForceWarn)]
+    }
+
+    #[test]
+    fn strict_profile_rejects_force_warn_and_lint_caps_below_deny() {
+        let mut cfg = Config::default();
+        let profile = octet_lint_metadata::strict_profile::strict_profile("robust").expect("robust profile");
+        cfg.apply_strict_profile(&profile).expect("robust profile should apply");
+        let store = lint_store_with_groups_and_aliases(&cfg);
+        let weakenings = |cap: Option<rustc_lint::Level>, opts: &[(String, rustc_lint::Level)]| {
+            profile_floor_weakenings(&cfg, cap, opts, &store)
+        };
+
+        // A floor lint named directly, through its canonical tool name, or through its group.
+        for name in [
+            "no_unwrap".to_owned(),
+            diagnostics::canonical_lint_name("no_unwrap"),
+            diagnostics::GROUP_SAFETY.to_owned(),
+        ] {
+            let found = weakenings(None, &force_warn(&name));
+            assert_eq!(found.len(), 1, "`--force-warn {name}` weakens the floor: {found:?}");
+            assert!(found[0].contains("`no_unwrap`") && found[0].contains(&name), "{found:?}");
+        }
+        for cap in [
+            rustc_lint::Level::Allow,
+            rustc_lint::Level::Warn,
+            rustc_lint::Level::ForceWarn,
+        ] {
+            assert_eq!(weakenings(Some(cap), &[]).len(), 1, "`--cap-lints {}` weakens the floor", cap.as_str());
+        }
+
+        // Non-floor lints, unknown names, `-A`, and caps at or above deny keep the floor.
+        assert!(weakenings(None, &force_warn("function_length")).is_empty());
+        assert!(weakenings(None, &force_warn("not_a_lint")).is_empty());
+        assert!(weakenings(None, &[("no_unwrap".to_owned(), rustc_lint::Level::Allow)]).is_empty());
+        assert!(weakenings(Some(rustc_lint::Level::Deny), &[]).is_empty());
+        assert!(weakenings(Some(rustc_lint::Level::Forbid), &[]).is_empty());
+
+        // Without a selected profile there is no floor to weaken.
+        let unprofiled = Config::default();
+        assert!(
+            profile_floor_weakenings(&unprofiled, Some(rustc_lint::Level::Allow), &force_warn("no_unwrap"), &store)
+                .is_empty()
+        );
+    }
+
     #[test]
     fn all_lints_register_canonical_and_bare_names() {
         let store = lint_store_with_groups_and_aliases(&Config::default());
@@ -1529,7 +1713,12 @@ mod tests {
         "unbounded_collection_growth",
     ];
 
-    const MACHINE_APPLICABLE_AUTOFIX_LINTS: &[&str] = &["compound_assertion", "bool_naming", "negated_predicate"];
+    const MACHINE_APPLICABLE_AUTOFIX_LINTS: &[&str] = &[
+        "compound_assertion",
+        "bool_naming",
+        "negated_predicate",
+        "platform_dependent_cast",
+    ];
 
     const MACHINE_APPLICABLE_AUTOFIX_OUT_OF_SCOPE: &[AutofixOutOfScopeRationale] = &[];
 

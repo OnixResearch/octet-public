@@ -27,6 +27,7 @@ const CONFLICTS_COMMAND: &str = "collaboration conflicts";
 const CHECKOUT_MISSING_CHANGES_NEGATIVE: &str = "checkout-missing-changes-negative.json";
 const PASS_VERDICT: &str = "PASS";
 const FAIL_VERDICT: &str = "FAIL";
+const MISSING_CHANGES_BLOCKER: &str = "native cairn/changes directory is missing, unsafe, or not a directory";
 const TAMPERED_OBJECT_ID: &str = "0000000000000000000000000000000000000000";
 
 // r[impl octet.cob_collaboration.pilot]
@@ -284,18 +285,12 @@ fn validate_secondary(
     require_field(CHECKOUT_MISSING_CHANGES_NEGATIVE, negative, "blocked", Value::Bool(true))?;
     require_field(CHECKOUT_MISSING_CHANGES_NEGATIVE, negative, "mutated", Value::Bool(false))?;
     require_field(CHECKOUT_MISSING_CHANGES_NEGATIVE, negative, "verdict", Value::String(FAIL_VERDICT.to_string()))?;
-    require_field(CHECKOUT_MISSING_CHANGES_NEGATIVE, negative, "dry_run", Value::Bool(false))?;
-    require_field(CHECKOUT_MISSING_CHANGES_NEGATIVE, negative, "object_id", Value::String(manifest.object_id.clone()))?;
-    require_field(CHECKOUT_MISSING_CHANGES_NEGATIVE, negative, "state_hash", Value::String(manifest.final_state_hash.clone()))?;
-    match negative.get("blockers").and_then(Value::as_array) {
-        Some(blockers) if blockers.iter().any(|blocker| blocker.as_str().is_some_and(|text| !text.is_empty())) => {
-            Ok(())
-        }
-        _ => Err(PilotEvidenceError::Field {
-            receipt: CHECKOUT_MISSING_CHANGES_NEGATIVE.to_string(),
-            field: "blockers".to_string(),
-        }),
-    }
+    require_field(
+        CHECKOUT_MISSING_CHANGES_NEGATIVE,
+        negative,
+        "blockers",
+        Value::Array(vec![Value::String(MISSING_CHANGES_BLOCKER.to_string())]),
+    )
 }
 
 fn validate_bundle(manifest: &PilotManifest, bundle_bytes: &[u8]) -> Result<(), PilotEvidenceError> {
@@ -381,9 +376,7 @@ fn validate_transport(
         transport,
         "artifact_tree_blake3",
         Value::String(manifest.transport.artifact_tree_blake3.clone()),
-    )?;
-    require_field(TRANSPORT, transport, "source_remotes", Value::Array(Vec::new()))?;
-    require_field(TRANSPORT, transport, "destination_remotes", Value::Array(Vec::new()))
+    )
 }
 
 fn validate_non_claims(

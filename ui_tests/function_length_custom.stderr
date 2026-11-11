@@ -1,4 +1,4 @@
-warning: function `long_function` is 106 lines (limit: 100)
+warning: function `long_function` is 104 lines (limit: 100)
   --> $DIR/function_length_custom/function_length_custom.rs:83:27
    |
 LL |   fn long_function() -> u32 {

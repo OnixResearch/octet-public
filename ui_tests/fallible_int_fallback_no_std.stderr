@@ -1,0 +1,30 @@
+warning: fallible integer conversion hides an out-of-range error behind a sentinel fallback
+  --> $DIR/fallible_int_fallback_no_std.rs:9:5
+   |
+LL |     u32::try_from(count).unwrap_or(0)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+   = note: `#[warn(tigerstyle::fallible_int_fallback)]` on by default
+
+warning: fallible integer conversion hides an out-of-range error behind a sentinel fallback
+  --> $DIR/fallible_int_fallback_no_std.rs:13:5
+   |
+LL |     u8::try_from(count).unwrap_or(u8::MAX)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+
+warning: fallible integer conversion hides an out-of-range error behind a default fallback
+  --> $DIR/fallible_int_fallback_no_std.rs:17:5
+   |
+LL |     u16::try_from(count).unwrap_or_default()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate integer conversion failures instead of replacing them with sentinel or default values Example: let id = u32::try_from(raw)?;
+   = note: see Tiger Style guide: Error Handling
+
+warning: 3 warnings emitted
+

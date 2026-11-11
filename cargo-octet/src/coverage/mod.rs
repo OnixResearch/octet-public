@@ -4,7 +4,7 @@
 // r[impl octet.coverage_baseline.comparison]
 pub const PROFILE_SCHEMA: &str = "octet-coverage-profiles/v1";
 pub const PROFILE_ID: &str = "cargo-llvm-cov-octet-lib";
-pub const PROFILE_IDENTITY: &str = "b3:e221f5d35528e6979bb44ab58cc5e486109799cf99fb80fc4d85ab77a7082634";
+pub const PROFILE_IDENTITY: &str = "b3:67ed0ffcd6a2d5a5561bb014fc99fa58a5234ed56b5a8a5cce52db722bca932c";
 pub const NATIVE_SCHEMA: &str = "octet-coverage-native-report/v1";
 pub const RECEIPT_SCHEMA: &str = "octet-coverage-receipt/v1";
 pub const SOURCE_MANIFEST_ARTIFACT: &str = "coverage-source-manifest.txt";
@@ -41,6 +41,8 @@ pub struct Thresholds {
     pub regions: u64,
 }
 
+// `profile_id` is a serialized profile JSON key; renaming the field would change the wire format.
+#[allow(clippy::struct_field_names)]
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Profile {
     pub profile_id: String,

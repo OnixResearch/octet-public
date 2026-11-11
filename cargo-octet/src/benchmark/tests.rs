@@ -12,6 +12,17 @@ fn profile_registry_identity_workloads_corpora_and_unknown_selection_are_checked
     let profile = selected_profile(PROFILE_ID).expect("profile");
     assert_eq!(profile.workloads.len(), PROFILE_WORKLOAD_COUNT);
     assert_eq!(profile.signal_corpus.len(), PROFILE_CORPUS_COUNT);
+    let mut corpus_kinds: Vec<&str> = profile.signal_corpus.iter().map(|corpus| corpus.source_kind.as_str()).collect();
+    corpus_kinds.sort_unstable();
+    assert_eq!(corpus_kinds, ["cross_project", "synthetic"]);
+    assert!(profile.signal_corpus.iter().all(|corpus| {
+        !corpus.source_repository.is_empty()
+            && !corpus.source_revision.is_empty()
+            && !corpus.representativeness_boundary.is_empty()
+    }));
+    let mut modes: Vec<&str> = profile.workloads.iter().map(|workload| workload.mode.as_str()).collect();
+    modes.sort_unstable();
+    assert_eq!(modes, ["cold", "incremental", "no_change", "warm"]);
     assert!(selected_profile("ambient-benchmark").is_err());
 }
 
@@ -216,6 +227,27 @@ fn capability_rooted_resource_inputs_preserve_constant_unknown_and_allocation_ob
 }
 
 #[test]
+fn copy_census_keeps_runtime_lengths_unknown_and_skips_intrinsic_declarations() {
+    let llvm = "declare void @llvm.memcpy.p0.p0.i64(ptr noalias nocapture writeonly, ptr noalias nocapture readonly, i64, i1 immarg)\n\
+                call void @llvm.memcpy.p0.p0.i64(ptr %a, ptr %b, i64 %5, i1 false)\n\
+                tail call void @llvm.memcpy.p0.p0.i64(ptr %a, ptr %b, i64 %_7, i1 false)\n\
+                call void @llvm.memcpy.p0.p0.i32(ptr %a, ptr %b, i32 %src.1, i1 false)\n\
+                invoke void @llvm.memcpy.p0.p0.i64(ptr %a, ptr %b, i64 32, i1 false)\n";
+    let observations = resources::scan_llvm_copy_sites(
+        "workload",
+        llvm,
+        &b3(COMPILER_IDENTITY_INPUT),
+        "x86_64-unknown-linux-gnu",
+        "release",
+    )
+    .expect("copy census");
+    let lengths: Vec<Option<u64>> = observations.iter().map(|observation| observation.constant_length_bytes).collect();
+    assert_eq!(lengths, vec![None, None, None, Some(KNOWN_COPY_BYTES)]);
+    assert!(observations.iter().all(|observation| !observation.context.starts_with("declare")));
+}
+
+#[cfg(unix)]
+#[test]
 fn bounded_shell_uses_fixed_profile_command_and_clear_environment() {
     let profile = selected_profile(PROFILE_ID).expect("profile");
     let directory = tempfile::tempdir().expect("temporary directory");
@@ -238,8 +270,11 @@ fn bounded_shell_uses_fixed_profile_command_and_clear_environment() {
         "call void @llvm.memcpy.p0.p0.i64(ptr %a, ptr %b, i64 32, i1 false)\n",
     )
     .expect("write runtime LLVM fixture");
+    let tool_directory = tempfile::tempdir().expect("temporary tool directory");
+    let cargo = tool_directory.path().join("cargo-fixture");
+    crate::test_support::write_executable_script(&cargo, "#!/bin/sh\nexit 0\n");
     let tools = shell::RuntimeTools {
-        cargo: "/bin/true".into(),
+        cargo,
         path: "/bin".into(),
         library_path: "/lib".into(),
         kernel_identity: "kernel-fixture".to_owned(),
@@ -247,10 +282,156 @@ fn bounded_shell_uses_fixed_profile_command_and_clear_environment() {
         governor: "performance".to_owned(),
         load_class: "isolated".to_owned(),
     };
-    let observation = shell::run_with(directory.path(), &profile, baseline, tools).expect("bounded benchmark run");
+    let observation = shell::run_with(directory.path(), &profile, baseline, &tools).expect("bounded benchmark run");
     assert_eq!(observation.input.candidate.samples.len(), SAMPLE_COUNT);
     assert!(observation.input.candidate.samples.iter().all(|sample| sample.outcome == "succeeded"));
     assert!(resources::is_b3(&observation.input.bounded_log_identity));
+}
+
+#[test]
+fn workload_environment_identity_limit_and_receipt_identity_mismatches_fail_closed() {
+    let profile = selected_profile(PROFILE_ID).expect("profile");
+
+    let mut workload = valid_input();
+    workload.candidate.workload_identity = b3(b"different-workload");
+    let diagnostics = validation::evaluate(&workload, &profile).diagnostics;
+    assert!(diagnostics.iter().any(|value| value.contains("checked workload profile")), "{diagnostics:?}");
+
+    let mut mode = valid_input();
+    mode.candidate.mode = "warm".to_owned();
+    let diagnostics = validation::evaluate(&mode, &profile).diagnostics;
+    assert!(diagnostics.iter().any(|value| value.contains("checked workload profile")), "{diagnostics:?}");
+
+    let mut environment = valid_input();
+    environment.candidate.environment.governor.clear();
+    let diagnostics = validation::evaluate(&environment, &profile).diagnostics;
+    assert!(
+        diagnostics.iter().any(|value| value.contains("environment facts are incomplete")),
+        "{diagnostics:?}"
+    );
+
+    let mut sample_identity = valid_input();
+    sample_identity.candidate.samples[0].log_identity = "not-a-b3-identity".to_owned();
+    let diagnostics = validation::evaluate(&sample_identity, &profile).diagnostics;
+    assert!(diagnostics.iter().any(|value| value.contains("invalid sample")), "{diagnostics:?}");
+
+    let mut log_identity = valid_input();
+    log_identity.bounded_log_identity = "b3:short".to_owned();
+    let diagnostics = validation::evaluate(&log_identity, &profile).diagnostics;
+    assert!(
+        diagnostics.iter().any(|value| value.contains("bounded log identity is malformed")),
+        "{diagnostics:?}"
+    );
+
+    let mut limit = valid_input();
+    let mut extra = limit.candidate.samples[0].clone();
+    extra.sample_index = SAMPLE_COUNT;
+    limit.candidate.samples.push(extra);
+    let diagnostics = validation::evaluate(&limit, &profile).diagnostics;
+    assert!(
+        diagnostics.iter().any(|value| value.contains("sample count is outside profile limits")),
+        "{diagnostics:?}"
+    );
+
+    let mut details = validation::evaluate(&valid_input(), &profile).details.expect("valid receipt");
+    details.projection_identity = b3(b"stale-projection");
+    let diagnostics = validate(&details);
+    assert!(diagnostics.iter().any(|value| value.contains("projection identity is stale")), "{diagnostics:?}");
+}
+
+#[test]
+fn benchmark_bundle_reproduces_receipt_and_rejects_stale_raw_artifacts() {
+    let profile = selected_profile(PROFILE_ID).expect("profile");
+    let input = valid_input();
+    let details = validation::evaluate(&input, &profile).details.expect("valid receipt details");
+    let rendered = request::render(&input).expect("render benchmark input");
+    let mut artifacts = request::artifact_payloads(&details, &rendered).expect("benchmark artifacts");
+    assert!(validate_bundle(&details, &artifacts).is_empty());
+
+    let mut stale_candidate = artifacts.clone();
+    let mut candidate = input.candidate.clone();
+    candidate.samples[0].wall_duration_ns = BASE_DURATION_NS + SMALL_DURATION_DELTA_NS + 1;
+    stale_candidate
+        .insert(CANDIDATE_ARTIFACT.to_owned(), request::payload(&candidate, "candidate").expect("candidate bytes"));
+    let diagnostics = validate_bundle(&details, &stale_candidate);
+    assert!(diagnostics.iter().any(|value| value.contains("candidate identity is stale")), "{diagnostics:?}");
+    assert!(diagnostics.iter().any(|value| value.contains("does not reproduce")), "{diagnostics:?}");
+
+    artifacts.insert(PROJECTION_ARTIFACT.to_owned(), b"{}\n".to_vec());
+    let diagnostics = validate_bundle(&details, &artifacts);
+    assert!(diagnostics.iter().any(|value| value.contains("projection identity is stale")), "{diagnostics:?}");
+
+    let mut missing = request::artifact_payloads(&details, &rendered).expect("benchmark artifacts");
+    missing.remove(ALLOCATION_ARTIFACT);
+    let diagnostics = validate_bundle(&details, &missing);
+    assert!(diagnostics.iter().any(|value| value.contains("is missing")), "{diagnostics:?}");
+}
+
+#[test]
+fn benchmark_artifact_bundle_verifies_and_rejects_tampered_samples() {
+    let input = valid_input();
+    let rendered = request::render(&input).expect("render benchmark input");
+    let baseline_identity = request::baseline_identity(&rendered).expect("baseline identity");
+    let mut receipt = crate::evidence_rails::evaluate(crate::evidence_rails::EvaluationInput {
+        rail: crate::evidence_rails::EvidenceRailKind::BenchmarkEvidence,
+        mode: "import",
+        import_text: &rendered,
+        workspace_scope: ".",
+        config_path: Some("standards/benchmark/profiles.json"),
+        baseline_identity: Some(baseline_identity),
+        lockfile_identity: None,
+        locked: false,
+        advisory_updated_by_prior_step: false,
+        profile: Some(PROFILE_ID),
+        requested_command: None,
+        parent_artifacts: Vec::new(),
+        tool_exit_code: None,
+    });
+    receipt.config_identity = Some(PROFILE_IDENTITY.to_owned());
+    let details = receipt.benchmark_evidence.clone().expect("benchmark details");
+    let receipt_json = crate::evidence_rails::render_receipt_json(&receipt).expect("render receipt");
+    let summary = crate::evidence_rails::render_summary(&receipt);
+    let provenance =
+        crate::evidence_rails::render_provenance_jsonl(&receipt, &receipt_json, &summary).expect("render provenance");
+    let mut files: Vec<crate::artifact::BundleFile> = request::artifact_payloads(&details, &rendered)
+        .expect("benchmark artifacts")
+        .into_iter()
+        .map(|(name, contents)| crate::artifact::BundleFile { name, contents })
+        .collect();
+    files.push(crate::artifact::BundleFile {
+        name: crate::evidence_rails::RECEIPT_ARTIFACT_NAME.to_owned(),
+        contents: receipt_json.into_bytes(),
+    });
+    files.push(crate::artifact::BundleFile {
+        name: crate::evidence_rails::SUMMARY_ARTIFACT_NAME.to_owned(),
+        contents: summary.into_bytes(),
+    });
+    files.push(crate::artifact::BundleFile {
+        name: crate::evidence_rails::PROVENANCE_ARTIFACT_NAME.to_owned(),
+        contents: provenance.into_bytes(),
+    });
+    let valid = crate::artifact::verify_bundle(crate::artifact::ArtifactBundleInput {
+        artifact_dir: "artifacts/benchmark-evidence".to_owned(),
+        files: files.clone(),
+    });
+    assert_eq!(valid.status, "valid", "{:?}", valid.diagnostics);
+    assert_eq!(valid.artifacts.len(), 9);
+
+    for name in [CANDIDATE_ARTIFACT, PROJECTION_ARTIFACT, ORACLE_ARTIFACT] {
+        let mut tampered = files.clone();
+        let artifact = tampered.iter_mut().find(|file| file.name == name).expect("benchmark artifact");
+        artifact.contents.extend_from_slice(b" ");
+        let report = crate::artifact::verify_bundle(crate::artifact::ArtifactBundleInput {
+            artifact_dir: "artifacts/benchmark-evidence".to_owned(),
+            files: tampered,
+        });
+        assert_eq!(report.status, "invalid", "tampered `{name}` passed: {:?}", report.diagnostics);
+        assert!(
+            report.diagnostics.iter().any(|diagnostic| diagnostic.contains("hash mismatch")),
+            "tampered `{name}`: {:?}",
+            report.diagnostics
+        );
+    }
 }
 
 #[test]

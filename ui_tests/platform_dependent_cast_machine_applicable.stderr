@@ -1,0 +1,63 @@
+warning: `as usize` from `u8` is platform-dependent
+  --> $DIR/platform_dependent_cast_machine_applicable.rs:2:5
+   |
+LL |     byte as usize
+   |     ^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Explicit Types
+   = note: `#[warn(tigerstyle::platform_dependent_cast)]` on by default
+help: replace with lossless `usize::from(...)`
+   |
+LL -     byte as usize
+LL +     usize::from(byte)
+   |
+
+warning: `as usize` from `u16` is platform-dependent
+  --> $DIR/platform_dependent_cast_machine_applicable.rs:6:5
+   |
+LL |     half as usize
+   |     ^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Explicit Types
+help: replace with lossless `usize::from(...)`
+   |
+LL -     half as usize
+LL +     usize::from(half)
+   |
+
+warning: `as isize` from `i16` is platform-dependent
+  --> $DIR/platform_dependent_cast_machine_applicable.rs:10:6
+   |
+LL |     (delta as isize, byte as isize)
+   |      ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Explicit Types
+help: replace with lossless `isize::from(...)`
+   |
+LL -     (delta as isize, byte as isize)
+LL +     (isize::from(delta), byte as isize)
+   |
+
+warning: `as isize` from `u8` is platform-dependent
+  --> $DIR/platform_dependent_cast_machine_applicable.rs:10:22
+   |
+LL |     (delta as isize, byte as isize)
+   |                      ^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Types): use explicit-width types at boundaries instead of `usize` or `isize` conversions Example: let len: u32 = value.try_into()?;
+   = note: structured suggestion applicability: MachineApplicable
+   = note: see Tiger Style guide: Explicit Types
+help: replace with lossless `isize::from(...)`
+   |
+LL -     (delta as isize, byte as isize)
+LL +     (delta as isize, isize::from(byte))
+   |
+
+warning: 4 warnings emitted
+

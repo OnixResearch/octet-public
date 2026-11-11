@@ -1,0 +1,7 @@
+{
+  "policy_hash": "policy-fixture",
+  "matrix": {"schema_version": "cairn.toolchain-profile-matrix.v1", "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"], "profiles": [
+    {"repo": "cairn", "profile_id": "cairn.dev", "purpose": "dev", "toolchain_pins": ["fenix"], "commands": ["cargo test"], "expected_artifacts": ["test"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]},
+    {"repo": "cairn", "profile_id": "cairn.dev", "purpose": "dev", "toolchain_pins": ["fenix"], "commands": ["cargo test"], "expected_artifacts": ["test"], "non_claims": ["does not prove command success", "separate execution receipt", "does not prove release eligibility"]}
+  ]}
+}

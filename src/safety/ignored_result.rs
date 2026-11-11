@@ -167,7 +167,12 @@ fn ignored_result_facts(cx: &LateContext<'_>, hir_id: hir::HirId, expr: &hir::Ex
 
 impl<'tcx> LateLintPass<'tcx> for IgnoredResult {
     fn check_local(&mut self, cx: &LateContext<'tcx>, local: &'tcx hir::LetStmt<'tcx>) {
-        if !matches!(local.pat.kind, PatKind::Wild) {
+        // `let _ = ...` and `_ = ...` (lowered as `AssignDesugar`) discard a
+        // value; the `let _ = __arg` that rustc emits for a `_` async fn
+        // parameter does not.
+        if !matches!(local.pat.kind, PatKind::Wild)
+            || !matches!(local.source, hir::LocalSource::Normal | hir::LocalSource::AssignDesugar)
+        {
             return;
         }
 
@@ -229,12 +234,16 @@ fn ignored_result_expr_suggestion(cx: &LateContext<'_>, expr: &hir::Expr<'_>) ->
 
 fn ignored_result_suggestion(cx: &LateContext<'_>, local: &hir::LetStmt<'_>) -> Option<LintSuggestion> {
     let init = local.init?;
+    // `local.span` includes the trailing `;`; replace only `let _ = <init>` so the statement keeps it.
+    if !local.span.contains(init.span) {
+        return None;
+    }
     let sm = cx.sess().source_map();
     let init_snippet = sm.span_to_snippet(init.span).ok()?;
     let replacement = format!("{init_snippet}?");
 
     Some(LintSuggestion::Single {
-        span: local.span,
+        span: local.span.with_hi(init.span.hi()),
         message: "propagate the error with `?` instead of discarding".to_owned(),
         replacement,
         applicability: Applicability::MaybeIncorrect,

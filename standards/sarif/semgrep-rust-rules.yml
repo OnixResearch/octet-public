@@ -1,0 +1,22 @@
+rules:
+  - id: octet.rust.unsafe-block
+    languages: [rust]
+    severity: WARNING
+    message: unsafe block requires review against the declared safety boundary
+    metadata:
+      category: security
+      confidence: LOW
+    pattern: unsafe { ... }
+
+  - id: octet.rust.expect-without-rationale
+    languages: [rust]
+    severity: ERROR
+    message: expect call aborts without a declared rationale
+    metadata:
+      category: reliability
+      confidence: LOW
+    patterns:
+      - pattern: $RECEIVER.expect($REASON)
+      - metavariable-regex:
+          metavariable: $REASON
+          regex: '^""$'

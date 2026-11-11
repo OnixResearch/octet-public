@@ -36,6 +36,8 @@ A pilot is not complete with only a happy path. Pair the passing harness with on
 cargo octet evidence collect --rail kani-model-check --input target/kani-summary.json --artifact-dir artifacts/kani-model-check
 ```
 
+The summary must record assumption review with `"assumptions_reviewed": true` and `"assumption_status": "reviewed"`. If either field is missing or says otherwise, the receipt fails when the summary claims property evidence (`claims.property_evidence: true`) and otherwise gets an `assumption-review-incomplete` finding that requires manual review. `"assumption_status": "vacuous"` always fails.
+
 ## Graduation path
 
 Panic-freedom is the entry point. Use passing unwind coverage or Kani contracts when the requirement claims unbounded coverage or functional correctness. Use Verus/Octet proof rails for richer proof obligations that require ghost state or reusable theorems.

@@ -1,0 +1,7 @@
+[2K[36m[vermilion][0m Verus front end: elaborating examples/m1-pipeline/checked.rs (--no-verify)[2K[36m[vermilion][0m lowering SST to the textual IR[2K[36m[vermilion][0m preparing the Lean environment (cached unless the library changed)[2K[36m[vermilion][0m generating Lean obligations from the IR[2K[36m[vermilion][0m Lean is judging the generated obligations of examples/m1-pipeline/checked.rs[2K[vrml-check] unit=.vermilion/check-checked-increment_checked.lean elapsed_ms=2142
+✓ all 2 obligations in examples/m1-pipeline/generated/checked/ (per-function units) verified by Lean — 2 newly checked. 🎉
+
+proofs twins updated examples/m1-pipeline/proofs/checked/ (1 unit twins, 2 obligations, 0 sorry)
+[2K[36m[vermilion][0m kernel-checking your proofs twinproofs twin identical to the generated module; skipping duplicate build
+[2K✓ proofs twin kernel-checked: examples/m1-pipeline/proofs/checked*
+

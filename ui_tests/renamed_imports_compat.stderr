@@ -1,0 +1,21 @@
+warning: renamed import `Config as LoaderConfig` hides the original searchable name
+  --> $DIR/renamed_imports_compat.rs:20:1
+   |
+LL | pub use crate::octet::Config as LoaderConfig;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Import Names): avoid `use ... as ...` aliases that hide the original searchable item name Example: use crate::transport::Config;
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::renamed_imports)]` on by default
+
+warning: renamed import `Config as UndocumentedConfig` hides the original searchable name
+  --> $DIR/renamed_imports_compat.rs:34:24
+   |
+LL | pub use crate::octet::{Config as UndocumentedConfig};
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Import Names): avoid `use ... as ...` aliases that hide the original searchable item name Example: use crate::transport::Config;
+   = note: see Tiger Style guide: Naming
+
+warning: 2 warnings emitted
+

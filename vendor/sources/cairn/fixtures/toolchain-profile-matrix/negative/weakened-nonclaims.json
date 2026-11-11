@@ -1,0 +1,4 @@
+{
+  "policy_hash": "policy-fixture",
+  "matrix": {"schema_version": "cairn.toolchain-profile-matrix.v1", "non_claims": ["profile declarations prove commands"], "profiles": [{"repo": "cairn", "profile_id": "cairn.release", "purpose": "release", "toolchain_pins": ["fenix"], "commands": ["cairn release-readiness"], "expected_artifacts": ["release"], "non_claims": ["profile declarations prove commands"]}]}
+}

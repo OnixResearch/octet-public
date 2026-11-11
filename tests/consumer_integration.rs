@@ -299,6 +299,117 @@ fn deterministic_core_uses_reviewed_core_scope_function_address_baseline() {
     assert!(fixture.log().contains("OCTET_STRICT_PROFILE=deterministic-core"));
 }
 
+#[test]
+fn function_address_paths_outside_workspace_are_rejected_before_cargo() {
+    let fixture =
+        ConsumerFixture::new("function-address-escaping-scope", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let shared = fixture.repo.parent().expect("fixture root").join("shared");
+    write_file(&shared.join("src/lib.rs"), "pub fn shared() -> u32 { 1 }\n");
+    let absolute_shared = shared.join("src");
+    for escaping in ["../shared/src", absolute_shared.to_str().expect("shared path utf8")] {
+        let output = run_with_check_args(
+            &fixture,
+            &["--function-addresses", "observe", "--function-address-path", escaping],
+            &[cargo_build_finished(true)],
+            EXIT_CODE_SUCCESS,
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(EXIT_CODE_INTEGRATION_FAILURE), "{escaping}: stderr={stderr}");
+        assert!(stderr.contains("`--function-address-path`"), "{escaping} should name the flag: {stderr}");
+        assert!(!fixture.log().contains("ARGS:check"), "{escaping} must be rejected before Cargo runs");
+    }
+}
+
+#[test]
+fn symlinked_core_source_scope_is_rejected_before_cargo_and_named_as_config() {
+    let escaping =
+        ConsumerFixture::new("core-scope-symlink-escape", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let shared = escaping.repo.parent().expect("fixture root").join("shared");
+    write_file(&shared.join("src/lib.rs"), "pub fn shared() -> u32 { 1 }\n");
+    std::os::unix::fs::symlink(&shared, escaping.repo.join("linked")).expect("symlink shared into repo");
+    write_file(&escaping.repo.join("dylint.toml"), "[octet]\ncore_source_scopes = [\"linked/src\"]\n");
+    let output = run_with_check_args(
+        &escaping,
+        &["--profile", "deterministic-core"],
+        &[cargo_build_finished(true)],
+        EXIT_CODE_SUCCESS,
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(EXIT_CODE_INTEGRATION_FAILURE), "stderr={stderr}");
+    assert!(stderr.contains("`core_source_scopes`"), "the config entry should be named: {stderr}");
+    assert!(!stderr.contains("--function-address-path"), "no flag was passed: {stderr}");
+    assert!(!escaping.log().contains("ARGS:check"), "symlinked scope must be rejected before Cargo runs");
+
+    let inside = ConsumerFixture::new("core-scope-in-root", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    std::os::unix::fs::symlink(inside.repo.join("src"), inside.repo.join("linked")).expect("symlink inside repo");
+    write_file(&inside.repo.join("dylint.toml"), "[octet]\ncore_source_scopes = [\"linked\"]\n");
+    let output = run_with_check_args(
+        &inside,
+        &["--profile", "deterministic-core"],
+        &[cargo_build_finished(true)],
+        EXIT_CODE_SUCCESS,
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_ne!(output.status.code(), Some(EXIT_CODE_INTEGRATION_FAILURE), "in-root link is a valid scope: {stderr}");
+    assert!(inside.log().contains("ARGS:check"), "in-root scope should reach Cargo: {stderr}");
+}
+
+#[test]
+fn function_address_options_without_mode_or_profile_are_rejected_before_cargo() {
+    let fixture =
+        ConsumerFixture::new("function-address-inert-options", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    for (flag, args) in [
+        ("--function-address-baseline", ["--function-address-baseline", "missing.json"]),
+        ("--function-address-path", ["--function-address-path", "src"]),
+    ] {
+        let output = run_with_check_args(&fixture, &args, &[cargo_build_finished(true)], EXIT_CODE_SUCCESS);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(EXIT_CODE_INTEGRATION_FAILURE), "{flag}: stderr={stderr}");
+        assert!(stderr.contains(&format!("`{flag}`")), "{flag} should be named: {stderr}");
+        assert!(!fixture.log().contains("ARGS:check"), "{flag} must be rejected before Cargo runs");
+    }
+}
+
+#[test]
+fn dylint_toml_env_override_is_rejected_before_any_cargo_invocation() {
+    let fixture = ConsumerFixture::new("dylint-toml-env-override", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    for value in ["[octet]\ndisabled_lints = [\"no_unwrap\"]\n", ""] {
+        let output = fixture.run_with_launcher_and_env(
+            None,
+            &[("DYLINT_TOML", value)],
+            &[],
+            EXIT_CODE_SUCCESS,
+            false,
+            Some("nightly-2026-03-21-x86_64-unknown-linux-gnu"),
+            Some(fixture.driver_path.as_path()),
+            Some(fixture.lint_lib_path.as_path()),
+            None,
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(EXIT_CODE_INTEGRATION_FAILURE), "{value:?}: stderr={stderr}");
+        assert!(stderr.contains("`DYLINT_TOML`"), "{value:?} should name the variable: {stderr}");
+        assert!(stderr.contains("dylint.toml"), "{value:?} should point at dylint.toml: {stderr}");
+        assert!(!fixture.log().contains("ARGS:"), "{value:?} must be rejected before any Cargo invocation");
+    }
+
+    let output = fixture.run(
+        &[],
+        EXIT_CODE_SUCCESS,
+        false,
+        Some("nightly-2026-03-21-x86_64-unknown-linux-gnu"),
+        Some(fixture.driver_path.as_path()),
+        Some(fixture.lint_lib_path.as_path()),
+        None,
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(EXIT_CODE_SUCCESS),
+        "without DYLINT_TOML the check runs: stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(fixture.log().contains("ARGS:check"));
+}
+
 // r[verify octet.effect_closure.cli.check_failure]
 #[test]
 fn effect_closure_admission_stops_after_failed_direct_check() {
@@ -345,7 +456,6 @@ fn effect_closure_admission_stops_after_failed_direct_check() {
     assert_eq!(status["phase"], "direct-check");
     assert!(!artifacts.join("effect-closure.json").exists());
     assert!(fixture.log().contains("ARGS:check"));
-    assert!(!fixture.log().contains("ARGS:metadata"));
 }
 
 #[test]
@@ -1043,6 +1153,73 @@ fn explicit_empty_tigerstyle_env_vars_exit_with_integration_failure_code() {
 }
 
 #[test]
+fn octet_runner_env_names_take_precedence_over_tigerstyle_aliases() {
+    const TOOLCHAIN: &str = "nightly-2026-03-21-x86_64-unknown-linux-gnu";
+    let run_with_env = |label: &str, env: &dyn Fn(&ConsumerFixture) -> Vec<(String, String)>| {
+        let fixture = ConsumerFixture::new(label, &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+        let env = env(&fixture);
+        let env: Vec<(&str, &str)> = env.iter().map(|(key, value)| (key.as_str(), value.as_str())).collect();
+        let output = fixture.run_with_launcher_and_env(None, &env, &[], 0, false, None, None, None, None);
+        (fixture, output)
+    };
+    let canonical_env = |fixture: &ConsumerFixture| {
+        vec![
+            ("OCTET_TOOLCHAIN".to_owned(), TOOLCHAIN.to_owned()),
+            ("OCTET_DRIVER_PATH".to_owned(), fixture.driver_path.display().to_string()),
+            ("OCTET_LINT_LIB".to_owned(), fixture.lint_lib_path.display().to_string()),
+        ]
+    };
+
+    for (label, alias_value) in [("octet-env-only", None), ("octet-env-over-empty-aliases", Some(""))] {
+        let (fixture, output) = run_with_env(label, &|fixture| {
+            let mut env = canonical_env(fixture);
+            if let Some(alias_value) = alias_value {
+                for alias in ["TIGERSTYLE_TOOLCHAIN", "TIGERSTYLE_DRIVER_PATH", "TIGERSTYLE_LINT_LIB"] {
+                    env.push((alias.to_owned(), alias_value.to_owned()));
+                }
+            }
+            env
+        });
+        let log = fixture.log();
+        assert!(
+            output.status.success(),
+            "{label}: OCTET_* runner env should configure the check: stdout={} stderr={} log={log}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            log.contains(&format!("RUSTUP_TOOLCHAIN={TOOLCHAIN}\n")),
+            "{label}: toolchain from OCTET_TOOLCHAIN: {log}"
+        );
+        assert!(
+            log.contains(&format!("RUSTC_WORKSPACE_WRAPPER={}\n", fixture.driver_path.display())),
+            "{label}: driver from OCTET_DRIVER_PATH: {log}"
+        );
+        assert!(
+            log.contains(&format!("DYLINT_LIBS=[\"{}\"]\n", fixture.lint_lib_path.display())),
+            "{label}: lint library from OCTET_LINT_LIB: {log}"
+        );
+    }
+
+    let (fixture, output) = run_with_env("empty-octet-driver-over-valid-alias", &|fixture| {
+        let mut env = canonical_env(fixture);
+        env[1].1 = String::new();
+        env.push(("TIGERSTYLE_DRIVER_PATH".to_owned(), fixture.driver_path.display().to_string()));
+        env
+    });
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "an explicit empty OCTET_DRIVER_PATH must not fall back to its alias: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let log = fixture.log();
+    assert!(!log.contains("ARGS:"), "empty OCTET_DRIVER_PATH should fail before invoking cargo: {log}");
+}
+
+// rustc fails a compile that hit an error-level lint, so real Cargo exits 101 for denied findings.
+#[test]
 fn error_level_lint_findings_exit_with_code_one() {
     let fixture = ConsumerFixture::new("lint-failure", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
     let lines = vec![
@@ -1056,10 +1233,11 @@ fn error_level_lint_findings_exit_with_code_one() {
             5,
             None,
         ),
-        cargo_build_finished(true),
+        cargo_top_level_diagnostic("consumer", ERROR_LEVEL, "aborting due to 1 previous error"),
+        cargo_build_finished(false),
     ];
 
-    let output = run_with_output_format(&fixture, JSON_OUTPUT_FORMAT, &lines, EXIT_CODE_SUCCESS);
+    let output = run_with_output_format(&fixture, JSON_OUTPUT_FORMAT, &lines, CARGO_COMPILE_FAILURE_EXIT);
     assert_eq!(
         output.status.code(),
         Some(EXIT_CODE_LINT_FAILURE),
@@ -1073,8 +1251,110 @@ fn error_level_lint_findings_exit_with_code_one() {
         stderr.contains(&format!("Status: {STATUS_LINT_FAILURE}")),
         "lint failure summary should report lint-failure: {stderr}"
     );
-    assert!(stderr.contains("Errors: 1"), "lint failure summary should count one error: {stderr}");
+    assert!(
+        stderr.contains("Errors: 1"),
+        "lint failure summary should count one error and skip rustc's abort summary: {stderr}"
+    );
     assert_eq!(fixture.lockfile(), fixture.original_lockfile, "lint failure should not dirty lockfile");
+
+    let sarif_output = run_with_output_format(&fixture, SARIF_OUTPUT_FORMAT, &lines, CARGO_COMPILE_FAILURE_EXIT);
+    assert_eq!(sarif_output.status.code(), Some(EXIT_CODE_LINT_FAILURE));
+    let sarif: serde_json::Value =
+        serde_json::from_slice(&sarif_output.stdout).expect("parse lint-failure SARIF output");
+    let invocation = &sarif["runs"][0]["invocations"][0];
+    assert_eq!(invocation["exitCode"], EXIT_CODE_LINT_FAILURE);
+    assert_eq!(invocation["executionSuccessful"], true, "denied findings are a successful scan: {invocation}");
+    assert_eq!(sarif["runs"][0]["properties"]["status"], STATUS_LINT_FAILURE);
+}
+
+#[test]
+fn non_lint_compile_errors_beside_denied_findings_exit_two() {
+    let fixture =
+        ConsumerFixture::new("lint-failure-compile-error", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let denied = cargo_compiler_message_with_level(
+        "consumer",
+        "no_unwrap",
+        ERROR_LEVEL,
+        "use of `.unwrap()`",
+        "src/lib.rs",
+        10,
+        5,
+        None,
+    );
+    let coded_error = cargo_compiler_message_with_level(
+        "consumer",
+        "E0308",
+        ERROR_LEVEL,
+        "mismatched types",
+        "src/lib.rs",
+        12,
+        9,
+        None,
+    );
+    let uncoded_error =
+        cargo_top_level_diagnostic("consumer", ERROR_LEVEL, "cannot find macro `missing` in this scope");
+
+    for (label, compile_error) in [("coded", coded_error), ("uncoded", uncoded_error)] {
+        let lines = vec![
+            denied.clone(),
+            compile_error,
+            cargo_top_level_diagnostic("consumer", "failure-note", "For more information about this error"),
+            cargo_build_finished(false),
+        ];
+        let output = run_with_output_format(&fixture, JSON_OUTPUT_FORMAT, &lines, CARGO_COMPILE_FAILURE_EXIT);
+        assert_eq!(
+            output.status.code(),
+            Some(EXIT_CODE_INTEGRATION_FAILURE),
+            "{label} compile error must stay an integration failure: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.contains(&format!("Status: {STATUS_INTEGRATION_FAILURE}")), "{label}: {stderr}");
+    }
+}
+
+#[test]
+fn non_json_cargo_stdout_lines_are_skipped_without_losing_the_run() {
+    const PROC_MACRO_LINE: &str = "proc macro debug: expanding derive(Example)";
+
+    let fixture = ConsumerFixture::new("non-json-stdout", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let lines = vec![
+        PROC_MACRO_LINE.to_owned(),
+        cargo_compiler_message("consumer", "no_unwrap", "use of `.unwrap()`", "src/lib.rs", 10, 5, None),
+        String::new(),
+        "{ not json".to_owned(),
+        cargo_build_finished(true),
+    ];
+
+    let json = run_with_output_format(&fixture, JSON_OUTPUT_FORMAT, &lines, EXIT_CODE_SUCCESS);
+    assert_eq!(
+        json.status.code(),
+        Some(EXIT_CODE_SUCCESS),
+        "non-JSON Cargo stdout must not abort the check: stdout={} stderr={}",
+        String::from_utf8_lossy(&json.stdout),
+        String::from_utf8_lossy(&json.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&json.stdout);
+    let findings: Vec<serde_json::Value> = stdout
+        .lines()
+        .map(|line| serde_json::from_str(line).expect("structured stdout stays JSON lines"))
+        .collect();
+    assert_eq!(findings.len(), 1, "the finding after the non-JSON line must be kept: {stdout}");
+    assert!(!stdout.contains(PROC_MACRO_LINE), "non-JSON lines must not leak into structured stdout: {stdout}");
+
+    let dir = artifact_dir(&fixture, "non-json-human");
+    let human = run_with_check_args(
+        &fixture,
+        &["--artifact-dir", dir.to_str().expect("artifact dir utf8")],
+        &lines,
+        EXIT_CODE_SUCCESS,
+    );
+    assert_eq!(human.status.code(), Some(EXIT_CODE_SUCCESS));
+    let stderr = String::from_utf8_lossy(&human.stderr);
+    assert!(stderr.contains(PROC_MACRO_LINE), "human mode should echo non-JSON Cargo stdout to stderr: {stderr}");
+    assert!(stderr.contains("Warnings: 1"), "human summary should count the finding: {stderr}");
+    assert!(artifact_bundle_is_valid(&dir, "human"), "the bundle must still be written");
 }
 
 #[test]
@@ -1126,6 +1406,65 @@ fn lockfile_mutation_restores_original_and_exits_two() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_eq!(fixture.lockfile(), fixture.original_lockfile, "lockfile should be restored after mutation");
+}
+
+#[test]
+fn lockfile_mutation_artifact_bundle_reports_final_exit_code() {
+    let fixture =
+        ConsumerFixture::new("lockfile-restore-artifact-dir", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let dir = artifact_dir(&fixture, "lockfile-mutation");
+    let stdout_file = write_json_stdout_file(&fixture, &[cargo_build_finished(true)]);
+    let output = fixture.run_with_launcher_and_env(
+        None,
+        &[("TS_STDOUT_FILE", stdout_file.to_str().expect("stdout file utf8"))],
+        &[
+            "--output-format",
+            SARIF_OUTPUT_FORMAT,
+            "--artifact-dir",
+            dir.to_str().expect("artifact dir utf8"),
+        ],
+        EXIT_CODE_SUCCESS,
+        true,
+        Some("nightly-2026-03-21-x86_64-unknown-linux-gnu"),
+        Some(fixture.driver_path.as_path()),
+        Some(fixture.lint_lib_path.as_path()),
+        None,
+    );
+
+    assert_eq!(
+        output.status.code(),
+        Some(EXIT_CODE_INTEGRATION_FAILURE),
+        "lockfile mutation should exit 2: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(fixture.lockfile(), fixture.original_lockfile, "lockfile should be restored after mutation");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("restored the original lockfile"),
+        "lockfile mutation should report the restore: {stderr}"
+    );
+    assert!(
+        stderr.contains("Status: integration-failure"),
+        "lockfile mutation summary should report integration-failure: {stderr}"
+    );
+
+    let status = read_json_artifact(&dir.join(STATUS_JSON_FILE));
+    assert_eq!(status["status"], STATUS_INTEGRATION_FAILURE);
+    assert_eq!(status["exit_code"], output.status.code().expect("lockfile mutation exit code"));
+    let summary = read_artifact(&dir.join(SUMMARY_TXT_FILE));
+    assert!(
+        summary.contains("Status: integration-failure"),
+        "lockfile mutation summary.txt should report integration-failure: {summary}"
+    );
+    let sarif = read_json_artifact(&dir.join(RESULTS_SARIF_FILE));
+    assert_eq!(sarif["runs"][0]["properties"]["status"], STATUS_INTEGRATION_FAILURE);
+    assert_eq!(
+        sarif["runs"][0]["invocations"][0]["exitCode"],
+        output.status.code().expect("lockfile mutation exit code")
+    );
+    assert_eq!(sarif["runs"][0]["invocations"][0]["executionSuccessful"], false);
+    assert_provenance_matches_artifacts(&dir, SARIF_OUTPUT_FORMAT);
 }
 
 #[test]
@@ -1584,6 +1923,83 @@ fn downstream_rollout_docs_point_to_first_class_cli_path() {
     );
 }
 
+#[test]
+fn pre_commit_deny_all_hook_metadata_and_template_are_reviewable() {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let metadata_path = repo_root.join(".pre-commit-hooks.yaml");
+    let hook_path = repo_root.join("hooks/octet-deny-all.sh");
+    let template_path = repo_root.join("templates/pre-commit-config.yaml");
+    let inventory_path = repo_root.join("tests/fixtures/lint_inventory_names.txt");
+
+    let metadata = fs::read_to_string(&metadata_path)
+        .unwrap_or_else(|error| panic!("read pre-commit hook metadata {}: {error}", metadata_path.display()));
+    let hook = fs::read_to_string(&hook_path)
+        .unwrap_or_else(|error| panic!("read pre-commit hook script {}: {error}", hook_path.display()));
+    let template = fs::read_to_string(&template_path)
+        .unwrap_or_else(|error| panic!("read pre-commit config template {}: {error}", template_path.display()));
+    let inventory = fs::read_to_string(&inventory_path)
+        .unwrap_or_else(|error| panic!("read lint inventory {}: {error}", inventory_path.display()));
+
+    for required in [
+        "id: octet-deny-all",
+        "id: tigerstyle-deny-all",
+        "entry: hooks/octet-deny-all.sh",
+        "language: script",
+        "pass_filenames: false",
+        "always_run: true",
+    ] {
+        assert!(
+            metadata.contains(required),
+            "pre-commit hook metadata must include `{required}` in {}",
+            metadata_path.display()
+        );
+    }
+
+    for lint_name in inventory.lines().filter(|line| !line.trim().is_empty()) {
+        let expected_flag = format!("-D {lint_name}");
+        assert!(
+            hook.contains(&expected_flag),
+            "deny-all pre-commit hook must promote `{lint_name}` with `{expected_flag}` in {}",
+            hook_path.display()
+        );
+    }
+
+    for required in [
+        "#!/bin/sh",
+        "-D unknown_lints",
+        "OCTET_PRECOMMIT_USE_INSTALLED",
+        "nix run \"${flake_ref}#cargo-octet\" -- check",
+    ] {
+        assert!(
+            hook.contains(required),
+            "deny-all pre-commit hook must include `{required}` in {}",
+            hook_path.display()
+        );
+    }
+    assert!(
+        !hook.contains("/usr/bin/env bash"),
+        "deny-all pre-commit hook must avoid /usr/bin/env for pure Nix compatibility: {}",
+        hook_path.display()
+    );
+    assert!(
+        !hook.contains("-D warnings"),
+        "deny-all pre-commit hook should deny Octet lints without promoting unrelated rustc warnings: {}",
+        hook_path.display()
+    );
+
+    for required in [
+        "repo: https://github.com/OnixResearch/octet",
+        "rev: 0123456789abcdef0123456789abcdef01234567",
+        "id: octet-deny-all",
+        "args: [\"--workspace\", \"--\", \"--all-targets\"]",
+    ] {
+        assert!(
+            template.contains(required),
+            "pre-commit config template must include `{required}` in {}",
+            template_path.display()
+        );
+    }
+}
 
 #[test]
 fn pre_commit_deny_all_hook_launches_pinned_runner_with_deny_flags() {
@@ -1635,6 +2051,60 @@ printf 'DYLINT_RUSTFLAGS:%s\n' "${{DYLINT_RUSTFLAGS:-}}" >> "$TS_LOG"
     }
 }
 
+// Cargo aliases expand only to Cargo arguments, so the default-on gate ships as a wrapper script.
+#[test]
+fn octet_check_wrapper_template_runs_gate_before_cargo_check() {
+    let tmp = TempDir::new("octet-check-wrapper");
+    let shell = bash_path().expect("find bash");
+    let fakebin = tmp.path().join("bin");
+    let log_path = tmp.path().join("cargo.log");
+    write_executable(
+        &fakebin.join("cargo"),
+        &format!(
+            r#"#!{shell}
+printf '%s\n' "$*" >> "$TS_LOG"
+if [[ "${{1:-}}" == "octet" ]]; then
+  exit "${{TS_GATE_EXIT:?}}"
+fi
+"#,
+            shell = shell.display(),
+        ),
+    );
+    let template = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates/octet-check.sh");
+    let template_source = fs::read_to_string(&template)
+        .unwrap_or_else(|error| panic!("read wrapper template {}: {error}", template.display()));
+    assert!(template_source.starts_with("#!/bin/sh\n"), "wrapper template must stay POSIX sh");
+    let path = format!("{}:{}", fakebin.display(), env::var("PATH").expect("PATH"));
+
+    for (gate_exit, expected_log) in [
+        (EXIT_CODE_SUCCESS, "octet check\ncheck --lib\n"),
+        (EXIT_CODE_LINT_FAILURE, "octet check\n"),
+        (EXIT_CODE_INTEGRATION_FAILURE, "octet check\n"),
+    ] {
+        let _ = fs::remove_file(&log_path);
+        let output = Command::new(&shell)
+            .arg(&template)
+            .arg("--lib")
+            .current_dir(tmp.path())
+            .env("PATH", &path)
+            .env("TS_LOG", &log_path)
+            .env("TS_GATE_EXIT", gate_exit.to_string())
+            .output()
+            .expect("run wrapper template");
+        assert_eq!(
+            output.status.code(),
+            Some(gate_exit),
+            "wrapper should return the gate status: stderr={}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            fs::read_to_string(&log_path).unwrap_or_default(),
+            expected_log,
+            "gate exit {gate_exit} should run the gate first and stop before `cargo check` on failure"
+        );
+    }
+}
+
 #[test]
 fn thin_wrapper_fixture_delegates_without_policy_logic() {
     let fixture_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/consumer-integration/justfile");
@@ -1669,6 +2139,7 @@ const EXIT_CODE_LINT_FAILURE: i32 = 1;
 const EXIT_CODE_INTEGRATION_FAILURE: i32 = 2;
 const WARNING_LEVEL: &str = "warning";
 const ERROR_LEVEL: &str = "error";
+const CARGO_COMPILE_FAILURE_EXIT: i32 = 101;
 const JSON_OUTPUT_FORMAT: &str = "json";
 const SARIF_OUTPUT_FORMAT: &str = "sarif";
 const STATUS_CLEAN: &str = "clean";
@@ -1733,6 +2204,12 @@ fn cargo_compiler_message_with_source_text(
 
 fn cargo_build_finished(success: bool) -> String {
     format!(r#"{{"reason":"build-finished","success":{success}}}"#)
+}
+
+fn cargo_top_level_diagnostic(target_name: &str, level: &str, message: &str) -> String {
+    format!(
+        r#"{{"reason":"compiler-message","package_id":"path+file:///fake#{target_name}@0.1.0","manifest_path":"/fake/Cargo.toml","target":{{"kind":["lib"],"crate_types":["lib"],"name":"{target_name}","src_path":"/fake/src/lib.rs","edition":"2024","doc":true,"doctest":true,"test":true}},"message":{{"rendered":"{level}: {message}\n","$message_type":"diagnostic","children":[],"level":"{level}","message":"{message}","spans":[],"code":null}}}}"#
+    )
 }
 
 fn cargo_compiler_artifact(target_name: &str, fresh: bool) -> String {
@@ -2285,6 +2762,130 @@ fn migration_manifest_commands_are_deterministic_and_safe() {
 }
 
 #[test]
+fn migrate_rejected_invocations_do_not_write_files() {
+    let fixture = ConsumerFixture::new("migration-rejected", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let manifest = fixture.repo.join(".octet/migrations/starter.json");
+    let manifest_arg = manifest.to_str().expect("manifest utf8");
+    let bin = built_cargo_octet_bin().expect("build cargo-octet binary");
+    let run = |args: &[&str]| Command::new(&bin).args(args).current_dir(&fixture.repo).output().expect("run migrate");
+
+    let start = run(&["migrate", "start", "--profile", "starter", "--manifest", manifest_arg]);
+    assert_eq!(start.status.code(), Some(EXIT_CODE_SUCCESS), "stderr={}", String::from_utf8_lossy(&start.stderr));
+    let mut reviewed = read_json_artifact(&manifest);
+    reviewed["accepted_findings"] = serde_json::json!(["finding-accepted"]);
+    reviewed["deferred_findings"] = serde_json::json!(["finding-b", "finding-a"]);
+    write_file(&manifest, &format!("{}\n", serde_json::to_string_pretty(&reviewed).expect("render manifest")));
+    let before = fs::read_to_string(&manifest).expect("read reviewed manifest");
+
+    for args in [
+        ["migrate", "start", "--dry-run", "--manifest", manifest_arg].as_slice(),
+        ["migrate", "apply-safe", "--dry-run", "--manifest", manifest_arg].as_slice(),
+        [
+            "migrate",
+            "start",
+            "--manifest",
+            manifest_arg,
+            "--output-format",
+            "sarif",
+        ]
+        .as_slice(),
+        [
+            "migrate",
+            "apply-safe",
+            "--manifest",
+            manifest_arg,
+            "--output-format",
+            "sarif",
+        ]
+        .as_slice(),
+    ] {
+        let output = run(args);
+        assert_eq!(output.status.code(), Some(EXIT_CODE_INTEGRATION_FAILURE), "{args:?} must be rejected");
+        assert_eq!(
+            fs::read_to_string(&manifest).expect("read manifest"),
+            before,
+            "{args:?} must not rewrite the reviewed manifest"
+        );
+    }
+
+    let session = fixture.repo.join("migration-session.json");
+    let template = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates/structured-migration-session.json");
+    write_file(&session, &fs::read_to_string(template).expect("read session template"));
+    let operation_manifest = fixture.repo.join("artifacts/migration/operation-manifest.json");
+    let rejected_apply = run(&[
+        "migrate",
+        "session",
+        "apply",
+        "--session",
+        session.to_str().expect("session utf8"),
+        "--operation-manifest",
+        operation_manifest.to_str().expect("operation manifest utf8"),
+        "--output-format",
+        "sarif",
+    ]);
+    assert_eq!(rejected_apply.status.code(), Some(EXIT_CODE_INTEGRATION_FAILURE));
+    assert!(!operation_manifest.exists(), "rejected session apply must not write the operation manifest");
+}
+
+#[test]
+fn migrate_session_apply_writes_only_clean_safe_record_only_manifests() {
+    let fixture = ConsumerFixture::new("migration-session-apply", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let bin = built_cargo_octet_bin().expect("build cargo-octet binary");
+    let template_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates/structured-migration-session.json");
+    let template: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(template_path).expect("read session template"))
+            .expect("template json");
+    let apply = |session: &serde_json::Value, label: &str| {
+        let session_path = fixture.repo.join(format!("{label}-session.json"));
+        write_file(&session_path, &serde_json::to_string_pretty(session).expect("render session"));
+        let manifest = fixture.repo.join(format!("artifacts/migration/{label}-operation-manifest.json"));
+        let output = Command::new(&bin)
+            .args(["migrate", "session", "apply", "--session"])
+            .arg(&session_path)
+            .arg("--operation-manifest")
+            .arg(&manifest)
+            .args(["--output-format", JSON_OUTPUT_FORMAT])
+            .current_dir(&fixture.repo)
+            .output()
+            .expect("run migrate session apply");
+        (output, manifest)
+    };
+
+    let (clean, clean_manifest) = apply(&template, "clean");
+    assert_eq!(clean.status.code(), Some(EXIT_CODE_SUCCESS), "stderr={}", String::from_utf8_lossy(&clean.stderr));
+    assert_eq!(read_json_artifact(&clean_manifest)["operations"].as_array().map(Vec::len), Some(1));
+
+    let mut manual_review = template.clone();
+    manual_review["planned_operations"]
+        .as_array_mut()
+        .expect("planned operations")
+        .push(serde_json::json!({
+            "operation_id": "rewrite-release-doc",
+            "operation_kind": "rewrite",
+            "target_locator": "docs/release-candidate.md",
+            "safety": "manual-review",
+            "dry_run_preview": "rewrite cargo-slotcar mentions"
+        }));
+    let (rejected, rejected_manifest) = apply(&manual_review, "manual-review");
+    assert_eq!(rejected.status.code(), Some(EXIT_CODE_LINT_FAILURE));
+    assert!(!rejected_manifest.exists(), "apply with diagnostics must not write the operation manifest");
+    let report: serde_json::Value = serde_json::from_slice(&rejected.stdout).expect("apply report json");
+    let operations = report["operations"].as_array().expect("report operations");
+    assert!(
+        operations
+            .iter()
+            .all(|operation| operation["operation_kind"] == "record-only" && operation["safety"] == "safe"),
+        "{report}"
+    );
+    assert!(
+        report["diagnostics"].as_array().expect("report diagnostics").iter().any(|diagnostic| diagnostic
+            .as_str()
+            .is_some_and(|text| text.contains("apply.unsupported_operation `rewrite-release-doc`"))),
+        "{report}"
+    );
+}
+
+#[test]
 fn transcript_reports_content_hash_and_fails_closed() {
     let fixture = ConsumerFixture::new("transcript-report", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
     let good = fixture.repo.join("docs/good.md");
@@ -2479,6 +3080,112 @@ fn baseline_file_accepts_current_findings_and_gates_new_ids() {
 }
 
 #[test]
+fn baseline_write_and_gate_follow_denied_lint_classification() {
+    let fixture =
+        ConsumerFixture::new("baseline-write-lint-failure", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let baseline_path = fixture.repo.join("octet-baseline.json");
+    let baseline_path_str = baseline_path.to_str().expect("baseline path utf8");
+    let refused_dir = artifact_dir(&fixture, "baseline-write-refused");
+    let dir = artifact_dir(&fixture, "baseline-lint-failure");
+    let finding = |level, line| {
+        cargo_compiler_message_with_level(
+            "consumer",
+            "no_unwrap",
+            level,
+            "use of `.unwrap()`",
+            "src/lib.rs",
+            line,
+            5,
+            None,
+        )
+    };
+
+    // Denied lints stop Cargo before every crate is checked, so no baseline is written from that run.
+    let refused = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            JSON_OUTPUT_FORMAT,
+            "--write-baseline",
+            baseline_path_str,
+            "--artifact-dir",
+            refused_dir.to_str().expect("artifact dir utf8"),
+        ],
+        &[finding(ERROR_LEVEL, 10), cargo_build_finished(false)],
+        CARGO_COMPILE_FAILURE_EXIT,
+    );
+    assert_eq!(
+        refused.status.code(),
+        Some(EXIT_CODE_INTEGRATION_FAILURE),
+        "a requested baseline that cannot be produced should exit 2: stdout={} stderr={}",
+        String::from_utf8_lossy(&refused.stdout),
+        String::from_utf8_lossy(&refused.stderr)
+    );
+    let refused_stderr = String::from_utf8_lossy(&refused.stderr);
+    assert!(
+        refused_stderr.contains("denied lints made Cargo fail")
+            && refused_stderr.contains("lower those lints to `warn`"),
+        "the refusal should name the cause and the remedy: {refused_stderr}"
+    );
+    assert!(!baseline_path.exists(), "an incomplete scan must not create a baseline");
+    let refused_status = read_json_artifact(&refused_dir.join(STATUS_JSON_FILE));
+    assert_eq!(refused_status["status"], STATUS_INTEGRATION_FAILURE);
+
+    // With the lint lowered to warn, Cargo completes and the baseline records the finding.
+    let written = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            JSON_OUTPUT_FORMAT,
+            "--write-baseline",
+            baseline_path_str,
+        ],
+        &[finding(WARNING_LEVEL, 10), cargo_build_finished(true)],
+        EXIT_CODE_SUCCESS,
+    );
+    assert_eq!(
+        written.status.code(),
+        Some(EXIT_CODE_SUCCESS),
+        "a complete warning-only scan should write the baseline: stdout={} stderr={}",
+        String::from_utf8_lossy(&written.stdout),
+        String::from_utf8_lossy(&written.stderr)
+    );
+    let baseline = read_json_artifact(&baseline_path);
+    assert_eq!(baseline["findings"].as_array().map(Vec::len), Some(1), "baseline should record the finding");
+
+    let gated = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            JSON_OUTPUT_FORMAT,
+            "--baseline",
+            baseline_path_str,
+            "--artifact-dir",
+            dir.to_str().expect("artifact dir utf8"),
+        ],
+        &[
+            finding(ERROR_LEVEL, 10),
+            cargo_compiler_message_with_level(
+                "consumer",
+                "no_panic",
+                ERROR_LEVEL,
+                "use of `panic!`",
+                "src/lib.rs",
+                20,
+                5,
+                None,
+            ),
+            cargo_build_finished(false),
+        ],
+        CARGO_COMPILE_FAILURE_EXIT,
+    );
+    assert_eq!(gated.status.code(), Some(EXIT_CODE_LINT_FAILURE));
+    let status = read_json_artifact(&dir.join(STATUS_JSON_FILE));
+    assert_eq!(status["status"], STATUS_LINT_FAILURE);
+    assert_eq!(status["baseline"]["new_total"], 1, "baseline gate should evaluate the denied run: {status}");
+}
+
+#[test]
 fn baseline_write_skips_incomplete_cargo_runs() {
     let fixture = ConsumerFixture::new("baseline-write-failed", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
     let baseline_path = fixture.repo.join("octet-baseline.json");
@@ -2508,6 +3215,91 @@ fn baseline_write_skips_incomplete_cargo_runs() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(!baseline_path.exists(), "failed cargo runs must not create or overwrite acceptance baselines");
+}
+
+#[test]
+fn baseline_evaluation_withholds_stale_ids_when_cargo_stops_early() {
+    let fixture = ConsumerFixture::new("baseline-stale-incomplete", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let baseline_path = fixture.repo.join("octet-baseline.json");
+    let baseline_path_str = baseline_path.to_str().expect("baseline path utf8");
+    let finding = |lint, level, message, line| {
+        cargo_compiler_message_with_level("consumer", lint, level, message, "src/lib.rs", line, 5, None)
+    };
+    let written = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            JSON_OUTPUT_FORMAT,
+            "--write-baseline",
+            baseline_path_str,
+        ],
+        &[
+            finding("no_unwrap", WARNING_LEVEL, "use of `.unwrap()`", 10),
+            finding("no_panic", WARNING_LEVEL, "use of `panic!`", 20),
+            cargo_build_finished(true),
+        ],
+        EXIT_CODE_SUCCESS,
+    );
+    assert_eq!(written.status.code(), Some(EXIT_CODE_SUCCESS), "{}", String::from_utf8_lossy(&written.stderr));
+
+    // A complete scan that no longer reports `no_panic` marks that accepted ID stale.
+    let complete_dir = artifact_dir(&fixture, "baseline-stale-complete");
+    let complete = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            SARIF_OUTPUT_FORMAT,
+            "--baseline",
+            baseline_path_str,
+            "--artifact-dir",
+            complete_dir.to_str().expect("artifact dir utf8"),
+        ],
+        &[
+            finding("no_unwrap", WARNING_LEVEL, "use of `.unwrap()`", 10),
+            cargo_build_finished(true),
+        ],
+        EXIT_CODE_SUCCESS,
+    );
+    assert_eq!(complete.status.code(), Some(EXIT_CODE_SUCCESS), "{}", String::from_utf8_lossy(&complete.stderr));
+
+    // A denied lint stops Cargo before every crate is checked, so absent accepted IDs are unknown,
+    // not stale.
+    let incomplete_dir = artifact_dir(&fixture, "baseline-stale-incomplete");
+    let incomplete = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            SARIF_OUTPUT_FORMAT,
+            "--baseline",
+            baseline_path_str,
+            "--artifact-dir",
+            incomplete_dir.to_str().expect("artifact dir utf8"),
+        ],
+        &[
+            finding("no_unwrap", ERROR_LEVEL, "use of `.unwrap()`", 10),
+            cargo_build_finished(false),
+        ],
+        CARGO_COMPILE_FAILURE_EXIT,
+    );
+    assert_eq!(
+        incomplete.status.code(),
+        Some(EXIT_CODE_LINT_FAILURE),
+        "{}",
+        String::from_utf8_lossy(&incomplete.stderr)
+    );
+    let status = read_json_artifact(&incomplete_dir.join(STATUS_JSON_FILE));
+    let sarif = read_json_artifact(&incomplete_dir.join(RESULTS_SARIF_FILE));
+    for baseline in [&status["baseline"], &sarif["runs"][0]["properties"]["baseline"]] {
+        assert!(baseline["stale_total"].is_null(), "incomplete scan must not report stale IDs: {baseline}");
+        assert!(baseline["stale_finding_ids"].is_null(), "incomplete scan must not report stale IDs: {baseline}");
+        assert_eq!(baseline["scan_complete"], false, "{baseline}");
+        assert_eq!(baseline["accepted_current"], 1, "{baseline}");
+        assert_eq!(baseline["new_total"], 0, "{baseline}");
+    }
+    let complete_status = read_json_artifact(&complete_dir.join(STATUS_JSON_FILE));
+    assert_eq!(complete_status["baseline"]["scan_complete"], true, "{complete_status}");
+    assert_eq!(complete_status["baseline"]["stale_total"], 1);
+    assert_eq!(complete_status["baseline"]["stale_finding_ids"].as_array().map(Vec::len), Some(1));
 }
 
 #[test]
@@ -2805,10 +3597,24 @@ fn artifact_directory_captures_structured_run() {
 fn artifact_directory_captures_json_run() {
     let fixture = ConsumerFixture::new("artifact-dir-json", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
     let dir = artifact_dir(&fixture, "json-run");
-    let stale_extra_file = dir.join("extra.txt");
+    let previous_run = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            SARIF_OUTPUT_FORMAT,
+            "--artifact-dir",
+            dir.to_str().expect("artifact dir utf8"),
+        ],
+        &three_finding_json_lines(),
+        EXIT_CODE_SUCCESS,
+    );
+    assert_eq!(previous_run.status.code(), Some(EXIT_CODE_SUCCESS), "previous SARIF bundle should be written");
+    let foreign_note = dir.join("notes.txt");
+    let foreign_proofs = dir.join("proofs/rail.receipt");
     let stale_sarif_file = dir.join(RESULTS_SARIF_FILE);
-    write_file(&stale_extra_file, "stale extra sidecar\n");
-    write_file(&stale_sarif_file, "stale sarif sidecar\n");
+    write_file(&foreign_note, "operator note\n");
+    write_file(&foreign_proofs, "receipt\n");
+    assert!(stale_sarif_file.is_file(), "previous SARIF bundle should leave results.sarif behind");
     let output = run_with_check_args(
         &fixture,
         &[
@@ -2828,20 +3634,23 @@ fn artifact_directory_captures_json_run() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+    let mut expected_entries = expected_artifact_files(JSON_OUTPUT_FORMAT);
+    expected_entries.extend(["notes.txt".to_owned(), "proofs".to_owned()]);
+    expected_entries.sort();
     assert_eq!(
         artifact_file_names(&dir),
-        expected_artifact_files(JSON_OUTPUT_FORMAT),
-        "json artifact directory should contain exactly the expected files"
+        expected_entries,
+        "json artifact directory should hold this run's outputs beside the untouched foreign entries"
     );
-    assert_provenance_matches_artifacts(&dir, JSON_OUTPUT_FORMAT);
-    assert!(
-        !stale_extra_file.exists(),
-        "runner should remove stale extra sidecars before writing the final bundle"
-    );
+    assert_eq!(read_artifact(&foreign_note), "operator note\n", "pruning must keep entries Octet did not write");
+    assert_eq!(read_artifact(&foreign_proofs), "receipt\n", "pruning must keep directories Octet did not write");
     assert!(
         !stale_sarif_file.exists(),
         "runner should remove stale non-selected structured sidecars before writing the final bundle"
     );
+    fs::remove_file(&foreign_note).expect("remove foreign note");
+    fs::remove_dir_all(dir.join("proofs")).expect("remove foreign proofs");
+    assert_provenance_matches_artifacts(&dir, JSON_OUTPUT_FORMAT);
 
     let status = read_json_artifact(&dir.join(STATUS_JSON_FILE));
     assert_eq!(status["status"], STATUS_WARNING_ONLY);
@@ -2877,6 +3686,102 @@ fn artifact_directory_captures_json_run() {
             serde_json::from_str::<serde_json::Value>(line).is_ok(),
             "artifact JSON line should stay valid on success: {line}"
         );
+    }
+}
+
+#[test]
+fn baseline_and_cache_paths_inside_artifact_dir_are_rejected_before_cargo() {
+    let fixture = ConsumerFixture::new("artifact-dir-owned-paths", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let dir = artifact_dir(&fixture, "owned-paths");
+    let dir_arg = dir.to_str().expect("artifact dir utf8");
+    let outside_baseline = fixture.repo.join("artifacts/owned-paths-baseline.json");
+    let outside_baseline_arg = outside_baseline.to_str().expect("baseline path utf8");
+
+    // A sibling whose name merely shares the artifact directory's prefix stays allowed.
+    let accepted = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            JSON_OUTPUT_FORMAT,
+            "--artifact-dir",
+            dir_arg,
+            "--write-baseline",
+            outside_baseline_arg,
+        ],
+        &three_finding_json_lines(),
+        EXIT_CODE_SUCCESS,
+    );
+    assert_eq!(
+        accepted.status.code(),
+        Some(EXIT_CODE_SUCCESS),
+        "baseline beside the artifact directory should be accepted: stdout={} stderr={}",
+        String::from_utf8_lossy(&accepted.stdout),
+        String::from_utf8_lossy(&accepted.stderr)
+    );
+    let inside_baseline = dir.join("accepted-baseline.json");
+    fs::copy(&outside_baseline, &inside_baseline).expect("place baseline inside the existing bundle");
+    let inside_baseline_arg = inside_baseline.to_str().expect("baseline path utf8");
+    let dotted_write_baseline = format!("{dir_arg}/../owned-paths/new-baseline.json");
+
+    for (flag, args) in [
+        ("--baseline", vec!["--artifact-dir", dir_arg, "--baseline", inside_baseline_arg]),
+        ("--write-baseline", vec![
+            "--artifact-dir",
+            dir_arg,
+            "--write-baseline",
+            dotted_write_baseline.as_str(),
+        ]),
+        ("--write-baseline", vec!["--artifact-dir", dir_arg, "--write-baseline", dir_arg]),
+        ("--cache", vec!["--artifact-dir", "./.octet", "--cache"]),
+    ] {
+        let mut check_args = vec!["--output-format", JSON_OUTPUT_FORMAT];
+        check_args.extend(args.iter().copied());
+        let output = run_with_check_args(&fixture, &check_args, &three_finding_json_lines(), EXIT_CODE_SUCCESS);
+        assert_eq!(
+            output.status.code(),
+            Some(EXIT_CODE_INTEGRATION_FAILURE),
+            "{args:?} must be rejected: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains(&format!("`{flag}`")) && stderr.contains("inside `--artifact-dir`"),
+            "{args:?} should name the conflicting flag: {stderr}"
+        );
+        assert!(!fixture.log().contains("ARGS:check"), "{args:?} must be rejected before Cargo runs");
+        assert!(inside_baseline.is_file(), "{args:?} must not prune the accepted baseline");
+    }
+    assert!(!fixture.repo.join(".octet").exists(), "a rejected cache run must not create the cache directory");
+}
+
+#[test]
+fn workspace_root_or_ancestor_artifact_dir_is_rejected_before_cargo() {
+    let fixture =
+        ConsumerFixture::new("artifact-dir-workspace-root", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    // Bundle markers at the root make it look like an earlier check bundle, which pruning accepts.
+    write_file(&fixture.repo.join(STATUS_JSON_FILE), r#"{"status":"clean","exit_code":0}"#);
+    write_file(&fixture.repo.join(PROVENANCE_JSONL_FILE), "{}\n");
+    let parent = fixture.repo.parent().expect("fixture root").to_str().expect("fixture root utf8").to_owned();
+
+    for artifact_dir in [".", "./src/..", parent.as_str()] {
+        let output = run_with_check_args(
+            &fixture,
+            &["--output-format", JSON_OUTPUT_FORMAT, "--artifact-dir", artifact_dir],
+            &three_finding_json_lines(),
+            EXIT_CODE_SUCCESS,
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        for kept in ["Cargo.toml", "Cargo.lock", "dylint.toml", "src/lib.rs"] {
+            assert!(fixture.repo.join(kept).is_file(), "`--artifact-dir {artifact_dir}` must keep {kept}: {stderr}");
+        }
+        assert_eq!(
+            output.status.code(),
+            Some(EXIT_CODE_INTEGRATION_FAILURE),
+            "`--artifact-dir {artifact_dir}` must be rejected: {stderr}"
+        );
+        assert!(stderr.contains("`--artifact-dir`") && stderr.contains("workspace root"), "{stderr}");
+        assert!(!fixture.log().contains("ARGS:check"), "`--artifact-dir {artifact_dir}` must fail before Cargo runs");
     }
 }
 
@@ -3007,6 +3912,11 @@ fn artifact_directory_captures_human_run() {
 #[test]
 fn strict_profile_bundle_binds_profile_identity_and_passes_artifact_verification() {
     let fixture = ConsumerFixture::new("strict-profile-artifact", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    // The robust profile scans the implicit whole-workspace scope, which skips a directory link
+    // that resolves outside the root and must record the skip.
+    let linked_crate = fixture.repo.parent().expect("fixture parent").join("linked-crate");
+    write_file(&linked_crate.join("src/lib.rs"), "pub fn linked() -> u32 { 1 }\n");
+    std::os::unix::fs::symlink("../linked-crate", fixture.repo.join("linked")).expect("link crate into fixture");
     let dir = artifact_dir(&fixture, "strict-profile-run");
     let output = run_with_check_args(
         &fixture,
@@ -3037,6 +3947,12 @@ fn strict_profile_bundle_binds_profile_identity_and_passes_artifact_verification
     assert!(summary.contains("Profile: robust"));
     let function_addresses = read_json_artifact(&dir.join("function-addresses.json"));
     assert_eq!(function_addresses["mode"], "observe");
+    assert_eq!(function_addresses["skipped_directory_links"], serde_json::json!(["linked"]));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("`linked` -> `../linked-crate`"),
+        "skipped directory link should be announced: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let provenance = read_artifact(&dir.join(PROVENANCE_JSONL_FILE));
     for line in provenance.lines() {
         let record: serde_json::Value = serde_json::from_str(line).expect("profile provenance record");
@@ -3216,6 +4132,8 @@ fn artifact_directory_mid_write_failure_exits_two_and_invalidates_bundle() {
     let fixture =
         ConsumerFixture::new("artifact-dir-mid-write-failure", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
     let dir = artifact_dir(&fixture, "mid-write-failure");
+    write_file(&dir.join(STATUS_JSON_FILE), "{}\n");
+    write_file(&dir.join(PROVENANCE_JSONL_FILE), "{}\n");
     fs::create_dir_all(dir.join(RESULTS_SARIF_FILE)).expect("create blocking results.sarif directory");
     let lines = vec![
         cargo_compiler_message("consumer", "no_unwrap", "use of `.unwrap()`", "src/lib.rs", 10, 5, None),
@@ -3325,6 +4243,148 @@ fn artifact_directory_setup_failure_exits_two() {
 }
 
 #[test]
+fn artifact_directory_refuses_non_bundle_directory_without_deleting() {
+    let fixture =
+        ConsumerFixture::new("artifact-dir-foreign-directory", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let dir = artifact_dir(&fixture, "cargo-target");
+    let cache_tag = dir.join("CACHEDIR.TAG");
+    let fingerprint = dir.join("debug/.fingerprint/consumer-hash/lib-consumer");
+    write_file(&cache_tag, "Signature: 8a477f597d28d172789f06886806bc55\n");
+    write_file(&fingerprint, "fingerprint\n");
+    let files_before = artifact_file_names(&dir);
+
+    let output = run_with_check_args(
+        &fixture,
+        &[
+            "--output-format",
+            JSON_OUTPUT_FORMAT,
+            "--artifact-dir",
+            dir.to_str().expect("artifact dir utf8"),
+        ],
+        &three_finding_json_lines(),
+        EXIT_CODE_SUCCESS,
+    );
+
+    assert_eq!(
+        output.status.code(),
+        Some(EXIT_CODE_INTEGRATION_FAILURE),
+        "non-bundle artifact directory should exit 2: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("not an existing `cargo octet check` bundle"),
+        "refusal should name the bundle requirement: {stderr}"
+    );
+    assert!(
+        stderr.contains("Status: integration-failure"),
+        "refusal should finalize as integration-failure: {stderr}"
+    );
+    assert_eq!(artifact_file_names(&dir), files_before, "refused artifact directory must keep its entries");
+    assert_eq!(read_artifact(&cache_tag), "Signature: 8a477f597d28d172789f06886806bc55\n");
+    assert_eq!(read_artifact(&fingerprint), "fingerprint\n");
+    assert!(!dir.join(STATUS_JSON_FILE).exists(), "refused artifact directory must not receive sidecars");
+}
+
+#[test]
+fn rustc_failure_note_keeps_structured_compile_failure_report() {
+    let fixture = ConsumerFixture::new("rustc-failure-note", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let lines = vec![
+        cargo_compiler_message_with_level(
+            "consumer",
+            "E0425",
+            ERROR_LEVEL,
+            "cannot find value `missing_value` in this scope",
+            "src/lib.rs",
+            1,
+            21,
+            None,
+        ),
+        cargo_top_level_diagnostic(
+            "consumer",
+            "failure-note",
+            "For more information about this error, try `rustc --explain E0425`.",
+        ),
+        cargo_build_finished(false),
+    ];
+
+    for output_format in [JSON_OUTPUT_FORMAT, SARIF_OUTPUT_FORMAT] {
+        let output = run_with_output_format(&fixture, output_format, &lines, CARGO_COMPILE_FAILURE_EXIT);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(
+            output.status.code(),
+            Some(EXIT_CODE_INTEGRATION_FAILURE),
+            "compile error with failure-note should exit 2 in {output_format} mode: stdout={stdout} stderr={stderr}"
+        );
+        assert!(!stderr.contains("invalid finding domain values"), "failure-note must not abort rendering: {stderr}");
+        assert!(stderr.contains("Status: integration-failure"), "{output_format} summary: {stderr}");
+        assert!(stderr.contains("Findings: 1"), "only the E0425 error is a finding: {stderr}");
+        assert_structured_compile_failure(output_format, &stdout, &[("E0425", ERROR_LEVEL)]);
+    }
+}
+
+#[test]
+fn internal_compiler_error_stays_structured_integration_failure() {
+    let fixture = ConsumerFixture::new("rustc-ice", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
+    let lines = vec![
+        cargo_top_level_diagnostic("consumer", "error: internal compiler error", "unexpected panic"),
+        cargo_top_level_diagnostic("consumer", "note", "we would appreciate a bug report"),
+        cargo_build_finished(false),
+    ];
+
+    for output_format in [JSON_OUTPUT_FORMAT, SARIF_OUTPUT_FORMAT] {
+        let output = run_with_output_format(&fixture, output_format, &lines, CARGO_COMPILE_FAILURE_EXIT);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(
+            output.status.code(),
+            Some(EXIT_CODE_INTEGRATION_FAILURE),
+            "ICE should exit 2 in {output_format} mode: stdout={stdout} stderr={stderr}"
+        );
+        assert!(!stderr.contains("invalid finding domain values"), "ICE must not abort rendering: {stderr}");
+        assert!(stderr.contains("Status: integration-failure"), "{output_format} summary: {stderr}");
+        assert_structured_compile_failure(output_format, &stdout, &[("compiler_error", ERROR_LEVEL)]);
+    }
+}
+
+fn assert_structured_compile_failure(output_format: &str, stdout: &str, expected: &[(&str, &str)]) {
+    let observed: Vec<(String, String)> = match output_format {
+        JSON_OUTPUT_FORMAT => stdout
+            .lines()
+            .map(|line| {
+                let finding: serde_json::Value = serde_json::from_str(line).expect("JSON finding line");
+                (
+                    finding["lint"].as_str().expect("lint").to_owned(),
+                    finding["severity"].as_str().expect("severity").to_owned(),
+                )
+            })
+            .collect(),
+        SARIF_OUTPUT_FORMAT => {
+            let sarif: serde_json::Value = serde_json::from_str(stdout).expect("parse compile-failure SARIF");
+            assert_eq!(sarif["runs"][0]["properties"]["status"], STATUS_INTEGRATION_FAILURE);
+            assert_eq!(sarif["runs"][0]["properties"]["exitCode"], EXIT_CODE_INTEGRATION_FAILURE);
+            sarif["runs"][0]["results"]
+                .as_array()
+                .expect("SARIF results")
+                .iter()
+                .map(|result| {
+                    (
+                        result["ruleId"].as_str().expect("ruleId").to_owned(),
+                        result["level"].as_str().expect("level").to_owned(),
+                    )
+                })
+                .collect()
+        }
+        _ => unreachable!("structured output formats are exhaustively covered"),
+    };
+    let expected: Vec<(String, String)> =
+        expected.iter().map(|(lint, level)| ((*lint).to_owned(), (*level).to_owned())).collect();
+    assert_eq!(observed, expected, "{output_format} findings");
+}
+
+#[test]
 fn terminated_child_artifact_records_terminated_classification() {
     let fixture = ConsumerFixture::new("terminated-artifact", &metadata(r#"["-p", "consumer"]"#, r#"["--lib"]"#));
     let dir = artifact_dir(&fixture, "terminated");
@@ -3412,6 +4472,10 @@ fn sarif_carries_invocation_metadata() {
         "SARIF invocation should record the command line"
     );
     assert_eq!(invocation["exitCode"], output.status.code().expect("sarif invocation exit code"));
+    assert_eq!(
+        invocation["executionSuccessful"], true,
+        "a complete scan with error-level findings is still a successful tool execution"
+    );
     assert_eq!(
         sorted_object_keys(&sarif["runs"][0]["properties"]),
         vec![

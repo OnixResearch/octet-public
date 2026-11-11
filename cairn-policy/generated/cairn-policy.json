@@ -5766,6 +5766,20 @@
             ],
             "root": ".cairn/specs/runner-self-check/spec.md",
             "source_kind": "accepted_specs"
+          },
+          {
+            "extensions": [
+              "md"
+            ],
+            "root": ".cairn/specs/artifact-bundle-verification/spec.md",
+            "source_kind": "accepted_specs"
+          },
+          {
+            "extensions": [
+              "md"
+            ],
+            "root": ".cairn/specs/project-architecture-gate/spec.md",
+            "source_kind": "accepted_specs"
           }
         ]
       },
@@ -5981,6 +5995,20 @@
               "md"
             ],
             "root": ".cairn/specs/runner-self-check/spec.md",
+            "source_kind": "accepted_specs"
+          },
+          {
+            "extensions": [
+              "md"
+            ],
+            "root": ".cairn/specs/artifact-bundle-verification/spec.md",
+            "source_kind": "accepted_specs"
+          },
+          {
+            "extensions": [
+              "md"
+            ],
+            "root": ".cairn/specs/project-architecture-gate/spec.md",
             "source_kind": "accepted_specs"
           }
         ]

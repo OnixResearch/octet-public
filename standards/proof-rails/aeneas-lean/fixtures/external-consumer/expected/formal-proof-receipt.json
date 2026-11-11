@@ -112,7 +112,7 @@
   "consumer": {
     "schema_version": "octet-aeneas-consumer-receipt-binding/v1",
     "profile_id": "octet-external-aeneas-consumer-v1",
-    "profile_identity": "b3:62bb3c01a2037eef1410e35d3902d73fb5e7439e8856d721d0823e14c0af4879",
+    "profile_identity": "b3:86351a1b7a93d5fbcacc20aa97ad8fff4c9d15b670f47f55988e5ac2deb66291",
     "consumer_id": "octet.external-consumer-fixture",
     "provider_profile_identity": "b3:cd11b49d1acede2c6a91fa26f0b7a6b4b28db4007b4601a65b3269706a0ce625",
     "compatibility_matrix_identity": "b3:403656d75de41b955cd2493ef289ba17308da65a3d214babc1ea606aeae248f5",
@@ -140,7 +140,7 @@
     "external_models": [],
     "trust_inputs": [],
     "resource_policy": {
-      "timeout_ms": 900000,
+      "timeout_ms": 2700000,
       "stdout_max_bytes": 1048576,
       "stderr_max_bytes": 1048576,
       "environment_allowlist": [
@@ -184,7 +184,7 @@
       "does not prove rustc compiler correctness",
       "does not transfer theorem intent or requirement ownership from the consumer to Octet"
     ],
-    "receipt_identity": "b3:f45bbb0a3ca34b6e1ef3b588080da023d1bc6fa6d0f078eaeeb1852d6254b473"
+    "receipt_identity": "b3:56284e96388b9ae3ca50f8afa0bffe91192662f5a4204d31b27d94d91ff1c139"
   },
   "provider": {
     "kind": "aeneas-lean",
@@ -222,7 +222,7 @@
         "build"
       ],
       "limits": {
-        "timeout_ms": 900000,
+        "timeout_ms": 2700000,
         "stdout_max_bytes": 1048576,
         "stderr_max_bytes": 1048576
       },

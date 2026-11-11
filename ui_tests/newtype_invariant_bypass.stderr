@@ -55,4 +55,32 @@ LL | | }
    = help: Tiger Style (Nominal Domain Types): keep refined fields private and expose checked constructors plus explicit borrowed accessors Example: pub struct Token(String); impl TryFrom<String> for Token { ... }
    = note: see Tiger Style guide: Explicit Interfaces
 
-warning: 4 warnings emitted
+warning: refined newtype `CheckedToken` implements unchecked conversion from raw storage; use `TryFrom` or a fallible constructor
+  --> $DIR/newtype_invariant_bypass.rs:32:5
+   |
+LL | /     impl From<&str> for CheckedToken {
+LL | |         fn from(value: &str) -> Self {
+LL | |             Self(value.to_owned())
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Nominal Domain Types): keep refined fields private and expose checked constructors plus explicit borrowed accessors Example: pub struct Token(String); impl TryFrom<String> for Token { ... }
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: refined newtype `CheckedToken` dereferences to raw storage; use an explicit borrowed accessor
+  --> $DIR/newtype_invariant_bypass.rs:39:5
+   |
+LL | /     impl Deref for CheckedToken {
+LL | |         type Target = str;
+LL | |
+LL | |         fn deref(&self) -> &Self::Target {
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Nominal Domain Types): keep refined fields private and expose checked constructors plus explicit borrowed accessors Example: pub struct Token(String); impl TryFrom<String> for Token { ... }
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: 6 warnings emitted
+

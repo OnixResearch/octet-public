@@ -1,3 +1,5 @@
+#![allow(non_trait_imports, reason = "fixture targets another lint; the import and path-naming lints have their own fixtures")]
+
 use tokio::sync::mpsc;
 
 async fn recv_loop(mut rx: mpsc::UnboundedReceiver<u8>) {

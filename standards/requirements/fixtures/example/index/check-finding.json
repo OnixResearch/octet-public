@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "stable_id": "check.lean_toolchain",
+  "lint": "requirements.empirical-check",
+  "file": "standards/proof-rails/aeneas-lean/fixtures/valid/artifacts/proofs/aeneas/lean-toolchain",
+  "evidence_tier": "empirical_check",
+  "summary": "r[octet.requirements.example.assumption.lean_toolchain] retained empirical toolchain hash check"
+}

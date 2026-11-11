@@ -9,22 +9,23 @@ copied into `reviewed.rs`. Commands were run from the scratch directory with the
 repo-local binary:
 
 ```bash
-TOOL='cargo run -q --manifest-path /path/to/git/octet/cargo-octet/Cargo.toml --'
+TOOL='cargo run -q --manifest-path ~/git/octet/cargo-octet/Cargo.toml --'
 ```
 
 ## Initial fixture
 
 ```rust
-#[rustfmt::skip]
 // octet-fingerprint: b3:0; review=safety-critical; evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md; macro=allow
+#[rustfmt::skip]
 pub fn bounded_retry_delay_ms(attempt: u32) -> u32 {
     assert!(attempt <= 5);
     50_u32.saturating_mul(attempt.saturating_add(1))
 }
 ```
 
-`#[rustfmt::skip]` keeps this deliberately long single-line marker intact for the
-example. Production code can use shorter `review` and `evidence` values instead.
+`#[rustfmt::skip]` is an outer attribute, so the marker sits on the line above it
+and the attribute is hashed as part of the function item. A marker placed between
+an attribute and `fn` does not bind to the function.
 
 ## Initial update
 
@@ -34,7 +35,7 @@ $ $TOOL fingerprint --update reviewed.rs
 
 ```text
 octet fingerprint update
-reviewed.rs bounded_retry_delay_ms written stored=0 computed=b3:c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
+reviewed.rs bounded_retry_delay_ms written semantic_id=b3:b0ce417cdb81a888 stored=0 computed=b3:7174aea81e7352b802272ef69d3708ccbc87f6f632136bb6b85e829b359fc37b normalized_body_hash=b3:ac75e8ed76065675b23915d9b7779a6f8fd620def344a345ec80e5451cc0a73f dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
 summary total=1 match=0 mismatch=0 missing=0 written=1 macro_warnings=0 metadata_missing=0
 ```
 
@@ -46,7 +47,7 @@ $ $TOOL fingerprint --check reviewed.rs
 
 ```text
 octet fingerprint check
-reviewed.rs bounded_retry_delay_ms match stored=c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c computed=b3:c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
+reviewed.rs bounded_retry_delay_ms match semantic_id=b3:b0ce417cdb81a888 stored=7174aea81e7352b802272ef69d3708ccbc87f6f632136bb6b85e829b359fc37b computed=b3:7174aea81e7352b802272ef69d3708ccbc87f6f632136bb6b85e829b359fc37b normalized_body_hash=b3:ac75e8ed76065675b23915d9b7779a6f8fd620def344a345ec80e5451cc0a73f dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
 summary total=1 match=1 mismatch=0 missing=0 written=0 macro_warnings=0 metadata_missing=0
 ```
 
@@ -74,7 +75,7 @@ $ echo $?
 
 ```text
 octet fingerprint diff
-reviewed.rs bounded_retry_delay_ms mismatch stored=c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c computed=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
+reviewed.rs bounded_retry_delay_ms mismatch semantic_id=b3:bc2dd43f7aa746d7 stored=7174aea81e7352b802272ef69d3708ccbc87f6f632136bb6b85e829b359fc37b computed=b3:90089d987ce66794a19701cdb27dfecee5a5283ed5d3bd3dd2de2b102fd7edb9 normalized_body_hash=b3:c3d1f40a016b05dea67ebb76d88107a9699d4b989f6aadb0e773b1a3bd515a23 dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
 summary total=1 match=0 mismatch=1 missing=0 written=0 macro_warnings=0 metadata_missing=0
 ```
 
@@ -86,7 +87,7 @@ $ $TOOL fingerprint --update reviewed.rs
 
 ```text
 octet fingerprint update
-reviewed.rs bounded_retry_delay_ms written stored=c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c computed=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
+reviewed.rs bounded_retry_delay_ms written semantic_id=b3:bc2dd43f7aa746d7 stored=7174aea81e7352b802272ef69d3708ccbc87f6f632136bb6b85e829b359fc37b computed=b3:90089d987ce66794a19701cdb27dfecee5a5283ed5d3bd3dd2de2b102fd7edb9 normalized_body_hash=b3:c3d1f40a016b05dea67ebb76d88107a9699d4b989f6aadb0e773b1a3bd515a23 dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
 summary total=1 match=0 mismatch=0 missing=0 written=1 macro_warnings=0 metadata_missing=0
 ```
 
@@ -98,7 +99,7 @@ $ $TOOL fingerprint --check reviewed.rs
 
 ```text
 octet fingerprint check
-reviewed.rs bounded_retry_delay_ms match stored=7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 computed=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
+reviewed.rs bounded_retry_delay_ms match semantic_id=b3:bc2dd43f7aa746d7 stored=90089d987ce66794a19701cdb27dfecee5a5283ed5d3bd3dd2de2b102fd7edb9 computed=b3:90089d987ce66794a19701cdb27dfecee5a5283ed5d3bd3dd2de2b102fd7edb9 normalized_body_hash=b3:c3d1f40a016b05dea67ebb76d88107a9699d4b989f6aadb0e773b1a3bd515a23 dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
 summary total=1 match=1 mismatch=0 missing=0 written=0 macro_warnings=0 metadata_missing=0
 ```
 
@@ -111,44 +112,3 @@ operator assertions are:
 - drift diff exits `1` and reports `mismatch=1`;
 - accepted update reports exactly one `written` marker;
 - final check returns to `match=1 mismatch=0 written=0`.
-## Regenerated output compatibility
-
-### Output 1
-
-```text
-octet fingerprint update
-reviewed.rs bounded_retry_delay_ms written semantic_id=b3:24c411c1ceef0f49 stored=0 computed=b3:c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c normalized_body_hash=b3:c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
-summary total=1 match=0 mismatch=0 missing=0 written=1 macro_warnings=0 metadata_missing=0
-```
-
-### Output 2
-
-```text
-octet fingerprint check
-reviewed.rs bounded_retry_delay_ms match semantic_id=b3:24c411c1ceef0f49 stored=c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c computed=b3:c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c normalized_body_hash=b3:c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
-summary total=1 match=1 mismatch=0 missing=0 written=0 macro_warnings=0 metadata_missing=0
-```
-
-### Output 3
-
-```text
-octet fingerprint diff
-reviewed.rs bounded_retry_delay_ms mismatch semantic_id=b3:9e54661bd2e84ee2 stored=c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c computed=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 normalized_body_hash=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
-summary total=1 match=0 mismatch=1 missing=0 written=0 macro_warnings=0 metadata_missing=0
-```
-
-### Output 4
-
-```text
-octet fingerprint update
-reviewed.rs bounded_retry_delay_ms written semantic_id=b3:9e54661bd2e84ee2 stored=c5707c7c97cc9590933c9b45064bcfc39d19ef7ad553e5b9ec1d751cc242b48c computed=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 normalized_body_hash=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
-summary total=1 match=0 mismatch=0 missing=0 written=1 macro_warnings=0 metadata_missing=0
-```
-
-### Output 5
-
-```text
-octet fingerprint check
-reviewed.rs bounded_retry_delay_ms match semantic_id=b3:9e54661bd2e84ee2 stored=7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 computed=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 normalized_body_hash=b3:7deb37887bd38ad0b5e586a9700eb9d34f61153df85ab06649c3f468f6816114 dependency_identity_status=unsupported-macro-context review=safety-critical evidence=docs/examples/function-fingerprint-lifecycle/lifecycle-transcript.md macro_warning=false
-summary total=1 match=1 mismatch=0 missing=0 written=0 macro_warnings=0 metadata_missing=0
-```

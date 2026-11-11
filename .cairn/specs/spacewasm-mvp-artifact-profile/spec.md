@@ -118,6 +118,11 @@ r[octet.spacewasm_mvp.external_evidence] Octet MAY ingest identity-verified Mant
 - WHEN evidence is assembled
 - THEN Octet MUST preserve both facts and MUST NOT convert runtime success into static conformance.
 
+#### Scenario: External report does not verify
+- GIVEN an external runtime report whose producer, artifact, cohort, profile, result, role, non-claims, or report identity fails verification
+- WHEN evidence is assembled
+- THEN Octet MUST NOT record the report as external evidence and MUST emit an external-evidence mismatch finding at the profile's declared external-evidence severity.
+
 ### Requirement: SpaceWasm findings export bounded Valence roles
 
 r[octet.spacewasm_mvp.valence_export] Octet MUST export verified SpaceWasm artifact facts only as recorded-only or boundary evidence unless a separate checked property profile explicitly authorizes a narrower role.

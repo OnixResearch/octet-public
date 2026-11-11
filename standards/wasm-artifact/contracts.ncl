@@ -16,6 +16,20 @@ let OneOf = fun allowed => std.contract.from_predicate (fun value =>
 let Blake3Identity = std.contract.from_predicate (fun value =>
   std.is_string value && std.string.is_match "^b3:[0-9a-f]{64}$" value
 ) in
+let UniqueArray = std.contract.from_predicate (fun value =>
+  std.is_array value
+  && std.array.all (fun item => std.array.length (std.array.filter (fun other => other == item) value) == 1) value
+) in
+let wit_fragment = "(?:[a-z][a-z0-9]*|[A-Z][A-Z0-9]*)" in
+let wit_label = wit_fragment ++ "(?:-" ++ wit_fragment ++ ")*" in
+let semver_number = "(?:0|[1-9][0-9]*)" in
+let semver_identifiers = "[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*" in
+let semver = semver_number ++ "\\." ++ semver_number ++ "\\." ++ semver_number
+  ++ "(?:-" ++ semver_identifiers ++ ")?(?:\\+" ++ semver_identifiers ++ ")?" in
+let WitWorld = std.contract.from_predicate (fun value =>
+  std.is_string value
+  && std.string.is_match ("^" ++ wit_label ++ ":" ++ wit_label ++ "/" ++ wit_label ++ "(?:@" ++ semver ++ ")?$") value
+) in
 let CohortMember = {
   crate_name | NonEmptyString,
   version | NonEmptyString,
@@ -25,12 +39,14 @@ let Severity = OneOf ["advisory", "warning", "error"] in
 let Profile = {
   profile_id | NonEmptyString,
   summary | NonEmptyString,
-  allowed_artifact_kinds | NonEmptyArray | Array (OneOf ["module", "component"]),
-  allowed_proposals | NonEmptyArray | Array NonEmptyString,
-  allowed_worlds | Array NonEmptyString,
-  allowed_imports | Array NonEmptyString,
-  allowed_exports | Array NonEmptyString,
-  required_exports | Array NonEmptyString,
+  allowed_artifact_kinds | NonEmptyArray | UniqueArray | Array (OneOf ["module", "component"]),
+  allowed_proposals | NonEmptyArray | UniqueArray | Array NonEmptyString,
+  allowed_worlds | UniqueArray | Array WitWorld,
+  allowed_imports | UniqueArray | Array NonEmptyString,
+  allowed_exports | UniqueArray | Array NonEmptyString,
+  required_exports | UniqueArray | Array NonEmptyString,
+  required_imports | optional | UniqueArray | Array NonEmptyString,
+  component_interface | optional | OneOf ["structural-v1"],
   allow_any_exports | Bool,
   resource_limits | {
     max_artifact_bytes | Positive,
@@ -61,7 +77,6 @@ let Profile = {
     duplicate_metadata | Severity,
     abi_mismatch | Severity,
     external_evidence | Severity,
-    cohort_drift | Severity,
   },
   verification_role | OneOf ["recorded_only", "boundary"],
   non_claims | NonEmptyArray | Array NonEmptyString,

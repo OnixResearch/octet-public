@@ -218,7 +218,7 @@ pub struct RunOutcome {
 impl RunOutcome {
     pub fn classify(findings: &[Finding], cargo_process_exit: CargoProcessExit) -> Self {
         let counts = FindingCounts::from_findings(findings);
-        let status = classify_status(&counts, &cargo_process_exit);
+        let status = classify_status(findings, &counts, &cargo_process_exit);
 
         Self {
             status,
@@ -271,9 +271,13 @@ struct StatusArtifact<'a> {
     cargo_process_exit: &'a CargoProcessExit,
 }
 
-fn classify_status(counts: &FindingCounts, cargo_process_exit: &CargoProcessExit) -> RunStatus {
+fn classify_status(findings: &[Finding], counts: &FindingCounts, cargo_process_exit: &CargoProcessExit) -> RunStatus {
     if !cargo_process_exit.is_success() {
-        return RunStatus::IntegrationFailure;
+        return if is_denied_lint_compile_failure(findings, cargo_process_exit) {
+            RunStatus::LintFailure
+        } else {
+            RunStatus::IntegrationFailure
+        };
     }
 
     if counts.error_findings > 0 {
@@ -285,6 +289,22 @@ fn classify_status(counts: &FindingCounts, cargo_process_exit: &CargoProcessExit
     }
 
     RunStatus::Clean
+}
+
+/// rustc fails a compile that hit an error-level lint, so Cargo exits non-zero for denied
+/// findings alone. That run is a lint failure only when Cargo exited with a code (not a signal)
+/// and every error-level diagnostic is an Octet lint finding; any other compiler error (an
+/// `E####` code, an uncoded error, an ICE, or a non-Octet lint) keeps it an integration failure.
+fn is_denied_lint_compile_failure(findings: &[Finding], cargo_process_exit: &CargoProcessExit) -> bool {
+    if cargo_process_exit.is_terminated() {
+        return false;
+    }
+    let mut errors = findings.iter().filter(|finding| finding.severity_is_error()).peekable();
+    errors.peek().is_some() && errors.all(is_octet_lint_finding)
+}
+
+fn is_octet_lint_finding(finding: &Finding) -> bool {
+    octet_lint_metadata::all_metadata().iter().any(|meta| meta.lint_name == finding.lint)
 }
 
 pub fn lint_meta_map() -> HashMap<&'static str, LintMeta> {
@@ -374,7 +394,7 @@ pub fn render_sarif(
                 "message": { "text": finding.message },
                 "locations": [{
                     "physicalLocation": {
-                        "artifactLocation": { "uri": finding.file },
+                        "artifactLocation": { "uri": sarif_artifact_uri(&finding.file) },
                         "region": {
                             "startLine": finding.line,
                             "startColumn": finding.column
@@ -419,9 +439,11 @@ pub fn render_sarif(
                     "rules": rules
                 }
             },
+            // Rustc `column_start` counts Unicode scalar values, not UTF-16 code units.
+            "columnKind": "unicodeCodePoints",
             "invocations": [{
                 "commandLine": command_line,
-                "executionSuccessful": outcome.exit_code == EXIT_SUCCESS,
+                "executionSuccessful": outcome.status != RunStatus::IntegrationFailure,
                 "exitCode": outcome.exit_code
             }],
             "properties": properties,
@@ -432,6 +454,26 @@ pub fn render_sarif(
     let mut rendered = serde_json::to_string_pretty(&sarif).map_err(|error| format!("write SARIF: {error}"))?;
     rendered.push('\n');
     Ok(rendered)
+}
+
+/// Encodes a workspace-relative `/`-separated path as a SARIF `artifactLocation.uri` relative
+/// reference. Each byte outside RFC 3986 `pchar` is percent-encoded, as are `%` and `:`, so a
+/// path with spaces, `#`, `?`, or a colon in its first segment stays an unambiguous URI. Octet's
+/// own SARIF intake still rejects a decoded first-segment colon, which reads as a drive letter or
+/// scheme, so only colons in later segments round-trip.
+pub fn sarif_artifact_uri(path: &str) -> String {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let mut uri = String::with_capacity(path.len());
+    for &byte in path.as_bytes() {
+        if byte.is_ascii_alphanumeric() || b"/-._~!$&'()*+,;=@".contains(&byte) {
+            uri.push(char::from(byte));
+        } else {
+            uri.push('%');
+            uri.push(char::from(HEX[usize::from(byte >> 4)]));
+            uri.push(char::from(HEX[usize::from(byte & 0x0F)]));
+        }
+    }
+    uri
 }
 
 pub fn render_integrated_json(
@@ -467,7 +509,7 @@ pub fn render_integrated_sarif(
         .as_array_mut()
         .ok_or_else(|| "rendered SARIF rules are not an array".to_owned())?;
     let mut architecture_codes = receipt.findings.iter().map(|finding| finding.code.as_str()).collect::<Vec<_>>();
-    architecture_codes.sort();
+    architecture_codes.sort_unstable();
     architecture_codes.dedup();
     rules.extend(architecture_codes.into_iter().map(|code| {
         serde_json::json!({
@@ -479,38 +521,54 @@ pub fn render_integrated_sarif(
     let results = sarif["runs"][0]["results"]
         .as_array_mut()
         .ok_or_else(|| "rendered SARIF results are not an array".to_owned())?;
-    results.extend(receipt.findings.iter().map(|finding| {
-        let level = if finding.status == octet_standards::project_architecture_gate::ArchitectureFindingStatus::Waived {
-            "note"
-        } else if matches!(
-            receipt.mode,
+    results.extend(
+        receipt
+            .findings
+            .iter()
+            .map(|finding| architecture_sarif_result(finding, receipt.mode, &receipt.evidence_tier)),
+    );
+    pretty_json(&sarif, "write integrated SARIF")
+}
+
+/// Renders one architecture finding as a SARIF result. Waived findings are notes. Open
+/// `Integration` findings block every mode, so they are errors; open policy findings are errors
+/// only in the blocking `Gate` and `Admission` modes.
+fn architecture_sarif_result(
+    finding: &octet_standards::project_architecture_gate::ProjectArchitectureFinding,
+    mode: octet_standards::project_architecture_policy::ArchitectureMode,
+    evidence_tier: &str,
+) -> serde_json::Value {
+    let level = if finding.status == octet_standards::project_architecture_gate::ArchitectureFindingStatus::Waived {
+        "note"
+    } else if finding.severity == octet_standards::project_architecture_gate::ArchitectureFindingSeverity::Policy
+        && matches!(
+            mode,
             octet_standards::project_architecture_policy::ArchitectureMode::Inventory
                 | octet_standards::project_architecture_policy::ArchitectureMode::Advisory
-        ) {
-            "warning"
-        } else {
-            "error"
-        };
-        let locations = finding.source_path.as_ref().map_or_else(Vec::new, |source_path| {
-            vec![serde_json::json!({
-                "physicalLocation": { "artifactLocation": { "uri": source_path } }
-            })]
-        });
-        serde_json::json!({
-            "ruleId": format!("project-architecture/{}", finding.code),
-            "level": level,
-            "message": { "text": finding.message },
-            "locations": locations,
-            "properties": {
-                "findingId": finding.finding_id,
-                "affectedClaim": finding.affected_claim,
-                "findingStatus": finding.status,
-                "evidenceTier": receipt.evidence_tier,
-                "phase": "architecture"
-            }
-        })
-    }));
-    pretty_json(&sarif, "write integrated SARIF")
+        )
+    {
+        "warning"
+    } else {
+        "error"
+    };
+    let locations = finding.source_path.as_ref().map_or_else(Vec::new, |source_path| {
+        vec![serde_json::json!({
+            "physicalLocation": { "artifactLocation": { "uri": sarif_artifact_uri(source_path) } }
+        })]
+    });
+    serde_json::json!({
+        "ruleId": format!("project-architecture/{}", finding.code),
+        "level": level,
+        "message": { "text": finding.message },
+        "locations": locations,
+        "properties": {
+            "findingId": finding.finding_id,
+            "affectedClaim": finding.affected_claim,
+            "findingStatus": finding.status,
+            "evidenceTier": evidence_tier,
+            "phase": "architecture"
+        }
+    })
 }
 
 pub fn render_status_json(
@@ -583,10 +641,13 @@ pub fn render_summary(
     if let Some(baseline) = baseline {
         writeln!(&mut summary, "Baseline hash: {}", baseline.baseline_hash)
             .map_err(|error| format!("write summary: {error}"))?;
+        let stale = baseline
+            .stale_total
+            .map_or_else(|| "stale unknown (incomplete scan)".to_owned(), |stale_total| format!("{stale_total} stale"));
         writeln!(
             &mut summary,
-            "Baseline: {} accepted, {} current accepted, {} new, {} stale",
-            baseline.accepted_total, baseline.accepted_current, baseline.new_total, baseline.stale_total
+            "Baseline: {} accepted, {} current accepted, {} new, {stale}",
+            baseline.accepted_total, baseline.accepted_current, baseline.new_total
         )
         .map_err(|error| format!("write summary: {error}"))?;
     }
@@ -681,8 +742,18 @@ pub fn render_integrated_summary(
         .to_owned();
     writeln!(&mut summary, "Lint phase: {} ({})", lint_outcome.status.as_str(), EvidenceTier::StaticLint.as_str())
         .map_err(|error| format!("write integrated summary: {error}"))?;
-    writeln!(&mut summary, "Architecture phase: {} ({})", receipt.status.as_str(), receipt.evidence_tier)
-        .map_err(|error| format!("write integrated summary: {error}"))?;
+    let waived = waived_architecture_findings(receipt);
+    if waived == 0 {
+        writeln!(&mut summary, "Architecture phase: {} ({})", receipt.status.as_str(), receipt.evidence_tier)
+    } else {
+        writeln!(
+            &mut summary,
+            "Architecture phase: {} with {waived} waived ({})",
+            receipt.status.as_str(),
+            receipt.evidence_tier
+        )
+    }
+    .map_err(|error| format!("write integrated summary: {error}"))?;
     writeln!(&mut summary, "Architecture findings: {}", receipt.findings.len())
         .map_err(|error| format!("write integrated summary: {error}"))?;
     writeln!(&mut summary, "Architecture receipt: {}", receipt.receipt_id)
@@ -716,10 +787,24 @@ fn integrated_phases(
             "evidence_tier": receipt.evidence_tier,
             "receipt_id": receipt.receipt_id,
             "finding_ids": receipt.findings.iter().map(|finding| &finding.finding_id).collect::<Vec<_>>(),
+            "waived_finding_count": waived_architecture_findings(receipt),
             "non_claims": receipt.non_claims,
         },
         "effect_closure": receipt.effect_closure,
     })
+}
+
+/// Waived findings let a `clean` architecture status differ from a run with no findings.
+fn waived_architecture_findings(
+    receipt: &octet_standards::project_architecture_gate::ProjectArchitectureReceipt,
+) -> usize {
+    receipt
+        .findings
+        .iter()
+        .filter(|finding| {
+            finding.status == octet_standards::project_architecture_gate::ArchitectureFindingStatus::Waived
+        })
+        .count()
 }
 
 fn pretty_json(value: &serde_json::Value, label: &str) -> Result<String, String> {
@@ -839,6 +924,95 @@ mod tests {
     }
 
     #[test]
+    fn sarif_declares_code_point_columns_and_percent_encodes_artifact_uris() {
+        let paths = [
+            ("src/lib.rs", "src/lib.rs"),
+            ("src/my module.rs", "src/my%20module.rs"),
+            ("src/100%.rs", "src/100%25.rs"),
+            ("src/a#b?.rs", "src/a%23b%3F.rs"),
+            ("src/a:b.rs", "src/a%3Ab.rs"),
+            ("src/caf\u{e9}.rs", "src/caf%C3%A9.rs"),
+        ];
+        let findings = paths
+            .iter()
+            .map(|(path, _)| {
+                let mut finding = test_finding();
+                (*path).clone_into(&mut finding.file);
+                finding
+            })
+            .collect::<Vec<_>>();
+        let outcome = RunOutcome::classify(&findings, CargoProcessExit::success());
+        let metadata = RunMetadata {
+            tool_name: "cargo-octet",
+            tool_version: "0.1.0",
+            rustc_version: "rustc-test".to_owned(),
+            toolchain: "nightly".to_owned(),
+            profile_name: "default".to_owned(),
+            profile_hash: "profile-hash".to_owned(),
+            config_hash: TEST_CONFIG_HASH.to_owned(),
+        };
+        let rendered = render_sarif(
+            &findings,
+            &lint_meta_map(),
+            &outcome,
+            "cargo octet check --output-format sarif",
+            &metadata,
+            None,
+        )
+        .expect("SARIF should render");
+        let sarif = serde_json::from_str::<serde_json::Value>(&rendered).expect("parse rendered SARIF");
+
+        assert_eq!(sarif["runs"][0]["columnKind"], "unicodeCodePoints");
+        let uris = sarif["runs"][0]["results"]
+            .as_array()
+            .expect("SARIF results")
+            .iter()
+            .map(|result| result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"].as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(uris, paths.iter().map(|(_, uri)| Some(*uri)).collect::<Vec<_>>());
+
+        let json_lines = render_json_lines(&findings).expect("JSON Lines should render");
+        assert!(json_lines.contains("\"file\":\"src/my module.rs\""), "JSON Lines keep raw paths: {json_lines}");
+    }
+
+    #[test]
+    fn architecture_sarif_results_error_on_open_integration_findings_in_every_mode() {
+        use octet_standards::project_architecture_gate::ArchitectureFindingSeverity;
+        use octet_standards::project_architecture_gate::ArchitectureFindingStatus;
+        use octet_standards::project_architecture_policy::ArchitectureMode;
+
+        let finding = |severity, status| octet_standards::project_architecture_gate::ProjectArchitectureFinding {
+            finding_id: "b3:finding".to_owned(),
+            code: "forbidden-role-edge".to_owned(),
+            severity,
+            status,
+            affected_claim: "architecture".to_owned(),
+            package_name: None,
+            unit_id: None,
+            fact_id: None,
+            source_path: Some("src/my module.rs".to_owned()),
+            source_blake3: "b3:source".to_owned(),
+            message: "architecture finding".to_owned(),
+        };
+        for (mode, policy_level) in [
+            (ArchitectureMode::Inventory, "warning"),
+            (ArchitectureMode::Advisory, "warning"),
+            (ArchitectureMode::Gate, "error"),
+            (ArchitectureMode::Admission, "error"),
+        ] {
+            for (severity, status, expected) in [
+                (ArchitectureFindingSeverity::Integration, ArchitectureFindingStatus::Open, "error"),
+                (ArchitectureFindingSeverity::Policy, ArchitectureFindingStatus::Open, policy_level),
+                (ArchitectureFindingSeverity::Policy, ArchitectureFindingStatus::Waived, "note"),
+            ] {
+                let result = architecture_sarif_result(&finding(severity, status), mode, "static_lint");
+                assert_eq!(result["level"], expected, "{mode:?} {severity:?} {status:?}");
+                assert_eq!(result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"], "src/my%20module.rs");
+            }
+        }
+    }
+
+    #[test]
     fn sarif_results_include_static_lint_evidence_tier() {
         let finding = test_finding();
         let outcome = RunOutcome::classify(std::slice::from_ref(&finding), CargoProcessExit::success());
@@ -863,6 +1037,177 @@ mod tests {
         .expect("SARIF should render");
 
         assert!(rendered.contains("\"evidenceTier\": \"static_lint\""));
+    }
+
+    #[test]
+    fn sarif_execution_successful_only_fails_for_integration_failures() {
+        let finding = test_finding();
+        let clean = RunOutcome::classify(&[], CargoProcessExit::success());
+        let lint_failure =
+            RunOutcome::classify(std::slice::from_ref(&finding), CargoProcessExit::success()).force_lint_failure();
+        let integration_failure = clean.force_integration_failure();
+        let metadata = RunMetadata {
+            tool_name: "cargo-octet",
+            tool_version: "0.1.0",
+            rustc_version: "rustc-test".to_owned(),
+            toolchain: "nightly".to_owned(),
+            profile_name: "default".to_owned(),
+            profile_hash: "profile-hash".to_owned(),
+            config_hash: TEST_CONFIG_HASH.to_owned(),
+        };
+
+        for (outcome, expected_exit, expected_success) in [
+            (&clean, EXIT_SUCCESS, true),
+            (&lint_failure, EXIT_LINT_FAILURE, true),
+            (&integration_failure, EXIT_INTEGRATION_FAILURE, false),
+        ] {
+            let rendered = render_sarif(
+                std::slice::from_ref(&finding),
+                &lint_meta_map(),
+                outcome,
+                "cargo octet check --output-format sarif",
+                &metadata,
+                None,
+            )
+            .expect("SARIF should render");
+            let sarif = serde_json::from_str::<serde_json::Value>(&rendered).expect("parse rendered SARIF");
+            let invocation = &sarif["runs"][0]["invocations"][0];
+
+            assert_eq!(invocation["exitCode"], expected_exit);
+            assert_eq!(invocation["executionSuccessful"], expected_success, "{:?}", outcome.status);
+        }
+    }
+
+    // r[verify octet.project_architecture_gate.waivers]
+    #[test]
+    fn integrated_status_and_summary_distinguish_waived_clean_from_clean() {
+        use octet_standards::project_architecture_gate::ArchitectureFindingSeverity;
+        use octet_standards::project_architecture_gate::ArchitectureFindingStatus;
+        use octet_standards::project_architecture_gate::ProjectArchitectureFinding;
+
+        let lint = RunOutcome::classify(&[], CargoProcessExit::success());
+        let metadata = RunMetadata {
+            tool_name: "cargo-octet",
+            tool_version: "0.1.0",
+            rustc_version: "rustc-test".to_owned(),
+            toolchain: "nightly".to_owned(),
+            profile_name: "default".to_owned(),
+            profile_hash: "profile-hash".to_owned(),
+            config_hash: TEST_CONFIG_HASH.to_owned(),
+        };
+        let clean = test_architecture_receipt(Vec::new());
+        let waived = test_architecture_receipt(vec![ProjectArchitectureFinding {
+            finding_id: "f".repeat(64),
+            code: "forbidden-role-edge".to_owned(),
+            severity: ArchitectureFindingSeverity::Policy,
+            status: ArchitectureFindingStatus::Waived,
+            affected_claim: "role-aware-dependency-graph".to_owned(),
+            package_name: None,
+            unit_id: None,
+            fact_id: None,
+            source_path: None,
+            source_blake3: "e".repeat(64),
+            message: "domain depends on outbound".to_owned(),
+        }]);
+
+        let mut phase_lines = Vec::new();
+        for (receipt, waived_count) in [(&clean, 0), (&waived, 1)] {
+            let status = render_integrated_status_json(&lint, &lint, "human", &metadata, None, receipt)
+                .expect("integrated status should render");
+            let status = serde_json::from_str::<serde_json::Value>(&status).expect("parse integrated status");
+            assert_eq!(status["phases"]["architecture"]["status"], "clean");
+            assert_eq!(status["phases"]["architecture"]["waived_finding_count"], waived_count);
+
+            let summary = render_integrated_summary(&[], &lint, &lint, &metadata, None, receipt)
+                .expect("integrated summary should render");
+            let phase_line = summary
+                .lines()
+                .find(|line| line.starts_with("Architecture phase: clean"))
+                .expect("architecture phase line")
+                .to_owned();
+            phase_lines.push(phase_line);
+        }
+        assert_ne!(phase_lines[0], phase_lines[1]);
+    }
+
+    fn test_architecture_receipt(
+        findings: Vec<octet_standards::project_architecture_gate::ProjectArchitectureFinding>,
+    ) -> octet_standards::project_architecture_gate::ProjectArchitectureReceipt {
+        let hash = "a".repeat(64);
+        octet_standards::project_architecture_gate::ProjectArchitectureReceipt {
+            schema_version: "test".to_owned(),
+            receipt_id: hash.clone(),
+            project_id: "fixture".to_owned(),
+            mode: octet_standards::project_architecture_policy::ArchitectureMode::Gate,
+            status: octet_standards::project_architecture_gate::ArchitecturePhaseStatus::Clean,
+            evidence_tier: "policy-check".to_owned(),
+            checker_id: "octet-standards.project-architecture-gate".to_owned(),
+            policy_source_blake3: hash.clone(),
+            policy_blake3: hash.clone(),
+            waiver_policy_blake3: hash.clone(),
+            lint_phase_status: "clean".to_owned(),
+            command_blake3: hash.clone(),
+            cargo_graph_id: hash.clone(),
+            architecture_ir_id: hash.clone(),
+            coverage_id: hash.clone(),
+            compiler_receipt_id: hash,
+            toolchain_blake3s: Vec::new(),
+            collector_blake3s: Vec::new(),
+            invocation_blake3s: Vec::new(),
+            targets: Vec::new(),
+            feature_sets: Vec::new(),
+            package_roles: Vec::new(),
+            port_traits: Vec::new(),
+            capability_families: Vec::new(),
+            outbound_effects: Vec::new(),
+            authorized_effect_fact_ids: Vec::new(),
+            authorized_effect_type_ids: Vec::new(),
+            applied_waiver_ids: findings.iter().map(|finding| finding.finding_id.clone()).collect(),
+            findings,
+            unknown_ids: Vec::new(),
+            test_only: None,
+            effect_closure: None,
+            non_claims: vec!["whole-program-correctness".to_owned()],
+        }
+    }
+
+    #[test]
+    fn denied_octet_lints_are_lint_failures_only_when_no_other_compiler_error_failed_cargo() {
+        let mut denied = test_finding();
+        denied.severity = ERROR_SEVERITY.to_owned();
+        let mut type_error = compiler_error_finding("mismatched types");
+        type_error.lint = "E0308".to_owned();
+        let cargo_failed = CargoProcessExit::exit_code(101);
+
+        for (findings, cargo_process_exit, expected) in [
+            (vec![denied.clone()], cargo_failed.clone(), RunStatus::LintFailure),
+            (vec![denied.clone(), test_finding()], cargo_failed.clone(), RunStatus::LintFailure),
+            (vec![denied.clone(), type_error], cargo_failed.clone(), RunStatus::IntegrationFailure),
+            (
+                vec![
+                    denied.clone(),
+                    compiler_error_finding("internal compiler error: unexpected panic"),
+                ],
+                cargo_failed.clone(),
+                RunStatus::IntegrationFailure,
+            ),
+            (vec![test_finding()], cargo_failed.clone(), RunStatus::IntegrationFailure),
+            (Vec::new(), cargo_failed, RunStatus::IntegrationFailure),
+            (vec![denied], CargoProcessExit::terminated(), RunStatus::IntegrationFailure),
+        ] {
+            let outcome = RunOutcome::classify(&findings, cargo_process_exit);
+            assert_eq!(outcome.status, expected, "{findings:#?}");
+            assert_eq!(outcome.exit_code, expected.exit_code());
+        }
+    }
+
+    fn compiler_error_finding(message: &str) -> Finding {
+        let mut finding = test_finding();
+        finding.lint = "compiler_error".to_owned();
+        finding.group = UNKNOWN_LINT_META.group.to_owned();
+        finding.severity = ERROR_SEVERITY.to_owned();
+        message.clone_into(&mut finding.message);
+        finding
     }
 
     fn test_finding() -> Finding {

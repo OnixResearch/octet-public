@@ -1,0 +1,13 @@
+{
+  "conclusion": "fail (vetting)",
+  "failures": [
+    {
+      "name": "itoa",
+      "version": "1.0.18",
+      "missing_criteria": [
+        "safe-to-deploy"
+      ]
+    }
+  ],
+  "suggest": null
+}

@@ -1,5 +1,5 @@
 warning: loop without visible iteration bound
-  --> $DIR/tokio_async/unbounded_loop_bare_async.rs:4:5
+  --> $DIR/tokio_async/unbounded_loop_bare_async.rs:6:5
    |
 LL | /     loop {
 LL | |         let _ = rx.recv().await;

@@ -1,0 +1,15 @@
+{
+  "schema_version": "octet-benchmark-assurance-fixture/v1",
+  "fixture_id": "missing-execution",
+  "claim": "The policy obligation was satisfied by an observed execution.",
+  "checked_policy_identity": "b3:ca0e8400a3ef7e5abf36104b36576fef198c34e0f79ebb0ce0d0f291c8a967b0",
+  "evidence_identity": "b3:b3bf68b1414c161e1384c9c5e45fb1a27c15a8556465c203943c8e7a7c8f6e98",
+  "execution": {
+    "status": "not_run",
+    "command_identity": "b3:bdc406f2b11a2ac584ecadea4e462adec3015029115092bbcbeee039db515f0d"
+  },
+  "proof": {
+    "source_identity": "b3:43834fbad41551fbaf363352b5e9ac31c2498ad621b4b324ec673dd7a58abfc8",
+    "source_anchor": "crates/app/src/compliant.rs:dispatch"
+  }
+}

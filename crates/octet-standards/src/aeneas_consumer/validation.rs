@@ -16,7 +16,7 @@ use super::model::ConsumerOutcome;
 use super::model::ConsumerProfile;
 use super::model::ConsumerReceiptBinding;
 
-const PROVIDER_TIMEOUT_MAX_MS: u64 = 900_000;
+const PROVIDER_TIMEOUT_MAX_MS: u64 = 2_700_000;
 const PROVIDER_LOG_MAX_BYTES: usize = 1_048_576;
 
 pub(super) fn profile(profile: &ConsumerProfile) -> Vec<String> {
@@ -161,12 +161,25 @@ pub(super) fn receipt(
         diagnostics.push("Aeneas consumer receipt source, theorem, model, or trust binding drifted".to_owned());
     }
     let mut roles = BTreeSet::new();
-    if receipt.stage_artifacts.is_empty()
-        || receipt.stage_artifacts.iter().any(|artifact| {
-            artifact.role.trim().is_empty() || !super::is_b3(&artifact.blake3) || !roles.insert(&artifact.role)
-        })
+    if receipt.stage_artifacts.iter().any(|artifact| {
+        artifact.role.trim().is_empty() || !super::is_b3(&artifact.blake3) || !roles.insert(artifact.role.as_str())
+    }) || roles != BTreeSet::from(super::STAGE_ARTIFACT_ROLES)
     {
-        diagnostics.push("Aeneas consumer receipt stage artifacts are empty, malformed, or duplicated".to_owned());
+        diagnostics.push(
+            "Aeneas consumer receipt stage artifacts are malformed, duplicated, or do not cover exactly the required roles"
+                .to_owned(),
+        );
+    }
+    if !stage_artifact_bound(receipt, super::STAGE_ROLE_RUST_SOURCE, &receipt.source_identity)
+        || !stage_artifact_bound(
+            receipt,
+            super::STAGE_ROLE_MAINTAINED_THEOREM,
+            &receipt.theorem.approved_statement_blake3,
+        )
+    {
+        diagnostics.push(
+            "Aeneas consumer receipt stage artifacts do not bind the selected source and approved theorem".to_owned(),
+        );
     }
     match super::receipt_identity(receipt) {
         Ok(expected) if receipt.receipt_identity == expected => {}
@@ -176,6 +189,10 @@ pub(super) fn receipt(
     diagnostics.sort();
     diagnostics.dedup();
     diagnostics
+}
+
+fn stage_artifact_bound(receipt: &ConsumerReceiptBinding, role: &str, identity: &str) -> bool {
+    receipt.stage_artifacts.iter().any(|artifact| artifact.role == role && artifact.blake3 == identity)
 }
 
 fn unsafe_path(value: &str) -> bool {

@@ -2,6 +2,37 @@
 
 This document fixes the Phase 7 boundary for Octet's Valence-oriented content-addressed Rust evidence work. It is a contract document, not an implementation claim for HIR/MIR extraction.
 
+> **Selected v2 source construction alone is not an evidence-rail PASS.**
+> The reviewed immutable Valence pin admits `octet-source-token-v2`, and
+> source-backed `object emit` now constructs v2 objects. The saved v1 corpus
+> receipt remains readable, but default replay against its source returns a
+> nonzero `object_set_hash` mismatch, not v1-v2 equality. The separate H2
+> reviewed-source-manifest binds audited v2 source bytes and four saved
+> references. The named children and aggregate have passed their actual
+> source-bound Nix derivations with independent saved-reference comparison;
+> source construction or self-replay alone never suffices.
+
+The selected v2 scanner preserves Rust macro token boundaries: adjacent
+punctuation has different identity from punctuation separated by whitespace or
+ordinary comments, and numeric literals, raw identifiers/lifetimes, and
+suffixed literals remain whole. Doc comments inside macro input become
+compiler-visible attributes and affect identity; ordinary comments and
+group-adjacent whitespace that leave Rust tokens unchanged remain trivia.
+The macro-review caveat does not excuse an object-hash collision.
+
+The fixed quoted-URL source and saved v2 receipt live under `cargo-octet/tests/fixtures/object-corpus/source-token-v2/`; `candidate-source-manifest.json` remains `PENDING` historical diagnostic material. The separate H2 `reviewed-source-manifest.json` binds its independently audited source/reference bytes and the exact upstream module Git revision. Neither manifest refers to a machine-local Valence checkout. The shared source scanner includes outer attributes separated from a function by comments or blank lines, including multiline attributes whose argument occupies a literal-only line. Changing `#[unsafe(export_name =\n    "alpha"\n)]` to `"omega"` changes the Rust export symbol, the v2 object hash, and a reviewed function-address marker's status. The scanner also includes a line-separated `pub`/`pub(crate)` visibility prefix and other split modifiers; dropping or restricting visibility changes identity. Trivia alone leaves token identity stable.
+
+Older receipts, markers, pointers, policies, and accepted evidence are not automatically rebound. Source-backed selected rails now fail closed when approved bindings or saved v2 references go missing or stale.
+
+The same fixture directory holds 18-path internal and 36-path expanded v2
+receipts and an expanded caveat taxonomy. Its immutable `PENDING` candidate
+manifest is historical; the reviewed manifest binds the audited 37 source-byte
+hashes and four artifact hashes, and the existing named rails are selected.
+An inert `// octet-object:` inside a block comment or a fingerprint
+comment/attribute inside non-code cannot provide review. A one-byte comment
+change can preserve the object-set hash but invalidate the manifest's
+source-byte binding.
+
 ## Canonical v1 identity
 
 `octet.function-object.v1` remains the canonical v1 review/provenance identity for selected Rust functions.

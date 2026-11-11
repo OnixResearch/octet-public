@@ -13,7 +13,7 @@ let contracts = import "contracts.ncl" in
     "standards/ast-grep/rule-tests/unsafe-block-review-test.yml",
     "standards/ast-grep/rule-tests/__snapshots__/unsafe-block-review-snapshot.yml",
   ],
-  bundle_identity = "b3:30e021d41c5727e6fb8e39956af08897c13a41da483882e5646109ef2e3b85c2",
+  bundle_identity = "b3:d19d96313ce51c8d388036e2097e4546bc9db13f3707de87c607456145f6d016",
   scan_scope = {
     paths = ["src", "cargo-octet/src", "crates"],
     globs = ["*.rs", "!**/target/**", "!**/tests/fixtures/**"],

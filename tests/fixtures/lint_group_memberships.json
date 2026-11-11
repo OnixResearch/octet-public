@@ -25,7 +25,10 @@
       "defaulting_trait_method",
       "no_todo",
       "unjustified_no_todo_allow",
-      "no_recursion"
+      "no_recursion",
+      "discarded_sync_result",
+      "flush_only_durability",
+      "retry_sync_after_error"
     ]
   },
   {
@@ -63,6 +66,8 @@
       "borrowed_argument_types",
       "deref_polymorphism",
       "too_many_parameters",
+      "raw_bool_parameter",
+      "raw_bool_parameter_suppression",
       "fat_trait",
       "concrete_construction_in_core",
       "type_accumulation",

@@ -1,0 +1,2 @@
+[octet]
+durability_profile_path = "ui_tests/durability_retry/profile.json"

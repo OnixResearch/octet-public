@@ -14,6 +14,15 @@ impl TryFrom<String> for CheckedToken {
     }
 }
 
+// Should NOT warn: fallible conversion from the borrowed `str` view.
+impl TryFrom<&str> for CheckedToken {
+    type Error = &'static str;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::try_from(value.to_owned())
+    }
+}
+
 impl CheckedToken {
     pub fn as_str(&self) -> &str {
         &self.0

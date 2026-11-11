@@ -1,0 +1,12 @@
+{
+  "schema_version": "mantle.function-address-binding.v1",
+  "disposition": "present",
+  "valid": true,
+  "receipt_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "claim_scope": "function_address.v1.lifecycle_policy_conformance",
+  "sidecar_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "valence_receipt_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "source_archive_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "release_binary_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "non_claim_boundary": "Cairn consumed Valence, Mantle, and Kamacite function-address evidence for lifecycle/release policy conformance only; it did not prove Rust semantic correctness, compiler correctness, whole-program safety, verifier soundness, or release eligibility"
+}

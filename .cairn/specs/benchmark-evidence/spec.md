@@ -95,7 +95,7 @@ Octet MUST compare baseline and candidate results only when required workload, p
 
 r[octet.benchmark_evidence.receipt]
 
-A benchmark receipt MUST bind profiles, workloads, commands, source states, environments, raw samples, signal oracles, findings, summaries, comparisons, logs, limits, parent links, and BLAKE3 identities.
+A benchmark receipt MUST bind profiles, workloads, commands, source states, environments, raw samples, allocation and copy observations, signal oracles, summaries, limits, parent links, and BLAKE3 identities.
 
 #### Scenario: Receipt reproduces its summary
 
@@ -106,7 +106,7 @@ A benchmark receipt MUST bind profiles, workloads, commands, source states, envi
 
 #### Scenario: Raw artifact is stale
 
-- GIVEN a workload, profile, sample, oracle, finding set, summary, comparison, or parent changes after collection
+- GIVEN a workload, profile, sample, allocation observation, copy artifact, oracle, finding set, summary, comparison, or parent changes after collection
 - WHEN artifact validation runs
 - THEN validation MUST fail with a deterministic identity diagnostic
 
@@ -151,7 +151,7 @@ Every published Octet performance, cache, memory, signal, suppression, false-pos
 
 r[octet.benchmark_evidence.verification]
 
-The implementation MUST include deterministic positive and negative fixtures for profiles, workloads, samples, environments, signal oracles, finding alignment, summaries, comparisons, identities, limits, compatibility, and claims.
+The implementation MUST include positive and negative fixtures for profiles, workloads, samples, allocation and copy observations, signal oracles, comparisons, identities, limits, and claims.
 
 #### Scenario: Focused benchmark matrix completes
 
@@ -159,3 +159,29 @@ The implementation MUST include deterministic positive and negative fixtures for
 - WHEN focused validation runs
 - THEN every positive fixture MUST pass deterministically
 - AND every negative fixture MUST fail for its declared diagnostic class
+
+### Requirement: Allocation and copy observations remain distinct
+
+r[octet.benchmark_evidence.resource_observation]
+
+Octet MUST keep instrumented runtime allocation observations separate from static LLVM copy-site observations.
+
+#### Scenario: An instrumented allocation interval completes
+
+- GIVEN a registered workload uses an explicit allocator wrapper and declared interval markers
+- WHEN the benchmark harness runs that interval
+- THEN the receipt MUST record allocation events, allocated bytes, instrumentation identity, scope, and sample outcome
+- AND the result MUST NOT claim allocation behavior outside the declared interval and build
+
+#### Scenario: An LLVM copy census completes
+
+- GIVEN a registered workload emits LLVM artifacts for one exact compiler, target, and optimization profile
+- WHEN the copy scanner examines those artifacts
+- THEN the receipt MUST record each detected copy site and each known constant length
+- AND variable or unresolved lengths MUST remain `unknown` rather than become zero
+
+#### Scenario: Resource observations are merged incorrectly
+
+- GIVEN a comparison attempts to convert static copy sites into runtime copy bytes or generalize an interval beyond its scope
+- WHEN resource-observation validation runs
+- THEN validation MUST fail with an evidence-class or scope diagnostic

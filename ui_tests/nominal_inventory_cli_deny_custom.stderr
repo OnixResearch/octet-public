@@ -1,0 +1,17 @@
+warning: alias `RequestId` ends with reviewed domain suffix `Id` and needs policy classification
+  --> $DIR/nominal_inventory_cli_deny_custom/nominal_inventory_cli_deny_custom.rs:10:14
+   |
+LL |     pub type RequestId = String;
+   |              ^^^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): replace registered primitive domain aliases with private nominal wrappers and checked constructors Example: pub struct UnitId(String);
+   = note: see Tiger Style guide: Explicit Interfaces
+note: the lint level is defined here
+  --> $DIR/nominal_inventory_cli_deny_custom/nominal_inventory_cli_deny_custom.rs:7:8
+   |
+LL | #[warn(primitive_domain_alias)]
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::primitive_domain_alias)]` implied by `#[warn(primitive_domain_alias)]`
+
+warning: 1 warning emitted
+

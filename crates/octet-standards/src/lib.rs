@@ -6,6 +6,7 @@
 //! Functional core for the Tiger Style policy checker.
 
 pub mod aeneas_consumer;
+pub mod aeneas_observation;
 pub mod architecture;
 pub mod artifacts;
 pub mod capability_manifest;
@@ -25,7 +26,11 @@ pub mod report;
 pub mod resource;
 pub mod runner;
 pub mod source;
+pub mod spec_trace_parity;
+pub mod storage_fault;
 pub mod suppression;
+pub mod vermilion;
+pub mod vermilion_canary;
 
 #[cfg(test)]
 mod tests {
@@ -58,15 +63,25 @@ mod tests {
     use crate::proof::VerusProofReceiptInput;
     use crate::proof::build_verus_proof_receipt;
     use crate::proof::check_verified_proof_rails;
+    use crate::report::CheckReport;
+    use crate::report::PolicyExecution;
+    use crate::report::PolicyExecutionOwnership;
+    use crate::report::PolicyExecutionStatus;
     use crate::report::render_json;
     use crate::report::render_markdown;
     use crate::resource::check_resources;
     use crate::runner::CheckInput;
+    use crate::runner::CheckerFailure;
+    use crate::runner::CheckerFailureKind;
     use crate::runner::run_checks;
     use crate::source::SourceFile;
 
     const DEVTOOLS_POLICY_ID: &str = "tigerstyle.devtools.lint-suppressions";
     const EMBEDDED_POLICY_ID: &str = "tigerstyle.embedded.bounded-queues";
+    const BLOCKING_IO_POLICY_ID: &str = "tigerstyle.embedded.blocking-io-timeouts";
+    const SAFE_SERIAL_POLICY_ID: &str = "tigerstyle.embedded.safe-serial-api";
+    const EXTERNAL_POLICY_ID: &str = "tigerstyle.devtools.deny-warnings";
+    const HUMAN_POLICY_ID: &str = "tigerstyle.culture.flow-protection";
     const FCIS_POLICY_ID: &str = "tigerstyle.architecture.fcis-crate-boundary";
     const EXTERNAL_DOMAIN_LEAKAGE_POLICY_ID: &str = "tigerstyle.architecture.external-domain-leakage";
     const ROOT_THINNESS_POLICY_ID: &str = "tigerstyle.architecture.root-crate-thinness";
@@ -86,6 +101,11 @@ mod tests {
     const MISSING_FIXTURE_COVERAGE_DIAGNOSTICS: usize = 8;
     const THICK_ROOT_LINE_COUNT: usize = 50;
     const BOUNDED_CHANNEL_CAPACITY: u16 = 16;
+    const UNBOUNDED_CHANNEL_LINE: &str = "fn start() { let (_tx, _rx) = tokio::sync::mpsc::unbounded_channel(); }";
+    const CLOCK_HANDLER_ARTIFACT: &str = "standards/check-fixtures/capability/clock-handler.txt";
+    const FS_HANDLER_ARTIFACT: &str = "standards/check-fixtures/capability/fs-handler.txt";
+    const COVERED_HANDLER_TRANSCRIPT: &str =
+        "success path: handler returns the fixture value\nfailure path: handler returns the configured error\n";
     const PUBLIC_API_BUDGET_FIXTURE_PATH: &str =
         "standards/check-fixtures/architecture/advisory/public-api-budget/src/lib.rs";
     const PUBLIC_API_BUDGET_FIXTURE_SOURCE: &str =
@@ -109,12 +129,125 @@ mod tests {
             registry: sample_registry(),
             sources: vec![SourceFile::new(SOURCE_PATH, valid_suppression_line(DEVTOOLS_POLICY_ID))],
             selection: FamilySelection::all(),
+            checker_failures: Vec::new(),
         });
 
         assert!(report.diagnostics.is_empty());
         assert_eq!(report.active_suppressions.len(), 1);
         assert_eq!(report.active_suppressions[0].policy_id, DEVTOOLS_POLICY_ID);
         assert_eq!(report.active_suppressions[0].line, 1);
+    }
+
+    #[test]
+    fn next_line_suppression_drops_only_the_covered_hard_rule_diagnostic() {
+        let text = format!(
+            "{}; scope=next-line\n{UNBOUNDED_CHANNEL_LINE}\n{UNBOUNDED_CHANNEL_LINE}\n",
+            valid_suppression_line(EMBEDDED_POLICY_ID)
+        );
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, text)],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: Vec::new(),
+        });
+
+        assert_eq!(report.active_suppressions.len(), 1);
+        assert_eq!(report.suppressed_diagnostics.iter().map(|diagnostic| diagnostic.line).collect::<Vec<_>>(), vec![
+            Some(2)
+        ]);
+        assert_eq!(
+            report
+                .diagnostics
+                .iter()
+                .map(|diagnostic| (diagnostic.policy_id.as_str(), diagnostic.line))
+                .collect::<Vec<_>>(),
+            vec![(EMBEDDED_POLICY_ID, Some(3))]
+        );
+    }
+
+    #[test]
+    fn line_suppression_lets_the_annotated_line_pass() {
+        let text = format!("{UNBOUNDED_CHANNEL_LINE} {}\n", valid_suppression_line(EMBEDDED_POLICY_ID));
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, text)],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: Vec::new(),
+        });
+
+        assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
+        assert!(!report.has_blocking_diagnostics());
+        assert_eq!(report.active_suppressions.len(), 1);
+        assert_eq!(report.suppressed_diagnostics.len(), 1);
+    }
+
+    #[test]
+    fn suppression_does_not_cover_other_policies_or_files() {
+        let other_policy =
+            format!("{}; scope=next-line\n{UNBOUNDED_CHANNEL_LINE}\n", valid_suppression_line(DEVTOOLS_POLICY_ID));
+        let suppressed_elsewhere =
+            format!("{}; scope=next-line\nfn idle() {{}}\n", valid_suppression_line(EMBEDDED_POLICY_ID));
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![
+                SourceFile::new(SOURCE_PATH, other_policy),
+                SourceFile::new("src/other.rs", suppressed_elsewhere),
+                SourceFile::new("src/device.rs", format!("\n{UNBOUNDED_CHANNEL_LINE}\n")),
+            ],
+            selection: FamilySelection::from_families(["devtools", "embedded"]),
+            checker_failures: Vec::new(),
+        });
+
+        assert_eq!(report.active_suppressions.len(), 2);
+        assert!(report.suppressed_diagnostics.is_empty(), "{:?}", report.suppressed_diagnostics);
+        assert_eq!(
+            report
+                .diagnostics
+                .iter()
+                .map(|diagnostic| (diagnostic.path.as_str(), diagnostic.line))
+                .collect::<Vec<_>>(),
+            vec![(SOURCE_PATH, Some(2)), ("src/device.rs", Some(2))]
+        );
+    }
+
+    #[test]
+    fn suppression_does_not_cover_suppression_validation_diagnostics() {
+        let text = format!(
+            "{}; scope=next-line\n// tigerstyle-allow: policy=tigerstyle.unknown.rule; source=doc; owner=a; rationale=b; review=c; safer_default=d\n",
+            valid_suppression_line(DEVTOOLS_POLICY_ID)
+        );
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, text)],
+            selection: FamilySelection::all(),
+            checker_failures: Vec::new(),
+        });
+
+        assert!(report.has_blocking_diagnostics());
+        assert!(report.suppressed_diagnostics.is_empty());
+        assert!(report.diagnostics.iter().any(|diagnostic| {
+            diagnostic.policy_id == DEVTOOLS_POLICY_ID && diagnostic.line == Some(2) && diagnostic.is_blocking()
+        }));
+    }
+
+    #[test]
+    fn markdown_lists_suppressed_findings_separately() {
+        let text = format!("{UNBOUNDED_CHANNEL_LINE} {}\n", valid_suppression_line(EMBEDDED_POLICY_ID));
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, text)],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: Vec::new(),
+        });
+        let markdown = render_markdown(&report);
+        let (findings, _) =
+            markdown.split_once("## Active Suppressions").expect("markdown should list active suppressions");
+        let (_, suppressed) =
+            markdown.split_once("## Suppressed Findings").expect("markdown should list suppressed findings");
+        let finding = format!("`{EMBEDDED_POLICY_ID}` at `{SOURCE_PATH}:1` — ");
+
+        assert!(!findings.contains(&finding), "{markdown}");
+        assert!(suppressed.contains(&finding), "{markdown}");
     }
 
     #[test]
@@ -126,6 +259,7 @@ mod tests {
                 "// tigerstyle-allow: policy=tigerstyle.devtools.lint-suppressions; owner=platform",
             )],
             selection: FamilySelection::all(),
+            checker_failures: Vec::new(),
         });
 
         assert!(report.has_blocking_diagnostics());
@@ -146,6 +280,7 @@ mod tests {
             registry: sample_registry(),
             sources: vec![SourceFile::new(SOURCE_PATH, line)],
             selection: FamilySelection::all(),
+            checker_failures: Vec::new(),
         });
 
         assert!(report.has_blocking_diagnostics());
@@ -162,6 +297,7 @@ mod tests {
                 "// tigerstyle-allow: policy=tigerstyle.unknown.rule; source=doc; owner=a; rationale=b; review=c; safer_default=d",
             )],
             selection: FamilySelection::all(),
+            checker_failures: Vec::new(),
         });
 
         assert!(report.has_blocking_diagnostics());
@@ -175,6 +311,7 @@ mod tests {
             registry: sample_registry(),
             sources: vec![SourceFile::new(SOURCE_PATH, valid_suppression_line(EMBEDDED_POLICY_ID))],
             selection: FamilySelection::from_families(["devtools"]),
+            checker_failures: Vec::new(),
         });
 
         assert!(report.diagnostics.is_empty());
@@ -188,6 +325,7 @@ mod tests {
             registry: sample_registry(),
             sources: vec![SourceFile::new(SOURCE_PATH, valid_suppression_line(DEVTOOLS_POLICY_ID))],
             selection: FamilySelection::from_families(["devtools"]),
+            checker_failures: Vec::new(),
         });
         let json = render_json(&report).expect("report should serialize");
 
@@ -202,12 +340,241 @@ mod tests {
             registry: sample_registry(),
             sources: vec![SourceFile::new(SOURCE_PATH, valid_suppression_line(DEVTOOLS_POLICY_ID))],
             selection: FamilySelection::from_families(["devtools"]),
+            checker_failures: Vec::new(),
         });
         let markdown = render_markdown(&report);
 
         assert!(markdown.starts_with("# Tiger Style Standards Report"));
         assert!(markdown.contains("## Active Suppressions"));
         assert!(markdown.contains(DEVTOOLS_POLICY_ID));
+    }
+
+    #[test]
+    fn unimplemented_hard_local_policies_are_unsupported() {
+        let registry = PolicyRegistry {
+            schema_version: "test".to_owned(),
+            checker_ids: vec!["octet-standards".to_owned()],
+            policies: vec![
+                sample_policy(BLOCKING_IO_POLICY_ID, "embedded", EMBEDDED_SOURCE),
+                sample_policy(SAFE_SERIAL_POLICY_ID, "embedded", EMBEDDED_SOURCE),
+            ],
+            seed_manifests: Vec::new(),
+            config_receipt_families: Vec::new(),
+        };
+        let report = run_checks(&CheckInput {
+            registry,
+            sources: vec![SourceFile::new(SOURCE_PATH, "fn start() {}\n")],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: Vec::new(),
+        });
+
+        let timeout = execution_for(&report, BLOCKING_IO_POLICY_ID);
+        let serial = execution_for(&report, SAFE_SERIAL_POLICY_ID);
+        assert_eq!(timeout.status, PolicyExecutionStatus::Unsupported);
+        assert_eq!(serial.status, PolicyExecutionStatus::Unsupported);
+        assert_eq!(timeout.ownership, PolicyExecutionOwnership::Local);
+        assert!(timeout.required);
+        assert!(timeout.coverage_explanation.contains("no implemented local checker"), "{timeout:?}");
+        assert!(!timeout.is_completed_local_check());
+        assert!(!report.coverage_complete());
+        assert!(!report.strict_passing());
+    }
+
+    #[test]
+    fn implemented_passing_policy_reports_passed_with_scope() {
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, "fn start() {}\n")],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: Vec::new(),
+        });
+
+        let execution = execution_for(&report, EMBEDDED_POLICY_ID);
+        assert_eq!(execution.status, PolicyExecutionStatus::Passed);
+        assert_eq!(execution.checker, "resource");
+        assert!(execution.selected_scope.contains("family=embedded"), "{}", execution.selected_scope);
+        assert!(
+            execution.selected_scope.contains("scope=embedded-bounded-primitives"),
+            "{}",
+            execution.selected_scope
+        );
+        assert!(execution.coverage_explanation.contains("emitted no diagnostic"));
+        assert!(execution.is_completed_local_check());
+        assert!(report.coverage_complete());
+        assert!(report.strict_passing());
+    }
+
+    #[test]
+    fn checker_violation_reports_failed_execution() {
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, UNBOUNDED_CHANNEL_LINE)],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: Vec::new(),
+        });
+
+        let execution = execution_for(&report, EMBEDDED_POLICY_ID);
+        assert_eq!(execution.status, PolicyExecutionStatus::Failed);
+        assert_eq!(execution.linked_diagnostics, vec![format!("{SOURCE_PATH}:1")]);
+        assert!(execution.coverage_explanation.contains("emitted 1 diagnostic"), "{execution:?}");
+        assert!(execution.is_completed_local_check());
+        assert!(report.coverage_complete());
+        assert!(!report.strict_passing());
+    }
+
+    #[test]
+    fn checker_failure_reports_tool_error_and_blocks_strict_coverage() {
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, "fn start() {}\n")],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: vec![CheckerFailure {
+                checker: "resource".to_owned(),
+                kind: CheckerFailureKind::Timeout,
+                policy_ids: vec![EMBEDDED_POLICY_ID.to_owned()],
+                message: "checker deadline exceeded".to_owned(),
+            }],
+        });
+
+        let execution = execution_for(&report, EMBEDDED_POLICY_ID);
+        assert_eq!(execution.status, PolicyExecutionStatus::ToolError);
+        assert!(execution.coverage_explanation.contains("timeout"), "{execution:?}");
+        assert!(execution.coverage_explanation.contains("checker deadline exceeded"));
+        assert!(!execution.is_completed_local_check());
+        assert!(!report.coverage_complete());
+        assert!(!report.strict_passing());
+    }
+
+    #[test]
+    fn family_exclusion_and_missing_source_scope_are_not_applicable() {
+        let excluded = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, "fn start() {}\n")],
+            selection: FamilySelection::from_families(["devtools"]),
+            checker_failures: Vec::new(),
+        });
+        let excluded_embedded = execution_for(&excluded, EMBEDDED_POLICY_ID);
+        assert_eq!(excluded_embedded.status, PolicyExecutionStatus::NotApplicable);
+        assert!(!excluded_embedded.required);
+        assert!(excluded_embedded.coverage_explanation.contains("was not selected"), "{excluded_embedded:?}");
+        assert!(excluded.coverage_complete());
+
+        let no_scope = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, "fn start() {}\n")],
+            selection: FamilySelection::from_families(["architecture"]),
+            checker_failures: Vec::new(),
+        });
+        let fcis = execution_for(&no_scope, FCIS_POLICY_ID);
+        assert_eq!(fcis.status, PolicyExecutionStatus::NotApplicable);
+        assert!(fcis.selected_scope.contains("scope=none"), "{}", fcis.selected_scope);
+        assert!(fcis.coverage_explanation.contains("no applicable architecture source scope"), "{fcis:?}");
+        assert!(no_scope.coverage_complete());
+    }
+
+    #[test]
+    fn external_and_human_policies_are_not_run_and_not_completed_local_checks() {
+        let registry = PolicyRegistry {
+            schema_version: "test".to_owned(),
+            checker_ids: vec!["rustc".to_owned(), "human-process".to_owned()],
+            policies: vec![
+                PolicyEntry {
+                    checker_id: "rustc".to_owned(),
+                    checker_owner: "devtools".to_owned(),
+                    ..sample_policy(EXTERNAL_POLICY_ID, "devtools", DEVTOOLS_SOURCE)
+                },
+                PolicyEntry {
+                    checker_id: "human-process".to_owned(),
+                    checker_owner: "culture".to_owned(),
+                    classification: Classification::HumanProcessOnly,
+                    enforcement_level: EnforcementLevel::HumanProcessOnly,
+                    ..sample_policy(HUMAN_POLICY_ID, "devtools", DEVTOOLS_SOURCE)
+                },
+            ],
+            seed_manifests: Vec::new(),
+            config_receipt_families: Vec::new(),
+        };
+        let report = run_checks(&CheckInput {
+            registry,
+            sources: vec![SourceFile::new(SOURCE_PATH, "fn start() {}\n")],
+            selection: FamilySelection::from_families(["devtools"]),
+            checker_failures: Vec::new(),
+        });
+
+        let external = execution_for(&report, EXTERNAL_POLICY_ID);
+        assert_eq!(external.status, PolicyExecutionStatus::NotRun);
+        assert_eq!(external.ownership, PolicyExecutionOwnership::External);
+        assert_eq!(external.checker, "rustc");
+        assert!(external.coverage_explanation.contains("not executed by octet-standards"), "{external:?}");
+        assert!(!external.is_completed_local_check());
+
+        let human = execution_for(&report, HUMAN_POLICY_ID);
+        assert_eq!(human.status, PolicyExecutionStatus::NotRun);
+        assert_eq!(human.ownership, PolicyExecutionOwnership::HumanProcess);
+        assert_eq!(human.checker, "human-process");
+        assert!(human.coverage_explanation.contains("human review process required"), "{human:?}");
+        assert!(!human.is_completed_local_check());
+        assert!(report.coverage_complete());
+        assert!(!report.strict_passing());
+    }
+
+    #[test]
+    fn missing_execution_record_blocks_strict_coverage() {
+        let missing = CheckReport {
+            required_policy_ids: vec![DEVTOOLS_POLICY_ID.to_owned()],
+            ..CheckReport::default()
+        };
+        assert!(!missing.coverage_complete());
+        assert!(!missing.strict_passing());
+
+        let not_run = CheckReport {
+            required_policy_ids: vec![DEVTOOLS_POLICY_ID.to_owned()],
+            policy_executions: vec![PolicyExecution {
+                policy_id: DEVTOOLS_POLICY_ID.to_owned(),
+                policy_revision: "test".to_owned(),
+                checker: "suppression".to_owned(),
+                checker_owner: "test".to_owned(),
+                selected_scope: "family=devtools; sources=1; scope=suppression-markers".to_owned(),
+                status: PolicyExecutionStatus::NotRun,
+                coverage_explanation: "checker did not execute".to_owned(),
+                linked_diagnostics: Vec::new(),
+                evidence_identity: "checker=suppression".to_owned(),
+                ownership: PolicyExecutionOwnership::Local,
+                required: true,
+            }],
+            ..CheckReport::default()
+        };
+        assert!(!not_run.coverage_complete());
+        assert!(!not_run.strict_passing());
+    }
+
+    #[test]
+    fn json_and_markdown_agree_on_policy_execution_status() {
+        let report = run_checks(&CheckInput {
+            registry: sample_registry(),
+            sources: vec![SourceFile::new(SOURCE_PATH, UNBOUNDED_CHANNEL_LINE)],
+            selection: FamilySelection::from_families(["embedded"]),
+            checker_failures: Vec::new(),
+        });
+        let json = render_json(&report).expect("report should serialize");
+        let parsed: CheckReport = serde_json::from_str(&json).expect("report JSON should deserialize");
+        let markdown = render_markdown(&report);
+        let execution = execution_for(&parsed, EMBEDDED_POLICY_ID);
+
+        assert_eq!(execution.status, PolicyExecutionStatus::Failed);
+        assert_eq!(execution.checker, "resource");
+        assert!(json.contains("\"status\": \"failed\""));
+        assert!(json.contains("\"checker\": \"resource\""));
+        assert!(
+            markdown.contains("`tigerstyle.embedded.bounded-queues` status=failed checker=resource"),
+            "{markdown}"
+        );
+        assert!(
+            markdown.contains("Scope: family=embedded; sources=1; scope=embedded-bounded-primitives"),
+            "{markdown}"
+        );
+        assert!(markdown.contains("Explanation: resource checker ran on embedded-bounded-primitives scope"));
+        assert!(markdown.contains("Coverage complete: yes."));
     }
 
     #[test]
@@ -308,6 +675,119 @@ mod tests {
         );
 
         assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn custom_boundary_checks_reject_forbidden_dependency_in_dotted_key_or_table_header() {
+        for (manifest, expected_line) in [
+            ("[package]\nname = \"tokio-free\"\n\n[dependencies]\ntokio.workspace = true\n", 5),
+            ("[package]\nname = \"tokio-free\"\n\n[dependencies.tokio]\nversion = \"1\"\n", 4),
+            ("[target.'cfg(unix)'.dependencies]\n\"tokio\" = { version = \"1\" }\n", 2),
+        ] {
+            let sources = vec![SourceFile::new("domain-core/Cargo.toml", manifest)];
+            let diagnostics = check_architecture(
+                &sample_custom_boundary_registry(),
+                &sources,
+                &FamilySelection::from_families(["architecture"]),
+            );
+
+            assert_eq!(diagnostics.len(), 1, "manifest: {manifest}");
+            assert!(diagnostics[0].message.contains("forbidden dependency `tokio`"));
+            assert_eq!(diagnostics[0].line, Some(expected_line), "manifest: {manifest}");
+        }
+    }
+
+    #[test]
+    fn custom_boundary_checks_ignore_forbidden_names_outside_dependency_tables() {
+        let sources = vec![SourceFile::new(
+            "domain-core/Cargo.toml",
+            "[dependencies]\nsnafu = \"0.8\"\n\n[features]\ntokio = []\n\n[build-dependencies]\nreqwest = \"0.12\"\n",
+        )];
+        let diagnostics = check_architecture(
+            &sample_custom_boundary_registry(),
+            &sources,
+            &FamilySelection::from_families(["architecture"]),
+        );
+
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+    }
+
+    #[test]
+    fn custom_boundary_checks_accept_shell_core_dependency_in_dotted_key_or_table_header() {
+        for shell_manifest in [
+            "[dependencies]\ndomain-core.workspace = true\n",
+            "[dependencies.domain-core]\npath = \"../domain-core\"\n",
+        ] {
+            let sources = vec![
+                SourceFile::new("domain-core/src/lib.rs", "#![no_std]\n"),
+                SourceFile::new("infrastructure-shell/Cargo.toml", shell_manifest),
+                SourceFile::new("infrastructure-shell/src/lib.rs", "pub fn shell() {}\n"),
+            ];
+            let diagnostics = check_architecture(
+                &sample_custom_boundary_registry(),
+                &sources,
+                &FamilySelection::from_families(["architecture"]),
+            );
+
+            assert!(diagnostics.is_empty(), "manifest: {shell_manifest}\n{diagnostics:?}");
+        }
+    }
+
+    #[test]
+    fn custom_boundary_checks_reject_shell_core_name_only_in_features() {
+        let sources = vec![SourceFile::new(
+            "infrastructure-shell/Cargo.toml",
+            "[dependencies]\nserde = \"1\"\n\n[features]\ndomain-core = []\n",
+        )];
+        let diagnostics = check_architecture(
+            &sample_custom_boundary_registry(),
+            &sources,
+            &FamilySelection::from_families(["architecture"]),
+        );
+
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert!(diagnostics[0].message.contains("shell crate must depend on core crate `domain-core`"));
+    }
+
+    #[test]
+    fn custom_boundary_checks_cover_every_declared_core_and_shell_crate() {
+        let sources = vec![
+            SourceFile::new("domain-core/src/lib.rs", "#![no_std]\n"),
+            SourceFile::new("domain-core/Cargo.toml", "[dependencies]\nsnafu = \"0.8\"\n"),
+            SourceFile::new(
+                "ledger-core/src/lib.rs",
+                "pub fn handle(input: axum::Json<u32>) -> u32 {\n    input.0\n}\n",
+            ),
+            SourceFile::new("ledger-core/Cargo.toml", "[dependencies]\ntokio = \"1\"\n"),
+            SourceFile::new(
+                "infrastructure-shell/Cargo.toml",
+                "[dependencies]\ndomain-core = { path = \"../domain-core\" }\n",
+            ),
+            SourceFile::new("infrastructure-shell/src/lib.rs", "pub fn shell() {}\n"),
+            SourceFile::new("worker-shell/Cargo.toml", "[dependencies]\nledger-core.workspace = true\n"),
+            SourceFile::new("worker-shell/src/lib.rs", "#![no_std]\n"),
+            SourceFile::new("audit-shell/Cargo.toml", "[dependencies]\nserde = \"1\"\n"),
+        ];
+        let diagnostics = check_architecture(
+            &sample_multi_crate_boundary_registry(),
+            &sources,
+            &FamilySelection::from_families(["architecture"]),
+        );
+        let findings = diagnostics
+            .iter()
+            .map(|diagnostic| (diagnostic.path.as_str(), diagnostic.message.as_str()))
+            .collect::<Vec<_>>();
+
+        assert_eq!(findings, vec![
+            ("ledger-core/src/lib.rs", "core crate `ledger-core/src/lib.rs` is missing #![no_std]"),
+            ("ledger-core/Cargo.toml", "core crate depends on forbidden dependency `tokio`"),
+            ("worker-shell/src/lib.rs", "shell crate `worker-shell/src/lib.rs` must not declare #![no_std]"),
+            (
+                "audit-shell/Cargo.toml",
+                "shell crate must depend on a declared core crate (`domain-core`, `ledger-core`)"
+            ),
+            ("ledger-core/src/lib.rs", "core public API leaks external domain type pattern `axum::`"),
+        ]);
     }
 
     #[test]
@@ -490,6 +970,29 @@ fn concurrency() { let _ = std::thread::spawn(|| ()); }\n";
     }
 
     #[test]
+    fn capability_manifest_requires_whole_word_handler_coverage_markers() {
+        let sources = vec![SourceFile::new(
+            "standards/check-fixtures/capability/clock-handler.txt",
+            "fake clock token lookup invoked\nfailure path: fake clock returns configured error\n",
+        )];
+        let check = check_capability_manifest(
+            &sample_capability_handler_registry(),
+            &sources,
+            &FamilySelection::from_families(["architecture"]),
+        );
+
+        let evidence = &check.reports[0].handler_evidence[0];
+        assert!(!evidence.success_path_coverage, "`token`/`look`/`invoke` must not count as `ok`");
+        assert!(evidence.failure_path_coverage);
+        assert!(
+            check
+                .diagnostics
+                .iter()
+                .any(|diagnostic| { diagnostic.message.contains("must cover success and failure paths") })
+        );
+    }
+
+    #[test]
     fn capability_manifest_rejects_ambiguous_strict_scope_resolution() {
         let sources = vec![SourceFile::new(
             "crates/tigerstyle-core/src/generated/model.rs",
@@ -507,6 +1010,80 @@ fn concurrency() { let _ = std::thread::spawn(|| ()); }\n";
                 .iter()
                 .any(|diagnostic| { diagnostic.message.contains("capability scope resolution is ambiguous") })
         );
+    }
+
+    #[test]
+    fn capability_manifest_requires_a_replay_command_and_artifact_per_handler() {
+        let selection = FamilySelection::from_families(["architecture"]);
+        let sources = vec![
+            SourceFile::new(CLOCK_HANDLER_ARTIFACT, COVERED_HANDLER_TRANSCRIPT),
+            SourceFile::new(FS_HANDLER_ARTIFACT, COVERED_HANDLER_TRANSCRIPT),
+        ];
+        let mut complete = sample_capability_handler_registry();
+        let mechanism = &mut complete.policies[0].mechanisms[0];
+        mechanism.capability_deterministic_handlers.push("FakeFs".to_owned());
+        mechanism.capability_handler_replay_commands.push("cargo test fake_fs_handler".to_owned());
+        mechanism.capability_handler_artifacts.push(FS_HANDLER_ARTIFACT.to_owned());
+        let mut missing_command = complete.clone();
+        missing_command.policies[0].mechanisms[0].capability_handler_replay_commands.pop();
+        let mut missing_artifact = complete.clone();
+        missing_artifact.policies[0].mechanisms[0].capability_handler_artifacts.pop();
+
+        let complete_check = check_capability_manifest(&complete, &sources, &selection);
+        let missing_command_check = check_capability_manifest(&missing_command, &sources, &selection);
+        let missing_artifact_check = check_capability_manifest(&missing_artifact, &sources, &selection);
+
+        assert!(complete_check.diagnostics.is_empty(), "{:?}", complete_check.diagnostics);
+        for (check, missing) in [
+            (&missing_command_check, "replay command"),
+            (&missing_artifact_check, "artifact"),
+        ] {
+            assert_eq!(
+                check
+                    .diagnostics
+                    .iter()
+                    .map(|diagnostic| (diagnostic.severity, diagnostic.message.contains("`FakeFs`")))
+                    .collect::<Vec<_>>(),
+                vec![(Severity::Error, true)],
+                "{missing}: {:?}",
+                check.diagnostics
+            );
+        }
+        let fake_fs_command = missing_command_check.reports[0]
+            .handler_evidence
+            .iter()
+            .find(|evidence| evidence.handler == "FakeFs")
+            .map(|evidence| evidence.replay_command.as_str());
+        assert_ne!(fake_fs_command, Some("cargo test fake_clock_handler"));
+    }
+
+    #[test]
+    fn capability_manifest_matches_handler_artifacts_on_whole_path_components() {
+        let selection = FamilySelection::from_families(["architecture"]);
+        let mut registry = sample_capability_handler_registry();
+        registry.policies[0].mechanisms[0].capability_handler_artifacts = vec!["tests/fs-handler.txt".to_owned()];
+
+        let lookalike = check_capability_manifest(
+            &registry,
+            &[SourceFile::new(
+                "fixtures/legacy_tests/fs-handler.txt",
+                COVERED_HANDLER_TRANSCRIPT,
+            )],
+            &selection,
+        );
+        let nested = check_capability_manifest(
+            &registry,
+            &[SourceFile::new(
+                "crates/app/tests/fs-handler.txt",
+                COVERED_HANDLER_TRANSCRIPT,
+            )],
+            &selection,
+        );
+
+        assert!(lookalike.reports[0].handler_evidence[0].blake3.is_empty());
+        assert!(lookalike.diagnostics.iter().any(|diagnostic| diagnostic.message.contains("tests/fs-handler.txt")));
+        assert!(!nested.reports[0].handler_evidence[0].blake3.is_empty());
+        assert!(nested.diagnostics.is_empty(), "{:?}", nested.diagnostics);
     }
 
     #[test]
@@ -617,6 +1194,62 @@ fn concurrency() { let _ = std::thread::spawn(|| ()); }\n";
         );
 
         assert!(diagnostics.is_empty());
+    }
+
+    // r[verify octet.hexagonal_ports.invariants.defined_in_core]
+    #[test]
+    fn architecture_port_mechanism_requires_exact_code_trait_declaration() {
+        let adapter = SourceFile::new(
+            "adapters/std/src/lib.rs",
+            "impl Clock for AdapterClock { fn now_ms(&self) -> u64 { 0 } }\n",
+        );
+        for (application, accepted) in [
+            ("pub trait Clock { fn now_ms(&self) -> u64; }\n", true),
+            ("pub trait Clock<T>: Send {}\n", true),
+            ("pub(crate) trait Clock{}\n", true),
+            ("pub trait ClockSource { fn now_ms(&self) -> u64; }\n", false),
+            ("// pub trait Clock { fn now_ms(&self) -> u64; }\n", false),
+            ("/* pub trait Clock {} */\n", false),
+            ("/*\npub trait Clock {}\n*/\n", false),
+            ("const MIMIC: &str = \"pub trait Clock {}\";\n", false),
+            ("const MIMIC: &str = r#\"\npub trait Clock {}\n\"#;\n", false),
+            ("fn subtrait Clock() {}\n", false),
+        ] {
+            let sources = vec![SourceFile::new("application/src/lib.rs", application), adapter.clone()];
+            let diagnostics = check_architecture(
+                &sample_port_registry(false),
+                &sources,
+                &FamilySelection::from_families(["architecture"]),
+            );
+
+            assert_eq!(diagnostics.is_empty(), accepted, "{application:?}: {diagnostics:?}");
+            assert!(diagnostics.iter().all(|diagnostic| diagnostic.policy_id == HEXAGONAL_PORT_POLICY_ID));
+        }
+    }
+
+    // r[verify octet.hexagonal_ports.invariants.adapter_impl]
+    #[test]
+    fn architecture_port_mechanism_requires_exact_code_adapter_impl() {
+        let application = SourceFile::new("application/src/lib.rs", "pub trait Clock { fn now_ms(&self) -> u64; }\n");
+        for (adapter, accepted) in [
+            ("impl Clock for AdapterClock {}\n", true),
+            ("impl Clock for AdapterClock<'_> { fn tick(&self) -> char { '\"' } }\n", true),
+            ("impl ClockSource for AdapterClock {}\n", false),
+            ("impl SlowClock for AdapterClock {}\n", false),
+            ("// impl Clock for AdapterClock {}\n", false),
+            ("/* impl Clock for AdapterClock {} */\n", false),
+            ("const MIMIC: &str = \"impl Clock for AdapterClock {}\";\n", false),
+        ] {
+            let sources = vec![application.clone(), SourceFile::new("adapters/std/src/lib.rs", adapter)];
+            let diagnostics = check_architecture(
+                &sample_port_registry(false),
+                &sources,
+                &FamilySelection::from_families(["architecture"]),
+            );
+
+            assert_eq!(diagnostics.is_empty(), accepted, "{adapter:?}: {diagnostics:?}");
+            assert!(diagnostics.iter().all(|diagnostic| diagnostic.policy_id == HEXAGONAL_PORT_POLICY_ID));
+        }
     }
 
     #[test]
@@ -799,6 +1432,114 @@ fn concurrency() { let _ = std::thread::spawn(|| ()); }\n";
             diagnostic.policy_id == FCIS_POLICY_ID
                 && diagnostic.message.contains("core crate `domain-core` depends on adapter crate `http-adapter`")
         }));
+    }
+
+    #[test]
+    fn architecture_dependency_direction_defaults_empty_edge_kinds_to_normal_and_build() {
+        let selection = FamilySelection::from_families(["architecture"]);
+        let registry = sample_dependency_direction_registry(Vec::new());
+
+        let clean = check_architecture(&registry, &[metadata_source(DEPENDENCY_DIRECTION_CLEAN_METADATA)], &selection);
+        let dev_only = check_architecture(&registry, &[metadata_source(dev_dependency_metadata())], &selection);
+        let core_to_adapter = check_architecture(
+            &registry,
+            &[metadata_source(DEPENDENCY_DIRECTION_CORE_TO_ADAPTER_METADATA)],
+            &selection,
+        );
+
+        assert!(clean.is_empty(), "{clean:?}");
+        assert!(dev_only.is_empty(), "{dev_only:?}");
+        assert!(core_to_adapter.iter().any(|diagnostic| {
+            diagnostic.message.contains("core crate `domain-core` depends on adapter crate `http-adapter`")
+        }));
+    }
+
+    #[test]
+    fn architecture_dependency_direction_reports_unknown_edge_kinds() {
+        let diagnostics = check_architecture(
+            &sample_dependency_direction_registry(vec!["runtime"]),
+            &[metadata_source(DEPENDENCY_DIRECTION_CLEAN_METADATA)],
+            &FamilySelection::from_families(["architecture"]),
+        );
+
+        assert_eq!(diagnostics.iter().map(|diagnostic| diagnostic.message.as_str()).collect::<Vec<_>>(), vec![
+            "crate-boundary `dependency_edge_kinds` declares unknown dependency edge kind `runtime`; expected `normal`, `build`, or `dev`"
+        ]);
+        assert_eq!(diagnostics[0].policy_id, FCIS_POLICY_ID);
+    }
+
+    #[test]
+    fn architecture_dependency_direction_rejects_metadata_without_resolve_graph() {
+        let selection = FamilySelection::from_families(["architecture"]);
+        let registry = sample_dependency_direction_registry(vec!["normal", "build"]);
+        let no_deps = clean_metadata_with(|metadata| metadata["resolve"] = serde_json::Value::Null);
+
+        for metadata in [no_deps.as_str(), "{}"] {
+            let diagnostics = check_architecture(&registry, &[metadata_source(metadata)], &selection);
+
+            assert!(
+                diagnostics.iter().any(|diagnostic| {
+                    diagnostic.policy_id == FCIS_POLICY_ID
+                        && diagnostic.severity == Severity::Error
+                        && diagnostic.path == CARGO_METADATA_SOURCE_PATH
+                        && diagnostic.message.contains("`resolve`")
+                }),
+                "{metadata}: {diagnostics:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn architecture_dependency_direction_rejects_declared_crates_missing_from_metadata() {
+        let selection = FamilySelection::from_families(["architecture"]);
+        for (role, missing_path) in [
+            ("core", "crates/missing-core/src/lib.rs"),
+            ("shell", "crates/missing-shell/Cargo.toml"),
+            ("adapter", "crates/missing-adapter/Cargo.toml"),
+        ] {
+            let mut registry = sample_dependency_direction_registry(vec!["normal", "build"]);
+            let mechanism = &mut registry.policies[0].mechanisms[0];
+            let declared = match role {
+                "core" => &mut mechanism.core_crates,
+                "shell" => &mut mechanism.shell_crates,
+                _ => &mut mechanism.adapter_crates,
+            };
+            declared.push(missing_path.to_owned());
+
+            let diagnostics =
+                check_architecture(&registry, &[metadata_source(DEPENDENCY_DIRECTION_CLEAN_METADATA)], &selection);
+
+            assert_eq!(
+                diagnostics
+                    .iter()
+                    .filter(|diagnostic| diagnostic.message.contains(missing_path))
+                    .map(|diagnostic| (diagnostic.policy_id.as_str(), diagnostic.severity))
+                    .collect::<Vec<_>>(),
+                vec![(FCIS_POLICY_ID, Severity::Error)],
+                "{role}: {diagnostics:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn architecture_dependency_direction_rejects_declared_crate_outside_resolved_workspace() {
+        let metadata =
+            clean_metadata_with(|metadata| metadata["workspace_members"] = serde_json::json!(["core", "shell"]));
+
+        let diagnostics = check_architecture(
+            &sample_dependency_direction_registry(vec!["normal", "build"]),
+            &[metadata_source(&metadata)],
+            &FamilySelection::from_families(["architecture"]),
+        );
+
+        assert!(
+            diagnostics.iter().any(|diagnostic| {
+                diagnostic.policy_id == FCIS_POLICY_ID
+                    && diagnostic.severity == Severity::Error
+                    && diagnostic.message.contains("`http-adapter`")
+            }),
+            "{diagnostics:?}"
+        );
     }
 
     #[test]
@@ -1002,6 +1743,7 @@ impl Session<Authenticated> { pub fn send(self) {} }
                 PUBLIC_API_BUDGET_FIXTURE_SOURCE,
             )],
             selection: FamilySelection::from_families(["architecture"]),
+            checker_failures: Vec::new(),
         });
 
         assert_eq!(report.diagnostics.len(), 1);
@@ -1021,6 +1763,7 @@ impl Session<Authenticated> { pub fn send(self) {} }
             registry: sample_registry(),
             sources: vec![SourceFile::new(SOURCE_PATH, "pub fn one_public_item() {}\n")],
             selection: FamilySelection::from_families(["architecture"]),
+            checker_failures: Vec::new(),
         });
 
         assert!(report.diagnostics.is_empty());
@@ -1041,6 +1784,14 @@ impl Session<Authenticated> { pub fn send(self) {} }
         assert_eq!(diagnostics.len(), MISSING_FIXTURE_COVERAGE_DIAGNOSTICS);
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.message.contains("no noncompliant fixture")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.message.contains("missing fixture coverage")));
+    }
+
+    fn execution_for<'a>(report: &'a CheckReport, policy_id: &str) -> &'a PolicyExecution {
+        report
+            .policy_executions
+            .iter()
+            .find(|execution| execution.policy_id == policy_id)
+            .unwrap_or_else(|| panic!("missing policy execution for {policy_id}"))
     }
 
     fn sample_registry() -> PolicyRegistry {
@@ -1155,19 +1906,28 @@ impl Session<Authenticated> { pub fn send(self) {} }
         SourceFile::new(CARGO_METADATA_SOURCE_PATH, text)
     }
 
+    fn clean_metadata_with(edit: impl FnOnce(&mut serde_json::Value)) -> String {
+        let mut metadata = serde_json::from_str::<serde_json::Value>(DEPENDENCY_DIRECTION_CLEAN_METADATA)
+            .expect("clean metadata fixture should parse");
+        edit(&mut metadata);
+        metadata.to_string()
+    }
+
     fn dev_dependency_metadata() -> &'static str {
         r#"{
   "packages": [
     { "id": "core", "name": "domain-core", "manifest_path": "/workspace/crates/domain-core/Cargo.toml" },
+    { "id": "shell", "name": "app-shell", "manifest_path": "/workspace/crates/app-shell/Cargo.toml" },
     { "id": "adapter", "name": "http-adapter", "manifest_path": "/workspace/crates/http-adapter/Cargo.toml" }
   ],
   "resolve": {
     "nodes": [
       { "id": "core", "deps": [{ "pkg": "adapter", "dep_kinds": [{ "kind": "dev" }] }] },
+      { "id": "shell", "deps": [{ "pkg": "core", "dep_kinds": [{ "kind": null }] }] },
       { "id": "adapter", "deps": [{ "pkg": "core", "dep_kinds": [{ "kind": null }] }] }
     ]
   },
-  "workspace_members": ["core", "adapter"]
+  "workspace_members": ["core", "shell", "adapter"]
 }"#
     }
 
@@ -1405,6 +2165,17 @@ impl Session<Authenticated> { pub fn send(self) {} }
             target_enforcement_mode: EnforcementMode::Structural,
             ..sample_policy(policy_id, pillar, source_anchor)
         }
+    }
+
+    fn sample_multi_crate_boundary_registry() -> PolicyRegistry {
+        let mut registry = sample_custom_boundary_registry();
+        let mechanism = &mut registry.policies[0].mechanisms[0];
+        mechanism.core_crates.push("ledger-core/src/lib.rs".to_owned());
+        mechanism.shell_crates.extend([
+            "worker-shell/Cargo.toml".to_owned(),
+            "audit-shell/Cargo.toml".to_owned(),
+        ]);
+        registry
     }
 
     fn sample_type_state_policy() -> PolicyEntry {

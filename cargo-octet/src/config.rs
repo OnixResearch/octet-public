@@ -9,6 +9,7 @@ use octet_standards::nickel_export::NickelExportManifest;
 use octet_standards::nickel_export::NickelExportSpec;
 use octet_standards::nickel_export::manifest_for_exports;
 use octet_standards::project_architecture_policy::ProjectArchitecturePolicy;
+use octet_standards::project_architecture_policy::architecture_waiver_policy_blake3;
 use octet_standards::project_architecture_policy::parse_project_architecture_policy;
 
 const ARCHITECTURE_POLICY_FIELD: &str = "architecture_policy";
@@ -36,7 +37,10 @@ pub struct SelectedProjectArchitecturePolicy {
     pub export_path: PathBuf,
     pub manifest_path: PathBuf,
     pub source_blake3: String,
+    /// BLAKE3 of the exported policy bytes.
     pub policy_blake3: String,
+    /// Waiver binding identity; compiler evidence and waivers bind it.
+    pub waiver_policy_blake3: String,
     pub policy: ProjectArchitecturePolicy,
 }
 
@@ -48,7 +52,10 @@ impl SelectedProjectArchitecturePolicy {
         {
             return Err("activated architecture policy paths must not be empty".to_owned());
         }
-        if self.source_blake3.len() != BLAKE3_HEX_LENGTH || self.policy_blake3.len() != BLAKE3_HEX_LENGTH {
+        if [&self.source_blake3, &self.policy_blake3, &self.waiver_policy_blake3]
+            .iter()
+            .any(|identity| identity.len() != BLAKE3_HEX_LENGTH)
+        {
             return Err("activated architecture policy identities must be BLAKE3 hex values".to_owned());
         }
         if self.policy.project_id.trim().is_empty() {
@@ -163,6 +170,7 @@ fn load_architecture_policy(
         manifest_path: export_manifest_path,
         source_blake3: blake3::hash(&source_bytes).to_hex().to_string(),
         policy_blake3: blake3::hash(&export_bytes).to_hex().to_string(),
+        waiver_policy_blake3: architecture_waiver_policy_blake3(&policy),
         policy,
     };
     selected.validate_loaded_binding()?;
@@ -327,7 +335,7 @@ mod tests {
     const POLICY_SOURCE: &str = "let contracts = import \"./octet-architecture.contracts.ncl\" in {}\n";
     const CONTRACT_SOURCE: &str = "{ ProjectArchitecturePolicy = Dyn, ProjectArchitecturePolicyRules = Dyn }\n";
     const POLICY_EXPORT: &str = include_str!("../../standards/project-architecture/octet-self-architecture.json");
-    const NICKEL_IDENTITY: &str = "nickel-test-identity";
+    const NICKEL_IDENTITY: &str = octet_standards::nickel_export::REVIEWED_NICKEL_EVALUATOR_IDENTITY;
 
     fn metadata_table(source: &str) -> toml::Table {
         let document = source.parse::<toml::Table>().expect("parse Cargo.toml");
@@ -381,6 +389,8 @@ cargo_check_args = ["--tests"]
         assert_eq!(selected.source_path, PathBuf::from("octet-architecture.ncl"));
         assert_eq!(selected.policy_blake3.len(), BLAKE3_HEX_LENGTH);
         assert_eq!(selected.source_blake3.len(), BLAKE3_HEX_LENGTH);
+        assert_eq!(selected.waiver_policy_blake3, architecture_waiver_policy_blake3(&selected.policy));
+        assert_ne!(selected.waiver_policy_blake3, selected.policy_blake3);
     }
 
     #[test]

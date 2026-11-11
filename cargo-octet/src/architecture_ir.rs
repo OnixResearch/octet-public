@@ -15,6 +15,7 @@ use octet_architecture_ir::CompilerValueFlowSelection;
 use octet_architecture_ir::ExpectedCompilationUnit;
 use octet_architecture_ir::InvalidCompilerArchitectureShard;
 use octet_architecture_ir::NormalizationInput;
+use octet_architecture_ir::SOURCE_BUILD_DIRECTORIES;
 use octet_architecture_ir::SourceRoleScope;
 use octet_standards::project_architecture_gate::ArchitectureCargoEdge;
 use octet_standards::project_architecture_gate::ArchitectureCargoGraph;
@@ -26,6 +27,13 @@ use serde::Deserialize;
 
 use crate::config::SelectedProjectArchitecturePolicy;
 
+#[cfg(test)]
+mod cargo_fixture_tests;
+#[cfg(test)]
+mod feature_fixture_tests;
+mod resolved_plan;
+mod target_plan;
+
 pub(crate) const ARCHITECTURE_SHARD_DIRECTORY: &str = ".octet/compiler-architecture/shards";
 pub(crate) const ARCHITECTURE_IR_ARTIFACT_NAME: &str = "compiler-architecture-ir.json";
 pub(crate) const ARCHITECTURE_COVERAGE_ARTIFACT_NAME: &str = "compiler-architecture-coverage.json";
@@ -35,8 +43,6 @@ const CARGO_METADATA_SUBCOMMAND: &str = "metadata";
 const FORMAT_VERSION_FLAG: &str = "--format-version";
 const METADATA_FORMAT_VERSION: &str = "1";
 const LOCKED_FLAG: &str = "--locked";
-const LIBRARY_TARGET_KINDS: &[&str] = &["lib", "rlib", "dylib", "cdylib", "staticlib"];
-const CUSTOM_BUILD_TARGET_KIND: &str = "custom-build";
 
 #[derive(Debug, Deserialize)]
 struct CargoMetadata {
@@ -102,6 +108,8 @@ pub(crate) struct PreparedCollector {
     pub expected_units: Vec<ExpectedCompilationUnit>,
     pub cargo_graph: ArchitectureCargoGraph,
     pub non_claims: Vec<String>,
+    /// Cached shard kept for each expected unit before Cargo ran, keyed by unit identity.
+    pub retained_shards: BTreeMap<String, PathBuf>,
 }
 
 #[derive(Clone)]
@@ -113,6 +121,9 @@ pub(crate) struct ArchitectureArtifacts {
     pub incomplete_error: Option<String>,
 }
 
+// Collector preparation binds policy, toolchain, Cargo graph, and unit identities in sequence;
+// helpers would thread the same partial state.
+#[allow(clippy::too_many_lines)]
 pub(crate) fn prepare_collector(
     workspace_root: &Path,
     policy: &SelectedProjectArchitecturePolicy,
@@ -121,12 +132,20 @@ pub(crate) fn prepare_collector(
     scope_args: &[String],
     cargo_check_args: &[String],
 ) -> Result<PreparedCollector, String> {
-    let package_roles = package_roles(policy)?;
-    let source_roles = source_roles(policy)?;
+    let package_roles = package_roles(policy);
+    let source_roles = source_roles(policy);
     let selected_packages = selected_packages(scope_args, &policy.policy.production.packages)?;
     let (toolchain_blake3, host_triple) = toolchain_identity(toolchain)?;
     let collector_blake3 = file_blake3(collector_path, "compiler architecture collector")?;
-    let target = selected_policy_target(cargo_check_args, &policy.policy.production.targets, &host_triple)?;
+    let candidates = policy_target_candidates(cargo_check_args, &policy.policy.production.targets, &host_triple)?;
+    let (target, graph) = target_plan::select_policy_row(
+        workspace_root,
+        toolchain,
+        scope_args,
+        cargo_check_args,
+        &candidates,
+        policy.policy.collection_limits.max_artifact_bytes,
+    )?;
     let (metadata, cargo_graph_blake3) = load_locked_metadata(workspace_root, toolchain, target)?;
     let lockfile_bytes = fs::read(workspace_root.join("Cargo.lock"))
         .map_err(|error| format!("read Cargo.lock for architecture identity: {error}"))?;
@@ -142,7 +161,6 @@ pub(crate) fn prepare_collector(
         "octet.compiler-architecture-ir.invocation/v1",
         &(scope_args, cargo_check_args, &lockfile_blake3, &cargo_graph_blake3),
     )?;
-
     let mut selected_units = Vec::new();
     for package in metadata.packages {
         if !selected_packages.contains(package.name.as_str()) {
@@ -164,50 +182,80 @@ pub(crate) fn prepare_collector(
             policy.policy.collection_limits.max_spans,
             policy.policy.collection_limits.max_artifact_bytes,
         )?;
-        for cargo_target in package.targets {
-            if cargo_target.kind.iter().any(|kind| kind == CUSTOM_BUILD_TARGET_KIND) {
-                continue;
+        let mut package_unit_count = 0;
+        for planned in graph.units.iter().filter(|planned| planned.pkg_id == package.id) {
+            let test_configuration = match planned.mode.as_str() {
+                "run-custom-build" => continue,
+                "build" => false,
+                "test" => true,
+                other => return Err(format!("unsupported Cargo architecture unit mode `{other}`")),
+            };
+            if planned.platform.as_ref().is_some_and(|platform| platform != &target.triple) {
+                return Err("Cargo plan selects a target outside the declared architecture row".to_owned());
             }
-            if !cargo_target.kind.iter().any(|kind| LIBRARY_TARGET_KINDS.contains(&kind.as_str())) {
-                continue;
+            let cargo_target = &planned.target;
+            let root_path = Path::new(&cargo_target.src_path)
+                .strip_prefix(workspace_root)
+                .map_err(|_| "Cargo architecture source root is outside the workspace".to_owned())?;
+            if root_path
+                .components()
+                .any(|part| part.as_os_str().to_str().is_some_and(|name| SOURCE_BUILD_DIRECTORIES.contains(&name)))
+            {
+                return Err(
+                    "Cargo architecture source root is inside an excluded build or evidence directory".to_owned()
+                );
             }
-            let mut features = target.features.clone();
+            let source_path = normalized_relative(root_path)?;
+            let unit_invocation = octet_architecture_ir::canonical_identity(
+                "octet.compiler-architecture-ir.unit-invocation/v2",
+                &(&invocation_blake3, &source_path, test_configuration, &planned.profile),
+            )?;
+            let mut features = planned.features.clone();
             features.sort();
             features.dedup();
-            let mut crate_types = canonical_rustc_crate_types(&cargo_target.kind, cargo_target.crate_types);
+            let mut crate_types = if test_configuration {
+                vec!["bin".to_owned()]
+            } else {
+                canonical_rustc_crate_types(cargo_target.crate_types.clone())
+            };
             crate_types.sort();
             crate_types.dedup();
+            let target_kind = if test_configuration {
+                format!("{}+test", cargo_target.kind.join("+"))
+            } else {
+                cargo_target.kind.join("+")
+            };
+            let unit_source_roles = source_roles
+                .iter()
+                .filter(|scope| manifest_dir.is_empty() || path_scopes_overlap(&scope.source_scope, &manifest_dir))
+                .cloned()
+                .collect::<Vec<_>>();
+            let unit_role = octet_architecture_ir::select_compilation_unit_role(
+                role,
+                &target_kind,
+                &source_path,
+                &unit_source_roles,
+            )
+            .map_err(|error| format!("Cargo unit `{}`: {error}", cargo_target.name))?;
             let mut unit = CompilationUnit {
                 unit_id: String::new(),
                 package_name: package.name.clone(),
                 package_version: package.version.clone(),
                 target_name: cargo_target.name.clone(),
-                target_kind: cargo_target.kind.join("+"),
+                target_kind,
+                source_path: source_path.clone(),
                 crate_types,
-                target_triple: target.triple.clone(),
+                target_triple: planned.platform.clone().unwrap_or_else(|| host_triple.clone()),
                 features,
                 default_features: target.default_features,
-                role,
+                role: unit_role,
                 toolchain_blake3: toolchain_blake3.clone(),
                 collector_blake3: collector_blake3.clone(),
-                policy_blake3: policy.policy_blake3.clone(),
+                policy_blake3: policy.waiver_policy_blake3.clone(),
                 source_blake3: source_blake3.clone(),
-                invocation_blake3: invocation_blake3.clone(),
+                invocation_blake3: unit_invocation,
             };
             unit.unit_id = octet_architecture_ir::compilation_unit_identity(&unit);
-            let package_source_root = if manifest_dir.is_empty() {
-                "src".to_owned()
-            } else {
-                format!("{manifest_dir}/src")
-            };
-            let unit_source_roles = source_roles
-                .iter()
-                .filter(|scope| path_scopes_overlap(&scope.source_scope, &package_source_root))
-                .cloned()
-                .collect::<Vec<_>>();
-            if unit_source_roles.is_empty() {
-                return Err(format!("package `{}` has no explicit compiler source-role scope", package.name));
-            }
             if selected_units.len() >= policy.policy.collection_limits.max_units {
                 return Err(format!(
                     "selected compiler architecture units exceed policy limit {}",
@@ -217,17 +265,24 @@ pub(crate) fn prepare_collector(
             selected_units.push(CollectorCompilationUnit {
                 rustc_crate_name: cargo_target.name.replace('-', "_"),
                 manifest_dir: manifest_dir.clone(),
+                source_path,
+                test_configuration,
                 source_roles: unit_source_roles,
                 unit,
             });
+            package_unit_count += 1;
+        }
+        if package_unit_count == 0 {
+            return Err(format!("Cargo plan omits selected architecture package `{}`", package.name));
         }
     }
+    octet_architecture_ir::validate_collector_units(&selected_units).map_err(|error| error.to_string())?;
     selected_units.sort_by(|left, right| left.unit.unit_id.cmp(&right.unit.unit_id));
     if selected_units.is_empty() {
-        return Err("activated architecture policy selected no Cargo library compilation units".to_owned());
+        return Err("activated architecture policy selected no Cargo compilation units".to_owned());
     }
     let shard_directory = workspace_root.join(ARCHITECTURE_SHARD_DIRECTORY);
-    prepare_shard_directory(
+    let retained_shards = prepare_shard_directory(
         &shard_directory,
         &expected_unit_ids(&selected_units),
         policy.policy.collection_limits.max_shards,
@@ -237,6 +292,11 @@ pub(crate) fn prepare_collector(
         .parent()
         .expect("architecture shard directory has a parent")
         .join("collector-context.json");
+    refresh_unit_stamps(
+        &octet_architecture_ir::compilation_unit_stamp_directory(&context_path),
+        &selected_units,
+        &retained_shards,
+    )?;
     let expected_units = selected_units
         .iter()
         .map(|selected| ExpectedCompilationUnit {
@@ -245,6 +305,7 @@ pub(crate) fn prepare_collector(
         .collect::<Vec<_>>();
     let context = CompilerArchitectureCollectorContext {
         schema_version: COMPILER_ARCHITECTURE_COLLECTOR_CONTEXT_SCHEMA_VERSION.to_owned(),
+        workspace_root: workspace_root.display().to_string(),
         output_directory: shard_directory.display().to_string(),
         limits: policy.policy.collection_limits.clone(),
         selected_units,
@@ -260,11 +321,12 @@ pub(crate) fn prepare_collector(
     Ok(PreparedCollector {
         context_path,
         shard_directory,
-        policy_blake3: policy.policy_blake3.clone(),
+        policy_blake3: policy.waiver_policy_blake3.clone(),
         limits: policy.policy.collection_limits.clone(),
         expected_units,
         cargo_graph,
         non_claims: policy.policy.non_claims.clone(),
+        retained_shards,
     })
 }
 
@@ -323,6 +385,12 @@ fn protected_value_flow_selections(
 }
 
 pub(crate) fn normalize_collected_shards(prepared: &PreparedCollector) -> Result<ArchitectureArtifacts, String> {
+    supersede_cached_shards(
+        &prepared.shard_directory,
+        &prepared.retained_shards,
+        prepared.limits.max_shards,
+        prepared.limits.max_shard_bytes,
+    )?;
     let ingestion =
         read_shards(&prepared.shard_directory, prepared.limits.max_shards, prepared.limits.max_shard_bytes)?;
     let outcome = octet_architecture_ir::normalize_architecture_shards(NormalizationInput {
@@ -355,11 +423,13 @@ pub(crate) fn normalize_collected_shards(prepared: &PreparedCollector) -> Result
     })
 }
 
-fn canonical_rustc_crate_types(target_kinds: &[String], crate_types: Vec<String>) -> Vec<String> {
+// Cargo's `lib` crate type is rustc's default library type, `rlib`, for every
+// target kind, including an example declared with `crate-type = ["lib"]`.
+fn canonical_rustc_crate_types(crate_types: Vec<String>) -> Vec<String> {
     crate_types
         .into_iter()
         .map(|crate_type| {
-            if crate_type == "lib" && target_kinds.iter().any(|kind| kind == "lib") {
+            if crate_type == "lib" {
                 "rlib".to_owned()
             } else {
                 crate_type
@@ -377,30 +447,134 @@ fn expected_unit_ids(selected_units: &[CollectorCompilationUnit]) -> std::collec
     selected_units.iter().map(|selected| selected.unit.unit_id.as_str()).collect()
 }
 
+/// Keeps a cached shard only when it is the single cached shard of an expected unit and returns the
+/// kept shard path of each such unit.
 fn prepare_shard_directory(
     directory: &Path,
     expected_unit_ids: &std::collections::BTreeSet<&str>,
     max_shards: usize,
     max_shard_bytes: usize,
-) -> Result<(), String> {
+) -> Result<BTreeMap<String, PathBuf>, String> {
     fs::create_dir_all(directory)
         .map_err(|error| format!("create architecture shard directory {}: {error}", directory.display()))?;
     let (paths, count_overflow) = bounded_shard_paths(directory, max_shards)?;
     if count_overflow {
         clear_shard_directory(directory)?;
-        return Ok(());
+        return Ok(BTreeMap::new());
     }
-    let mut retained_unit_ids = std::collections::BTreeSet::new();
+    // A unit with several cached shards has no trustworthy cache entry, so every one of them is
+    // discarded.
+    let mut cached_units = Vec::with_capacity(paths.len());
+    let mut unit_shard_counts = BTreeMap::<&str, usize>::new();
     for path in paths {
-        let cached = read_cached_shard(&path, max_shard_bytes);
-        let keep = cached.is_ok_and(|shard| {
-            expected_unit_ids.contains(shard.unit.unit_id.as_str()) && retained_unit_ids.insert(shard.unit.unit_id)
-        });
-        if !keep {
-            remove_shard_entry(&path)?;
+        let unit_id = read_cached_shard(&path, max_shard_bytes)
+            .ok()
+            .and_then(|shard| expected_unit_ids.get(shard.unit.unit_id.as_str()).copied());
+        if let Some(unit_id) = unit_id {
+            *unit_shard_counts.entry(unit_id).or_default() += 1;
+        }
+        cached_units.push((path, unit_id));
+    }
+    let mut retained = BTreeMap::new();
+    for (path, unit_id) in cached_units {
+        match unit_id {
+            Some(unit_id) if unit_shard_counts.get(unit_id) == Some(&1) => {
+                retained.insert(unit_id.to_owned(), path);
+            }
+            _ => remove_shard_entry(&path)?,
         }
     }
     remove_non_json_shard_entries(directory)?;
+    Ok(retained)
+}
+
+/// Writes each expected unit's freshness stamp, whose content is the unit identity, and removes
+/// stamps of units that are no longer expected.
+///
+/// The collector records a unit's stamp in rustc dep-info. An untouched stamp lets Cargo keep the
+/// unit fresh beside its retained cached shard; a rewritten or removed stamp makes Cargo recompile
+/// the unit so the collector writes a new shard.
+fn refresh_unit_stamps(
+    stamp_directory: &Path,
+    selected_units: &[CollectorCompilationUnit],
+    retained_shards: &BTreeMap<String, PathBuf>,
+) -> Result<(), String> {
+    fs::create_dir_all(stamp_directory)
+        .map_err(|error| format!("create architecture unit stamp directory {}: {error}", stamp_directory.display()))?;
+    let mut expected_names = std::collections::BTreeSet::new();
+    for selected in selected_units {
+        let unit_id = &selected.unit.unit_id;
+        let name = octet_architecture_ir::compilation_unit_stamp_name(&selected.unit);
+        let path = stamp_directory.join(&name);
+        if unit_stamp_needs_write(&path, unit_id, retained_shards.contains_key(unit_id)) {
+            fs::write(&path, unit_id)
+                .map_err(|error| format!("write architecture unit stamp {}: {error}", path.display()))?;
+        }
+        expected_names.insert(name);
+    }
+    let entries = fs::read_dir(stamp_directory)
+        .map_err(|error| format!("read architecture unit stamp directory {}: {error}", stamp_directory.display()))?;
+    for entry in entries {
+        let entry = entry.map_err(|error| format!("read architecture unit stamp entry: {error}"))?;
+        if !entry.file_name().to_str().is_some_and(|name| expected_names.contains(name)) {
+            let path = entry.path();
+            let removed = if path.is_dir() {
+                fs::remove_dir_all(&path)
+            } else {
+                fs::remove_file(&path)
+            };
+            removed.map_err(|error| format!("remove stale architecture unit stamp {}: {error}", path.display()))?;
+        }
+    }
+    Ok(())
+}
+
+/// A stamp is rewritten when the unit has no retained cached shard or when the stamp does not
+/// already hold exactly the unit identity.
+fn unit_stamp_needs_write(path: &Path, unit_id: &str, has_retained_shard: bool) -> bool {
+    if !has_retained_shard {
+        return true;
+    }
+    let holds_unit_id = fs::metadata(path).is_ok_and(|metadata| {
+        metadata.is_file() && u64::try_from(unit_id.len()).is_ok_and(|length| metadata.len() == length)
+    }) && fs::read(path).is_ok_and(|bytes| bytes == unit_id.as_bytes());
+    !holds_unit_id
+}
+
+/// Removes each retained cached shard whose unit also received a shard during this run.
+///
+/// Cargo can recompile a unit whose identity is unchanged, for example after a workspace
+/// dependency changed; the shard written by that compilation supersedes the cached one.
+fn supersede_cached_shards(
+    directory: &Path,
+    retained_shards: &BTreeMap<String, PathBuf>,
+    max_shards: usize,
+    max_shard_bytes: usize,
+) -> Result<(), String> {
+    if retained_shards.is_empty() {
+        return Ok(());
+    }
+    let (paths, count_overflow) = bounded_shard_paths(directory, max_shards)?;
+    if count_overflow {
+        return Ok(());
+    }
+    let retained_paths = retained_shards.values().collect::<std::collections::BTreeSet<_>>();
+    let mut superseded = std::collections::BTreeSet::new();
+    for path in paths.iter().filter(|path| !retained_paths.contains(path)) {
+        if let Ok(shard) = read_cached_shard(path, max_shard_bytes)
+            && let Some(cached) = retained_shards.get(&shard.unit.unit_id)
+        {
+            superseded.insert(cached);
+        }
+    }
+    for path in superseded {
+        match fs::remove_file(path) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+                return Err(format!("remove superseded architecture shard {}: {error}", path.display()));
+            }
+            _ => {}
+        }
+    }
     Ok(())
 }
 
@@ -610,7 +784,7 @@ fn resolved_architecture_cargo_graph(
             continue;
         }
         for dependency in &node.deps {
-            let callee_package = package_names
+            let dependency_package = package_names
                 .get(dependency.pkg.as_str())
                 .ok_or_else(|| format!("Cargo dependency has unknown package ID `{}`", dependency.pkg))?;
             for kind in &dependency.dep_kinds {
@@ -619,7 +793,7 @@ fn resolved_architecture_cargo_graph(
                 }
                 edges.push(ArchitectureCargoEdge {
                     caller_package: (*caller_package).to_owned(),
-                    callee_package: (*callee_package).to_owned(),
+                    callee_package: (*dependency_package).to_owned(),
                     edge_kind: kind.kind.clone().unwrap_or_else(|| "normal".to_owned()),
                     target_predicate: kind.target.clone(),
                 });
@@ -790,28 +964,69 @@ fn selected_packages<'a>(
     Ok(selected)
 }
 
-fn selected_policy_target<'a>(
+/// Returns every same-triple policy row whose features and default-feature selection accept the
+/// invocation.
+///
+/// Explicit selections can match at most one row because policy validation rejects duplicate rows.
+/// An `--all-features` invocation keeps every row with the requested defaults; the Cargo plan
+/// comparison picks one.
+fn policy_target_candidates<'a>(
     cargo_check_args: &[String],
     targets: &'a [octet_standards::project_architecture_policy::ArchitectureTarget],
     host_triple: &str,
-) -> Result<&'a octet_standards::project_architecture_policy::ArchitectureTarget, String> {
+) -> Result<Vec<&'a octet_standards::project_architecture_policy::ArchitectureTarget>, String> {
     let requested_target = option_value(cargo_check_args, "--target").unwrap_or(host_triple);
-    let matches = targets.iter().filter(|target| target.triple == requested_target).collect::<Vec<_>>();
-    let [target] = matches.as_slice() else {
-        return Err(format!(
+    let mut candidates = Vec::new();
+    let mut rejections = std::collections::BTreeSet::new();
+    for target in targets.iter().filter(|target| target.triple == requested_target) {
+        match validate_cargo_selection(cargo_check_args, target) {
+            Ok(()) => candidates.push(target),
+            Err(error) => {
+                rejections.insert(error);
+            }
+        }
+    }
+    if !candidates.is_empty() {
+        return Ok(candidates);
+    }
+    let mut rejections = rejections.into_iter();
+    match (rejections.next(), rejections.next()) {
+        (Some(rejection), None) => Err(rejection),
+        (None, _) => Err(format!(
             "Cargo invocation target `{requested_target}` must match exactly one architecture policy target"
-        ));
-    };
-    validate_cargo_selection(cargo_check_args, target)?;
-    Ok(target)
+        )),
+        (Some(_), Some(_)) => Err(format!(
+            "Cargo invocation features and default-feature selection do not match any architecture policy target \
+             for `{requested_target}`"
+        )),
+    }
 }
 
 fn validate_cargo_selection(
     cargo_check_args: &[String],
     target: &octet_standards::project_architecture_policy::ArchitectureTarget,
 ) -> Result<(), String> {
-    if !cargo_check_args.iter().any(|argument| argument == "--lib") {
-        return Err("architecture collection requires `--lib` to bind expected library units".to_owned());
+    if cargo_check_args.iter().any(|argument| argument.starts_with("-F")) {
+        return Err("architecture rows require --features rather than -F shorthand".to_owned());
+    }
+    let all_features = cargo_check_args.iter().any(|argument| argument == "--all-features");
+    if all_features
+        && cargo_check_args
+            .iter()
+            .any(|argument| argument == "--features" || argument.starts_with("--features="))
+    {
+        return Err("architecture rows reject mixed --all-features and --features selections".to_owned());
+    }
+    for option in ["--features", "--target", "--all-features"] {
+        let prefix = format!("{option}=");
+        if cargo_check_args
+            .iter()
+            .filter(|argument| argument.as_str() == option || argument.starts_with(&prefix))
+            .count()
+            > 1
+        {
+            return Err(format!("architecture rows reject repeated `{option}` selections"));
+        }
     }
     let requested_target = option_value(cargo_check_args, "--target");
     if let Some(requested_target) = requested_target
@@ -831,14 +1046,14 @@ fn validate_cargo_selection(
     let mut expected_features = target.features.clone();
     expected_features.sort();
     expected_features.dedup();
-    if requested_features != expected_features {
+    // All-feature equality is established by complete Cargo plans before collector context publication.
+    if !all_features && requested_features != expected_features {
         return Err(format!(
-            "Cargo invocation features {:?} do not match architecture policy features {:?}",
-            requested_features, expected_features
+            "Cargo invocation features {requested_features:?} do not match architecture policy features {expected_features:?}"
         ));
     }
-    let no_default_features = cargo_check_args.iter().any(|argument| argument == "--no-default-features");
-    if target.default_features == no_default_features {
+    let default_features_disabled = cargo_check_args.iter().any(|argument| argument == "--no-default-features");
+    if target.default_features == default_features_disabled {
         return Err(format!(
             "Cargo invocation default-feature selection does not match architecture policy default_features={}",
             target.default_features
@@ -858,45 +1073,41 @@ fn option_value<'a>(arguments: &'a [String], option: &str) -> Option<&'a str> {
     })
 }
 
-fn source_roles(selected: &SelectedProjectArchitecturePolicy) -> Result<Vec<SourceRoleScope>, String> {
+fn source_roles(selected: &SelectedProjectArchitecturePolicy) -> Vec<SourceRoleScope> {
     let mut roles = Vec::with_capacity(selected.policy.roles.len());
     for assignment in &selected.policy.roles {
-        if assignment.scope_kind != ArchitectureScopeKind::Source || !assignment.role.is_production() {
+        if assignment.scope_kind != ArchitectureScopeKind::Source {
             continue;
         }
         roles.push(SourceRoleScope {
             source_scope: assignment.scope.clone(),
-            role: convert_role(assignment.role)?,
+            role: convert_role(assignment.role),
         });
     }
     roles.sort_by(|left, right| left.source_scope.cmp(&right.source_scope));
-    Ok(roles)
+    roles
 }
 
-fn package_roles(
-    selected: &SelectedProjectArchitecturePolicy,
-) -> Result<BTreeMap<&str, CompilerArchitectureRole>, String> {
+fn package_roles(selected: &SelectedProjectArchitecturePolicy) -> BTreeMap<&str, CompilerArchitectureRole> {
     let mut roles = BTreeMap::new();
     for assignment in &selected.policy.roles {
         if assignment.scope_kind != ArchitectureScopeKind::Package || !assignment.role.is_production() {
             continue;
         }
-        let role = convert_role(assignment.role)?;
-        roles.insert(assignment.scope.as_str(), role);
+        roles.insert(assignment.scope.as_str(), convert_role(assignment.role));
     }
-    Ok(roles)
+    roles
 }
 
-fn convert_role(role: ArchitectureRole) -> Result<CompilerArchitectureRole, String> {
+fn convert_role(role: ArchitectureRole) -> CompilerArchitectureRole {
     match role {
-        ArchitectureRole::DomainCore => Ok(CompilerArchitectureRole::DomainCore),
-        ArchitectureRole::ApplicationShell => Ok(CompilerArchitectureRole::ApplicationShell),
-        ArchitectureRole::InboundAdapter => Ok(CompilerArchitectureRole::InboundAdapter),
-        ArchitectureRole::OutboundAdapter => Ok(CompilerArchitectureRole::OutboundAdapter),
-        ArchitectureRole::CompositionRoot => Ok(CompilerArchitectureRole::CompositionRoot),
-        ArchitectureRole::Test | ArchitectureRole::Generated => {
-            Err("non-production role reached production compiler selection".to_owned())
-        }
+        ArchitectureRole::DomainCore => CompilerArchitectureRole::DomainCore,
+        ArchitectureRole::ApplicationShell => CompilerArchitectureRole::ApplicationShell,
+        ArchitectureRole::InboundAdapter => CompilerArchitectureRole::InboundAdapter,
+        ArchitectureRole::OutboundAdapter => CompilerArchitectureRole::OutboundAdapter,
+        ArchitectureRole::CompositionRoot => CompilerArchitectureRole::CompositionRoot,
+        ArchitectureRole::Test => CompilerArchitectureRole::Test,
+        ArchitectureRole::Generated => CompilerArchitectureRole::Generated,
     }
 }
 
@@ -913,7 +1124,7 @@ fn package_source_identity(
     let mut files = Vec::new();
     files.push(package_root.join("Cargo.toml"));
     let mut observed_source_entries = 1usize;
-    collect_rust_sources(&package_root.join("src"), &mut files, max_source_files, &mut observed_source_entries)?;
+    collect_rust_sources(&package_root, &mut files, max_source_files, &mut observed_source_entries)?;
     files.sort();
     let frame_capacity = files
         .len()
@@ -948,6 +1159,10 @@ fn package_source_identity(
     ))
 }
 
+/// Collects `.rs` files below `directory`. Build and evidence directory names are excluded only
+/// beside a `Cargo.toml` (the package root or a nested package or workspace root such as `fuzz/`),
+/// so a module directory such as `src/target/` stays part of the source envelope while
+/// `fuzz/target/` does not.
 fn collect_rust_sources(
     directory: &Path,
     files: &mut Vec<PathBuf>,
@@ -957,6 +1172,7 @@ fn collect_rust_sources(
     if !directory.exists() {
         return Ok(());
     }
+    let manifest_directory = directory.join("Cargo.toml").is_file();
     let mut paths = Vec::new();
     let entries = fs::read_dir(directory)
         .map_err(|error| format!("read package source directory {}: {error}", directory.display()))?;
@@ -971,6 +1187,23 @@ fn collect_rust_sources(
     }
     paths.sort();
     for path in paths {
+        if manifest_directory
+            && path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| SOURCE_BUILD_DIRECTORIES.contains(&name))
+        {
+            continue;
+        }
+        if path.is_symlink() {
+            if path.is_dir() || path.extension().and_then(|extension| extension.to_str()) == Some("rs") {
+                return Err(format!(
+                    "compiler architecture source envelope contains a source symlink: {}",
+                    path.display()
+                ));
+            }
+            continue;
+        }
         if path.is_dir() {
             collect_rust_sources(&path, files, max_source_entries, observed_source_entries)?;
         } else if path.extension().and_then(|extension| extension.to_str()) == Some("rs") {
@@ -1031,6 +1264,7 @@ mod tests {
                 package_version: "0.1.0".to_owned(),
                 target_name: "fixture".to_owned(),
                 target_kind: "lib".to_owned(),
+                source_path: "src/lib.rs".to_owned(),
                 crate_types: vec!["rlib".to_owned()],
                 target_triple: "x86_64-unknown-linux-gnu".to_owned(),
                 features: Vec::new(),
@@ -1074,8 +1308,11 @@ mod tests {
 
     #[test]
     fn implicit_cargo_library_kind_matches_rustc_rlib() {
-        assert_eq!(canonical_rustc_crate_types(&["lib".to_owned()], vec!["lib".to_owned()]), vec!["rlib".to_owned()]);
-        assert_eq!(canonical_rustc_crate_types(&["cdylib".to_owned()], vec!["cdylib".to_owned()]), vec![
+        assert_eq!(canonical_rustc_crate_types(vec!["lib".to_owned()]), vec!["rlib".to_owned()]);
+        assert_eq!(canonical_rustc_crate_types(vec!["cdylib".to_owned()]), vec!["cdylib".to_owned()]);
+        // Target kind plays no part: an `[[example]]` with `crate-type = ["lib"]` is an rlib too.
+        assert_eq!(canonical_rustc_crate_types(vec!["lib".to_owned(), "cdylib".to_owned()]), vec![
+            "rlib".to_owned(),
             "cdylib".to_owned()
         ]);
     }
@@ -1112,7 +1349,7 @@ mod tests {
     }
 
     #[test]
-    fn cache_preparation_keeps_at_most_one_shard_per_expected_unit() {
+    fn cache_preparation_discards_every_shard_of_a_duplicated_unit() {
         let fixture = tempfile::tempdir().expect("create cache fixture");
         let first = cached_shard(FIXTURE_HASH_A, FIXTURE_HASH_B);
         let second = cached_shard(FIXTURE_HASH_A, FIXTURE_HASH_C);
@@ -1124,7 +1361,182 @@ mod tests {
             .expect("prepare duplicate cache");
 
         let retained = fs::read_dir(fixture.path()).expect("read prepared cache").count();
-        assert_eq!(retained, 1);
+        assert_eq!(retained, 0, "an ambiguous cached unit must not keep an arbitrary shard");
+    }
+
+    #[test]
+    fn cache_preparation_keeps_one_shard_per_expected_unit() {
+        let fixture = tempfile::tempdir().expect("create cache fixture");
+        write_cached_shard(fixture.path(), "kept.json", &cached_shard(FIXTURE_HASH_A, FIXTURE_HASH_B));
+        write_cached_shard(fixture.path(), "stale.json", &cached_shard(FIXTURE_HASH_C, FIXTURE_HASH_B));
+        let expected = std::collections::BTreeSet::from([FIXTURE_HASH_A]);
+
+        let retained = prepare_shard_directory(
+            fixture.path(),
+            &expected,
+            MAX_INGESTION_FIXTURE_SHARDS,
+            MAX_CACHE_FIXTURE_SHARD_BYTES,
+        )
+        .expect("prepare cache");
+
+        assert!(fixture.path().join("kept.json").is_file());
+        assert!(!fixture.path().join("stale.json").exists());
+        assert_eq!(retained, BTreeMap::from([(FIXTURE_HASH_A.to_owned(), fixture.path().join("kept.json"))]));
+    }
+
+    fn collector_unit(unit_id: &str, target_kind: &str) -> CollectorCompilationUnit {
+        let mut unit = cached_shard(unit_id, FIXTURE_HASH_B).unit;
+        unit.target_kind = target_kind.to_owned();
+        CollectorCompilationUnit {
+            rustc_crate_name: "fixture".to_owned(),
+            manifest_dir: String::new(),
+            source_path: unit.source_path.clone(),
+            test_configuration: false,
+            source_roles: Vec::new(),
+            unit,
+        }
+    }
+
+    fn modified(path: &Path) -> std::time::SystemTime {
+        fs::metadata(path).and_then(|metadata| metadata.modified()).expect("stamp modification time")
+    }
+
+    fn age(path: &Path) {
+        fs::File::options()
+            .write(true)
+            .open(path)
+            .and_then(|file| file.set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1)))
+            .expect("age stamp fixture");
+    }
+
+    #[test]
+    fn unit_stamp_is_rewritten_only_without_a_retained_shard_or_matching_identity() {
+        let fixture = tempfile::tempdir().expect("create stamp fixture");
+        let stamp = fixture.path().join("unit.stamp");
+
+        assert!(unit_stamp_needs_write(&stamp, FIXTURE_HASH_A, true), "a missing stamp is written");
+        fs::write(&stamp, FIXTURE_HASH_A).expect("write stamp fixture");
+        assert!(!unit_stamp_needs_write(&stamp, FIXTURE_HASH_A, true), "a current stamp keeps Cargo fresh");
+        assert!(unit_stamp_needs_write(&stamp, FIXTURE_HASH_A, false), "a unit without a cached shard recompiles");
+        assert!(unit_stamp_needs_write(&stamp, FIXTURE_HASH_C, true), "a changed identity recompiles");
+        fs::write(&stamp, format!("{FIXTURE_HASH_A}\n")).expect("write padded stamp fixture");
+        assert!(unit_stamp_needs_write(&stamp, FIXTURE_HASH_A, true), "only the exact identity is current");
+    }
+
+    #[test]
+    fn unit_stamp_refresh_touches_only_units_that_must_recompile() {
+        let fixture = tempfile::tempdir().expect("create stamp fixture");
+        let directory = fixture.path().join("unit-stamps");
+        let cached = collector_unit(FIXTURE_HASH_A, "lib");
+        let uncached = collector_unit(FIXTURE_HASH_C, "bin");
+        let units = [cached.clone(), uncached.clone()];
+        let retained = BTreeMap::from([(FIXTURE_HASH_A.to_owned(), fixture.path().join("cached.json"))]);
+        let cached_stamp = directory.join(octet_architecture_ir::compilation_unit_stamp_name(&cached.unit));
+        let uncached_stamp = directory.join(octet_architecture_ir::compilation_unit_stamp_name(&uncached.unit));
+
+        refresh_unit_stamps(&directory, &units, &retained).expect("write initial stamps");
+        assert_eq!(fs::read_to_string(&cached_stamp).expect("cached stamp"), FIXTURE_HASH_A);
+        assert_eq!(fs::read_to_string(&uncached_stamp).expect("uncached stamp"), FIXTURE_HASH_C);
+        fs::write(directory.join("removed-unit.stamp"), FIXTURE_HASH_B).expect("write stale stamp");
+        age(&cached_stamp);
+        age(&uncached_stamp);
+        let aged = modified(&cached_stamp);
+
+        refresh_unit_stamps(&directory, &units, &retained).expect("refresh stamps");
+
+        assert_eq!(modified(&cached_stamp), aged, "a cached unit with a current stamp stays fresh");
+        assert!(modified(&uncached_stamp) > aged, "a unit without a cached shard is recompiled");
+        assert!(!directory.join("removed-unit.stamp").exists(), "stamps of removed units are deleted");
+
+        let mut changed = cached.clone();
+        changed.unit.unit_id = FIXTURE_HASH_B.to_owned();
+        let retained = BTreeMap::from([(FIXTURE_HASH_B.to_owned(), fixture.path().join("cached.json"))]);
+        refresh_unit_stamps(&directory, &[changed], &retained).expect("refresh changed identity");
+
+        assert_eq!(fs::read_to_string(&cached_stamp).expect("rewritten stamp"), FIXTURE_HASH_B);
+        assert!(modified(&cached_stamp) > aged, "a changed identity is recompiled");
+        assert!(!uncached_stamp.exists());
+    }
+
+    #[test]
+    fn shard_written_this_run_supersedes_the_cached_shard_of_its_unit() {
+        let fixture = tempfile::tempdir().expect("create cache fixture");
+        write_cached_shard(fixture.path(), "cached.json", &cached_shard(FIXTURE_HASH_A, FIXTURE_HASH_B));
+        write_cached_shard(fixture.path(), "kept.json", &cached_shard(FIXTURE_HASH_C, FIXTURE_HASH_B));
+        let expected = std::collections::BTreeSet::from([FIXTURE_HASH_A, FIXTURE_HASH_C]);
+        let retained = prepare_shard_directory(
+            fixture.path(),
+            &expected,
+            MAX_COUNT_OVERFLOW_FIXTURE_SHARDS,
+            MAX_CACHE_FIXTURE_SHARD_BYTES,
+        )
+        .expect("prepare cache");
+        supersede_cached_shards(
+            fixture.path(),
+            &retained,
+            MAX_COUNT_OVERFLOW_FIXTURE_SHARDS,
+            MAX_CACHE_FIXTURE_SHARD_BYTES,
+        )
+        .expect("supersede without new shards");
+        assert!(fixture.path().join("cached.json").is_file(), "a cached shard without a new shard stays");
+
+        write_cached_shard(fixture.path(), "recompiled.json", &cached_shard(FIXTURE_HASH_A, FIXTURE_HASH_C));
+        supersede_cached_shards(
+            fixture.path(),
+            &retained,
+            MAX_COUNT_OVERFLOW_FIXTURE_SHARDS,
+            MAX_CACHE_FIXTURE_SHARD_BYTES,
+        )
+        .expect("supersede recompiled unit");
+
+        assert!(!fixture.path().join("cached.json").exists(), "the recompiled unit drops its cached shard");
+        assert!(fixture.path().join("recompiled.json").is_file());
+        assert!(fixture.path().join("kept.json").is_file(), "other units keep their cached shard");
+        supersede_cached_shards(
+            fixture.path(),
+            &retained,
+            MAX_COUNT_OVERFLOW_FIXTURE_SHARDS,
+            MAX_CACHE_FIXTURE_SHARD_BYTES,
+        )
+        .expect("superseding is repeatable");
+        assert!(fixture.path().join("recompiled.json").is_file());
+    }
+
+    #[test]
+    fn source_identity_excludes_build_directories_only_beside_a_manifest() {
+        let workspace = tempfile::tempdir().expect("create source fixture");
+        let package = workspace.path().join("member");
+        for (relative, contents) in [
+            ("Cargo.toml", "[package]\nname = \"member\"\n"),
+            ("src/lib.rs", "mod target;\n"),
+            ("src/target/mod.rs", "pub fn nested() {}\n"),
+            ("target/debug/build/out.rs", "pub fn generated() {}\n"),
+            ("fuzz/Cargo.toml", "[package]\nname = \"member-fuzz\"\n"),
+            ("fuzz/fuzz_targets/parse.rs", "fn main() {}\n"),
+            ("fuzz/target/debug/out.rs", "pub fn fuzz_generated() {}\n"),
+        ] {
+            let path = package.join(relative);
+            fs::create_dir_all(path.parent().expect("fixture parent")).expect("create fixture parent");
+            fs::write(path, contents).expect("write source fixture");
+        }
+        let identity = || package_source_identity(workspace.path(), "member", 64, 4096).expect("source identity");
+        let original = identity();
+
+        fs::write(package.join("target/debug/build/out.rs"), "pub fn regenerated() {}\n")
+            .expect("change root build output");
+        assert_eq!(identity(), original, "package-root build output is not source");
+
+        fs::write(package.join("fuzz/target/debug/out.rs"), "pub fn fuzz_regenerated() {}\n")
+            .expect("change nested package build output");
+        assert_eq!(identity(), original, "nested package build output is not source");
+
+        fs::write(package.join("src/target/mod.rs"), "pub fn changed() {}\n").expect("change nested module");
+        let module_changed = identity();
+        assert_ne!(module_changed, original, "a module directory named like a build directory is source");
+
+        fs::write(package.join("fuzz/fuzz_targets/parse.rs"), "fn main() { let _ = 1; }\n")
+            .expect("change nested package source");
+        assert_ne!(identity(), module_changed, "nested package sources stay in the envelope");
     }
 
     #[test]
@@ -1140,6 +1552,46 @@ mod tests {
             .expect("prepare overflow cache");
 
         assert_eq!(fs::read_dir(fixture.path()).expect("read cleared cache").count(), 0);
+    }
+
+    #[test]
+    fn all_target_rows_accept_explicit_features_but_reject_ambiguous_scope() {
+        let valid = vec![
+            "--all-targets".to_owned(),
+            "--target=x86_64-unknown-linux-gnu".to_owned(),
+            "--features=production".to_owned(),
+            "--no-default-features".to_owned(),
+        ];
+        assert_eq!(validate_cargo_selection(&valid, &target()), Ok(()));
+        for extra in [
+            "--all-features",
+            "-Fproduction",
+            "--features=production",
+            "--target=x86_64-unknown-linux-gnu",
+        ] {
+            let mut invalid = valid.clone();
+            invalid.push(extra.to_owned());
+            assert!(validate_cargo_selection(&invalid, &target()).is_err(), "{extra}");
+        }
+    }
+
+    // r[verify octet.architecture.features.rejection]
+    #[test]
+    fn all_features_preserves_selector_default_and_target_guards() {
+        let valid = vec!["--all-features".to_owned(), "--no-default-features".to_owned()];
+        assert_eq!(validate_cargo_selection(&valid, &target()), Ok(()));
+        for extra in [
+            "--all-features",
+            "--features=production",
+            "-Fproduction",
+            "--target=other",
+        ] {
+            let mut invalid = valid.clone();
+            invalid.push(extra.to_owned());
+            assert!(validate_cargo_selection(&invalid, &target()).is_err(), "{extra}");
+        }
+        assert!(validate_cargo_selection(&["--all-features".to_owned()], &target()).is_err());
+        assert!(policy_target_candidates(&valid, &[target()], "other-host").is_err());
     }
 
     #[test]
@@ -1159,5 +1611,31 @@ mod tests {
             "--no-default-features".to_owned(),
         ];
         assert!(validate_cargo_selection(&invalid, &target()).is_err());
+    }
+
+    #[test]
+    fn feature_matrix_rows_on_one_triple_select_by_features_and_defaults() {
+        let staging = ArchitectureTarget {
+            features: vec!["staging".to_owned()],
+            ..target()
+        };
+        let defaults = ArchitectureTarget {
+            default_features: true,
+            ..target()
+        };
+        let rows = [target(), staging.clone(), defaults.clone()];
+        let selection = |args: &[&str]| {
+            let args = args.iter().map(|argument| (*argument).to_owned()).collect::<Vec<_>>();
+            policy_target_candidates(&args, &rows, "x86_64-unknown-linux-gnu")
+                .map(|candidates| candidates.into_iter().cloned().collect::<Vec<_>>())
+        };
+
+        assert_eq!(selection(&["--features=staging", "--no-default-features"]), Ok(vec![staging.clone()]));
+        assert_eq!(selection(&["--features=production", "--no-default-features"]), Ok(vec![target()]));
+        assert_eq!(selection(&["--features=production"]), Ok(vec![defaults.clone()]));
+        assert!(selection(&["--features=other", "--no-default-features"]).is_err());
+        // All-feature rows stay candidates until the Cargo plan comparison selects exactly one of them.
+        assert_eq!(selection(&["--all-features", "--no-default-features"]), Ok(vec![target(), staging]));
+        assert_eq!(selection(&["--all-features"]), Ok(vec![defaults]));
     }
 }

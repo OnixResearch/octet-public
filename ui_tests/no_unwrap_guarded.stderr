@@ -1,8 +1,8 @@
-warning: `.expect()` in production code will panic on failure
-  --> $DIR/no_unwrap_guarded.rs:15:17
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/no_unwrap_guarded.rs:27:17
    |
-LL |         let _ = value.expect("guarded expect should still warn");
-   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |         let _ = value.unwrap();
+   |                 ^^^^^^^^^^^^^^
    |
    = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
    = note: structured suggestion applicability: MaybeIncorrect
@@ -10,12 +10,27 @@ LL |         let _ = value.expect("guarded expect should still warn");
    = note: `#[warn(tigerstyle::no_unwrap)]` on by default
 help: propagate the error with `?` instead of panicking
    |
+LL -         let _ = value.unwrap();
+LL +         let _ = value?;
+   |
+
+warning: `.expect()` in production code will panic on failure
+  --> $DIR/no_unwrap_guarded.rs:33:17
+   |
+LL |         let _ = value.expect("guarded expect should still warn");
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of panicking
+   |
 LL -         let _ = value.expect("guarded expect should still warn");
 LL +         let _ = value?;
    |
 
 warning: `.unwrap()` in production code will panic on failure
-  --> $DIR/no_unwrap_guarded.rs:23:17
+  --> $DIR/no_unwrap_guarded.rs:41:17
    |
 LL |         let _ = value.unwrap();
    |                 ^^^^^^^^^^^^^^
@@ -29,5 +44,20 @@ LL -         let _ = value.unwrap();
 LL +         let _ = value?;
    |
 
-warning: 2 warnings emitted
+warning: `.unwrap()` in production code will panic on failure
+  --> $DIR/no_unwrap_guarded.rs:56:17
+   |
+LL |         let _ = Option::unwrap(value);
+   |                 ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): propagate or handle absence explicitly instead of panicking with `unwrap` or `expect` Example: let value = maybe?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of panicking
+   |
+LL -         let _ = Option::unwrap(value);
+LL +         let _ = value?;
+   |
+
+warning: 4 warnings emitted
 

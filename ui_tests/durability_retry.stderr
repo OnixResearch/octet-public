@@ -1,0 +1,15 @@
+warning: synchronization on `file` retries after a handled failure without an intervening write, reopen, replacement, quarantine, or reconciliation
+  --> $DIR/durability_retry/durability_retry.rs:19:5
+   |
+LL |     file.sync_all().map_err(|_error| store_error())?;
+   |     ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Durable Persistence): after a failed synchronization, rewrite from the source of truth, reopen or replace the handle, quarantine, or reconcile before observing durability again Example: file.sync_all()?; file = File::create(path)?; file.write_all(bytes)?; file.sync_all()?;
+   = note: see Tiger Style guide: Resilience / Silent error swallowing
+   = note: bounded repair guidance: after a failed synchronization, rewrite from the source of truth, reopen or replace the handle, quarantine, or reconcile before observing durability again; a same-handle retry does not prove earlier bytes reached storage
+   = note: bounded repair options: record an explicit uncertain outcome; quarantine the artifact; reopen or replace the handle; rewrite from the source of truth; reconcile against storage; no single repair proves durability
+   = note: These checks cover selected source shapes inside consumer-declared boundary functions only; they do not prove filesystem, device, or hardware durability. Passing these checks does not prove that sync_all, sync_data, a configured commit, or an adapter observation succeeded. The checks do not analyze aliasing, interprocedural control flow, runtime ordering, or macro-expanded synchronization.
+   = note: `#[warn(tigerstyle::retry_sync_after_error)]` on by default
+
+warning: 1 warning emitted
+

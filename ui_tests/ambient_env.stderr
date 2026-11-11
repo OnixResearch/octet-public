@@ -17,5 +17,32 @@ LL |         std::env::set_var("OCTET_MODE", "checked");
    = help: Tiger Style (Functional Core): capture process environment in the shell and pass explicit config, paths, or arguments into core logic Example: fn load(config: Config) -> Output { compute(config.home_dir) }
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
-warning: 2 warnings emitted
+warning: direct `std::env::var` access reads or mutates ambient process state
+  --> $DIR/ambient_env.rs:16:27
+   |
+LL |     let port = parse_port(std::env::var("PORT").ok());
+   |                           ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): capture process environment in the shell and pass explicit config, paths, or arguments into core logic Example: fn load(config: Config) -> Output { compute(config.home_dir) }
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: direct `std::env::var` access reads or mutates ambient process state
+  --> $DIR/ambient_env.rs:17:24
+   |
+LL |     let profile = Some(std::env::var("OCTET_PROFILE"));
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): capture process environment in the shell and pass explicit config, paths, or arguments into core logic Example: fn load(config: Config) -> Output { compute(config.home_dir) }
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: direct `std::env::var_os` access reads or mutates ambient process state
+  --> $DIR/ambient_env.rs:18:33
+   |
+LL |     let debug = format!("{:?}", std::env::var_os("OCTET_DEBUG"));
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): capture process environment in the shell and pass explicit config, paths, or arguments into core logic Example: fn load(config: Config) -> Output { compute(config.home_dir) }
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 5 warnings emitted
 

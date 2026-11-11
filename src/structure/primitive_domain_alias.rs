@@ -102,6 +102,13 @@ fn disposition_is_reportable(
     }
 }
 
+// Suffix-only discovery candidates never fail a build: when the effective
+// level at the alias is above warn (for example a command-line
+// `-D primitive_domain_alias` in inventory mode), the candidate is skipped.
+fn candidate_level_is_reportable(level: rustc_lint::Level) -> bool {
+    !matches!(level, rustc_lint::Level::Deny | rustc_lint::Level::Forbid)
+}
+
 impl<'tcx> LateLintPass<'tcx> for PrimitiveDomainAlias {
     fn check_item(&mut self, cx: &rustc_lint::LateContext<'tcx>, item: &'tcx hir::Item<'tcx>) {
         let hir::ItemKind::TyAlias(ident, ..) = item.kind else {
@@ -125,6 +132,11 @@ impl<'tcx> LateLintPass<'tcx> for PrimitiveDomainAlias {
         };
         let disposition = octet_lint_metadata::nominal_domain::classify_descriptor(&self.catalog, descriptor);
         if !disposition_is_reportable(self.mode, &disposition) {
+            return;
+        }
+        if matches!(disposition, octet_lint_metadata::nominal_domain::DomainDisposition::HeuristicCandidate { .. })
+            && !candidate_level_is_reportable(cx.tcx.lint_level_at_node(PRIMITIVE_DOMAIN_ALIAS, item.hir_id()).level)
+        {
             return;
         }
         let Some(message) = alias_message(symbol, &disposition) else {
@@ -171,6 +183,14 @@ mod tests {
                 domain_id: "fixture.unit-id".to_owned()
             }
         ));
+    }
+
+    #[test]
+    fn heuristic_candidates_never_report_above_warn() {
+        assert!(candidate_level_is_reportable(rustc_lint::Level::Warn));
+        assert!(candidate_level_is_reportable(rustc_lint::Level::ForceWarn));
+        assert!(!candidate_level_is_reportable(rustc_lint::Level::Deny));
+        assert!(!candidate_level_is_reportable(rustc_lint::Level::Forbid));
     }
 
     #[test]

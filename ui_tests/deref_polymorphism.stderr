@@ -27,5 +27,19 @@ LL | | }
    = help: Tiger Style (Explicit Interfaces): prefer explicit accessors over public `Deref` to another nominal domain type Example: pub fn as_inner(&self) -> &Inner
    = note: see Tiger Style guide: Rust Idioms / Deref Polymorphism
 
-warning: 2 warnings emitted
+warning: public `Deref<Target = EngineAlias>` expands the wrapper's API surface implicitly; prefer explicit accessors for domain polymorphism
+  --> $DIR/deref_polymorphism.rs:106:1
+   |
+LL | / impl Deref for AliasHandle {
+LL | |     type Target = EngineAlias;
+LL | |
+LL | |     fn deref(&self) -> &Self::Target {
+...  |
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Explicit Interfaces): prefer explicit accessors over public `Deref` to another nominal domain type Example: pub fn as_inner(&self) -> &Inner
+   = note: see Tiger Style guide: Rust Idioms / Deref Polymorphism
+
+warning: 3 warnings emitted
 

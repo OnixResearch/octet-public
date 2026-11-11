@@ -1,0 +1,37 @@
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_single_report.rs:11:1
+   |
+LL | #[allow(tigerstyle::safety)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[allow(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_single_report.rs:16:1
+   |
+LL | #[allow(unjustified_no_todo_allow)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: strict profile `robust` requires `unjustified_no_todo_allow` at `deny`, but this `#[warn(...)]` would silence it; source attributes cannot lower a profile's suppression-governance lints, so remove the attribute
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_single_report.rs:22:1
+   |
+LL | #[warn(tigerstyle::safety)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: `#[allow(...)]` without justification comment
+  --> $DIR/strict_profile_governance_custom/strict_profile_governance_single_report.rs:27:1
+   |
+LL | #[allow(tigerstyle::no_unwrap)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+   = note: `-D tigerstyle::unjustified-allow` implied by `-D unjustified-allow`
+   = help: to override `-D unjustified-allow` add `#[allow(tigerstyle::unjustified_allow)]`
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+error: aborting due to 4 previous errors
+

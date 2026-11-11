@@ -1,0 +1,24 @@
+{
+  "schema_version": "octet-durability-claims-profile/v1",
+  "profile_id": "durability-adapter",
+  "boundaries": [
+    {
+      "boundary_id": "durability-adapter",
+      "source_scope": "ui_tests/durability_adapter",
+      "boundary_functions": [
+        "publish"
+      ],
+      "required_observation": "adapter-observation",
+      "uncertain_outcome_types": [
+        "StoreError"
+      ],
+      "commit_surfaces": [],
+      "adapter_observations": [
+        "commit_durable"
+      ]
+    }
+  ],
+  "non_claims": [
+    "This fixture profile declares one analyzed boundary only."
+  ]
+}

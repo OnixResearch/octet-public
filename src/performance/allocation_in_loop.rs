@@ -60,8 +60,14 @@ pub(crate) fn supported_allocating_type(cx: &LateContext<'_>, ty: ty::Ty<'_>) ->
     }
 }
 
-pub(crate) fn expr_supported_allocation_type(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> Option<String> {
-    supported_allocating_type(cx, cx.typeck_results().expr_ty(expr))
+/// Allocation that `allocation_in_loop` reports. Empty constructors such as
+/// `Vec::new()`, `String::new()`, or `HashMap::new()` do not allocate, so the
+/// shared classifier's zero-argument `new()` calls are skipped here.
+fn loop_allocation_type(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> Option<String> {
+    if expr_is_zero_arg_new_call(expr) {
+        return None;
+    }
+    expr_is_allocation(cx, expr)
 }
 
 pub(crate) fn qpath_names_constructor_new(qpath: &hir::QPath<'_>) -> bool {
@@ -100,8 +106,8 @@ pub(crate) fn expr_is_allocation(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> 
                 if qpath_names_constructor_new(qpath) {
                     return Some(type_name);
                 }
-                if let Some(ref method) = qpath_names_method_name(qpath)
-                    && (method.as_str() == "from" || method.as_str() == "from_str")
+                if let Some(method) = qpath_names_method_name(qpath)
+                    && matches!(method.as_str(), "from" | "from_str" | "with_capacity")
                 {
                     return Some(type_name);
                 }
@@ -109,7 +115,7 @@ pub(crate) fn expr_is_allocation(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> 
         }
         hir::ExprKind::MethodCall(method, ..) => {
             let method_name = method.ident.name.as_str();
-            if method_name == "to_string" || method_name == "to_owned" {
+            if matches!(method_name, "to_string" | "to_owned" | "to_vec") {
                 let ty = cx.typeck_results().expr_ty(expr);
                 if let Some(type_name) = supported_allocating_type(cx, ty) {
                     return Some(type_name);
@@ -129,10 +135,40 @@ fn qpath_names_method_name(qpath: &hir::QPath<'_>) -> Option<String> {
     Some(segment_name.to_owned())
 }
 
+/// Scope an allocation's value leaves through. An allocation that feeds a
+/// `return` or `break` runs once on the way out, not on every iteration of the
+/// loops it exits.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ExitScope {
+    /// The value stays in the current iteration.
+    Stays,
+    /// `return` leaves the enclosing closure or function.
+    Returns,
+    /// `break` leaves the loop or labeled block with this id.
+    BreaksOut(hir::HirId),
+}
+
 fn hir_id_has_loop_parent(cx: &LateContext<'_>, hir_id: hir::HirId) -> bool {
-    for (_, node) in cx.tcx.hir_parent_iter(hir_id) {
+    let mut exit = ExitScope::Stays;
+    for (parent_id, node) in cx.tcx.hir_parent_iter(hir_id) {
+        if exit == ExitScope::BreaksOut(parent_id) {
+            exit = ExitScope::Stays;
+            continue;
+        }
         match node {
-            hir::Node::Expr(parent) if matches!(parent.kind, hir::ExprKind::Loop(..)) => return true,
+            hir::Node::Expr(parent) => match (exit, parent.kind) {
+                (ExitScope::Stays, hir::ExprKind::Loop(..)) => return true,
+                (ExitScope::Stays, hir::ExprKind::Ret(_)) => exit = ExitScope::Returns,
+                (ExitScope::Stays, hir::ExprKind::Break(destination, _)) => {
+                    // An unresolved target fails to compile; treat it as leaving everything.
+                    let Ok(target) = destination.target_id else {
+                        return false;
+                    };
+                    exit = ExitScope::BreaksOut(target);
+                }
+                (ExitScope::Returns, hir::ExprKind::Closure(..)) => exit = ExitScope::Stays,
+                _ => {}
+            },
             hir::Node::Item(_) | hir::Node::ImplItem(_) | hir::Node::TraitItem(_) => return false,
             _ => {}
         }
@@ -140,9 +176,10 @@ fn hir_id_has_loop_parent(cx: &LateContext<'_>, hir_id: hir::HirId) -> bool {
     false
 }
 
-fn allocation_in_loop_facts(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> AllocationInLoopFacts {
-    AllocationInLoopFacts {
-        constructor_kind: if expr_is_zero_arg_new_call(expr) && expr_supported_allocation_type(cx, expr).is_some() {
+fn allocation_in_loop_facts(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> (AllocationInLoopFacts, Option<String>) {
+    let allocation_type = loop_allocation_type(cx, expr);
+    let facts = AllocationInLoopFacts {
+        constructor_kind: if allocation_type.is_some() {
             AllocationConstructorKind::Supported
         } else {
             AllocationConstructorKind::Other
@@ -150,17 +187,18 @@ fn allocation_in_loop_facts(cx: &LateContext<'_>, expr: &hir::Expr<'_>) -> Alloc
         is_inside_loop: hir_id_has_loop_parent(cx, expr.hir_id),
         is_in_test_context: test_context::late_hir_id_is_in_test_context(cx, expr.hir_id, expr.span),
         is_from_expansion: expr.span.from_expansion(),
-    }
+    };
+    (facts, allocation_type)
 }
 
 impl<'tcx> LateLintPass<'tcx> for AllocationInLoop {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx hir::Expr<'tcx>) {
-        let facts = allocation_in_loop_facts(cx, expr);
+        let (facts, allocation_type) = allocation_in_loop_facts(cx, expr);
         if !classify_allocation_in_loop(facts) {
             return;
         }
 
-        let type_name = expr_supported_allocation_type(cx, expr).unwrap_or_else(|| "collection".to_owned());
+        let type_name = allocation_type.unwrap_or_else(|| "collection".to_owned());
         let message = format!("{type_name} allocation constructor runs inside a loop");
         emit_tiger_style_lint(cx, ALLOCATION_IN_LOOP, expr.span, message, "allocation_in_loop");
     }

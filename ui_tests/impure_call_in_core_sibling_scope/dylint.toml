@@ -1,0 +1,6 @@
+[octet]
+# A sibling directory whose name merely starts with the first scope is outside
+# it. The second scope only ever matched this fixture's path as a substring;
+# it names nothing under the workspace root, so it matches nothing and warns.
+core_source_scopes = ["ui_tests/impure_call_in_core", "impure_call_in_core_sibling_scope"]
+disabled_lints = ["concrete_construction_in_core"]

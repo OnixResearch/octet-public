@@ -1,0 +1,24 @@
+{
+  "layout": "cairn",
+  "root": "fixtures/basic",
+  "resolution": {
+    "diagnostics": [],
+    "locator_consulted": false,
+    "registry_lookup": "local_locator_only",
+    "selected": {
+      "project_identity": null,
+      "root": "fixtures/basic",
+      "source": "explicit_root",
+      "store_id": null,
+      "store_identity": null
+    },
+    "valid": true
+  },
+  "specs": [
+    {
+      "id": "demo",
+      "path": "fixtures/basic/.cairn/specs/demo/spec.md",
+      "title": "demo Specification"
+    }
+  ]
+}

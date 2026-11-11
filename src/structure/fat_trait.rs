@@ -1,7 +1,6 @@
 use rustc_hir as hir;
 use rustc_lint::LateContext;
 use rustc_lint::LateLintPass;
-use rustc_lint::LintContext;
 use rustc_session::declare_tool_lint;
 use rustc_session::impl_lint_pass;
 
@@ -9,7 +8,6 @@ use crate::diagnostics::emit_tiger_style_lint;
 use crate::test_context;
 
 const LINT_NAME: &str = "fat_trait";
-const FN_TOKEN: &str = "fn ";
 
 declare_tool_lint! {
     /// Detects traits with more than a configurable number of methods.
@@ -32,8 +30,12 @@ impl FatTrait {
 
 impl_lint_pass!(FatTrait => [FAT_TRAIT]);
 
-fn trait_method_count(cx: &LateContext<'_>, span: rustc_span::Span) -> usize {
-    cx.sess().source_map().span_to_snippet(span).map_or(0, |snippet| snippet.matches(FN_TOKEN).count())
+fn trait_method_count(cx: &LateContext<'_>, trait_def_id: hir::def_id::LocalDefId) -> usize {
+    cx.tcx
+        .associated_items(trait_def_id)
+        .in_definition_order()
+        .filter(|assoc_item| assoc_item.is_fn())
+        .count()
 }
 
 impl<'tcx> LateLintPass<'tcx> for FatTrait {
@@ -45,7 +47,7 @@ impl<'tcx> LateLintPass<'tcx> for FatTrait {
             return;
         }
 
-        let method_count = trait_method_count(cx, item.span);
+        let method_count = trait_method_count(cx, item.owner_id.def_id);
         if method_count <= self.max_methods {
             return;
         }

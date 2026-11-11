@@ -40,6 +40,8 @@ const PROOF_BUNDLE_SCHEMA_VERSION: &str = "octet-proof-bundle/v1";
 const ARTIFACT_MANIFEST_SCHEMA_VERSION: &str = "octet-artifact-manifest/v1";
 const ADVISORY_FIXTURE: &str = "standards/check-fixtures/architecture/advisory/public-api-budget";
 const HARD_FAILURE_FIXTURE: &str = "standards/check-fixtures/architecture/noncompliant/missing-no-std";
+const OCTET_LAYOUT_METADATA_FIXTURE: &str =
+    "standards/check-fixtures/architecture/dependency-direction/octet-layout.json";
 const EXPECTED_BINARY_DECLARATION_COUNT: usize = 1;
 const STANDARDS_ALIAS_BINARY_COUNT: usize = 3;
 const EXPECTED_STANDARDS_VERSION_PREFIX: &str = "octet-standards ";
@@ -102,7 +104,8 @@ fn advisory_only_cli_report_exits_successfully() {
     let temp = TempDir::new().expect("temp dir should be created");
     let registry = write_registry(&temp);
 
-    let output = run_architecture_check(&registry, &repo_path(ADVISORY_FIXTURE));
+    let metadata = write_octet_layout_metadata(&temp);
+    let output = run_architecture_check(&registry, &[&repo_path(ADVISORY_FIXTURE), &metadata]);
     assert_success(&output);
     let report = parse_report(&output);
 
@@ -120,7 +123,7 @@ fn hard_policy_cli_report_exits_with_failure() {
     let temp = TempDir::new().expect("temp dir should be created");
     let registry = write_registry(&temp);
 
-    let output = run_architecture_check(&registry, &repo_path(HARD_FAILURE_FIXTURE));
+    let output = run_architecture_check(&registry, &[&repo_path(HARD_FAILURE_FIXTURE)]);
     assert_failure(&output);
     let report = parse_report(&output);
 
@@ -131,6 +134,51 @@ fn hard_policy_cli_report_exits_with_failure() {
             .iter()
             .any(|diagnostic| diagnostic.policy_id == FCIS_POLICY_ID && diagnostic.severity == Severity::Error)
     );
+}
+
+#[test]
+fn check_rejects_unknown_family() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry(&temp);
+
+    let output = Command::new(binary_path())
+        .arg("check")
+        .arg("--registry")
+        .arg(&registry)
+        .arg("--source")
+        .arg(repo_path(ADVISORY_FIXTURE))
+        .arg("--family")
+        .arg("architecure")
+        .arg("--output")
+        .arg("json")
+        .output()
+        .expect("standards checker should run");
+    assert_failure(&output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("unknown --family value(s): architecure"), "stderr was: {stderr}");
+    assert!(stderr.contains(ARCHITECTURE_FAMILY), "stderr should list known families: {stderr}");
+}
+
+#[test]
+fn check_rejects_selection_without_policies() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let mut empty_registry = proof_registry();
+    empty_registry.policies.clear();
+    let registry = write_registry_value(&temp, &empty_registry);
+
+    let output = Command::new(binary_path())
+        .arg("check")
+        .arg("--registry")
+        .arg(&registry)
+        .arg("--source")
+        .arg(repo_path(ADVISORY_FIXTURE))
+        .arg("--output")
+        .arg("json")
+        .output()
+        .expect("standards checker should run");
+    assert_failure(&output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("evaluates zero policies"), "stderr was: {stderr}");
 }
 
 #[test]
@@ -217,11 +265,16 @@ fn export_artifacts_emits_profile_bound_acceptance_receipt() {
     assert_receipt_artifact(&receipt, CHECK_CONFIG_TOML_FILE, &artifact_dir);
     assert_receipt_artifact(&receipt, CONFIG_RECEIPT_FAMILIES_JSON_FILE, &artifact_dir);
     assert_receipt_artifact(&receipt, ARTIFACT_MANIFEST_JSON_FILE, &artifact_dir);
+    let verification_commands = receipt["verification_commands"].as_array().expect("commands should be an array");
     assert!(
-        receipt["verification_commands"].as_array().expect("commands should be an array")[0]["command"]
+        verification_commands[0]["command"]
             .as_str()
             .expect("command should be a string")
             .contains("nickel export")
+    );
+    assert_eq!(
+        verification_commands[0]["status"], "recorded",
+        "a caller-supplied command is recorded, not executed, by export-artifacts"
     );
     let provenance_records = receipt["provenance_records"].as_array().expect("provenance records array");
     assert!(!provenance_records.is_empty(), "receipt should carry generated-artifact provenance records");
@@ -232,6 +285,35 @@ fn export_artifacts_emits_profile_bound_acceptance_receipt() {
             && record["artifact_locator"].as_str().unwrap_or_default().ends_with(ARTIFACT_MANIFEST_JSON_FILE)
             && !record["parent_artifacts"].as_array().expect("parent artifacts").is_empty()
     }));
+}
+
+#[test]
+fn export_artifacts_receipt_without_recorded_commands_lists_its_own_passing_run() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry(&temp);
+    let receipt_path = temp.path().join("receipts/acceptance.json");
+    let profile_path = temp.path().join("profile.json");
+    std::fs::write(&profile_path, test_profile_json()).expect("profile JSON should be written");
+
+    let output = Command::new(binary_path())
+        .arg("export-artifacts")
+        .arg("--registry")
+        .arg(&registry)
+        .arg("--out-dir")
+        .arg(temp.path().join("generated"))
+        .arg("--profile-json")
+        .arg(&profile_path)
+        .arg("--receipt-out")
+        .arg(&receipt_path)
+        .output()
+        .expect("artifact export should run");
+    assert_success(&output);
+
+    let receipt_text = std::fs::read_to_string(&receipt_path).expect("receipt should be readable");
+    let receipt: serde_json::Value = serde_json::from_str(&receipt_text).expect("receipt should parse as JSON");
+    let verification_commands = receipt["verification_commands"].as_array().expect("commands should be an array");
+    assert_eq!(verification_commands.len(), 1);
+    assert_eq!(verification_commands[0]["status"], "passed");
 }
 
 #[test]
@@ -479,6 +561,8 @@ fn execute_proof_rails_uses_command_output_as_receipt() {
         "nix-derivation = octet-standards.drv\nclosure-source = exportReferencesGraph\n",
     )
     .expect("proof Nix closure manifest should be written");
+    std::fs::write(fixture.join("proof-nix-closure.graph"), nix_closure_graph())
+        .expect("proof Nix closure graph should be written");
     std::fs::write(
         fixture.join("proof-command.sh"),
         "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' 'proof-result: pass deterministic-effect-handlers'\n",
@@ -502,6 +586,79 @@ fn execute_proof_rails_uses_command_output_as_receipt() {
     let report = parse_report(&output);
     assert_eq!(report.diagnostics.len(), 0);
     assert!(report.evaluated_policy_ids.iter().any(|policy_id| policy_id == PROOF_POLICY_ID));
+}
+
+#[test]
+fn execute_proof_rails_rejects_missing_nix_closure_graph() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &proof_registry());
+    let fixture = write_executable_proof_fixture(&temp, "missing-graph-proof-fixture");
+    std::fs::remove_file(fixture.join("proof-nix-closure.graph")).expect("proof Nix closure graph should be removed");
+
+    let output = run_executed_proof_check(&registry, &fixture);
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(report.diagnostics.iter().any(|diagnostic| {
+        diagnostic.policy_id == PROOF_POLICY_ID
+            && diagnostic.message.contains("verifier_nix_closure_graph_paths")
+            && diagnostic.message.contains("matches no checked closure graph artifact")
+    }));
+}
+
+#[test]
+fn execute_proof_rails_rejects_malformed_nix_closure_graph() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &proof_registry());
+    let fixture = write_executable_proof_fixture(&temp, "malformed-graph-proof-fixture");
+    std::fs::write(fixture.join("proof-nix-closure.graph"), "/nix/store/aaa-octet-standards\nnot-a-count\n")
+        .expect("malformed proof Nix closure graph should be written");
+
+    let output = run_executed_proof_check(&registry, &fixture);
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(report.diagnostics.iter().any(|diagnostic| {
+        diagnostic.policy_id == PROOF_POLICY_ID
+            && diagnostic.message.contains("verifier_nix_closure_graph_paths")
+            && diagnostic.message.contains("malformed closure graph")
+    }));
+}
+
+#[test]
+fn execute_proof_rails_rejects_missing_build_closure_manifest() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &proof_registry());
+    let fixture = write_executable_proof_fixture(&temp, "missing-build-closure-proof-fixture");
+    std::fs::remove_file(fixture.join("proof-build-closure.txt")).expect("build closure manifest should be removed");
+
+    let output = run_executed_proof_check(&registry, &fixture);
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(report.diagnostics.iter().any(|diagnostic| {
+        diagnostic.policy_id == PROOF_POLICY_ID
+            && diagnostic.message.contains("verifier_build_closure_paths")
+            && diagnostic.message.contains("matches no checked closure manifest")
+    }));
+}
+
+#[test]
+fn execute_proof_rails_rejects_missing_nix_closure_manifest() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &proof_registry());
+    let fixture = write_executable_proof_fixture(&temp, "missing-nix-closure-proof-fixture");
+    std::fs::remove_file(fixture.join("proof-nix-closure.txt")).expect("Nix closure manifest should be removed");
+
+    let output = run_executed_proof_check(&registry, &fixture);
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(report.diagnostics.iter().any(|diagnostic| {
+        diagnostic.policy_id == PROOF_POLICY_ID
+            && diagnostic.message.contains("verifier_nix_closure_paths")
+            && diagnostic.message.contains("matches no checked closure manifest")
+    }));
 }
 
 #[test]
@@ -861,6 +1018,283 @@ fn execute_proof_rails_replaces_stale_committed_receipt() {
     }));
 }
 
+#[test]
+fn execute_proof_rails_rejects_failing_execution_despite_valid_committed_receipt() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &relocated_receipt_proof_registry());
+    let fixture = write_relocated_receipt_fixture(&temp, "failing-relocated-proof-fixture", "fail");
+    std::fs::write(fixture.join("receipts/proof-receipt.txt"), "proof-result: pass deterministic-effect-handlers\n")
+        .expect("valid committed proof receipt should be written");
+
+    let output = run_executed_proof_check(&registry, &fixture);
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(report.diagnostics.iter().any(|diagnostic| {
+        diagnostic.policy_id == PROOF_POLICY_ID
+            && diagnostic.path.ends_with("receipts/proof-receipt.txt")
+            && diagnostic.message.contains("missing pass signal")
+    }));
+}
+
+#[test]
+fn check_skips_non_utf8_files_in_source_directories_but_rejects_named_ones() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry(&temp);
+    let source_dir = temp.path().join("binary-asset-fixture");
+    std::fs::create_dir_all(source_dir.join("src")).expect("source dir should be created");
+    std::fs::create_dir_all(source_dir.join("assets")).expect("asset dir should be created");
+    std::fs::write(source_dir.join("src/lib.rs"), "pub fn small() {}\n").expect("source should be written");
+    let binary_asset = source_dir.join("assets/logo.bin");
+    std::fs::write(&binary_asset, [0xff, 0xfe, 0x00, 0x01]).expect("binary asset should be written");
+
+    let metadata = write_octet_layout_metadata(&temp);
+    let walked = run_architecture_check(&registry, &[&source_dir, &metadata]);
+
+    assert_success(&walked);
+    assert!(parse_report(&walked).diagnostics.is_empty());
+
+    let named = run_architecture_check(&registry, &[&binary_asset, &metadata]);
+
+    assert_failure(&named);
+    let stderr = String::from_utf8_lossy(&named.stderr);
+    assert!(stderr.contains("failed to read") && stderr.contains("logo.bin"), "stderr was: {stderr}");
+}
+
+#[test]
+fn proof_artifact_dir_requires_execute_proof_rails() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &proof_registry());
+    let fixture = write_executable_proof_fixture(&temp, "proof-artifact-dir-fixture");
+    let proof_artifact_dir = temp.path().join("proof-artifacts");
+
+    let output = Command::new(binary_path())
+        .arg("check")
+        .arg("--registry")
+        .arg(&registry)
+        .arg("--source")
+        .arg(&fixture)
+        .arg("--family")
+        .arg(VERIFICATION_FAMILY)
+        .arg("--proof-artifact-dir")
+        .arg(&proof_artifact_dir)
+        .arg("--output")
+        .arg("json")
+        .output()
+        .expect("standards checker should run");
+
+    assert_failure(&output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("--execute-proof-rails"), "stderr was: {stderr}");
+    assert!(output.stdout.is_empty(), "no report should be emitted for rejected arguments");
+    assert!(!proof_artifact_dir.exists());
+}
+
+#[test]
+fn execute_proof_rails_rejects_pass_signal_with_failing_exit_status() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &relocated_receipt_proof_registry());
+    let fixture = write_relocated_receipt_fixture(&temp, "failing-exit-proof-fixture", "pass");
+    std::fs::write(
+        fixture.join("proof-command.sh"),
+        "#!/usr/bin/env bash\nprintf '%s\\n' 'proof-result: pass deterministic-effect-handlers'\nexit 1\n",
+    )
+    .expect("failing proof command should be written");
+
+    let output = run_executed_proof_check(&registry, &fixture);
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(report.diagnostics.iter().any(|diagnostic| {
+        diagnostic.policy_id == PROOF_POLICY_ID && diagnostic.message.contains("`exit-status: 1`")
+    }));
+}
+
+#[test]
+fn execute_proof_rails_replaces_committed_receipt_at_receipt_path() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry_value(&temp, &relocated_receipt_proof_registry());
+    let fixture = write_relocated_receipt_fixture(&temp, "passing-relocated-proof-fixture", "pass");
+    std::fs::write(fixture.join("receipts/proof-receipt.txt"), "proof-result: fail deterministic-effect-handlers\n")
+        .expect("stale committed proof receipt should be written");
+
+    let output = run_executed_proof_check(&registry, &fixture);
+
+    assert_success(&output);
+    let report = parse_report(&output);
+    assert_eq!(report.diagnostics.len(), 0);
+    assert!(report.evaluated_policy_ids.iter().any(|policy_id| policy_id == PROOF_POLICY_ID));
+}
+
+#[cfg(unix)]
+#[test]
+fn architecture_check_reports_cargo_metadata_that_cannot_run() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry(&temp);
+    let workspace = write_cargo_workspace_fixture(&temp);
+    let empty_path = temp.path().join("empty-path");
+    std::fs::create_dir_all(&empty_path).expect("empty PATH dir should be created");
+
+    let output = run_architecture_check_with_path(&registry, &workspace, &empty_path);
+
+    assert_cargo_metadata_failure(&output, "`cargo metadata --format-version 1` could not run");
+}
+
+#[cfg(unix)]
+#[test]
+fn architecture_check_reports_cargo_metadata_nonzero_exit() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry(&temp);
+    let workspace = write_cargo_workspace_fixture(&temp);
+    let fake_bin = write_fake_cargo(&temp, "#!/bin/sh\necho 'error: failed to load manifest' >&2\nexit 101\n");
+
+    let output = run_architecture_check_with_path(&registry, &workspace, &fake_bin);
+
+    assert_cargo_metadata_failure(&output, "exit status: 101");
+    assert!(
+        parse_report(&output)
+            .diagnostics
+            .iter()
+            .any(|diagnostic| { diagnostic.message.contains("error: failed to load manifest") })
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn architecture_check_reports_cargo_metadata_non_utf8_output() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry(&temp);
+    let workspace = write_cargo_workspace_fixture(&temp);
+    let fake_bin = write_fake_cargo(&temp, "#!/bin/sh\nprintf '\\377\\376'\n");
+
+    let output = run_architecture_check_with_path(&registry, &workspace, &fake_bin);
+
+    assert_cargo_metadata_failure(&output, "non-UTF-8 output");
+}
+
+#[cfg(unix)]
+#[test]
+fn architecture_check_runs_cargo_metadata_for_relative_source_paths() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let mut registry_value = test_registry();
+    registry_value.policies[0].mechanisms[0].dependency_edge_kinds = vec!["normal".to_owned(), "build".to_owned()];
+    let registry = write_registry_value(&temp, &registry_value);
+    let workspace = write_cargo_workspace_fixture(&temp);
+    let fake_bin = write_fake_cargo(
+        &temp,
+        r#"#!/bin/sh
+printf '%s' '{"packages":[{"id":"core","name":"tigerstyle-core","manifest_path":"/w/crates/tigerstyle-core/Cargo.toml"},{"id":"tokio","name":"tokio","manifest_path":"/registry/tokio/Cargo.toml"}],"resolve":{"nodes":[{"id":"core","deps":[{"pkg":"tokio","dep_kinds":[{"kind":null}]}]}]},"workspace_members":["core"]}'
+"#,
+    );
+
+    let output = Command::new(binary_path())
+        .current_dir(&workspace)
+        .arg("check")
+        .arg("--registry")
+        .arg(&registry)
+        .arg("--source")
+        .arg("crates")
+        .arg("--family")
+        .arg(ARCHITECTURE_FAMILY)
+        .arg("--output")
+        .arg("json")
+        .env("PATH", &fake_bin)
+        .output()
+        .expect("standards checker should run");
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(
+        report.diagnostics.iter().any(|diagnostic| {
+            diagnostic.policy_id == FCIS_POLICY_ID
+                && diagnostic
+                    .message
+                    .contains("core crate `tigerstyle-core` depends on external infrastructure crate `tokio`")
+        }),
+        "{:?}",
+        report.diagnostics
+    );
+}
+
+#[test]
+fn architecture_check_rejects_sources_outside_any_cargo_workspace() {
+    let temp = TempDir::new().expect("temp dir should be created");
+    let registry = write_registry(&temp);
+    let loose_sources = temp.path().join("loose-sources");
+    std::fs::create_dir_all(loose_sources.join("crates/tigerstyle-core/src")).expect("core dir should be created");
+    std::fs::write(loose_sources.join("crates/tigerstyle-core/src/lib.rs"), "#![no_std]\n")
+        .expect("core crate root should be written");
+
+    let output = run_architecture_check(&registry, &[&loose_sources]);
+
+    assert_failure(&output);
+    let report = parse_report(&output);
+    assert!(
+        report.diagnostics.iter().any(|diagnostic| {
+            diagnostic.policy_id == FCIS_POLICY_ID
+                && diagnostic.severity == Severity::Error
+                && diagnostic.message.contains("Cargo.toml")
+        }),
+        "{:?}",
+        report.diagnostics
+    );
+}
+
+fn write_cargo_workspace_fixture(temp: &TempDir) -> PathBuf {
+    let workspace = temp.path().join("workspace");
+    std::fs::create_dir_all(workspace.join("crates/tigerstyle-core/src")).expect("core crate dir should be created");
+    std::fs::write(workspace.join("Cargo.toml"), "[workspace]\nmembers = [\"crates/*\"]\n")
+        .expect("workspace manifest should be written");
+    std::fs::write(workspace.join("crates/tigerstyle-core/src/lib.rs"), "#![no_std]\n")
+        .expect("core crate root should be written");
+    workspace
+}
+
+#[cfg(unix)]
+fn write_fake_cargo(temp: &TempDir, script: &str) -> PathBuf {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    let fake_bin = temp.path().join("fake-bin");
+    std::fs::create_dir_all(&fake_bin).expect("fake cargo dir should be created");
+    let fake_cargo = fake_bin.join("cargo");
+    std::fs::write(&fake_cargo, script).expect("fake cargo should be written");
+    std::fs::set_permissions(&fake_cargo, std::fs::Permissions::from_mode(0o755))
+        .expect("fake cargo should be executable");
+    fake_bin
+}
+
+fn run_architecture_check_with_path(registry: &Path, source: &Path, path_env: &Path) -> Output {
+    Command::new(binary_path())
+        .arg("check")
+        .arg("--registry")
+        .arg(registry)
+        .arg("--source")
+        .arg(source)
+        .arg("--family")
+        .arg(ARCHITECTURE_FAMILY)
+        .arg("--output")
+        .arg("json")
+        .env("PATH", path_env)
+        .output()
+        .expect("standards checker should run")
+}
+
+fn assert_cargo_metadata_failure(output: &Output, expected_message: &str) {
+    assert_failure(output);
+    let report = parse_report(output);
+    assert!(
+        report.diagnostics.iter().any(|diagnostic| {
+            diagnostic.policy_id == FCIS_POLICY_ID
+                && diagnostic.severity == Severity::Error
+                && diagnostic.path.ends_with("workspace/Cargo.toml")
+                && diagnostic.message.contains("cargo metadata")
+                && diagnostic.message.contains(expected_message)
+        }),
+        "expected cargo metadata failure `{expected_message}`, got {:?}",
+        report.diagnostics
+    );
+}
+
 fn export_artifacts(registry: &Path, artifact_dir: &Path) {
     let output = Command::new(binary_path())
         .arg("export-artifacts")
@@ -923,6 +1357,40 @@ fn write_executable_proof_fixture(temp: &TempDir, name: &str) -> PathBuf {
     fixture
 }
 
+fn write_relocated_receipt_fixture(temp: &TempDir, name: &str, proof_result: &str) -> PathBuf {
+    let fixture = temp.path().join(name);
+    std::fs::create_dir_all(fixture.join("src")).expect("proof fixture source dir should be created");
+    std::fs::create_dir_all(fixture.join("proofs")).expect("proof fixture proof dir should be created");
+    std::fs::create_dir_all(fixture.join("receipts")).expect("proof fixture receipt dir should be created");
+    std::fs::write(fixture.join("src/lib.rs"), "pub fn proof_witness() {}\n").expect("proof source should be written");
+    std::fs::write(fixture.join("proofs/witness.rs"), "proof fn witness() {}\n")
+        .expect("proof input should be written");
+    std::fs::write(
+        fixture.join("proof-command.sh"),
+        format!(
+            "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' 'proof-result: {proof_result} deterministic-effect-handlers'\n"
+        ),
+    )
+    .expect("proof command should be written");
+    fixture
+}
+
+fn run_executed_proof_check(registry: &Path, fixture: &Path) -> Output {
+    Command::new(binary_path())
+        .arg("check")
+        .arg("--registry")
+        .arg(registry)
+        .arg("--source")
+        .arg(fixture)
+        .arg("--family")
+        .arg(VERIFICATION_FAMILY)
+        .arg("--execute-proof-rails")
+        .arg("--output")
+        .arg("json")
+        .output()
+        .expect("standards checker should run")
+}
+
 fn refresh_manifest_entry(artifact_dir: &Path, artifact_name: &str) {
     let manifest_path = artifact_dir.join(ARTIFACT_MANIFEST_JSON_FILE);
     let artifact_path = artifact_dir.join(artifact_name);
@@ -940,19 +1408,28 @@ fn refresh_manifest_entry(artifact_dir: &Path, artifact_name: &str) {
     std::fs::write(&manifest_path, format!("{text}\n")).expect("manifest should be refreshed");
 }
 
-fn run_architecture_check(registry: &Path, source: &Path) -> Output {
-    Command::new(binary_path())
-        .arg("check")
-        .arg("--registry")
-        .arg(registry)
-        .arg("--source")
-        .arg(source)
+fn run_architecture_check(registry: &Path, sources: &[&Path]) -> Output {
+    let mut command = Command::new(binary_path());
+    command.arg("check").arg("--registry").arg(registry);
+    for source in sources {
+        command.arg("--source").arg(source);
+    }
+    command
         .arg("--family")
         .arg(ARCHITECTURE_FAMILY)
         .arg("--output")
         .arg("json")
         .output()
         .expect("standards checker should run")
+}
+
+/// Copies the reviewed Octet-layout crate graph to a `__octet/cargo-metadata.json` source path.
+fn write_octet_layout_metadata(temp: &TempDir) -> PathBuf {
+    let metadata_dir = temp.path().join("cargo-metadata/__octet");
+    std::fs::create_dir_all(&metadata_dir).expect("metadata dir should be created");
+    let metadata = metadata_dir.join("cargo-metadata.json");
+    std::fs::copy(repo_path(OCTET_LAYOUT_METADATA_FIXTURE), &metadata).expect("metadata fixture should be copied");
+    metadata
 }
 
 fn run_architecture_artifact_check(policy_artifacts_dir: &Path, source: &Path) -> Output {
@@ -1078,6 +1555,17 @@ fn proof_registry_with_modes(current: EnforcementMode, target: EnforcementMode) 
         seed_manifests: Vec::new(),
         config_receipt_families: Vec::new(),
     }
+}
+
+fn relocated_receipt_proof_registry() -> PolicyRegistry {
+    let mut registry = proof_registry();
+    let rail = &mut registry.policies[0].proof_rails[0];
+    rail.proof_paths = vec!["*/proofs/witness.rs".to_owned()];
+    rail.receipt_paths = vec!["*/receipts/proof-receipt.txt".to_owned()];
+    rail.receipt_binding = String::new();
+    rail.receipt_provenance = ReceiptProvenance::default();
+    rail.receipt_verifier = ReceiptVerifier::default();
+    registry
 }
 
 fn verified_policy(current: EnforcementMode, target: EnforcementMode) -> PolicyEntry {

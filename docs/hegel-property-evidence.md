@@ -61,6 +61,8 @@ The first catalog law checks issue-code normalization. Generated duplicates, whi
 
 A failed law must bind one retained counterexample. The summary identity and counterexample identity must match the exact retained bytes.
 
+When a property fails under `--run`, the producer adapter does not abort the run. It writes the counterexample to the profile `counterexample_path` and sets the summary result to `counterexample`. The counterexample records the failing property, the Hegel failure message, and the shrunk draws. Each text value is bounded to 512 bytes, and the adapter keeps at most 16 draws. The summary reports the failing property as its issue code. Its `cases_completed` value counts the generated cases that passed before the first failure. The adapter then exits successfully, and Octet records a failed receipt with a `hegel-counterexample` finding.
+
 Profiles retain only bounded issue codes and bounded values. They do not authorize arbitrary paths or environment values.
 
 Accepted counterexamples stay replayable through the retained artifact or a checked regression fixture.

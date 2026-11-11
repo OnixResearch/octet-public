@@ -14,3 +14,4 @@ LL | #![warn(primitive_domain_alias)]
    = note: `#[warn(tigerstyle::primitive_domain_alias)]` implied by `#[warn(primitive_domain_alias)]`
 
 warning: 1 warning emitted
+

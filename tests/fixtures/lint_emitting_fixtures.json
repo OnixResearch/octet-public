@@ -116,6 +116,14 @@
     "fixture": "too_many_parameters"
   },
   {
+    "lint_name": "raw_bool_parameter",
+    "fixture": "raw_bool_parameter"
+  },
+  {
+    "lint_name": "raw_bool_parameter_suppression",
+    "fixture": "raw_bool_parameter_suppression"
+  },
+  {
     "lint_name": "fat_trait",
     "fixture": "fat_trait"
   },
@@ -286,5 +294,17 @@
   {
     "lint_name": "no_recursion",
     "fixture": "no_recursion"
+  },
+  {
+    "lint_name": "discarded_sync_result",
+    "fixture": "durability_discard/durability_discard"
+  },
+  {
+    "lint_name": "flush_only_durability",
+    "fixture": "durability_flush_only/durability_flush_only"
+  },
+  {
+    "lint_name": "retry_sync_after_error",
+    "fixture": "durability_retry/durability_retry"
   }
 ]

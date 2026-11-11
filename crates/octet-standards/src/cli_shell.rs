@@ -14,6 +14,7 @@ use clap::Parser;
 use clap::Subcommand;
 use clap::ValueEnum;
 use octet_standards::architecture::CARGO_METADATA_SOURCE_PATH;
+use octet_standards::architecture::crate_boundary_mechanism_active;
 use octet_standards::artifacts::ARTIFACT_MANIFEST_JSON_FILE;
 use octet_standards::artifacts::ArtifactManifest;
 use octet_standards::artifacts::CHECK_CONFIG_TOML_FILE;
@@ -95,6 +96,8 @@ enum Command {
     CustomsGate(CustomsGateArgs),
     /// Validate hard-policy fixture coverage from a manifest.
     FixtureCoverage(FixtureCoverageArgs),
+    /// Validate saved storage-fault assurance evidence without running a producer.
+    StorageFaultAssurance(StorageFaultAssuranceArgs),
 }
 
 /// Source-check arguments.
@@ -108,7 +111,7 @@ struct CheckArgs {
     #[arg(long)]
     policy_artifacts_dir: Option<PathBuf>,
 
-    /// Source files or directories to inspect.
+    /// Source files or directories to inspect. Directory walks skip files that are not valid UTF-8.
     #[arg(long, required = true)]
     source: Vec<PathBuf>,
 
@@ -124,8 +127,14 @@ struct CheckArgs {
     #[arg(long)]
     execute_proof_rails: bool,
 
-    /// Directory where executed proof-rail receipts are persisted for later promotion evidence.
+    /// Require complete execution coverage for selected hard policies in addition to no blocking
+    /// diagnostics.
     #[arg(long)]
+    strict_policy_coverage: bool,
+
+    /// Directory where executed proof-rail receipts are persisted for later promotion evidence.
+    /// Requires `--execute-proof-rails`.
+    #[arg(long, requires = "execute_proof_rails")]
     proof_artifact_dir: Option<PathBuf>,
 }
 
@@ -148,7 +157,8 @@ struct ExportArtifactsArgs {
     #[arg(long)]
     receipt_out: Option<PathBuf>,
 
-    /// Verification or replay command to record in the receipt.
+    /// Verification or replay command to record in the receipt with status `recorded`; it is not
+    /// executed.
     #[arg(long)]
     verification_command: Vec<String>,
 }
@@ -188,7 +198,8 @@ struct CustomsGateArgs {
     #[arg(long)]
     artifact_manifest: Option<PathBuf>,
 
-    /// Checked-in source or fixture path. Repeatable; directories are read recursively.
+    /// Checked-in source or fixture path. Repeatable; directories are read recursively, skipping
+    /// files that are not valid UTF-8.
     #[arg(long)]
     source: Vec<PathBuf>,
 
@@ -266,6 +277,7 @@ fn run_cli(cli: Cli) -> Result<bool, CliError> {
         Command::NickelExportManifest(args) => run_nickel_export_manifest_command(&args),
         Command::CustomsGate(args) => run_customs_gate_command(&args),
         Command::FixtureCoverage(args) => run_fixture_coverage_command(args),
+        Command::StorageFaultAssurance(args) => run_storage_fault_assurance_command(&args),
     }
 }
 
@@ -284,12 +296,19 @@ fn run_check_command(args: CheckArgs) -> Result<bool, CliError> {
                 let report = CheckReport {
                     diagnostics,
                     active_suppressions: Vec::new(),
+                    suppressed_diagnostics: Vec::new(),
                     evaluated_policy_ids: Vec::new(),
                     policy_evaluations: Vec::new(),
                     capability_reports: Vec::new(),
+                    policy_executions: Vec::new(),
+                    required_policy_ids: Vec::new(),
                 };
                 emit_report(args.output, &report)?;
-                return Ok(report.has_blocking_diagnostics());
+                return Ok(if args.strict_policy_coverage {
+                    !report.strict_passing()
+                } else {
+                    report.has_blocking_diagnostics()
+                });
             }
         }
     } else if let Some(registry) = &args.registry {
@@ -299,23 +318,59 @@ fn run_check_command(args: CheckArgs) -> Result<bool, CliError> {
             message: "pass --registry or --policy-artifacts-dir".to_owned(),
         });
     };
+    validate_family_selection(&registry, &selection)?;
     let mut sources = load_sources(&args.source)?;
-    append_cargo_metadata_source(&registry, &selection, &args.source, &mut sources);
+    let cargo_metadata_diagnostic = append_cargo_metadata_source(&registry, &selection, &args.source, &mut sources);
     if args.execute_proof_rails {
         let executed = execute_relevant_proof_rails(&registry, &sources, &selection, &args.source);
         if let Some(proof_artifact_dir) = &args.proof_artifact_dir {
             persist_proof_receipts(proof_artifact_dir, &executed.receipts)?;
         }
-        sources.retain(|source| !executed.proof_path_patterns.iter().any(|pattern| source.path.contains(pattern)));
+        sources.retain(|source| {
+            !executed
+                .receipt_path_patterns
+                .iter()
+                .any(|pattern| octet_standards::proof_artifact::path_matches_pattern(pattern, &source.path))
+        });
         sources.extend(executed.receipts);
     }
-    let report = run_checks(&CheckInput {
+    let mut report = run_checks(&CheckInput {
         registry,
         sources,
         selection,
+        checker_failures: Vec::new(),
     });
+    report.diagnostics.extend(cargo_metadata_diagnostic);
     emit_report(args.output, &report)?;
-    Ok(report.has_blocking_diagnostics())
+    Ok(if args.strict_policy_coverage {
+        !report.strict_passing()
+    } else {
+        report.has_blocking_diagnostics()
+    })
+}
+
+fn validate_family_selection(registry: &PolicyRegistry, selection: &FamilySelection) -> Result<(), CliError> {
+    let unknown_families = selection.unknown_families(registry);
+    if !unknown_families.is_empty() {
+        let known_families = registry
+            .policies
+            .iter()
+            .map(|policy| policy.pillar.as_str())
+            .collect::<std::collections::BTreeSet<_>>();
+        return Err(CliError::Config {
+            message: format!(
+                "unknown --family value(s): {}; known families: {}",
+                unknown_families.join(", "),
+                known_families.into_iter().collect::<Vec<_>>().join(", ")
+            ),
+        });
+    }
+    if !selection.selects_any_policy(registry) {
+        return Err(CliError::Config {
+            message: "family selection evaluates zero policies; the registry declares no matching policies".to_owned(),
+        });
+    }
+    Ok(())
 }
 
 fn run_export_artifacts_command(args: &ExportArtifactsArgs) -> Result<bool, CliError> {
@@ -436,12 +491,90 @@ fn run_fixture_coverage_command(args: FixtureCoverageArgs) -> Result<bool, CliEr
     let report = CheckReport {
         diagnostics,
         active_suppressions: Vec::new(),
+        suppressed_diagnostics: Vec::new(),
         evaluated_policy_ids: Vec::new(),
         policy_evaluations: Vec::new(),
         capability_reports: Vec::new(),
+        policy_executions: Vec::new(),
+        required_policy_ids: Vec::new(),
     };
     emit_report(output, &report)?;
     Ok(report.has_blocking_diagnostics())
+}
+
+/// Saved storage-fault assurance arguments.
+#[derive(Debug, Parser)]
+struct StorageFaultAssuranceArgs {
+    /// JSON profile exported from the storage-fault assurance Nickel profile.
+    #[arg(long)]
+    profile: PathBuf,
+
+    /// Saved producer receipt JSON.
+    #[arg(long)]
+    producer_receipt: PathBuf,
+
+    /// Saved Cairn receipt JSON.
+    #[arg(long)]
+    cairn_receipt: PathBuf,
+
+    /// Output format.
+    #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
+    output: OutputFormat,
+}
+
+fn run_storage_fault_assurance_command(args: &StorageFaultAssuranceArgs) -> Result<bool, CliError> {
+    let profile_text = read_text(&args.profile)?;
+    let producer_text = read_text(&args.producer_receipt)?;
+    let cairn_text = read_text(&args.cairn_receipt)?;
+    match octet_standards::storage_fault::validate_storage_fault_assurance(&profile_text, &producer_text, &cairn_text) {
+        Ok(result) => {
+            emit_storage_fault_result(args.output, &result)?;
+            Ok(false)
+        }
+        Err(diagnostics) => {
+            emit_storage_fault_diagnostics(args.output, &diagnostics)?;
+            Ok(true)
+        }
+    }
+}
+
+fn emit_storage_fault_result(
+    output: OutputFormat,
+    result: &octet_standards::storage_fault::StorageFaultAssurance,
+) -> Result<(), CliError> {
+    match output {
+        OutputFormat::Json => {
+            println!("{}", serde_json::to_string_pretty(result).map_err(|source| CliError::Serialize { source })?);
+        }
+        OutputFormat::Human | OutputFormat::Markdown => {
+            println!("storage-fault assurance: passed");
+            println!("profile: {}", result.profile_id);
+            println!("producer receipt: {}", result.producer_receipt_blake3);
+            println!("Cairn receipt: {}", result.cairn_receipt_blake3);
+            for case_id in &result.verified_cases {
+                println!("verified case: {case_id}");
+            }
+            for non_claim in &result.non_claims {
+                println!("non-claim: {non_claim}");
+            }
+        }
+    }
+    Ok(())
+}
+
+fn emit_storage_fault_diagnostics(output: OutputFormat, diagnostics: &[String]) -> Result<(), CliError> {
+    match output {
+        OutputFormat::Json => {
+            let report = serde_json::json!({ "status": "failed", "diagnostics": diagnostics });
+            println!("{}", serde_json::to_string_pretty(&report).map_err(|source| CliError::Serialize { source })?);
+        }
+        OutputFormat::Human | OutputFormat::Markdown => {
+            for diagnostic in diagnostics {
+                eprintln!("storage-fault assurance: {diagnostic}");
+            }
+        }
+    }
+    Ok(())
 }
 
 fn write_export_receipt(
@@ -602,17 +735,22 @@ fn policy_provenance_record(
     }
 }
 
+/// Bind verification commands into the receipt.
+///
+/// `export-artifacts` does not execute caller-supplied `--verification-command` entries, so they
+/// are `recorded`; without any, the receipt lists its own completed export as `passed`.
 fn export_verification_commands(args: &ExportArtifactsArgs) -> Vec<ReceiptVerificationCommand> {
-    let commands = if args.verification_command.is_empty() {
-        vec!["octet-standards export-artifacts receipt emission".to_owned()]
-    } else {
-        args.verification_command.clone()
-    };
-    commands
-        .into_iter()
-        .map(|command| ReceiptVerificationCommand {
-            command,
+    if args.verification_command.is_empty() {
+        return vec![ReceiptVerificationCommand {
+            command: "octet-standards export-artifacts receipt emission".to_owned(),
             status: AcceptanceStatus::Passed,
+        }];
+    }
+    args.verification_command
+        .iter()
+        .map(|command| ReceiptVerificationCommand {
+            command: command.clone(),
+            status: AcceptanceStatus::Recorded,
         })
         .collect()
 }
@@ -873,7 +1011,7 @@ fn sanitized_receipt_file_name(path: &str) -> String {
 
 struct ExecutedProofRails {
     receipts: Vec<SourceFile>,
-    proof_path_patterns: Vec<String>,
+    receipt_path_patterns: Vec<String>,
 }
 
 fn execute_relevant_proof_rails(
@@ -882,22 +1020,24 @@ fn execute_relevant_proof_rails(
     selection: &FamilySelection,
     source_paths: &[PathBuf],
 ) -> ExecutedProofRails {
-    let mut proof_path_patterns = Vec::new();
+    let mut receipt_path_patterns = Vec::new();
     let receipts = registry
         .policies
         .iter()
         .filter(|policy| selection.includes(&policy.pillar))
         .filter(|policy| policy_is_verified(policy))
         .flat_map(|policy| policy.proof_rails.iter())
-        .filter(|rail| proof_rail_is_relevant(rail, sources))
+        .filter(|rail| octet_standards::proof_artifact::proof_rail_is_relevant(rail, sources))
         .map(|rail| {
-            proof_path_patterns.extend(rail.proof_paths.iter().cloned());
-            execute_proof_rail(rail, sources, source_paths)
+            let rail_receipt_paths = octet_standards::proof_artifact::receipt_paths(rail);
+            let receipt = execute_proof_rail(rail, &rail_receipt_paths, sources, source_paths);
+            receipt_path_patterns.extend(rail_receipt_paths);
+            receipt
         })
         .collect();
     ExecutedProofRails {
         receipts,
-        proof_path_patterns,
+        receipt_path_patterns,
     }
 }
 
@@ -906,21 +1046,16 @@ fn policy_is_verified(policy: &octet_standards::model::PolicyEntry) -> bool {
         || policy.target_enforcement_mode == octet_standards::model::EnforcementMode::Verified
 }
 
-fn proof_rail_is_relevant(rail: &octet_standards::model::ProofRail, sources: &[SourceFile]) -> bool {
-    !matching_sources(&rail.source_paths, sources).is_empty()
-        || !matching_sources(&rail.proof_paths, sources).is_empty()
-}
-
 fn execute_proof_rail(
     rail: &octet_standards::model::ProofRail,
+    receipt_path_patterns: &[String],
     sources: &[SourceFile],
     source_paths: &[PathBuf],
 ) -> SourceFile {
     let working_dir = proof_command_working_dir(source_paths);
     let output = execute_proof_command_argv(rail, &working_dir);
     let receipt = proof_command_receipt(rail, sources, &working_dir, output);
-    let receipt_path = working_dir.join(first_proof_path(rail));
-    SourceFile::new(receipt_path.display().to_string(), receipt)
+    SourceFile::new(executed_receipt_path(receipt_path_patterns, sources, &working_dir), receipt)
 }
 
 fn proof_command_working_dir(source_paths: &[PathBuf]) -> PathBuf {
@@ -936,8 +1071,14 @@ fn proof_command_working_dir(source_paths: &[PathBuf]) -> PathBuf {
     )
 }
 
-fn first_proof_path(rail: &octet_standards::model::ProofRail) -> &str {
-    rail.proof_paths.first().map_or("proof-receipt.txt", String::as_str)
+/// Resolve where the freshly executed receipt replaces the checked receipt: the first checked
+/// source matching the rail receipt patterns, else the first receipt pattern under `working_dir`.
+fn executed_receipt_path(receipt_path_patterns: &[String], sources: &[SourceFile], working_dir: &Path) -> String {
+    if let Some(source) = matching_sources(receipt_path_patterns, sources).first() {
+        return source.path.clone();
+    }
+    let first_pattern = receipt_path_patterns.first().map_or("proof-receipt.txt", String::as_str);
+    working_dir.join(first_pattern).display().to_string()
 }
 
 fn execute_proof_command_argv(
@@ -1036,9 +1177,16 @@ fn proof_receipt_verifier(rail: &octet_standards::model::ProofRail, sources: &[S
     if !verifier.verifier_build_closure.is_empty() {
         lines.push(format!("proof-verifier-build-closure: {}", verifier.verifier_build_closure));
     }
-    if !verifier.verifier_build_closure_digest.is_empty() {
-        let digest = build_closure_digest(&verifier.verifier_build_closure_paths, sources)
-            .unwrap_or_else(|| verifier.verifier_build_closure_digest.clone());
+    // Unmatched configured closure manifests omit the digest line; the checker reports the
+    // manifest error instead of accepting the configured digest.
+    if !verifier.verifier_build_closure_digest.is_empty()
+        && let Ok(digest) = octet_standards::proof_artifact::build_closure_digest(
+            &verifier.verifier_build_closure_paths,
+            sources,
+            octet_standards::proof_artifact::FIELD_BUILD_CLOSURE_PATHS,
+        )
+    {
+        let digest = digest.unwrap_or_else(|| verifier.verifier_build_closure_digest.clone());
         lines.push(format!("proof-verifier-build-closure-blake3: {digest}"));
     }
     if !verifier.verifier_nix_derivation.is_empty() {
@@ -1050,15 +1198,26 @@ fn proof_receipt_verifier(rail: &octet_standards::model::ProofRail, sources: &[S
     if !verifier.verifier_nix_closure.is_empty() {
         lines.push(format!("proof-verifier-nix-closure: {}", verifier.verifier_nix_closure));
     }
-    if !verifier.verifier_nix_closure_digest.is_empty() {
-        let digest = build_closure_digest(&verifier.verifier_nix_closure_paths, sources)
-            .unwrap_or_else(|| verifier.verifier_nix_closure_digest.clone());
+    if !verifier.verifier_nix_closure_digest.is_empty()
+        && let Ok(digest) = octet_standards::proof_artifact::build_closure_digest(
+            &verifier.verifier_nix_closure_paths,
+            sources,
+            octet_standards::proof_artifact::FIELD_NIX_CLOSURE_PATHS,
+        )
+    {
+        let digest = digest.unwrap_or_else(|| verifier.verifier_nix_closure_digest.clone());
         lines.push(format!("proof-verifier-nix-closure-blake3: {digest}"));
     }
     if !verifier.verifier_nix_closure_graph_digest.is_empty() {
-        let digest = nix_closure_graph_digest(&verifier.verifier_nix_closure_graph_paths, sources)
-            .unwrap_or_else(|| verifier.verifier_nix_closure_graph_digest.clone());
-        lines.push(format!("proof-verifier-nix-closure-graph-blake3: {digest}"));
+        // Unmatched or malformed configured graphs omit the line; the checker reports the graph
+        // error instead of accepting the configured digest.
+        if let Ok(digest) = octet_standards::proof_artifact::nix_closure_graph_digest(
+            &verifier.verifier_nix_closure_graph_paths,
+            sources,
+        ) {
+            let digest = digest.unwrap_or_else(|| verifier.verifier_nix_closure_graph_digest.clone());
+            lines.push(format!("proof-verifier-nix-closure-graph-blake3: {digest}"));
+        }
     }
     if !verifier.toolchain_id.is_empty() {
         lines.push(format!("proof-toolchain: {}", verifier.toolchain_id));
@@ -1075,89 +1234,6 @@ fn proof_receipt_verifier(rail: &octet_standards::model::ProofRail, sources: &[S
         ) + "
 "
     }
-}
-
-fn build_closure_digest(paths: &[String], sources: &[SourceFile]) -> Option<String> {
-    if paths.is_empty() {
-        return None;
-    }
-    let mut matched_sources = matching_sources(paths, sources);
-    if matched_sources.is_empty() {
-        return None;
-    }
-    matched_sources.sort_by(|left, right| left.path.cmp(&right.path));
-    let mut manifest = String::new();
-    for source in matched_sources {
-        writeln!(manifest, "{}:{}", source.path, blake3_hex(&source.text)).expect("writing to string should not fail");
-    }
-    Some(blake3_hex(&manifest))
-}
-
-fn nix_closure_graph_digest(paths: &[String], sources: &[SourceFile]) -> Option<String> {
-    if paths.is_empty() {
-        return None;
-    }
-    let mut matched_sources = matching_sources(paths, sources);
-    if matched_sources.is_empty() {
-        return None;
-    }
-    matched_sources.sort_by(|left, right| left.path.cmp(&right.path));
-    let mut canonical_graphs = String::new();
-    for source in matched_sources {
-        let canonical = canonical_nix_closure_graph(&source.text)?;
-        canonical_graphs.push_str(&canonical);
-    }
-    Some(blake3_hex(&canonical_graphs))
-}
-
-fn canonical_nix_closure_graph(text: &str) -> Option<String> {
-    let lines = text.lines().collect::<Vec<_>>();
-    let mut index = 0;
-    let mut records = Vec::new();
-    while index < lines.len() {
-        while index < lines.len() && lines[index].trim().is_empty() {
-            index += 1;
-        }
-        if index >= lines.len() {
-            break;
-        }
-        let path = lines[index].trim().to_owned();
-        index += 1;
-        while index < lines.len() && lines[index].trim().is_empty() {
-            index += 1;
-        }
-        if index >= lines.len() {
-            return None;
-        }
-        let reference_count = lines[index].trim().parse::<usize>().ok()?;
-        index += 1;
-        let mut references = Vec::with_capacity(reference_count);
-        for _ in 0..reference_count {
-            while index < lines.len() && lines[index].trim().is_empty() {
-                index += 1;
-            }
-            if index >= lines.len() {
-                return None;
-            }
-            references.push(lines[index].trim().to_owned());
-            index += 1;
-        }
-        references.sort();
-        records.push((path, references));
-    }
-    if records.is_empty() {
-        return None;
-    }
-    records.sort_by(|left, right| left.0.cmp(&right.0));
-    let mut canonical = String::new();
-    for (path, references) in records {
-        writeln!(canonical, "{path}").expect("writing to string should not fail");
-        writeln!(canonical, "{}", references.len()).expect("writing to string should not fail");
-        for reference in references {
-            writeln!(canonical, "{reference}").expect("writing to string should not fail");
-        }
-    }
-    Some(canonical)
 }
 
 fn proof_receipt_binding(rail: &octet_standards::model::ProofRail, sources: &[SourceFile]) -> String {
@@ -1179,35 +1255,77 @@ fn blake3_hex(text: &str) -> String {
     blake3::hash(text.as_bytes()).to_hex().to_string()
 }
 
+/// Adds `cargo metadata` output for the dependency-direction check.
+///
+/// Returns an error diagnostic when the active crate-boundary mechanism needs the crate graph but
+/// no `--source` path lies inside a Cargo workspace, or `cargo metadata` cannot run, exits
+/// non-zero, or prints non-UTF-8 output.
+// r[impl octet.dependency_direction.shell.metadata_failure]
 fn append_cargo_metadata_source(
     registry: &PolicyRegistry,
     selection: &FamilySelection,
     source_paths: &[PathBuf],
     sources: &mut Vec<SourceFile>,
-) {
-    if !selection.includes(ARCHITECTURE_FAMILY) || registry.policy_by_id(FCIS_POLICY_ID).is_none() {
-        return;
+) -> Option<Diagnostic> {
+    if !selection.includes(ARCHITECTURE_FAMILY) || !crate_boundary_mechanism_active(registry) {
+        return None;
     }
+    let policy = registry.policy_by_id(FCIS_POLICY_ID)?;
     if sources.iter().any(|source| source.path.ends_with(CARGO_METADATA_SOURCE_PATH)) {
-        return;
+        return None;
     }
     let Some(working_dir) = cargo_metadata_working_dir(source_paths) else {
-        return;
+        return Some(Diagnostic::new(DiagnosticInput {
+            policy_id: policy.policy_id.clone(),
+            source_section: policy.source_anchor.clone(),
+            path: CARGO_METADATA_SOURCE_PATH.to_owned(),
+            line: None,
+            severity: Severity::Error,
+            message: format!(
+                "no `--source` path has a `{CARGO_MANIFEST_FILE}` ancestor, so `cargo metadata --format-version 1` has no workspace to read; the dependency-direction check has no crate graph"
+            ),
+            remediation: "pass a `--source` path inside the checked Cargo workspace, or pass its `cargo metadata --format-version 1` output as a `__octet/cargo-metadata.json` source".to_owned(),
+        }));
     };
-    let Ok(output) = ProcessCommand::new("cargo")
-        .args(["metadata", "--format-version", "1"])
-        .current_dir(&working_dir)
-        .output()
-    else {
-        return;
-    };
-    if !output.status.success() {
-        return;
+    match cargo_metadata_output(&working_dir) {
+        Ok(metadata) => {
+            sources.push(SourceFile::new(CARGO_METADATA_SOURCE_PATH, metadata));
+            None
+        }
+        Err(message) => Some(Diagnostic::new(DiagnosticInput {
+            policy_id: policy.policy_id.clone(),
+            source_section: policy.source_anchor.clone(),
+            path: working_dir.join(CARGO_MANIFEST_FILE).display().to_string(),
+            line: None,
+            severity: Severity::Error,
+            message: format!("{message}; the dependency-direction check has no crate graph"),
+            remediation: "make `cargo metadata --format-version 1` succeed from the checked workspace, or pass its output as a `__octet/cargo-metadata.json` source".to_owned(),
+        })),
     }
-    let Ok(metadata) = String::from_utf8(output.stdout) else {
-        return;
-    };
-    sources.push(SourceFile::new(CARGO_METADATA_SOURCE_PATH, metadata));
+}
+
+fn cargo_metadata_output(working_dir: &Path) -> Result<String, String> {
+    let output = ProcessCommand::new("cargo")
+        .args(["metadata", "--format-version", "1"])
+        .current_dir(working_dir)
+        .output()
+        .map_err(|error| {
+            format!("`cargo metadata --format-version 1` could not run in `{}`: {error}", working_dir.display())
+        })?;
+    if !output.status.success() {
+        return Err(format!(
+            "`cargo metadata --format-version 1` failed in `{}` with {}: {}",
+            working_dir.display(),
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    String::from_utf8(output.stdout).map_err(|error| {
+        format!(
+            "`cargo metadata --format-version 1` printed non-UTF-8 output in `{}`: {error}",
+            working_dir.display()
+        )
+    })
 }
 
 fn cargo_metadata_working_dir(source_paths: &[PathBuf]) -> Option<PathBuf> {
@@ -1224,8 +1342,14 @@ fn cargo_metadata_working_dir(source_paths: &[PathBuf]) -> Option<PathBuf> {
 fn nearest_manifest_directory(start: &Path) -> Option<PathBuf> {
     let mut current = Some(start);
     while let Some(directory) = current {
-        if directory.join(CARGO_MANIFEST_FILE).is_file() {
-            return Some(directory.to_path_buf());
+        // A relative walk ends at the empty path, which names the current directory.
+        let probe = if directory.as_os_str().is_empty() {
+            Path::new(".")
+        } else {
+            directory
+        };
+        if probe.join(CARGO_MANIFEST_FILE).is_file() {
+            return Some(probe.to_path_buf());
         }
         current = directory.parent();
     }
@@ -1261,7 +1385,16 @@ fn append_sources_from_directory(directory: &Path, sources: &mut Vec<SourceFile>
         })?;
     entries.sort_by_key(std::fs::DirEntry::path);
     for entry in entries {
-        append_sources_from_path(&entry.path(), sources)?;
+        let path = entry.path();
+        if path.is_dir() {
+            append_sources_from_directory(&path, sources)?;
+            continue;
+        }
+        match append_source_file(&path, sources) {
+            // Walked directories may hold binary assets; only files named directly must be text.
+            Err(CliError::Read { source, .. }) if source.kind() == io::ErrorKind::InvalidData => {}
+            result => result?,
+        }
     }
     Ok(())
 }

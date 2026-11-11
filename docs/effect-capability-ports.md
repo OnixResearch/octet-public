@@ -19,7 +19,9 @@ narrow typed roots, validates every in-root locator as relative, and reads or
 writes artifact bundles, lint caches, source files, and proof receipts through
 those roots. Traversal, absolute locator, symlink, and non-regular-file cases
 fail closed before the shell reads, writes, verifies, or caches outside the
-chosen root.
+chosen root. File reads open the in-root target without blocking and inspect
+the opened handle, so a FIFO, device, or directory is rejected instead of
+stalling the shell or being read as file content.
 
 Capabilities stay narrow. `ProcessCapabilityToken` names only the process effect
 family; it is not a broad service object and it does not hide filesystem,

@@ -1,0 +1,5 @@
+[octet]
+nominal_domain_mode = "inventory"
+
+[octet.lint_levels]
+primitive_domain_alias = "deny"

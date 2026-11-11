@@ -56,7 +56,81 @@ pub struct StrictProfile {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct StrictProfileCatalog {
     pub schema_version: String,
+    pub boolean_api_policy: BooleanApiPolicy,
     pub profiles: Vec<StrictProfile>,
+}
+
+/// Closed policy for the direct boolean-parameter lint, exported from Nickel.
+///
+/// The policy names the covered callable shapes, the private direct-boolean
+/// minimum, the compatibility exclusions, the narrow expectation format, and
+/// the prohibited broad suppressions. Validation fails closed before lint
+/// execution when a value would weaken the full-catalog gate.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the policy records independent prohibition flags, not mutually exclusive states"
+)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct BooleanApiPolicy {
+    pub public_scope: Vec<String>,
+    pub private_min_direct_bool_parameters: usize,
+    pub parameter_type: String,
+    pub skip_expansions: bool,
+    pub skip_external_trait_impls: bool,
+    pub exception_attribute: String,
+    pub exception_reason_required: bool,
+    pub exception_owner_required: bool,
+    pub broad_suppression: String,
+    pub finding_baseline: String,
+    pub warning_budget: String,
+    pub unknown_scope: String,
+    pub non_claims: Vec<String>,
+}
+
+/// Returns the checked raw-boolean policy and a BLAKE3 identity of its canonical JSON.
+///
+/// # Errors
+///
+/// Returns a deterministic diagnostic if the embedded policy is invalid or its identity cannot be
+/// serialized.
+pub fn boolean_api_policy() -> Result<(BooleanApiPolicy, String), String> {
+    let policy = load_strict_profile_catalog()?.boolean_api_policy;
+    let identity = boolean_api_policy_identity(&policy)?;
+    Ok((policy, identity))
+}
+
+fn boolean_api_policy_identity(policy: &BooleanApiPolicy) -> Result<String, String> {
+    let canonical =
+        serde_json::to_vec(policy).map_err(|error| format!("serialize boolean API policy identity: {error}"))?;
+    Ok(format!("b3:{}", blake3::hash(&canonical).to_hex()))
+}
+
+fn validate_boolean_api_policy(policy: &BooleanApiPolicy, diagnostics: &mut Vec<String>) {
+    let required_scopes = ["free-function", "inherent-method", "crate-owned-trait"];
+    if policy.public_scope.iter().map(String::as_str).collect::<Vec<_>>() != required_scopes {
+        diagnostics.push("boolean API policy public_scope must name the closed callable set".to_owned());
+    }
+    if policy.private_min_direct_bool_parameters != 2 || policy.parameter_type != "direct-bool" {
+        diagnostics.push("boolean API policy must cover direct bool and two private parameters".to_owned());
+    }
+    if !policy.skip_expansions || !policy.skip_external_trait_impls {
+        diagnostics.push("boolean API policy must preserve generated and external trait signatures".to_owned());
+    }
+    if policy.exception_attribute != "local-expect"
+        || !policy.exception_reason_required
+        || !policy.exception_owner_required
+        || policy.broad_suppression != "deny"
+        || policy.finding_baseline != "deny"
+        || policy.warning_budget != "deny"
+        || policy.unknown_scope != "deny"
+    {
+        diagnostics.push(
+            "boolean API policy must reject broad suppressions, baselines, budgets, and unknown scopes".to_owned(),
+        );
+    }
+    if policy.non_claims.is_empty() || policy.non_claims.iter().any(|claim| claim.trim().is_empty()) {
+        diagnostics.push("boolean API policy requires explicit non-claims".to_owned());
+    }
 }
 
 /// Loads and validates the embedded strict-profile catalog.
@@ -113,6 +187,7 @@ pub fn strict_profile_catalog_diagnostics(catalog: &StrictProfileCatalog) -> Vec
     if catalog.profiles.is_empty() {
         diagnostics.push("profiles must not be empty".to_owned());
     }
+    validate_boolean_api_policy(&catalog.boolean_api_policy, &mut diagnostics);
 
     let mut profile_ids = BTreeSet::new();
     for profile in &catalog.profiles {
@@ -255,5 +330,30 @@ mod tests {
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("unknown required lint `not_a_lint`")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("requires core scopes")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("non_claims must not be empty")));
+    }
+
+    #[test]
+    fn boolean_api_policy_rejects_suppression_and_rekeys_on_change() {
+        let mut catalog = load_strict_profile_catalog().expect("checked policy");
+        let initial = boolean_api_policy_identity(&catalog.boolean_api_policy).expect("policy hash");
+        let (_, repeated) = boolean_api_policy().expect("repeat policy hash");
+        assert_eq!(initial, repeated);
+        catalog.boolean_api_policy.warning_budget = "allow".to_owned();
+        catalog.boolean_api_policy.broad_suppression = "allow".to_owned();
+        catalog.boolean_api_policy.public_scope.push("unknown-scope".to_owned());
+
+        let diagnostics = strict_profile_catalog_diagnostics(&catalog);
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("broad suppressions, baselines, budgets")));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("closed callable set")));
+        assert_ne!(initial, boolean_api_policy_identity(&catalog.boolean_api_policy).expect("changed policy hash"));
+    }
+
+    #[test]
+    fn boolean_api_policy_retains_flat_generated_fields() {
+        let source: serde_json::Value =
+            serde_json::from_str(STRICT_PROFILE_CATALOG_JSON).expect("generated strict-profile catalog");
+        let policy = load_strict_profile_catalog().expect("checked policy").boolean_api_policy;
+        let serialized = serde_json::to_value(policy).expect("serialize checked policy");
+        assert_eq!(serialized, source["boolean_api_policy"]);
     }
 }

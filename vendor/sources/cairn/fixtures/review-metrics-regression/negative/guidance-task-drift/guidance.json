@@ -1,0 +1,21 @@
+{
+  "schema_version": "cairn.semantic-review.metrics-regression-guidance-sync.v1",
+  "guidance": [
+    {
+      "anchor": "review-metrics-auto-fix",
+      "diagnostics": []
+    }
+  ],
+  "tasks": [
+    {
+      "path": ".cairn/changes/example/tasks.md",
+      "requirement_ids": []
+    }
+  ],
+  "specs": [
+    {
+      "path": ".cairn/changes/example/specs/semantic-review/spec.md",
+      "requirement_ids": []
+    }
+  ]
+}

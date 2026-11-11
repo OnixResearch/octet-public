@@ -4,7 +4,6 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::str::FromStr;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -74,8 +73,10 @@ const CORPUS_RECEIPT_COMPARED_FIELDS: &[&str] = &[
     "pure_cache_blocked_count",
     "boundary",
 ];
-const OBJECT_MARKER: &str = "// octet-object:";
 const HASH_PREFIX: &str = "b3:";
+// Request the scanner's v2 identity; the exact selected Valence constructor
+// decides whether that label is supported and refuses older v1-only pins.
+const REQUESTED_SOURCE_TOKEN_ALGORITHM: &str = "octet-source-token-v2";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
@@ -202,7 +203,9 @@ struct ObjectRecord {
 struct ObjectMarker {
     start: usize,
     end: usize,
-    stored_hash: String,
+    /// `b3:` and the hex digest; `None` when the marker has no hash yet, as in
+    /// `b3:` or `b3:TODO`, so the function reports `missing`.
+    stored_hash: Option<String>,
     review: Option<String>,
     evidence: Option<String>,
 }
@@ -685,8 +688,18 @@ fn run_supplement_check(
             return Ok(1);
         }
     };
-    let expected = select_supplement_receipt(expected_value, receipt_path)?;
-    let errors = validate_supplement_receipt_shape(&expected, family);
+    let expected = match supplement_receipt_entries(expected_value, receipt_path) {
+        Ok(entries) => entries,
+        Err(error) => {
+            let report = invalid_supplement_check_report(receipt_path_string, family, scope, vec![error]);
+            print_supplement_check_report(&report, output_format)?;
+            return Ok(1);
+        }
+    };
+    let errors = expected
+        .iter()
+        .flat_map(|entry| validate_supplement_receipt_shape(entry, family))
+        .collect::<Vec<_>>();
     if !errors.is_empty() {
         let report = invalid_supplement_check_report(receipt_path_string, family, scope, errors);
         print_supplement_check_report(&report, output_format)?;
@@ -694,8 +707,10 @@ fn run_supplement_check(
     }
 
     let current = supplement_records(paths, function, family, scope)?;
-    let current_first = current.first().ok_or_else(|| "no functions matched supplement check selection".to_owned())?;
-    let comparisons = supplement_comparisons(&expected, current_first);
+    if current.is_empty() {
+        return Err("no functions matched supplement check selection".to_owned());
+    }
+    let comparisons = supplement_comparisons(&expected, &current);
     let status = if comparisons.iter().all(|comparison| comparison.status == "match") {
         "pass"
     } else {
@@ -821,7 +836,7 @@ fn rustc_hir_spike_supplement(fixture_path: &Path, function: &str) -> Result<Fun
         .into_iter()
         .find(|span| span.name == function)
         .ok_or_else(|| format!("fixture {} does not contain function `{function}`", read_path.display()))?;
-    let object = function_object_for_source(fixture_path, &source, &span, &source[span.start..span.end])?;
+    let object = function_object_for_source(fixture_path, &source, &span)?;
     let hir_tree = rustc_hir_tree(&read_path)?;
     let context = runtime_rustc_hir_spike_context()?;
     let hir_tree_hash = determinism::full_hash(&hir_tree);
@@ -875,7 +890,7 @@ fn rustc_thir_spike_supplement(fixture_path: &Path, function: &str) -> Result<Fu
         .find(|span| span.name == function)
         .ok_or_else(|| format!("fixture {} does not contain function `{function}`", read_path.display()))?;
     let function_source = &source[span.start..span.end];
-    let object = function_object_for_source(fixture_path, &source, &span, function_source)?;
+    let object = function_object_for_source(fixture_path, &source, &span)?;
     let context = runtime_rustc_thir_spike_context()?;
     let fixture_contract_hash = determinism::full_hash(&format!(
         "{}\n{}\n{}\n{}",
@@ -924,7 +939,7 @@ fn rustc_mir_spike_supplement(fixture_path: &Path, function: &str) -> Result<Fun
         .find(|span| span.name == function)
         .ok_or_else(|| format!("fixture {} does not contain function `{function}`", read_path.display()))?;
     let function_source = &source[span.start..span.end];
-    let object = function_object_for_source(fixture_path, &source, &span, function_source)?;
+    let object = function_object_for_source(fixture_path, &source, &span)?;
     let context = runtime_rustc_mir_spike_context()?;
     let fixture_contract_hash = determinism::full_hash(&format!(
         "{}
@@ -1046,10 +1061,18 @@ struct SupplementCheckReport {
 
 #[derive(Debug, Clone, Serialize)]
 struct SupplementComparison {
+    /// Entry identity for per-supplement fields; `None` for receipt-level comparisons.
+    supplement: Option<SupplementEntryKey>,
     field: &'static str,
     status: &'static str,
     expected: serde_json::Value,
     current: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct SupplementEntryKey {
+    source_path: serde_json::Value,
+    function_name: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1059,11 +1082,23 @@ struct SupplementCheckError {
     message: String,
 }
 
-fn select_supplement_receipt(value: serde_json::Value, path: &Path) -> Result<serde_json::Value, String> {
+/// Returns every supplement in a receipt: the `supplements` list of an emit report, or a bare
+/// supplement record.
+fn supplement_receipt_entries(
+    value: serde_json::Value,
+    path: &Path,
+) -> Result<Vec<serde_json::Value>, SupplementCheckError> {
     if let Some(supplements) = value.get("supplements").and_then(serde_json::Value::as_array) {
-        return supplements.first().cloned().ok_or_else(|| format!("{} has no supplements", path.display()));
+        if supplements.is_empty() {
+            return Err(supplement_check_error(
+                "empty-receipt",
+                Some("supplements"),
+                format!("{} has no supplements", path.display()),
+            ));
+        }
+        return Ok(supplements.clone());
     }
-    Ok(value)
+    Ok(vec![value])
 }
 
 const SUPPLEMENT_REPLAY_COMPARED_FIELDS: &[&str] = &[
@@ -1165,11 +1200,62 @@ fn validate_supplement_receipt_shape(
     errors
 }
 
+fn supplement_entry_key(value: &serde_json::Value) -> SupplementEntryKey {
+    SupplementEntryKey {
+        source_path: value.get("source_path").cloned().unwrap_or(serde_json::Value::Null),
+        function_name: value.get("function_name").cloned().unwrap_or(serde_json::Value::Null),
+    }
+}
+
+/// Compares every receipt supplement with the current selection.
+///
+/// Entries pair by `source_path` and `function_name`; entries without a keyed partner pair in order
+/// so a tampered identity still reports field-level mismatches, and any unpaired entry compares
+/// against `null`.
 fn supplement_comparisons(
-    expected: &serde_json::Value,
-    current: &FunctionObjectSupplementV1,
+    expected: &[serde_json::Value],
+    current: &[FunctionObjectSupplementV1],
 ) -> Vec<SupplementComparison> {
-    let current = serde_json::to_value(current).expect("serialize current supplement");
+    let mut comparisons = vec![SupplementComparison {
+        supplement: None,
+        field: "supplement_count",
+        status: comparison_status(expected.len() == current.len()),
+        expected: serde_json::json!(expected.len()),
+        current: serde_json::json!(current.len()),
+    }];
+    let mut unpaired_current = current
+        .iter()
+        .map(|supplement| Some(serde_json::to_value(supplement).expect("serialize current supplement")))
+        .collect::<Vec<_>>();
+    let mut paired_current = expected
+        .iter()
+        .map(|entry| {
+            let key = supplement_entry_key(entry);
+            unpaired_current
+                .iter_mut()
+                .find(|slot| slot.as_ref().is_some_and(|candidate| supplement_entry_key(candidate) == key))
+                .and_then(Option::take)
+        })
+        .collect::<Vec<_>>();
+    let mut leftover_current = unpaired_current.into_iter().flatten();
+    for slot in paired_current.iter_mut().filter(|slot| slot.is_none()) {
+        *slot = leftover_current.next();
+    }
+    for (entry, current_entry) in expected.iter().zip(&paired_current) {
+        let current_entry = current_entry.as_ref().unwrap_or(&serde_json::Value::Null);
+        comparisons.extend(supplement_entry_comparisons(entry, current_entry));
+    }
+    for current_entry in leftover_current {
+        comparisons.extend(supplement_entry_comparisons(&serde_json::Value::Null, &current_entry));
+    }
+    comparisons
+}
+
+fn supplement_entry_comparisons(
+    expected: &serde_json::Value,
+    current: &serde_json::Value,
+) -> Vec<SupplementComparison> {
+    let key = supplement_entry_key(if expected.is_null() { current } else { expected });
     SUPPLEMENT_REPLAY_COMPARED_FIELDS
         .iter()
         .copied()
@@ -1177,17 +1263,18 @@ fn supplement_comparisons(
             let expected_value = expected.get(field).cloned().unwrap_or(serde_json::Value::Null);
             let current_value = current.get(field).cloned().unwrap_or(serde_json::Value::Null);
             SupplementComparison {
+                supplement: Some(key.clone()),
                 field,
-                status: if expected_value == current_value {
-                    "match"
-                } else {
-                    "mismatch"
-                },
+                status: comparison_status(expected_value == current_value),
                 expected: expected_value,
                 current: current_value,
             }
         })
         .collect()
+}
+
+fn comparison_status(matches: bool) -> &'static str {
+    if matches { "match" } else { "mismatch" }
 }
 
 fn print_hir_fixture_inventory_human(report: &HirFixtureInventoryReport) {
@@ -1237,7 +1324,13 @@ fn print_supplement_check_report(report: &SupplementCheckReport, output_format: 
             );
             println!("receipt_path={}", report.receipt_path);
             for comparison in &report.comparisons {
-                println!("{}={}", comparison.field, comparison.status);
+                match &comparison.supplement {
+                    Some(key) => println!(
+                        "{}={} source_path={} function_name={}",
+                        comparison.field, comparison.status, key.source_path, key.function_name
+                    ),
+                    None => println!("{}={}", comparison.field, comparison.status),
+                }
             }
             println!("claims_correctness={}", report.boundary.claims_correctness);
             println!("claims_semantic_equivalence={}", report.boundary.claims_semantic_equivalence);
@@ -2087,6 +2180,12 @@ fn corpus_replay_command(paths: &[PathBuf]) -> String {
 }
 
 fn run_marker(args: &ObjectArgs, update: bool) -> Result<i32, String> {
+    // Reject unsupported output before `update` touches any source.
+    let json_output = match args.output_format {
+        OutputFormat::Human => false,
+        OutputFormat::Json => true,
+        OutputFormat::Sarif => return Err("object marker does not support SARIF output; use human or json".to_owned()),
+    };
     let mut files = collect_files(&args.paths)?;
     let mut records = Vec::new();
     for path in files.drain(..) {
@@ -2098,10 +2197,9 @@ fn run_marker(args: &ObjectArgs, update: bool) -> Result<i32, String> {
             {
                 continue;
             }
-            let function_source = &source[span.start..span.end];
-            let object = function_object_for_source(&path, &source, &span, function_source)?;
-            let marker = object_marker_before(&source, span.start);
-            let status = match marker.as_ref().map(|marker| marker.stored_hash.as_str()) {
+            let object = function_object_for_source(&path, &source, &span)?;
+            let marker = object_marker_before(&source, span.marker_block.clone());
+            let status = match marker.as_ref().and_then(|marker| marker.stored_hash.as_deref()) {
                 Some(stored) if stored == object.object_hash => "match",
                 Some(_) => "mismatch",
                 None => "missing",
@@ -2113,13 +2211,14 @@ fn run_marker(args: &ObjectArgs, update: bool) -> Result<i32, String> {
                 if let Some(marker) = marker.as_ref() {
                     replacements.push((marker.start, marker.end, line));
                 } else {
-                    replacements.push((span.start, span.start, line));
+                    let (start, line) = fingerprint::marker_insertion(&source, span.start, line);
+                    replacements.push((start, start, line));
                 }
             }
             records.push(ObjectMarkerRecord {
                 path: normalized_source_path(&path),
                 name: object.name,
-                stored_hash: marker.as_ref().map(|marker| marker.stored_hash.clone()),
+                stored_hash: marker.as_ref().and_then(|marker| marker.stored_hash.clone()),
                 computed_hash: object.object_hash,
                 status: if update && status != "match" { "written" } else { status },
                 review: marker.as_ref().and_then(|marker| marker.review.clone()),
@@ -2142,10 +2241,10 @@ fn run_marker(args: &ObjectArgs, update: bool) -> Result<i32, String> {
         mode: if update { "update" } else { "check" },
         records,
     };
-    match args.output_format {
-        OutputFormat::Human => print_marker_human(&report),
-        OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report).map_err(|error| error.to_string())?),
-        OutputFormat::Sarif => return Err("object marker does not support SARIF output; use human or json".to_owned()),
+    if json_output {
+        println!("{}", serde_json::to_string_pretty(&report).map_err(|error| error.to_string())?);
+    } else {
+        print_marker_human(&report);
     }
     let failing = !update
         && report
@@ -2165,8 +2264,7 @@ fn collect_objects(paths: &[PathBuf], function: Option<&str>) -> Result<Vec<Obje
             {
                 continue;
             }
-            let function_source = &source[span.start..span.end];
-            let object = function_object_for_source(&path, &source, &span, function_source)?;
+            let object = function_object_for_source(&path, &source, &span)?;
             objects.push(ObjectRecord { object });
         }
     }
@@ -2188,26 +2286,32 @@ fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>, String> {
     Ok(files)
 }
 
+/// All source-backed commands use the same selected function's original byte
+/// span. The scanner owns tokenization; valence-core owns the versioned label
+/// and typed object identity.
 fn function_object_for_source(
     path: &Path,
-    full_source: &str,
+    source: &str,
     span: &fingerprint::FunctionSpan,
-    function_source: &str,
 ) -> Result<FunctionObjectV1, String> {
-    let normalized_function_source = NormalizedFunctionSource::new(
-        function_object::NORMALIZATION_ALGORITHM,
-        fingerprint::normalize_tokens(function_source),
+    let function_source = &source[span.start..span.end];
+    let source_span = checked_source_span(
+        source[..span.start].bytes().filter(|byte| *byte == b'\n').count(),
+        function_source.bytes().filter(|byte| *byte == b'\n').count(),
     )
-    .map_err(|error| error.to_string())?;
-    let dependency_identity_status =
-        DependencyIdentityStatus::from_str(fingerprint::dependency_identity_status(function_source))
+    .map_err(|error| format!("function object {}::{}: {error}", normalized_source_path(path), span.name))?;
+    let normalized_function_source =
+        NormalizedFunctionSource::new(REQUESTED_SOURCE_TOKEN_ALGORITHM, fingerprint::normalize_tokens(function_source))
             .map_err(|error| error.to_string())?;
+    let dependency_identity_status = fingerprint::dependency_identity_status(function_source)
+        .parse::<DependencyIdentityStatus>()
+        .map_err(|error| error.to_string())?;
     function_object::build_function_object(FunctionObjectInput {
         tool_name: "cargo-octet",
         tool_version: env!("CARGO_PKG_VERSION"),
         name: &span.name,
         source_path: normalized_source_path(path),
-        source_span: source_span(full_source, span.start, span.end)?,
+        source_span,
         function_source,
         normalized_function_source,
         dependency_set_hash: fingerprint::dependency_set_hash(function_source),
@@ -2217,23 +2321,19 @@ fn function_object_for_source(
     .map_err(|error| error.to_string())
 }
 
-#[allow(dead_code)]
-fn effect_caveats(function_source: &str) -> Vec<function_object::EffectCaveat> {
-    function_object::effect_caveats(function_source)
-}
-
-fn source_span(source: &str, start: usize, end: usize) -> Result<SourceSpan, String> {
-    let start_line = line_number(source, start)?;
-    let end_line = line_number(source, end.saturating_sub(1))?;
+fn checked_source_span(prior_newlines: usize, function_newlines: usize) -> Result<SourceSpan, &'static str> {
+    let start_line = u32::try_from(prior_newlines)
+        .map_err(|_| "source-span start line exceeds u32::MAX")?
+        .checked_add(1)
+        .ok_or("source-span start line exceeds u32::MAX")?;
+    let function_newlines = u32::try_from(function_newlines).map_err(|_| "source-span end line exceeds u32::MAX")?;
+    let end_line = start_line.checked_add(function_newlines).ok_or("source-span end line exceeds u32::MAX")?;
     Ok(SourceSpan { start_line, end_line })
 }
 
-fn line_number(source: &str, byte_index: usize) -> Result<u32, String> {
-    if byte_index > source.len() {
-        return Err("function span exceeded source length".to_owned());
-    }
-    let line_count = source[..byte_index].bytes().filter(|byte| *byte == b'\n').count() + 1;
-    u32::try_from(line_count).map_err(|_| "source line count exceeds u32".to_owned())
+#[allow(dead_code)]
+fn effect_caveats(function_source: &str) -> Vec<function_object::EffectCaveat> {
+    function_object::effect_caveats(function_source)
 }
 
 fn normalized_source_path(path: &Path) -> String {
@@ -2244,44 +2344,31 @@ fn normalized_source_path(path: &Path) -> String {
     determinism::normalize_path(&relative)
 }
 
-fn object_marker_before(source: &str, item_start: usize) -> Option<ObjectMarker> {
-    let prefix = &source[..item_start];
-    let line_start = prefix.rfind('\n').map_or(0, |index| index + 1);
-    let previous_end = line_start.saturating_sub(1);
-    let previous_start = source[..previous_end].rfind('\n').map_or(0, |index| index + 1);
-    let previous = source[previous_start..previous_end].trim();
-    if !previous.starts_with(OBJECT_MARKER) {
-        return None;
-    }
-    let hash_start = previous.find(HASH_PREFIX)? + HASH_PREFIX.len();
-    let stored_hash =
-        format!("b3:{}", previous[hash_start..].chars().take_while(char::is_ascii_hexdigit).collect::<String>());
-    if stored_hash == "b3:" {
-        return None;
-    }
+/// The object marker nearest the function in its marker block, which it can
+/// share with a fingerprint marker in either order. A marker without a hex
+/// hash still binds, so `update` replaces it in place and keeps its metadata.
+fn object_marker_before(source: &str, marker_block: std::ops::Range<usize>) -> Option<ObjectMarker> {
+    let line = fingerprint::marker_lines(source, marker_block)
+        .filter(|line| line.text.starts_with(fingerprint::OBJECT_COMMENT_MARKER))
+        .last()?;
+    let stored_hash = line
+        .text
+        .find(HASH_PREFIX)
+        .map(|index| {
+            line.text[index + HASH_PREFIX.len()..]
+                .chars()
+                .take_while(char::is_ascii_hexdigit)
+                .collect::<String>()
+        })
+        .filter(|hash| !hash.is_empty())
+        .map(|hash| format!("{HASH_PREFIX}{hash}"));
     Some(ObjectMarker {
-        start: previous_start,
-        end: if previous_end < source.len() {
-            previous_end + 1
-        } else {
-            previous_end
-        },
+        start: line.start,
+        end: line.end,
         stored_hash,
-        review: marker_value(previous, "review"),
-        evidence: marker_value(previous, "evidence"),
+        review: fingerprint::marker_value(line.text, "review"),
+        evidence: fingerprint::marker_value(line.text, "evidence"),
     })
-}
-
-fn marker_value(line: &str, key: &str) -> Option<String> {
-    let value_start = line.find(&format!("{key}="))? + key.len() + 1;
-    let value = line[value_start..]
-        .split([';', ',', ')', ']'])
-        .next()
-        .unwrap_or("")
-        .trim()
-        .trim_matches('"')
-        .to_owned();
-    (!value.is_empty() && value != "TODO").then_some(value)
 }
 
 fn run_diff(
@@ -2339,7 +2426,12 @@ fn run_pointer_set(
     if !available.contains(hash) {
         return Err(format!("pointer hash `{hash}` does not resolve to an object record"));
     }
-    let mut manifest = read_pointer_manifest(manifest_path)?;
+    // Only `pointer set` may create a manifest; every reader fails closed on a missing file.
+    let mut manifest = if manifest_path.exists() {
+        read_pointer_manifest(manifest_path)?
+    } else {
+        NamePointerManifest::default()
+    };
     manifest.schema_version = 1;
     let old_hash = manifest.pointers.get(name).map(|pointer| pointer.object_hash.clone());
     let diff_summary = match old_hash.as_deref() {
@@ -2534,9 +2626,6 @@ fn read_json(path: &Path) -> Result<serde_json::Value, String> {
 }
 
 fn read_pointer_manifest(path: &Path) -> Result<NamePointerManifest, String> {
-    if !path.exists() {
-        return Ok(NamePointerManifest::default());
-    }
     serde_json::from_value(read_json(path)?).map_err(|error| format!("parse pointer manifest: {error}"))
 }
 
@@ -2606,14 +2695,12 @@ mod tests {
 
     use super::ObjectSupplementStatus;
     use super::PilotSupplementContext;
-    use super::RUSTC_HIR_SPIKE_EXTRACTOR_NAME;
-    use super::RUSTC_HIR_SPIKE_EXTRACTOR_VERSION;
     use super::SUPPLEMENT_STATUS_VALUES;
     use super::SupplementFamilyArg;
     use super::SupplementScopeArg;
     use super::canonical_supplement_json;
+    use super::checked_source_span;
     use super::effect_caveats;
-    use super::function_object_for_source;
     use super::pilot_hir_supplement;
     use super::pilot_mir_supplement;
     use super::rustc_hir_spike_supplement;
@@ -2630,48 +2717,55 @@ mod tests {
     use crate::object_core::RUSTC_THIR_SPIKE_CALL_FUNCTION;
     use crate::object_core::RUSTC_THIR_SPIKE_FIXTURE_RELATIVE_PATH;
     use crate::object_core::RUSTC_THIR_SPIKE_FUNCTION;
+    use crate::valence_core_shim::function_object;
+    use crate::valence_core_shim::function_object::DependencyIdentityStatus;
+    use crate::valence_core_shim::function_object::FunctionObjectInput;
+    use crate::valence_core_shim::function_object::FunctionObjectV1;
+    use crate::valence_core_shim::function_object::NormalizedFunctionSource;
+    use crate::valence_core_shim::function_object::SourceSpan;
 
-    #[test]
-    fn function_object_rejects_correctness_claims() {
+    /// Function Object v1 built directly through valence-core, for testing
+    /// supplement logic. The fixture has no literals or comments, so these
+    /// tokens are the bytes that `octet-source-token-v1` names.
+    fn fixture_object() -> FunctionObjectV1 {
         let source = "pub fn checked(input: u32) -> u32 { input + 1 }\n";
-        let spans = fingerprint::find_functions(source);
-        let object = function_object_for_source(Path::new("src/lib.rs"), source, &spans[0], source)
-            .expect("build function object");
-        assert!(!object.object_hash.is_empty());
-        assert!(!object.correctness_claim.claims_correctness);
-        assert!(object.correctness_claim.detail.contains("do not prove"));
+        function_object::build_function_object(FunctionObjectInput {
+            tool_name: "cargo-octet",
+            tool_version: env!("CARGO_PKG_VERSION"),
+            name: "checked",
+            source_path: "src/lib.rs".to_owned(),
+            source_span: SourceSpan {
+                start_line: 1,
+                end_line: 1,
+            },
+            function_source: source,
+            normalized_function_source: NormalizedFunctionSource::new(
+                function_object::NORMALIZATION_ALGORITHM,
+                "pub fn checked ( input : u32 ) - > u32 { input + 1 }".to_owned(),
+            )
+            .expect("v1 normalized fixture"),
+            dependency_set_hash: fingerprint::dependency_set_hash(source),
+            dependency_identity_status: DependencyIdentityStatus::SourceScannerTokenSet,
+            macro_calls: false,
+        })
+        .expect("build fixture object")
     }
 
     #[test]
-    fn function_object_hash_is_stable_for_comments_and_formatting() {
-        let one = "pub fn checked(input: u32) -> u32 { // comment\n input + 1 }\n";
-        let two = "pub fn checked( input:u32)->u32{input+1}\n";
-        let one_span = fingerprint::find_functions(one);
-        let two_span = fingerprint::find_functions(two);
-        let one_object = function_object_for_source(
-            Path::new("src/lib.rs"),
-            one,
-            &one_span[0],
-            &one[one_span[0].start..one_span[0].end],
-        )
-        .expect("one object");
-        let two_object = function_object_for_source(
-            Path::new("src/lib.rs"),
-            two,
-            &two_span[0],
-            &two[two_span[0].start..two_span[0].end],
-        )
-        .expect("two object");
-        assert_eq!(one_object.normalized_body_hash, two_object.normalized_body_hash);
-        assert_eq!(one_object.object_hash, two_object.object_hash);
+    fn source_span_preserves_lines_and_rejects_overflow() {
+        let span = checked_source_span(2, 3).expect("bounded multiline function");
+        assert_eq!((span.start_line, span.end_line), (3, 6));
+        assert_eq!(checked_source_span(u32::MAX as usize, 0).unwrap_err(), "source-span start line exceeds u32::MAX");
+        assert_eq!(
+            checked_source_span((u32::MAX - 1) as usize, 1).unwrap_err(),
+            "source-span end line exceeds u32::MAX"
+        );
+        assert_eq!(checked_source_span(0, usize::MAX).unwrap_err(), "source-span end line exceeds u32::MAX");
     }
 
     #[test]
     fn pilot_hir_supplement_attaches_to_v1_identity() {
-        let source = "pub fn checked(input: u32) -> u32 { input + 1 }\n";
-        let spans = fingerprint::find_functions(source);
-        let object = function_object_for_source(Path::new("src/lib.rs"), source, &spans[0], source)
-            .expect("build function object");
+        let object = fixture_object();
         let context = pilot_context();
         let supplement = pilot_hir_supplement(&object, &context);
         let json = canonical_supplement_json(&supplement).expect("canonical supplement json");
@@ -2691,11 +2785,7 @@ mod tests {
 
     #[test]
     fn pilot_mir_supplement_records_closed_unsupported_summary_families() {
-        let source = "pub fn checked(input: u32) -> u32 { input + 1 }\n";
-        let spans = fingerprint::find_functions(source);
-        let object = function_object_for_source(Path::new("src/lib.rs"), source, &spans[0], source)
-            .expect("build function object");
-        let supplement = pilot_mir_supplement(&object, &pilot_context());
+        let supplement = pilot_mir_supplement(&fixture_object(), &pilot_context());
 
         assert_eq!(SUPPLEMENT_STATUS_VALUES, &[
             ObjectSupplementStatus::UnsupportedPlanned.as_str(),
@@ -2715,45 +2805,6 @@ mod tests {
             assert!(observation.detail.contains("explicit unknown/unsupported"));
         }
         assert!(!supplement.boundary.claims_cross_toolchain_stability);
-        assert!(!supplement.boundary.claims_semantic_equivalence);
-    }
-
-    #[test]
-    fn rustc_hir_spike_helper_records_fixture_context_and_hashes() {
-        let fixture = Path::new(RUSTC_HIR_SPIKE_FIXTURE_RELATIVE_PATH);
-        let supplement =
-            rustc_hir_spike_supplement(fixture, RUSTC_HIR_SPIKE_FUNCTION).expect("rustc HIR spike supplement");
-        let json = canonical_supplement_json(&supplement).expect("canonical rustc HIR supplement json");
-
-        assert_eq!(supplement.schema, "octet.function-object-hir-supplement.v1");
-        assert_eq!(supplement.family, "hir");
-        assert_eq!(supplement.source_path, RUSTC_HIR_SPIKE_FIXTURE_RELATIVE_PATH);
-        assert_eq!(supplement.function_name, RUSTC_HIR_SPIKE_FUNCTION);
-        assert_eq!(supplement.extractor.name, RUSTC_HIR_SPIKE_EXTRACTOR_NAME);
-        assert_eq!(supplement.extractor.version, RUSTC_HIR_SPIKE_EXTRACTOR_VERSION);
-        assert!(supplement.rustc_version.contains("rustc "));
-        assert!(!supplement.target_triple.is_empty());
-        assert!(supplement.observations.contains_key("rustc_hir_tree_hash"));
-        assert!(supplement.observations.contains_key("fixture_context"));
-        assert!(supplement.observation_hash.starts_with("b3:"));
-        assert!(json.contains("fixture-bounded"));
-        assert!(json.contains("\"claims_correctness\": false"));
-        assert!(json.contains("\"claims_semantic_equivalence\": false"));
-    }
-
-    #[test]
-    fn rustc_hir_spike_helper_accepts_second_branch_fixture_shape() {
-        let fixture = Path::new(RUSTC_HIR_SPIKE_BRANCH_FIXTURE_RELATIVE_PATH);
-        let supplement = rustc_hir_spike_supplement(fixture, RUSTC_HIR_SPIKE_BRANCH_FUNCTION)
-            .expect("branch rustc HIR spike supplement");
-        let fixture_context = supplement.observations.get("fixture_context").expect("fixture context observation");
-
-        assert_eq!(supplement.source_path, RUSTC_HIR_SPIKE_BRANCH_FIXTURE_RELATIVE_PATH);
-        assert_eq!(supplement.function_name, RUSTC_HIR_SPIKE_BRANCH_FUNCTION);
-        assert!(fixture_context.detail.contains("fixture_shape=branch-control-flow"));
-        assert!(supplement.observations.contains_key("rustc_hir_tree_hash"));
-        assert!(supplement.observation_hash.starts_with("b3:"));
-        assert!(!supplement.boundary.claims_correctness);
         assert!(!supplement.boundary.claims_semantic_equivalence);
     }
 
@@ -2865,15 +2916,11 @@ mod tests {
 
     #[test]
     fn supplement_check_comparisons_fail_closed_on_context_mismatch() {
-        let source = "pub fn checked(input: u32) -> u32 { input + 1 }\n";
-        let spans = fingerprint::find_functions(source);
-        let object = function_object_for_source(Path::new("src/lib.rs"), source, &spans[0], source)
-            .expect("build function object");
-        let current = pilot_hir_supplement(&object, &pilot_context());
+        let current = pilot_hir_supplement(&fixture_object(), &pilot_context());
         let mut expected = serde_json::to_value(&current).expect("serialize expected supplement");
         expected["rustc_version"] = serde_json::json!("different-rustc");
 
-        let comparisons = supplement_comparisons(&expected, &current);
+        let comparisons = supplement_comparisons(std::slice::from_ref(&expected), std::slice::from_ref(&current));
         let rustc = comparisons
             .iter()
             .find(|comparison| comparison.field == "rustc_version")
@@ -2890,19 +2937,17 @@ mod tests {
     }
 
     #[test]
-    fn rustc_hir_spike_replay_compares_fixture_observations_and_caveats() {
-        let fixture = Path::new(RUSTC_HIR_SPIKE_FIXTURE_RELATIVE_PATH);
-        let current =
-            rustc_hir_spike_supplement(fixture, RUSTC_HIR_SPIKE_FUNCTION).expect("rustc HIR spike supplement");
+    fn supplement_comparisons_flag_each_tampered_field() {
+        let current = pilot_hir_supplement(&fixture_object(), &pilot_context());
         let mut expected = serde_json::to_value(&current).expect("serialize expected supplement");
         expected["source_path"] = serde_json::json!("different/src.rs");
         expected["function_name"] = serde_json::json!("different_function");
         expected["extractor"]["name"] = serde_json::json!("different-extractor");
-        expected["observations"]["rustc_hir_tree_hash"]["detail"] = serde_json::json!("tampered observation");
+        expected["observations"]["hir_context"]["detail"] = serde_json::json!("tampered observation");
         expected["observation_hash"] = serde_json::json!("b3:tampered");
         expected["extraction_caveats"][0]["detail"] = serde_json::json!("tampered caveat");
 
-        let comparisons = supplement_comparisons(&expected, &current);
+        let comparisons = supplement_comparisons(std::slice::from_ref(&expected), std::slice::from_ref(&current));
         for field in [
             "source_path",
             "function_name",

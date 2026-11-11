@@ -4,7 +4,13 @@
 //! diagnostics, and receipt semantics are owned by the pinned
 //! `nickel-export-core` dependency. This module retains only Octet's v1 spec and
 //! manifest projection so existing generated artifacts and commands remain
-//! compatible during migration.
+//! compatible during migration. The evaluator-observed dependency closure the
+//! core checks comes from statically scanning `import` targets in the supplied
+//! source and dependency texts, not from the spec's declared list.
+
+mod imports;
+
+use std::collections::BTreeSet;
 
 use nickel_export_core as canonical;
 use serde::Deserialize;
@@ -173,6 +179,10 @@ pub fn manifest_for_exports(inputs: &[NickelExportInput<'_>]) -> Result<NickelEx
 }
 
 /// Verify that an existing Octet v1 manifest matches current exact inputs.
+///
+/// The manifest must equal the one rebuilt from `inputs`: schema, generator,
+/// evaluator identity, and every entry's identities, paths, and metadata are
+/// compared, and duplicate output paths are rejected.
 #[must_use]
 pub fn verify_manifest(manifest: &NickelExportManifest, inputs: &[NickelExportInput<'_>]) -> Vec<String> {
     let mut diagnostics = Vec::new();
@@ -189,6 +199,14 @@ pub fn verify_manifest(manifest: &NickelExportManifest, inputs: &[NickelExportIn
             return diagnostics;
         }
     };
+    push_manifest_field_mismatch("generator", &expected.generator, &manifest.generator, &mut diagnostics);
+    push_manifest_field_mismatch(
+        "Nickel identity",
+        &expected.nickel_identity,
+        &manifest.nickel_identity,
+        &mut diagnostics,
+    );
+    push_duplicate_outputs(manifest, &mut diagnostics);
     for expected_entry in &expected.exports {
         match manifest.exports.iter().find(|entry| entry.output.path == expected_entry.output.path) {
             Some(actual) => compare_manifest_entry(expected_entry, actual, &mut diagnostics),
@@ -199,6 +217,11 @@ pub fn verify_manifest(manifest: &NickelExportManifest, inputs: &[NickelExportIn
         if !expected.exports.iter().any(|entry| entry.output.path == actual.output.path) {
             diagnostics.push(format!("Nickel export manifest contains stale output `{}`", actual.output.path));
         }
+    }
+    if diagnostics.is_empty() && *manifest != expected {
+        diagnostics.push(
+            "Nickel export manifest does not match the manifest rebuilt from current inputs; regenerate it".to_owned(),
+        );
     }
     diagnostics
 }
@@ -244,7 +267,8 @@ fn build_canonical_receipt(input: &NickelExportInput<'_>) -> Result<canonical::E
             bytes: dependency.text.as_bytes(),
         })
         .collect::<Vec<_>>();
-    let observed_dependencies = input.dependencies.iter().map(|dependency| dependency.path).collect::<Vec<_>>();
+    let observed_closure = imports::observed_import_closure(&input.spec.source, input.source_text, &input.dependencies);
+    let observed_dependencies = observed_closure.iter().map(String::as_str).collect::<Vec<_>>();
     let contract_diagnostics = input
         .contract_diagnostics
         .iter()
@@ -322,6 +346,25 @@ fn legacy_contract_diagnostics(input: &NickelExportInput<'_>) -> Vec<String> {
         .collect()
 }
 
+fn push_manifest_field_mismatch(field: &str, expected: &str, actual: &str, diagnostics: &mut Vec<String>) {
+    if expected != actual {
+        diagnostics.push(format!("stale Nickel export manifest {field}; expected `{expected}`, got `{actual}`"));
+    }
+}
+
+fn push_duplicate_outputs(manifest: &NickelExportManifest, diagnostics: &mut Vec<String>) {
+    let mut seen_paths = BTreeSet::new();
+    let mut duplicate_paths = BTreeSet::new();
+    for entry in &manifest.exports {
+        if !seen_paths.insert(entry.output.path.as_str()) {
+            duplicate_paths.insert(entry.output.path.as_str());
+        }
+    }
+    for path in duplicate_paths {
+        diagnostics.push(format!("Nickel export manifest contains duplicate output `{path}`"));
+    }
+}
+
 fn compare_manifest_entry(
     expected: &NickelExportManifestEntry,
     actual: &NickelExportManifestEntry,
@@ -330,17 +373,30 @@ fn compare_manifest_entry(
     push_identity_mismatch("source", &expected.source, &actual.source, diagnostics);
     compare_dependencies(expected, actual, diagnostics);
     push_identity_mismatch("output", &expected.output, &actual.output, diagnostics);
-    if expected.output_format != actual.output_format {
+    let output = expected.output.path.as_str();
+    push_entry_field_mismatch(output, "family", &expected.family_id, &actual.family_id, diagnostics);
+    push_entry_field_mismatch(output, "format", &expected.output_format, &actual.output_format, diagnostics);
+    push_entry_field_mismatch(output, "selector", &expected.selector, &actual.selector, diagnostics);
+    push_entry_field_mismatch(output, "contract", &expected.contract, &actual.contract, diagnostics);
+    push_entry_field_mismatch(
+        output,
+        "generation command",
+        &expected.generation_command,
+        &actual.generation_command,
+        diagnostics,
+    );
+    if expected.command_argv != actual.command_argv {
         diagnostics.push(format!(
-            "stale Nickel export metadata `{}`; expected format `{}`, got `{}`",
-            expected.output.path, expected.output_format, actual.output_format
+            "stale Nickel export metadata `{output}`; expected command argv {:?}, got {:?}",
+            expected.command_argv, actual.command_argv
         ));
     }
-    if expected.generation_command != actual.generation_command {
-        diagnostics.push(format!(
-            "stale Nickel export metadata `{}`; expected generation command `{}`, got `{}`",
-            expected.output.path, expected.generation_command, actual.generation_command
-        ));
+}
+
+fn push_entry_field_mismatch(output: &str, field: &str, expected: &str, actual: &str, diagnostics: &mut Vec<String>) {
+    if expected != actual {
+        diagnostics
+            .push(format!("stale Nickel export metadata `{output}`; expected {field} `{expected}`, got `{actual}`"));
     }
 }
 
@@ -376,6 +432,10 @@ fn push_identity_mismatch(
     actual: &ExportIdentity,
     diagnostics: &mut Vec<String>,
 ) {
+    if expected.path != actual.path {
+        diagnostics
+            .push(format!("stale Nickel export {label} path; expected `{}`, got `{}`", expected.path, actual.path));
+    }
     if expected.blake3 == actual.blake3 && expected.bytes == actual.bytes {
         return;
     }
@@ -413,7 +473,9 @@ mod tests {
     const FAMILY_ID: &str = "octet.dynamic-evidence-profile-config";
     const SOURCE_PATH: &str = "templates/dynamic-evidence-profiles.ncl";
     const OUTPUT_PATH: &str = "dynamic-evidence-profiles.json";
-    const SOURCE_TEXT: &str = "{ schema_version = \"octet-dynamic-evidence-profiles/v1\" }\n";
+    const SOURCE_TEXT: &str = "let contracts = import \"../standards/policies/contracts.ncl\" in\n{ schema_version = \"octet-dynamic-evidence-profiles/v1\" }\n";
+    const DEPENDENCY_PATH: &str = "standards/policies/contracts.ncl";
+    const DEPENDENCY_TEXT: &str = "{ Contract = String }\n";
     const OUTPUT_TEXT: &str = "{\"schema_version\":\"octet-dynamic-evidence-profiles/v1\"}\n";
     const NICKEL_IDENTITY: &str = REVIEWED_NICKEL_EVALUATOR_IDENTITY;
 
@@ -560,7 +622,7 @@ mod tests {
         stale_spec.dependencies = vec!["templates/shared.ncl".to_owned()];
         let stale_input = NickelExportInput {
             spec: &stale_spec,
-            source_text: "{ schema_version = \"changed\" }\n",
+            source_text: "let shared = import \"shared.ncl\" in { schema_version = \"changed\" }\n",
             dependencies: vec![NamedText {
                 path: "templates/shared.ncl",
                 text: "{ inherited = true }\n",
@@ -588,6 +650,53 @@ mod tests {
     }
 
     #[test]
+    fn manifest_verification_rejects_identity_metadata_drift_and_duplicate_outputs() {
+        type Mutation<'a> = &'a dyn Fn(&mut NickelExportManifest);
+
+        let spec = json_spec();
+        let fresh = manifest_for_exports(&[export_input(&spec, OUTPUT_TEXT)]).expect("valid observation");
+        assert!(verify_manifest(&fresh, &[export_input(&spec, OUTPUT_TEXT)]).is_empty());
+
+        let drifted = |mutate: Mutation<'_>| {
+            let mut manifest = fresh.clone();
+            mutate(&mut manifest);
+            verify_manifest(&manifest, &[export_input(&spec, OUTPUT_TEXT)])
+        };
+        let cases: [(&str, Mutation<'_>); 10] = [
+            ("nickel identity", &|manifest| manifest.nickel_identity = "nickel-substituted".to_owned()),
+            ("generator", &|manifest| manifest.generator = "other-generator".to_owned()),
+            ("family", &|manifest| manifest.exports[0].family_id = "octet.other-family".to_owned()),
+            ("contract", &|manifest| manifest.exports[0].contract = "OtherContract".to_owned()),
+            ("selector", &|manifest| manifest.exports[0].selector = "other".to_owned()),
+            ("command argv", &|manifest| manifest.exports[0].command_argv.push("--extra".to_owned())),
+            ("source path", &|manifest| manifest.exports[0].source.path = "templates/other.ncl".to_owned()),
+            ("dependency path", &|manifest| {
+                manifest.exports[0].dependencies[0].path = "standards/policies/other.ncl".to_owned();
+            }),
+            ("duplicate dependency", &|manifest| {
+                let duplicate = manifest.exports[0].dependencies[0].clone();
+                manifest.exports[0].dependencies.push(duplicate);
+            }),
+            ("duplicate output", &|manifest| {
+                let mut duplicate = manifest.exports[0].clone();
+                duplicate.output.blake3 = bare_blake3("stale");
+                manifest.exports.push(duplicate);
+            }),
+        ];
+        let accepted = cases
+            .into_iter()
+            .filter(|(_, mutate)| drifted(*mutate).is_empty())
+            .map(|(label, _)| label)
+            .collect::<Vec<_>>();
+        assert!(accepted.is_empty(), "drifted manifests verified clean: {accepted:?}");
+        let duplicate_diagnostics = drifted(&|manifest| manifest.exports.push(manifest.exports[0].clone()));
+        assert!(
+            duplicate_diagnostics.iter().any(|diagnostic| diagnostic.contains("duplicate output")),
+            "{duplicate_diagnostics:?}"
+        );
+    }
+
+    #[test]
     fn secret_bearing_source_is_rejected_before_manifest_acceptance() {
         let spec = json_spec();
         let input = NickelExportInput {
@@ -605,6 +714,87 @@ mod tests {
         let diagnostics = validate_export_acceptance(&input);
 
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("raw secret material")));
+    }
+
+    #[test]
+    // r[verify octet.nickel_export_helpers.repository_extraction.imperative_shell.undeclared_import]
+    fn undeclared_or_unused_imports_block_acceptance_and_manifest() {
+        let spec = json_spec();
+        let direct = "let contracts = import \"../standards/policies/contracts.ncl\" in\nlet hidden = import \"../standards/policies/hidden.ncl\" in\n{ schema_version = \"v1\" }\n";
+        let interpolated = "let contracts = import \"../standards/policies/contracts.ncl\" in\n{ label = \"%{(import \"../standards/policies/hidden.ncl\").name}\" }\n";
+        let multiline_interpolated = "let contracts = import \"../standards/policies/contracts.ncl\" in\n{ label = m%\"%%{(import \"../standards/policies/hidden.ncl\").name}\"% }\n";
+        let transitive = "let shared = import \"./shared.ncl\" in { Contract = String }\n";
+        let unused = "{ schema_version = \"v1\" }\n";
+        let cases = [
+            ("direct", direct, DEPENDENCY_TEXT),
+            ("interpolated", interpolated, DEPENDENCY_TEXT),
+            ("multiline interpolated", multiline_interpolated, DEPENDENCY_TEXT),
+            ("transitive", SOURCE_TEXT, transitive),
+            ("unused declaration", unused, DEPENDENCY_TEXT),
+        ];
+
+        let accepted = cases
+            .iter()
+            .filter(|(_, source_text, dependency_text)| {
+                let input = NickelExportInput {
+                    spec: &spec,
+                    source_text,
+                    dependencies: vec![NamedText {
+                        path: DEPENDENCY_PATH,
+                        text: dependency_text,
+                    }],
+                    output_text: OUTPUT_TEXT,
+                    nickel_identity: NICKEL_IDENTITY,
+                    contract_diagnostics: Vec::new(),
+                };
+                validate_export_acceptance(&input).is_empty() || manifest_for_exports(&[input]).is_ok()
+            })
+            .map(|(label, _, _)| *label)
+            .collect::<Vec<_>>();
+
+        assert!(accepted.is_empty(), "incomplete import closures were accepted: {accepted:?}");
+    }
+
+    #[test]
+    fn import_closure_resolves_relative_paths_and_skips_comments_and_strings() {
+        let mut spec = json_spec();
+        spec.dependencies.push("standards/policies/shared.ncl".to_owned());
+        let source_text = concat!(
+            "# import \"ignored-comment.ncl\"\n",
+            "let contracts = import \"./../standards/policies/contracts.ncl\" in\n",
+            "{\n",
+            "  note = \"import \\\"ignored-string.ncl\\\"\",\n",
+            "  text = m%\"import \"ignored-multiline.ncl\"\"%,\n",
+            "  label = \"%{ \"nested\" }\",\n",
+            "}\n",
+        );
+        let input = NickelExportInput {
+            spec: &spec,
+            source_text,
+            dependencies: vec![
+                NamedText {
+                    path: DEPENDENCY_PATH,
+                    text: "let shared = import \"shared.ncl\" in { Contract = String }\n",
+                },
+                NamedText {
+                    path: "standards/policies/shared.ncl",
+                    text: "{ Shared = Number }\n",
+                },
+            ],
+            output_text: OUTPUT_TEXT,
+            nickel_identity: NICKEL_IDENTITY,
+            contract_diagnostics: Vec::new(),
+        };
+
+        let diagnostics = validate_export_acceptance(&input);
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+        let manifest = manifest_for_exports(&[input]).expect("declared import closure should produce a manifest");
+        let dependencies = manifest.exports[0]
+            .dependencies
+            .iter()
+            .map(|dependency| dependency.path.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(dependencies, vec![DEPENDENCY_PATH, "standards/policies/shared.ncl"]);
     }
 
     fn supported_format_specs() -> Vec<NickelExportSpec> {

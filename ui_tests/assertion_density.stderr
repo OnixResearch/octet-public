@@ -20,5 +20,85 @@ LL | #![warn(assertion_density)]
    |         ^^^^^^^^^^^^^^^^^
    = note: `#[warn(tigerstyle::assertion_density)]` implied by `#[warn(assertion_density)]`
 
-warning: 1 warning emitted
+warning: function `single_debug_assert` has 1 assertion(s) in 24 lines (need 2+)
+  --> $DIR/assertion_density.rs:66:46
+   |
+LL |   fn single_debug_assert(data: &[u8]) -> usize {
+   |  ______________________________________________^
+LL | |     // Should warn: one `debug_assert!` is one assertion, not two
+LL | |     let a = data.len();
+LL | |     debug_assert!(a > 0);
+...  |
+LL | |     t
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Assertion Density): add enough assertions to make local invariants visible near the logic they defend
+   = note: see Tiger Style guide: Assertion Density
+
+warning: function `sparse_method` has 0 assertion(s) in 23 lines (need 2+)
+  --> $DIR/assertion_density.rs:96:51
+   |
+LL |       fn sparse_method(&self, data: &[u8]) -> usize {
+   |  ___________________________________________________^
+LL | |         let a = data.len();
+LL | |         let b = a + 1;
+LL | |         let c = b + 2;
+...  |
+LL | |         t
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Assertion Density): add enough assertions to make local invariants visible near the logic they defend
+   = note: see Tiger Style guide: Assertion Density
+
+warning: function `sparse_default_method` has 0 assertion(s) in 23 lines (need 2+)
+  --> $DIR/assertion_density.rs:126:59
+   |
+LL |       fn sparse_default_method(&self, data: &[u8]) -> usize {
+   |  ___________________________________________________________^
+LL | |         let a = data.len();
+LL | |         let b = a + 1;
+LL | |         let c = b + 2;
+...  |
+LL | |         t
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Assertion Density): add enough assertions to make local invariants visible near the logic they defend
+   = note: see Tiger Style guide: Assertion Density
+
+warning: function `test_or_unix_sparse` has 0 assertion(s) in 23 lines (need 2+)
+  --> $DIR/assertion_density.rs:230:46
+   |
+LL |   fn test_or_unix_sparse(data: &[u8]) -> usize {
+   |  ______________________________________________^
+LL | |     // Should warn: `any(test, unix)` also holds in production builds
+LL | |     let a = data.len();
+LL | |     let a = a + 1;
+...  |
+LL | |     a
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Assertion Density): add enough assertions to make local invariants visible near the logic they defend
+   = note: see Tiger Style guide: Assertion Density
+
+warning: function `helper_beside_test_sparse` has 0 assertion(s) in 23 lines (need 2+)
+  --> $DIR/assertion_density.rs:281:41
+   |
+LL |   fn helper_beside_test_sparse() -> usize {
+   |  _________________________________________^
+LL | |     // Should warn: helpers next to `#[test]` functions are still checked
+LL | |     let a = 0_usize;
+LL | |     let a = a + 1;
+...  |
+LL | |     a
+LL | | }
+   | |_^
+   |
+   = help: Tiger Style (Assertion Density): add enough assertions to make local invariants visible near the logic they defend
+   = note: see Tiger Style guide: Assertion Density
+
+warning: 6 warnings emitted
 

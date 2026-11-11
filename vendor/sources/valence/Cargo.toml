@@ -1,0 +1,29 @@
+[workspace]
+members = [
+  "crates/valence-core",
+  "crates/valence-cli",
+  "pilots/shared-identity",
+]
+resolver = "2"
+exclude = ["pilots/canonical-json-preserve-order"]
+
+# r[impl valence.strict_rust_admission.consumer_scope.production]
+[workspace.metadata.octet]
+default_scope = ["-p", "valence-shared-identity-pilot"]
+cargo_check_args = ["--lib"]
+
+[workspace.package]
+edition = "2024"
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/OnixResearch/valence"
+homepage = "https://github.com/OnixResearch/valence"
+version = "0.1.0"
+
+[workspace.dependencies]
+blake3 = "1"
+cap-std = "4.0.2"
+iddqd = "0.4.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hegeltest = { version = "0.14.12", features = ["native"] }
+valence-core = { path = "crates/valence-core" }

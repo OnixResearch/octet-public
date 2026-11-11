@@ -1,0 +1,173 @@
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:17:9
+   |
+LL |         Limits::SIZE + MAX_REGION_BYTES * 2,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+note: the lint level is defined here
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:1:9
+   |
+LL | #![warn(raw_arithmetic_overflow)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(tigerstyle::raw_arithmetic_overflow)]` implied by `#[warn(raw_arithmetic_overflow)]`
+help: replace with saturating addition
+   |
+LL -         Limits::SIZE + MAX_REGION_BYTES * 2,
+LL +         (Limits::SIZE).saturating_add(MAX_REGION_BYTES * 2),
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:23:5
+   |
+LL |     value + 1
+   |     ^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     value + 1
+LL +     (value).saturating_add(1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:30:6
+   |
+LL |     (value + 1, bound + MAX_REGION_BYTES, CONST_LOOKING + 1)
+   |      ^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     (value + 1, bound + MAX_REGION_BYTES, CONST_LOOKING + 1)
+LL +     ((value).saturating_add(1), bound + MAX_REGION_BYTES, CONST_LOOKING + 1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:30:17
+   |
+LL |     (value + 1, bound + MAX_REGION_BYTES, CONST_LOOKING + 1)
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     (value + 1, bound + MAX_REGION_BYTES, CONST_LOOKING + 1)
+LL +     (value + 1, (bound).saturating_add(MAX_REGION_BYTES), CONST_LOOKING + 1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:30:43
+   |
+LL |     (value + 1, bound + MAX_REGION_BYTES, CONST_LOOKING + 1)
+   |                                           ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     (value + 1, bound + MAX_REGION_BYTES, CONST_LOOKING + 1)
+LL +     (value + 1, bound + MAX_REGION_BYTES, (CONST_LOOKING).saturating_add(1))
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:36:5
+   |
+LL |     GLOBAL + 1
+   |     ^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     GLOBAL + 1
+LL +     (GLOBAL).saturating_add(1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:42:5
+   |
+LL |     (RAW_PTR as usize) + 1
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     (RAW_PTR as usize) + 1
+LL +     ((RAW_PTR as usize)).saturating_add(1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:68:5
+   |
+LL |     T::MAX + 1
+   |     ^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     T::MAX + 1
+LL +     (T::MAX).saturating_add(1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:72:5
+   |
+LL |     T::MAX + 1
+   |     ^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     T::MAX + 1
+LL +     (T::MAX).saturating_add(1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:76:5
+   |
+LL |     (const { T::MAX }) + 1
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     (const { T::MAX }) + 1
+LL +     ((const { T::MAX })).saturating_add(1)
+   |
+
+warning: unprotected unsigned addition may overflow
+  --> $DIR/raw_arithmetic_overflow_const_expr.rs:93:5
+   |
+LL |     value.max() + 1
+   |     ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Overflow Protection): use checked or saturating arithmetic when overflow would change behavior Example: let total = a.checked_add(b)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Overflow Protection
+help: replace with saturating addition
+   |
+LL -     value.max() + 1
+LL +     (value.max()).saturating_add(1)
+   |
+
+warning: 11 warnings emitted
+

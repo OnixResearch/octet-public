@@ -1,0 +1,3 @@
+{"fields":{"labels":[{"column":65,"line":1,"message":"the triple won't be evaluated against cfg() sections, just explicit triples","span":"octet-unknown-triple"}],"message":"unknown target `octet-unknown-triple` specified","severity":"warning"},"type":"diagnostic"}
+{"fields":{"code":"deprecated","labels":[{"column":1,"line":1,"message":"","span":"targets"}],"message":"this key has been moved to [graph]","severity":"warning"},"type":"diagnostic"}
+{"fields":{"advisories":{"errors":0,"helps":0,"notes":0,"warnings":0},"bans":{"errors":0,"helps":0,"notes":0,"warnings":0},"licenses":{"errors":0,"helps":1,"notes":0,"warnings":0},"sources":{"errors":0,"helps":0,"notes":0,"warnings":0}},"type":"summary"}

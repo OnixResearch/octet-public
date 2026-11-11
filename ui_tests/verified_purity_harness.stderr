@@ -1,0 +1,30 @@
+error: system time access in verified module
+  --> $ROOT/ui_tests/tokio_async/src/verified/mod.rs:12:5
+   |
+LL |     time::Instant::now()
+   |     ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+   = note: `#[deny(tigerstyle::verified_purity)]` on by default
+
+error: system time access in verified module
+  --> $ROOT/ui_tests/tokio_async/src/verified/mod.rs:20:20
+   |
+LL |     let _started = SystemTime::now();
+   |                    ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: system time access in verified module
+  --> $ROOT/ui_tests/tokio_async/src/verified/mod.rs:56:5
+   |
+LL |     time::Instant::now()
+   |     ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Verified Module Purity): keep verified modules free of runtime-only side effects and shell concerns Example: pub fn next_state(input: Input) -> Output
+   = note: see Tiger Style guide: Verified Module Purity
+
+error: aborting due to 3 previous errors
+

@@ -1,0 +1,12 @@
+{
+  "schema": "cairn.function-address-stack-smoke.expected.v1",
+  "source_identity": "b3:60e2cbf9f16cdb87ba919678f75a6f129b796ed70c2eca79ef946165224b4ba0",
+  "function_address": "b3:5ce6a7fbfb0c82e5738dd2368906bc0f9acb302d98622fddf16b17b06e8236cb",
+  "function_name": "add_checked",
+  "source_path": "src/lib.rs",
+  "valence_receipt_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "kamacite_receipt_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "valence_role": "function-address-evidence-sidecar",
+  "claim_scope": "function_address.v1.lifecycle_policy_conformance",
+  "required_non_claim": "not release eligibility"
+}

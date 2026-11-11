@@ -22,6 +22,11 @@ const FORBIDDEN_CLAIMS: [&str; 5] = [
     "release eligibility",
 ];
 
+/// Builds the blocked MIRAI pilot decision receipt for `profile`.
+///
+/// # Errors
+///
+/// Returns an error when the receipt cannot be serialized to compute its identity.
 pub fn blocked_receipt(profile: &PilotProfile) -> Result<DecisionReceipt, String> {
     let measurements = profile
         .promotion_criteria
@@ -86,6 +91,7 @@ pub fn blocked_receipt(profile: &PilotProfile) -> Result<DecisionReceipt, String
     Ok(receipt)
 }
 
+#[must_use]
 pub fn validate_receipt(receipt: &DecisionReceipt, profile: &PilotProfile) -> Vec<String> {
     let mut diagnostics = Vec::new();
     if receipt.schema_version != DECISION_SCHEMA
@@ -140,13 +146,15 @@ fn validate_measurements(receipt: &DecisionReceipt, profile: &PilotProfile, diag
         .map(|criterion| criterion.criterion_id.clone())
         .collect::<Vec<_>>();
     expected.sort();
+    let mut measured =
+        receipt.measurements.iter().map(|measurement| measurement.criterion_id.clone()).collect::<Vec<_>>();
+    measured.sort();
     if receipt.failed_criteria != expected
-        || receipt.measurements.len() != profile.promotion_criteria.len()
-        || receipt.measurements.iter().any(|measurement| {
-            measurement.passed
-                || measurement.availability != AVAILABILITY_BLOCKED
-                || !expected.contains(&measurement.criterion_id)
-        })
+        || measured != expected
+        || receipt
+            .measurements
+            .iter()
+            .any(|measurement| measurement.passed || measurement.availability != AVAILABILITY_BLOCKED)
     {
         diagnostics.push("MIRAI pilot failed-criterion accounting is incomplete".to_owned());
     }
@@ -167,6 +175,11 @@ fn validate_comparisons(receipt: &DecisionReceipt, profile: &PilotProfile, diagn
     }
 }
 
+/// Renders a decision receipt as pretty JSON bytes.
+///
+/// # Errors
+///
+/// Returns an error when the receipt cannot be serialized.
 pub fn receipt_bytes(receipt: &DecisionReceipt) -> Result<Vec<u8>, String> {
     super::pretty_bytes(receipt, "MIRAI pilot decision receipt")
 }

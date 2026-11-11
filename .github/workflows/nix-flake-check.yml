@@ -5,10 +5,37 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Expected-green subset (`checks.<system>.core` in flake.nix). The full flake
+  # check below also runs rails that wait on owner review, so only this job
+  # distinguishes a regression from known-blocked evidence.
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v31
+      # The pinned Cairn and Valence flake inputs and the Valence Cargo git
+      # dependency use ssh:// URLs. The repositories are public, but runners
+      # have no SSH key, so fetch them anonymously over HTTPS. The pinned URLs
+      # stay unchanged because reviewed manifests bind them.
+      - run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+      - run: nix build .#checks.x86_64-linux.core --print-build-logs
+
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v31
+      - run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
       - run: nix flake check

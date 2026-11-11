@@ -1,0 +1,208 @@
+{
+  "admission": null,
+  "capability_classifications": [
+    {
+      "core_handling": "explicit-fact",
+      "executor_role": "outbound-adapter",
+      "family": "filesystem",
+      "rationale": "the corpus records storage access as an adapter-only effect"
+    }
+  ],
+  "collection_limits": {
+    "max_artifact_bytes": 268435456,
+    "max_calls": 262144,
+    "max_configurations": 8192,
+    "max_constructors": 65536,
+    "max_effects": 65536,
+    "max_expansions": 65536,
+    "max_function_safety_facts": 65536,
+    "max_implementations": 16384,
+    "max_items": 65536,
+    "max_modules": 4096,
+    "max_shard_bytes": 67108864,
+    "max_shards": 32,
+    "max_signatures": 65536,
+    "max_span_bytes": 1048576,
+    "max_spans": 262144,
+    "max_traits": 8192,
+    "max_type_shapes": 65536,
+    "max_types": 65536,
+    "max_units": 32,
+    "max_unknowns": 65536,
+    "max_value_flow_bodies": 65536,
+    "max_value_flow_rounds": 64,
+    "max_value_flow_steps": 1048576,
+    "max_value_provenance_facts": 262144
+  },
+  "core_no_std": [],
+  "dependency_rules": [
+    {
+      "allowed_callee_roles": [
+        "domain-core"
+      ],
+      "caller_role": "domain-core",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    },
+    {
+      "allowed_callee_roles": [
+        "application-shell",
+        "domain-core"
+      ],
+      "caller_role": "application-shell",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    },
+    {
+      "allowed_callee_roles": [
+        "outbound-adapter",
+        "application-shell",
+        "domain-core"
+      ],
+      "caller_role": "outbound-adapter",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    },
+    {
+      "allowed_callee_roles": [
+        "composition-root",
+        "application-shell",
+        "outbound-adapter",
+        "domain-core"
+      ],
+      "caller_role": "composition-root",
+      "edge_kinds": [
+        "normal",
+        "build"
+      ]
+    }
+  ],
+  "mode": "inventory",
+  "non_claims": [
+    "The corpus is a bounded architecture fixture and does not represent all Rust projects.",
+    "The policy is a benchmark fixture and grants no release or consumer authority."
+  ],
+  "outbound_effects": [],
+  "ports": [],
+  "production": {
+    "packages": [
+      "app",
+      "bin_target",
+      "core-api",
+      "empty_scope",
+      "facade",
+      "gated",
+      "infra-api",
+      "traits"
+    ],
+    "source_scopes": [
+      "crates/app/src",
+      "crates/bin_target/src",
+      "crates/core-api/src",
+      "crates/empty_scope/src",
+      "crates/facade/src",
+      "crates/gated/src",
+      "crates/infra-api/src",
+      "crates/traits/src"
+    ],
+    "targets": [
+      {
+        "default_features": true,
+        "features": [],
+        "triple": "x86_64-unknown-linux-gnu"
+      }
+    ]
+  },
+  "project_id": "octet-benchmark-architecture-corpus",
+  "provider_classifications": [],
+  "roles": [
+    {
+      "role": "application-shell",
+      "scope": "app",
+      "scope_kind": "package"
+    },
+    {
+      "role": "composition-root",
+      "scope": "bin_target",
+      "scope_kind": "package"
+    },
+    {
+      "role": "domain-core",
+      "scope": "core-api",
+      "scope_kind": "package"
+    },
+    {
+      "role": "domain-core",
+      "scope": "empty_scope",
+      "scope_kind": "package"
+    },
+    {
+      "role": "application-shell",
+      "scope": "facade",
+      "scope_kind": "package"
+    },
+    {
+      "role": "application-shell",
+      "scope": "gated",
+      "scope_kind": "package"
+    },
+    {
+      "role": "outbound-adapter",
+      "scope": "infra-api",
+      "scope_kind": "package"
+    },
+    {
+      "role": "application-shell",
+      "scope": "traits",
+      "scope_kind": "package"
+    },
+    {
+      "role": "application-shell",
+      "scope": "crates/app/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "composition-root",
+      "scope": "crates/bin_target/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "domain-core",
+      "scope": "crates/core-api/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "domain-core",
+      "scope": "crates/empty_scope/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "application-shell",
+      "scope": "crates/facade/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "application-shell",
+      "scope": "crates/gated/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "outbound-adapter",
+      "scope": "crates/infra-api/src",
+      "scope_kind": "source"
+    },
+    {
+      "role": "application-shell",
+      "scope": "crates/traits/src",
+      "scope_kind": "source"
+    }
+  ],
+  "schema_version": "octet-project-architecture-policy/v1",
+  "waivers": []
+}

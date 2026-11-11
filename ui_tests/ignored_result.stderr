@@ -11,7 +11,7 @@ LL |     let _ = buf.write_all(b"hello");
 help: propagate the error with `?` instead of discarding
    |
 LL -     let _ = buf.write_all(b"hello");
-LL +     buf.write_all(b"hello")?
+LL +     buf.write_all(b"hello")?;
    |
 
 warning: `Result` value silently discarded in statement position
@@ -28,5 +28,20 @@ help: propagate the error with `?` instead of discarding
 LL |     buf.write_all(b"hello")?;
    |                            +
 
-warning: 2 warnings emitted
+warning: `Result` value silently discarded with `let _ = ...`
+  --> $DIR/ignored_result.rs:30:5
+   |
+LL |     _ = buf.write_all(b"hello");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Error Handling): handle fallible results explicitly with `?`, `match`, or an intentional logged drop Example: tx.send(msg)?;
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Error Handling
+help: propagate the error with `?` instead of discarding
+   |
+LL -     _ = buf.write_all(b"hello");
+LL +     buf.write_all(b"hello")?;
+   |
+
+warning: 3 warnings emitted
 

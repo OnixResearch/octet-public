@@ -1,0 +1,12 @@
+{
+  "chain_root_hash": "1f04fe96d46f6b9904e71506fc93a7a7bebb75d9f95f954b57bd6ad5d644a8b1",
+  "checkpoint_hash": "f9ea48b0c043202e1fa2974ca0c5381db33b5b7db4c4d5a84f4c1f5179477386",
+  "head_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "record_count": 2,
+  "schema_version": "cairn.runtime_witness_checkpoint.v1",
+  "subject": "repo:cairn",
+  "witness_identity": {
+    "id": "fixture-independent-witness",
+    "kind": "test-fixture"
+  }
+}

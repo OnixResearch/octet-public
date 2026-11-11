@@ -9,7 +9,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::artifacts::ArtifactManifest;
-use crate::artifacts::ArtifactManifestEntry;
 use crate::model::ConfigReceiptFamily;
 use crate::model::ConfigReceiptFamilyStatus;
 use crate::model::PolicyRegistry;
@@ -32,8 +31,32 @@ const REMEDIATION_ARTIFACTS: &str = "regenerate package artifacts and refresh th
 const REMEDIATION_OFFLINE: &str = "use checked-in package sources, manifests, fixtures, and generated artifacts only";
 const REMEDIATION_SECRETS: &str = "remove raw secret material or record a non-candidate exclusion rationale";
 
-static SECRET_MARKERS: &[&str] = &["BEGIN PRIVATE KEY", "password =", "token =", "secret =", "api_key ="];
+static PACKAGE_KINDS: &[&str] = &[
+    "policy",
+    "profile",
+    "template",
+    "proof-rail",
+    "generated-contract",
+    "contract",
+];
+/// Credential key names that mark an assignment such as `password = "..."` or `"api_key": "..."`.
+static SECRET_KEY_NAMES: &[&str] = &[
+    "password",
+    "passwd",
+    "token",
+    "secret",
+    "api_key",
+    "apikey",
+    "private_key",
+];
+const PEM_HEADER_START: &str = "-----begin ";
+const PRIVATE_KEY_LABEL: &str = "private key";
+const BARE_PRIVATE_KEY_HEADER: &str = "begin private key";
 static REMOTE_FETCH_MARKERS: &[&str] = &["https://", "http://", "curl ", "wget ", "git clone"];
+/// Kinds that define contracts, schemas, profiles, templates, or policy rules.
+static EXPORT_COVERAGE_KINDS: &[&str] = &["policy", "profile", "template", "generated-contract", "contract"];
+/// Generation-command markers for deterministic Nickel export coverage.
+static EXPORT_COMMAND_MARKERS: &[&str] = &["nickel export", "nickel-export-manifest"];
 
 /// One package-generated artifact tracked by customs.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -53,7 +76,7 @@ pub struct PolicyPackageManifest {
     pub schema_version: String,
     /// Stable package ID.
     pub package_id: String,
-    /// Package kind, such as policy, profile, template, proof-rail, or generated-contract.
+    /// Package kind: policy, profile, template, proof-rail, generated-contract, or contract.
     pub kind: String,
     /// Owning team, module, or source path.
     pub owner: String,
@@ -93,7 +116,7 @@ pub struct PolicyPackageManifest {
     /// True only for packages whose validation explicitly needs remote fetching.
     #[serde(default)]
     pub remote_fetches_allowed: bool,
-    /// Rationale required when raw secrets or non-candidate material is present.
+    /// Exclusion rationale for secret-shaped material; honoured only for `non-candidate` packages.
     #[serde(default)]
     pub secret_exclusion_rationale: String,
 }
@@ -152,7 +175,7 @@ pub fn validate_policy_package(input: &CustomsInput<'_>) -> CustomsReport {
     validate_registry_coverage(input.package, input.registry, &mut diagnostics);
     validate_generated_artifacts(input, &mut diagnostics);
     validate_offline_boundary(input.package, &mut diagnostics);
-    validate_secret_boundary(input.package, input.sources, &mut diagnostics);
+    validate_secret_boundary(input, &mut diagnostics);
 
     let status = if diagnostics.is_empty() { "pass" } else { "fail" }.to_owned();
     let mut accepted_artifacts =
@@ -181,7 +204,13 @@ fn validate_package_shape(package: &PolicyPackageManifest, diagnostics: &mut Vec
         ));
     }
     push_blank(package.package_id.trim(), "package_id", diagnostics);
-    push_blank(package.kind.trim(), "kind", diagnostics);
+    if !is_known_kind(&package.kind) {
+        diagnostics.push(diagnostic(
+            "kind",
+            format!("unknown package kind `{}`; expected one of {}", package.kind, PACKAGE_KINDS.join(", ")),
+            REMEDIATION_FIX_PACKAGE,
+        ));
+    }
     push_blank(package.owner.trim(), "owner", diagnostics);
     push_blank(package.provenance.trim(), "provenance", diagnostics);
     push_blank(package.license_notes.trim(), "license_notes", diagnostics);
@@ -261,6 +290,13 @@ fn validate_registry_coverage(
     registry: &PolicyRegistry,
     diagnostics: &mut Vec<CustomsDiagnostic>,
 ) {
+    if package_is_promotable(package) && package.registry_family_ids.is_empty() {
+        diagnostics.push(diagnostic(
+            "registry_family_ids",
+            "promotable package declares no registry family coverage".to_owned(),
+            REMEDIATION_REGISTRY,
+        ));
+    }
     for family_id in &package.registry_family_ids {
         match registry.config_receipt_families.iter().find(|family| family.family_id == *family_id) {
             Some(family) => validate_registry_family(package, family, diagnostics),
@@ -291,10 +327,25 @@ fn validate_registry_family(
 }
 
 fn validate_generated_artifacts(input: &CustomsInput<'_>, diagnostics: &mut Vec<CustomsDiagnostic>) {
-    for artifact in &input.package.generated_artifacts {
+    let package = input.package;
+    if package_is_promotable(package)
+        && EXPORT_COVERAGE_KINDS.contains(&package.kind.as_str())
+        && package.generated_artifacts.is_empty()
+        && !package.generation_commands.iter().any(|command| is_export_command(command))
+    {
+        diagnostics.push(diagnostic(
+            "generated_artifacts",
+            format!(
+                "promotable {} package declares no generated-artifact freshness or deterministic export coverage",
+                package.kind
+            ),
+            REMEDIATION_ARTIFACTS,
+        ));
+    }
+    for artifact in &package.generated_artifacts {
         push_blank(&artifact.generation_command, &format!("{} generation_command", artifact.path), diagnostics);
         push_blank(&artifact.validation_command, &format!("{} validation_command", artifact.path), diagnostics);
-        let Some(text) = artifact_text(input.artifact_texts, &artifact.path) else {
+        let Some(text) = text_at(input.artifact_texts, &artifact.path) else {
             diagnostics.push(diagnostic(
                 &artifact.path,
                 format!("generated artifact `{}` is missing from artifact inventory", artifact.path),
@@ -321,9 +372,15 @@ fn validate_artifact_identity(
     diagnostics: &mut Vec<CustomsDiagnostic>,
 ) {
     let expected = artifact_text_identity(path, text);
-    match manifest_entry(manifest, path) {
-        Some(actual) if actual.blake3 == expected.blake3 && actual.bytes == expected.bytes => {}
-        Some(actual) => diagnostics.push(diagnostic(
+    let mut entries = manifest.artifacts.iter().filter(|entry| entry.path == path);
+    match (entries.next(), entries.next()) {
+        (Some(_), Some(_)) => diagnostics.push(diagnostic(
+            path,
+            format!("artifact manifest has duplicate entries for generated artifact `{path}`"),
+            REMEDIATION_ARTIFACTS,
+        )),
+        (Some(actual), None) if actual.blake3 == expected.blake3 && actual.bytes == expected.bytes => {}
+        (Some(actual), None) => diagnostics.push(diagnostic(
             path,
             format!(
                 "stale generated artifact `{path}`; expected blake3 {} bytes {}, got blake3 {} bytes {}",
@@ -331,7 +388,7 @@ fn validate_artifact_identity(
             ),
             REMEDIATION_ARTIFACTS,
         )),
-        None => diagnostics.push(diagnostic(
+        (None, _) => diagnostics.push(diagnostic(
             path,
             format!("artifact manifest is missing generated artifact `{path}`"),
             REMEDIATION_ARTIFACTS,
@@ -359,22 +416,26 @@ fn validate_offline_boundary(package: &PolicyPackageManifest, diagnostics: &mut 
     }
 }
 
-fn validate_secret_boundary(
-    package: &PolicyPackageManifest,
-    sources: &[SourceFile],
-    diagnostics: &mut Vec<CustomsDiagnostic>,
-) {
-    if !package.secret_exclusion_rationale.trim().is_empty() {
+fn validate_secret_boundary(input: &CustomsInput<'_>, diagnostics: &mut Vec<CustomsDiagnostic>) {
+    let package = input.package;
+    if package.status == STATUS_NON_CANDIDATE && !package.secret_exclusion_rationale.trim().is_empty() {
         return;
     }
-    for path in &package.source_paths {
-        let Some(source) = sources.iter().find(|source| source.path == *path) else {
-            continue;
-        };
-        if contains_secret_marker(&source.text) {
+    let sources = package.source_paths.iter().map(|path| ("package source", path, input.sources));
+    let fixtures = package
+        .positive_fixtures
+        .iter()
+        .chain(&package.negative_fixtures)
+        .map(|path| ("package fixture", path, input.sources));
+    let artifacts = package
+        .generated_artifacts
+        .iter()
+        .map(|artifact| ("generated artifact", &artifact.path, input.artifact_texts));
+    for (label, path, texts) in sources.chain(fixtures).chain(artifacts) {
+        if text_at(texts, path).is_some_and(contains_secret_marker) {
             diagnostics.push(diagnostic(
                 path,
-                format!("package source `{path}` appears to contain raw secret material"),
+                format!("{label} `{path}` appears to contain raw secret material"),
                 REMEDIATION_SECRETS,
             ));
         }
@@ -385,6 +446,10 @@ fn is_known_status(status: &str) -> bool {
     matches!(status, STATUS_PROMOTABLE | STATUS_EXISTING | STATUS_NON_CANDIDATE | STATUS_DRAFT)
 }
 
+fn is_known_kind(kind: &str) -> bool {
+    PACKAGE_KINDS.contains(&kind)
+}
+
 fn package_is_promotable(package: &PolicyPackageManifest) -> bool {
     matches!(package.status.as_str(), STATUS_PROMOTABLE | STATUS_EXISTING)
 }
@@ -393,12 +458,12 @@ fn source_exists(sources: &[SourceFile], path: &str) -> bool {
     sources.iter().any(|source| source.path == path)
 }
 
-fn artifact_text<'a>(artifacts: &'a [SourceFile], path: &str) -> Option<&'a str> {
-    artifacts.iter().find(|artifact| artifact.path == path).map(|artifact| artifact.text.as_str())
+fn text_at<'a>(texts: &'a [SourceFile], path: &str) -> Option<&'a str> {
+    texts.iter().find(|text| text.path == path).map(|text| text.text.as_str())
 }
 
-fn manifest_entry<'a>(manifest: &'a ArtifactManifest, path: &str) -> Option<&'a ArtifactManifestEntry> {
-    manifest.artifacts.iter().find(|entry| entry.path == path)
+fn is_export_command(command: &str) -> bool {
+    EXPORT_COMMAND_MARKERS.iter().any(|marker| command.contains(marker))
 }
 
 fn contains_remote_fetch(value: &str) -> bool {
@@ -408,7 +473,25 @@ fn contains_remote_fetch(value: &str) -> bool {
 
 fn contains_secret_marker(value: &str) -> bool {
     let lowered = value.to_ascii_lowercase();
-    SECRET_MARKERS.iter().any(|marker| lowered.contains(&marker.to_ascii_lowercase()))
+    lowered.lines().any(|line| has_private_key_header(line) || has_secret_assignment(line))
+}
+
+/// Match PEM private-key headers such as `-----BEGIN EC PRIVATE KEY-----`.
+fn has_private_key_header(line: &str) -> bool {
+    line.contains(BARE_PRIVATE_KEY_HEADER)
+        || line.find(PEM_HEADER_START).is_some_and(|start| line[start..].contains(PRIVATE_KEY_LABEL))
+}
+
+/// Match a credential key name followed by optional quotes and whitespace, then `=` or `:`.
+fn has_secret_assignment(line: &str) -> bool {
+    SECRET_KEY_NAMES.iter().any(|key| {
+        line.match_indices(key).any(|(start, _)| {
+            let rest = line[start + key.len()..].trim_start_matches(|character: char| {
+                character == '"' || character == '\'' || character.is_whitespace()
+            });
+            rest.starts_with('=') || rest.starts_with(':')
+        })
+    })
 }
 
 fn push_blank(value: &str, field: &str, diagnostics: &mut Vec<CustomsDiagnostic>) {
@@ -433,6 +516,7 @@ fn diagnostic(field: impl Into<String>, message: String, remediation: &str) -> C
 mod tests {
     use super::*;
     use crate::artifacts::ARTIFACT_MANIFEST_SCHEMA_VERSION;
+    use crate::artifacts::ArtifactManifestEntry;
     use crate::model::ConfigReceiptOwnership;
     use crate::model::PolicyRegistry;
     use crate::proof_artifact::artifact_text_identity;
@@ -500,6 +584,264 @@ mod tests {
         assert_eq!(report.status, "fail");
         assert!(report.diagnostics.iter().any(|diagnostic| diagnostic.message.contains("remote fetch")));
         assert!(report.diagnostics.iter().any(|diagnostic| diagnostic.message.contains("raw secret material")));
+    }
+
+    #[test]
+    fn secret_exclusion_rationale_only_excuses_non_candidate_packages() {
+        let mut package = valid_package();
+        package.secret_exclusion_rationale = "fixture credentials are inert".to_owned();
+        let mut sources = valid_sources();
+        sources.push(SourceFile::new("secret-package.ncl", "token = \"do-not-commit\"\n"));
+        package.source_paths.push("secret-package.ncl".to_owned());
+        let registry = valid_registry();
+        let artifact_manifest = valid_manifest();
+        let artifacts = valid_artifacts();
+
+        let promotable = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+        assert!(
+            promotable.diagnostics.iter().any(|diagnostic| diagnostic.field == "secret-package.ncl"
+                && diagnostic.message.contains("raw secret material")),
+            "{:?}",
+            promotable.diagnostics
+        );
+
+        package.status = STATUS_NON_CANDIDATE.to_owned();
+        let excluded = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+        assert!(
+            !excluded.diagnostics.iter().any(|diagnostic| diagnostic.message.contains("raw secret material")),
+            "{:?}",
+            excluded.diagnostics
+        );
+    }
+
+    #[test]
+    fn secret_scan_covers_fixtures_and_generated_artifacts() {
+        let package = valid_package();
+        let secret_artifact = "{ password = \"do-not-commit\" }\n";
+        let sources = vec![
+            SourceFile::new(SOURCE_PATH, ARTIFACT_TEXT),
+            SourceFile::new(POSITIVE_FIXTURE, "api_key = \"do-not-commit\"\n"),
+            SourceFile::new(NEGATIVE_FIXTURE, "-----BEGIN PRIVATE KEY-----\n"),
+        ];
+        let artifacts = vec![SourceFile::new(SOURCE_PATH, secret_artifact)];
+        let identity = artifact_text_identity(SOURCE_PATH, secret_artifact);
+        let mut artifact_manifest = valid_manifest();
+        artifact_manifest.artifacts[0].blake3 = identity.blake3;
+        artifact_manifest.artifacts[0].bytes = identity.bytes;
+        let registry = valid_registry();
+
+        let report = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+
+        let secret_fields = report
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.message.contains("raw secret material"))
+            .map(|diagnostic| diagnostic.field.as_str())
+            .collect::<Vec<_>>();
+        assert!(secret_fields.contains(&POSITIVE_FIXTURE), "{:?}", report.diagnostics);
+        assert!(secret_fields.contains(&NEGATIVE_FIXTURE), "{:?}", report.diagnostics);
+        assert!(secret_fields.contains(&SOURCE_PATH), "{:?}", report.diagnostics);
+    }
+
+    #[test]
+    fn secret_scan_matches_key_headers_and_assignment_spellings() {
+        let secret_texts = [
+            "-----BEGIN RSA PRIVATE KEY-----\n",
+            "-----BEGIN OPENSSH PRIVATE KEY-----\n",
+            "-----BEGIN EC PRIVATE KEY-----\n",
+            "-----BEGIN ENCRYPTED PRIVATE KEY-----\n",
+            "BEGIN PRIVATE KEY\n",
+            "password=\"hunter2\"\n",
+            "password = \"hunter2\"\n",
+            "{\"api_key\": \"abc\"}\n",
+            "{ 'apikey' : 'abc' }\n",
+            "API_KEY=abc\n",
+            "api_key = \"abc\"\n",
+            "passwd: hunter2\n",
+            "token=abc\n",
+            "token = abc\n",
+            "\"token\":\"abc\"\n",
+            "client_secret = \"abc\"\n",
+            "secret=abc\n",
+            "secret = abc\n",
+            "private_key: abc\n",
+        ];
+        let accepted = secret_texts.iter().filter(|text| !contains_secret_marker(text)).collect::<Vec<_>>();
+        assert!(accepted.is_empty(), "secret material passed the scan: {accepted:?}");
+
+        // Markers pinned by `nickel-export-core` at the Cargo-locked revision.
+        let core_markers = [
+            "begin private key",
+            "password=",
+            "password =",
+            "token=",
+            "token =",
+            "secret=",
+            "secret =",
+            "api_key=",
+            "api_key =",
+        ];
+        let missed = core_markers
+            .iter()
+            .filter(|marker| !contains_secret_marker(&format!("{marker}x\n")))
+            .collect::<Vec<_>>();
+        assert!(missed.is_empty(), "pinned nickel-export-core markers passed the scan: {missed:?}");
+
+        let ordinary_texts = [
+            "tokenizer = \"bpe\"\n",
+            "secretary: \"Ada\"\n",
+            "secret_exclusion_rationale = \"\"\n",
+            "passwords are rotated by the operator\n",
+            "the token expires after one hour\n",
+            "-----BEGIN PUBLIC KEY-----\n",
+            "api_keys_rotated = true\n",
+        ];
+        let rejected = ordinary_texts.iter().filter(|text| contains_secret_marker(text)).collect::<Vec<_>>();
+        assert!(rejected.is_empty(), "ordinary text tripped the secret scan: {rejected:?}");
+    }
+
+    #[test]
+    fn secret_scan_rejects_alternate_spellings_in_package_sources() {
+        let mut package = valid_package();
+        let mut sources = valid_sources();
+        for (path, text) in [
+            ("rsa-key.pem", "-----BEGIN RSA PRIVATE KEY-----\nMIIE\n-----END RSA PRIVATE KEY-----\n"),
+            ("compact.ncl", "{ password=\"hunter2\" }\n"),
+            ("json-key.json", "{\"api_key\": \"abc\"}\n"),
+        ] {
+            sources.push(SourceFile::new(path, text));
+            package.source_paths.push(path.to_owned());
+        }
+        let registry = valid_registry();
+        let artifact_manifest = valid_manifest();
+        let artifacts = valid_artifacts();
+
+        let report = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+
+        for path in ["rsa-key.pem", "compact.ncl", "json-key.json"] {
+            assert!(
+                report
+                    .diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.field == path && diagnostic.remediation == REMEDIATION_SECRETS),
+                "{path}: {:?}",
+                report.diagnostics
+            );
+        }
+    }
+
+    #[test]
+    fn promotable_package_requires_registry_family_coverage() {
+        let registry = valid_registry();
+        let artifact_manifest = valid_manifest();
+        let sources = valid_sources();
+        let artifacts = valid_artifacts();
+        let mut package = valid_package();
+        package.registry_family_ids.clear();
+
+        let promotable = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+        assert_eq!(promotable.status, "fail");
+        assert!(
+            promotable.diagnostics.iter().any(|diagnostic| diagnostic.field == "registry_family_ids"),
+            "{:?}",
+            promotable.diagnostics
+        );
+
+        package.status = STATUS_DRAFT.to_owned();
+        let draft = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+        assert!(draft.diagnostics.is_empty(), "{:?}", draft.diagnostics);
+    }
+
+    #[test]
+    fn promotable_export_kinds_require_generated_artifact_or_export_coverage() {
+        let registry = valid_registry();
+        let artifact_manifest = valid_manifest();
+        let sources = valid_sources();
+        let artifacts = valid_artifacts();
+        let mut package = valid_package();
+        package.generated_artifacts.clear();
+        for kind in ["policy", "profile", "template", "generated-contract", "contract"] {
+            kind.clone_into(&mut package.kind);
+            let report = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+            assert!(
+                report.diagnostics.iter().any(|diagnostic| diagnostic.field == "generated_artifacts"),
+                "{kind}: {:?}",
+                report.diagnostics
+            );
+        }
+
+        "proof-rail".clone_into(&mut package.kind);
+        let proof_rail = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+        assert!(proof_rail.diagnostics.is_empty(), "{:?}", proof_rail.diagnostics);
+
+        "profile".clone_into(&mut package.kind);
+        package.generation_commands =
+            vec!["nickel export --format json templates/dynamic-evidence-profiles.ncl".to_owned()];
+        let exported = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+        assert!(exported.diagnostics.is_empty(), "{:?}", exported.diagnostics);
+
+        package.generation_commands.clear();
+        package.status = STATUS_DRAFT.to_owned();
+        let draft = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+        assert!(draft.diagnostics.is_empty(), "{:?}", draft.diagnostics);
+    }
+
+    #[test]
+    fn package_kind_must_match_contract_enum() {
+        let registry = valid_registry();
+        let artifact_manifest = valid_manifest();
+        let sources = valid_sources();
+        let artifacts = valid_artifacts();
+        let mut package = valid_package();
+        for kind in [
+            "policy",
+            "profile",
+            "template",
+            "proof-rail",
+            "generated-contract",
+            "contract",
+        ] {
+            kind.clone_into(&mut package.kind);
+            let report = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+            assert!(report.diagnostics.is_empty(), "{kind}: {:?}", report.diagnostics);
+        }
+
+        package.kind = "plugin".to_owned();
+        let report = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+
+        assert_eq!(report.status, "fail");
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.field == "kind" && diagnostic.message.contains("unknown package kind")),
+            "{:?}",
+            report.diagnostics
+        );
+    }
+
+    #[test]
+    fn duplicate_artifact_manifest_paths_fail_closed() {
+        let package = valid_package();
+        let registry = valid_registry();
+        let sources = valid_sources();
+        let artifacts = valid_artifacts();
+        let mut artifact_manifest = valid_manifest();
+        let mut stale_duplicate = artifact_manifest.artifacts[0].clone();
+        stale_duplicate.blake3 = "stale".to_owned();
+        artifact_manifest.artifacts.push(stale_duplicate);
+
+        let report = report_for(&package, &registry, &artifact_manifest, &sources, &artifacts);
+
+        assert_eq!(report.status, "fail");
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.field == SOURCE_PATH && diagnostic.message.contains("duplicate entries")),
+            "{:?}",
+            report.diagnostics
+        );
     }
 
     fn report_for(

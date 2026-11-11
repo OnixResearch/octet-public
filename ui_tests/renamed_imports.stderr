@@ -1,5 +1,5 @@
 warning: renamed import `Config as TransportConfig` hides the original searchable name
-  --> $DIR/renamed_imports.rs:14:1
+  --> $DIR/renamed_imports.rs:24:1
    |
 LL | use crate::transport::Config as TransportConfig;
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,5 +8,23 @@ LL | use crate::transport::Config as TransportConfig;
    = note: see Tiger Style guide: Naming
    = note: `#[warn(tigerstyle::renamed_imports)]` on by default
 
-warning: 1 warning emitted
+warning: renamed import `Config as IncompatibleTransportConfig` hides the original searchable name
+  --> $DIR/renamed_imports.rs:27:1
+   |
+LL | pub use crate::transport::Config as IncompatibleTransportConfig;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Import Names): avoid `use ... as ...` aliases that hide the original searchable item name Example: use crate::transport::Config;
+   = note: see Tiger Style guide: Naming
+
+warning: renamed import `Registry as ServiceRegistry` hides the original searchable name
+  --> $DIR/renamed_imports.rs:30:1
+   |
+LL | use crate::registry::Registry as ServiceRegistry;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Import Names): avoid `use ... as ...` aliases that hide the original searchable item name Example: use crate::transport::Config;
+   = note: see Tiger Style guide: Naming
+
+warning: 3 warnings emitted
 

@@ -1,0 +1,38 @@
+{
+  "schema_version": "octet-nickel-export-manifest/v1",
+  "generator": "octet-standards.nickel-export-helper/v1",
+  "nickel_identity": "nickel-lang-cli nickel 1.17.0 (rev 1320a98)",
+  "exports": [
+    {
+      "family_id": "octet.durability-claims-catalog",
+      "output_format": "json",
+      "source": {
+        "path": "standards/durability-claims/catalog.ncl",
+        "blake3": "9e139a8e489693b11dcca0ce795c1941b56515990c246c4db22e289cb2a1f6ee",
+        "bytes": 2067
+      },
+      "dependencies": [
+        {
+          "path": "standards/durability-claims/contracts.ncl",
+          "blake3": "32025ef4307524df5555dfb75903f1910d96ccc9f4959041109896718dd8cb83",
+          "bytes": 3814
+        }
+      ],
+      "output": {
+        "path": "standards/durability-claims/generated/catalog.json",
+        "blake3": "04b1131e310b18c11b7a201cd79fca5fe002fd963e0d9821168d2c08d402fad4",
+        "bytes": 1983
+      },
+      "selector": "",
+      "contract": "Catalog and CatalogRules",
+      "generation_command": "nickel export --format json standards/durability-claims/catalog.ncl",
+      "command_argv": [
+        "nickel",
+        "export",
+        "--format",
+        "json",
+        "standards/durability-claims/catalog.ncl"
+      ]
+    }
+  ]
+}

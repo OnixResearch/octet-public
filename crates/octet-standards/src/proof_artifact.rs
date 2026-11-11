@@ -9,6 +9,10 @@ use crate::source::SourceFile;
 /// Receipt binding mode that binds command text and matched source contents.
 pub const RECEIPT_BINDING_BLAKE3_COMMAND_AND_SOURCE: &str = "blake3-command-and-source";
 
+/// Receipt verifier field naming verifier build closure manifest paths.
+pub const FIELD_BUILD_CLOSURE_PATHS: &str = "verifier_build_closure_paths";
+/// Receipt verifier field naming Nix recursive closure manifest paths.
+pub const FIELD_NIX_CLOSURE_PATHS: &str = "verifier_nix_closure_paths";
 const FIELD_CLOSURE_GRAPH: &str = "verifier_nix_closure_graph_paths";
 
 /// Deterministic identity for a text artifact.
@@ -74,6 +78,10 @@ pub fn path_pattern_diagnostics(patterns: &[String], sources: &[SourceFile], fie
 
     let mut diagnostics = Vec::new();
     for pattern in patterns {
+        if let Some(reason) = escaping_pattern_reason(pattern) {
+            diagnostics.push(format!("proof rail field `{field_name}` pattern `{pattern}` is {reason}"));
+            continue;
+        }
         let normalized_pattern = normalize_path(pattern);
         if normalized_pattern.is_empty() {
             diagnostics.push(format!("proof rail field `{field_name}` contains an empty path pattern"));
@@ -166,14 +174,24 @@ pub fn receipt_binding_text(rail: &ProofRail, sources: &[SourceFile]) -> String 
 }
 
 /// Build a BLAKE3 digest over matched closure manifest sources.
-#[must_use]
-pub fn build_closure_digest(paths: &[String], sources: &[SourceFile]) -> Option<String> {
+///
+/// Returns `Ok(None)` only when no manifest paths are configured.
+///
+/// # Errors
+///
+/// Returns a deterministic diagnostic naming `field_name` when configured paths match no checked
+/// manifest; callers must not fall back to a configured digest.
+pub fn build_closure_digest(
+    paths: &[String],
+    sources: &[SourceFile],
+    field_name: &str,
+) -> Result<Option<String>, String> {
     if paths.is_empty() {
-        return None;
+        return Ok(None);
     }
     let mut matched_sources = matching_sources(paths, sources);
     if matched_sources.is_empty() {
-        return None;
+        return Err(format!("{field_name} [{}] matches no checked closure manifest", paths.join(", ")));
     }
     matched_sources.sort_by(|left, right| left.path.cmp(&right.path));
     let mut manifest = String::new();
@@ -181,27 +199,31 @@ pub fn build_closure_digest(paths: &[String], sources: &[SourceFile]) -> Option<
         writeln!(manifest, "{}:{}", source.path, blake3_hex_text(&source.text))
             .expect("writing to string should not fail");
     }
-    Some(blake3_hex_text(&manifest))
+    Ok(Some(blake3_hex_text(&manifest)))
 }
 
 /// Build a BLAKE3 digest over canonical Nix exportReferencesGraph artifacts.
 ///
+/// Returns `Ok(None)` only when no closure graph paths are configured.
+///
 /// # Errors
 ///
-/// Returns a deterministic diagnostic when any matched graph is malformed.
+/// Returns a deterministic diagnostic when configured paths match no checked graph artifact or
+/// when any matched graph is malformed; callers must not fall back to a configured digest.
 pub fn nix_closure_graph_digest(paths: &[String], sources: &[SourceFile]) -> Result<Option<String>, String> {
     if paths.is_empty() {
         return Ok(None);
     }
     let mut matched_sources = matching_sources(paths, sources);
     if matched_sources.is_empty() {
-        return Ok(None);
+        return Err(format!("{FIELD_CLOSURE_GRAPH} [{}] matches no checked closure graph artifact", paths.join(", ")));
     }
     matched_sources.sort_by(|left, right| left.path.cmp(&right.path));
     let mut canonical_graphs = String::new();
     for source in matched_sources {
-        let canonical = canonical_nix_closure_graph(&source.text)
-            .map_err(|diagnostic| format!("{FIELD_CLOSURE_GRAPH} `{}`: {diagnostic}", source.path))?;
+        let canonical = canonical_nix_closure_graph(&source.text).map_err(|diagnostic| {
+            format!("{FIELD_CLOSURE_GRAPH} `{}`: malformed closure graph: {diagnostic}", source.path)
+        })?;
         canonical_graphs.push_str(&canonical);
     }
     Ok(Some(blake3_hex_text(&canonical_graphs)))
@@ -287,10 +309,29 @@ pub fn normalize_path(path: &str) -> String {
 }
 
 /// Return true when a normalized path or glob pattern matches a path.
+///
+/// Absolute or parent-traversing patterns match nothing; see [`path_pattern_diagnostics`].
 #[must_use]
 pub fn path_matches_pattern(pattern: &str, path: &str) -> bool {
+    if escaping_pattern_reason(pattern).is_some() {
+        return false;
+    }
     let normalized_pattern = normalize_path(pattern);
     path_matches_normalized_pattern(&normalized_pattern, path)
+}
+
+/// Explain why a pattern escapes the source root: absolute (leading separator or drive prefix)
+/// or parent-traversing (a `..` component). Checked before normalization, which would hide both.
+fn escaping_pattern_reason(pattern: &str) -> Option<&'static str> {
+    let bytes = pattern.as_bytes();
+    let drive_prefix = bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
+    if pattern.starts_with(['/', '\\']) || drive_prefix {
+        Some("absolute; proof rail path patterns must be source-root-relative")
+    } else if pattern.split(['/', '\\']).any(|component| component == "..") {
+        Some("parent-traversing; proof rail path patterns must not contain `..`")
+    } else {
+        None
+    }
 }
 
 fn patterns_match_any_source(patterns: &[String], sources: &[SourceFile]) -> bool {
@@ -415,6 +456,42 @@ mod tests {
     }
 
     #[test]
+    fn closure_graph_digest_rejects_unmatched_configured_paths() {
+        let sources = vec![SourceFile::new(SOURCE_PATH, SOURCE_TEXT)];
+
+        let error = nix_closure_graph_digest(&["artifacts/*.graph".to_owned()], &sources).expect_err("missing graph");
+
+        assert!(error.contains(FIELD_CLOSURE_GRAPH));
+        assert!(error.contains("matches no checked closure graph artifact"));
+        assert_eq!(nix_closure_graph_digest(&[], &sources), Ok(None));
+    }
+
+    #[test]
+    fn closure_manifest_digest_rejects_unmatched_configured_paths() {
+        let sources = vec![SourceFile::new(SOURCE_PATH, SOURCE_TEXT)];
+
+        let error = build_closure_digest(&["artifacts/*.txt".to_owned()], &sources, FIELD_NIX_CLOSURE_PATHS)
+            .expect_err("missing manifest");
+
+        assert!(error.contains(FIELD_NIX_CLOSURE_PATHS));
+        assert!(error.contains("matches no checked closure manifest"));
+        assert_eq!(build_closure_digest(&[], &sources, FIELD_NIX_CLOSURE_PATHS), Ok(None));
+    }
+
+    #[test]
+    fn closure_graph_digest_rejects_malformed_matched_graph() {
+        let sources = vec![SourceFile::new(
+            "artifacts/closure.graph",
+            "/nix/store/a\nnot-a-count\n",
+        )];
+
+        let error = nix_closure_graph_digest(&["artifacts/*.graph".to_owned()], &sources).expect_err("bad graph");
+
+        assert!(error.contains("artifacts/closure.graph"));
+        assert!(error.contains("malformed closure graph"));
+    }
+
+    #[test]
     fn path_diagnostics_reject_missing_and_ambiguous_exact_patterns() {
         let sources = vec![SourceFile::new("src/lib.rs", ""), SourceFile::new("./src/lib.rs", "")];
 
@@ -423,5 +500,36 @@ mod tests {
 
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("matched multiple paths")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.contains("matches no checked path")));
+    }
+
+    #[test]
+    fn path_patterns_escaping_the_source_root_bind_nothing() {
+        let sources = vec![SourceFile::new(SOURCE_PATH, SOURCE_TEXT)];
+
+        for (pattern, reason) in [
+            ("/src/verified/add.rs", "absolute"),
+            ("\\src\\verified\\add.rs", "absolute"),
+            ("C:/src/verified/add.rs", "absolute"),
+            ("../src/verified/add.rs", "parent"),
+            ("src/verified/../verified/add.rs", "parent"),
+            ("src\\..\\src\\verified\\*.rs", "parent"),
+        ] {
+            let patterns = vec![pattern.to_owned()];
+            let diagnostics = path_pattern_diagnostics(&patterns, &sources, "source_paths");
+            assert!(
+                diagnostics.iter().any(|diagnostic| diagnostic.contains(pattern) && diagnostic.contains(reason)),
+                "`{pattern}` must be rejected as {reason}: {diagnostics:?}"
+            );
+            assert!(matching_sources(&patterns, &sources).is_empty(), "`{pattern}` must not bind a source");
+            assert!(source_identities_for_patterns(&patterns, &sources, "source_paths").is_err());
+        }
+
+        let relative = vec![
+            SOURCE_PATH.to_owned(),
+            format!("./{SOURCE_PATH}"),
+            "src/verified/*.rs".to_owned(),
+        ];
+        assert!(path_pattern_diagnostics(&relative, &sources, "source_paths").is_empty());
+        assert_eq!(matching_sources(&relative, &sources).len(), 1);
     }
 }

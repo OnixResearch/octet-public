@@ -1,5 +1,5 @@
 warning: direct randomness source `rand::thread_rng(` makes core behavior non-deterministic
-  --> $DIR/ambient_random.rs:34:16
+  --> $DIR/ambient_random.rs:60:16
    |
 LL |     let _rng = rand::thread_rng();
    |                ^^^^^^^^^^^^^^^^^^
@@ -9,7 +9,7 @@ LL |     let _rng = rand::thread_rng();
    = note: `#[warn(tigerstyle::ambient_random)]` on by default
 
 warning: direct randomness source `getrandom::fill(` makes core behavior non-deterministic
-  --> $DIR/ambient_random.rs:36:27
+  --> $DIR/ambient_random.rs:62:27
    |
 LL |     let _fill_succeeded = getrandom::fill(&mut bytes).is_ok();
    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -18,7 +18,7 @@ LL |     let _fill_succeeded = getrandom::fill(&mut bytes).is_ok();
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
 warning: direct randomness source `rand::random(` makes core behavior non-deterministic
-  --> $DIR/ambient_random.rs:37:6
+  --> $DIR/ambient_random.rs:63:6
    |
 LL |     (rand::random(), uuid::Uuid::new_v4())
    |      ^^^^^^^^^^^^^^
@@ -27,7 +27,7 @@ LL |     (rand::random(), uuid::Uuid::new_v4())
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
 warning: direct randomness source `uuid::Uuid::new_v4(` makes core behavior non-deterministic
-  --> $DIR/ambient_random.rs:37:22
+  --> $DIR/ambient_random.rs:63:22
    |
 LL |     (rand::random(), uuid::Uuid::new_v4())
    |                      ^^^^^^^^^^^^^^^^^^^^
@@ -35,5 +35,50 @@ LL |     (rand::random(), uuid::Uuid::new_v4())
    = help: Tiger Style (Functional Core): inject seeds, RNG ports, nonce bytes, or shell-generated identifiers instead of reading randomness directly Example: fn choose(rng: &mut impl Rng) -> Choice
    = note: see Tiger Style guide: Functional Core / Imperative Shell
 
-warning: 4 warnings emitted
+warning: direct randomness source `rand::random(` makes core behavior non-deterministic
+  --> $DIR/ambient_random.rs:67:11
+   |
+LL |     (Some(rand::random()), Ok(uuid::Uuid::new_v4()))
+   |           ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): inject seeds, RNG ports, nonce bytes, or shell-generated identifiers instead of reading randomness directly Example: fn choose(rng: &mut impl Rng) -> Choice
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: direct randomness source `uuid::Uuid::new_v4(` makes core behavior non-deterministic
+  --> $DIR/ambient_random.rs:67:31
+   |
+LL |     (Some(rand::random()), Ok(uuid::Uuid::new_v4()))
+   |                               ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): inject seeds, RNG ports, nonce bytes, or shell-generated identifiers instead of reading randomness directly Example: fn choose(rng: &mut impl Rng) -> Choice
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: direct randomness source `fastrand::shuffle(` makes core behavior non-deterministic
+  --> $DIR/ambient_random.rs:71:5
+   |
+LL |     fastrand::shuffle(items);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): inject seeds, RNG ports, nonce bytes, or shell-generated identifiers instead of reading randomness directly Example: fn choose(rng: &mut impl Rng) -> Choice
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: direct randomness source `fastrand::u64(` makes core behavior non-deterministic
+  --> $DIR/ambient_random.rs:72:6
+   |
+LL |     (fastrand::u64(..), fastrand::Rng::new())
+   |      ^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): inject seeds, RNG ports, nonce bytes, or shell-generated identifiers instead of reading randomness directly Example: fn choose(rng: &mut impl Rng) -> Choice
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: direct randomness source `fastrand::Rng::new(` makes core behavior non-deterministic
+  --> $DIR/ambient_random.rs:72:25
+   |
+LL |     (fastrand::u64(..), fastrand::Rng::new())
+   |                         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Functional Core): inject seeds, RNG ports, nonce bytes, or shell-generated identifiers instead of reading randomness directly Example: fn choose(rng: &mut impl Rng) -> Choice
+   = note: see Tiger Style guide: Functional Core / Imperative Shell
+
+warning: 9 warnings emitted
 

@@ -10,6 +10,10 @@
 
 [octet]
 
+# Declared durability boundaries. Author the profile in Nickel, export it, and
+# point this key at the generated JSON. Omit it when no boundary is declared.
+# durability_profile_path = "durability-claims.json"
+
 # Threshold overrides
 # Keep only the fields you actively tune. Delete the rest.
 
@@ -26,11 +30,20 @@
 # assertion_density_min_lines = 30
 # assertion_density_min_assertions = 2
 
+# Raise file-size and module-size limits only while oversized files or crowded
+# module directories are being split. Values shown are the defaults.
+# excessive_file_length_max = 300
+# module_file_count_max = 7
+
+# Parameter budget for `too_many_parameters`. Value shown is the default.
+# max_parameters = 5
+
 # Tune SOLID structure signals only with a cleanup plan.
 # trait_method_max = 7
 # impl_blocks_max = 4
 # module_pub_items_max = 12
 # core_source_scopes = ["crates/domain-core/src/"]
+# core_value_provider_types = ["reviewed_values::Value"]
 # sealed_enum_marker = "octet::sealed_enum"
 # state_machine_core_marker = "octet::state_machine_core"
 # state_machine_enum_marker = "octet::state_machine_enum" # required on closed state/event enums for FSM profile evidence
@@ -39,7 +52,8 @@
 
 # Nominal-domain rollout mode
 # Omit this key until the workspace owns a reviewed policy inventory.
-# `inventory` warns for exact findings and suffix candidates.
+# `inventory` warns for exact findings and suffix candidates, and caps any
+# `lint_levels` deny for the nominal-domain lints at `warn`.
 # `warn` warns only for exact policy rows. `deny` denies only exact rows.
 # nominal_domain_mode = "inventory"
 
@@ -60,10 +74,18 @@
 # ]
 
 # Per-lint rollout controls
+# Do not add `raw_bool_parameter` to disabled_lints for a strict release gate.
+# Inventory the owned APIs, migrate covered direct `bool` parameters, and use
+# only an exact source-local compatibility expectation with a specific reason
+# and named owner when a published external contract cannot change.
+# See `docs/boolean-api-modeling.md`.
 # Omitted `disabled_lints` / `lint_levels` default to empty collections.
-# Unknown lint names and invalid level values warn and are ignored.
+# Unknown config keys, unknown lint names, and invalid level values warn and
+# are ignored.
 # If the same lint appears in both places, `disabled_lints` wins and the level
 # override is ignored.
+# Explicit command-line levels such as `-D numeric_units` in
+# `DYLINT_RUSTFLAGS` win over `lint_levels`.
 # Keep keys here bare (`no_unwrap`), even though source attrs and group attrs in
 # Rust code currently uses source-attribute tool names like `tigerstyle::no_unwrap`
 # and `tigerstyle::safety`; keep config keys bare here.
@@ -85,6 +107,13 @@
 # disabled_lints = [
 #   "function_length",
 #   "acronym_style",
+#   "magic_number",
+#   "excessive_file_length",
+#   "module_file_count",
+#   "underscore_in_module_filename",
+#   "non_trait_imports",
+#   "renamed_imports",
+#   "path_segment_repetition",
 #   "numeric_units",
 #   "unbounded_loop",
 #   "compound_condition",
@@ -112,6 +141,8 @@
 #   "too_many_parameters",
 #   "fat_trait",
 #   "concrete_construction_in_core",
+#   "drop_must_use",
+#   "fallible_int_fallback",
 #   "type_accumulation",
 #   "bool_naming",
 #   "ignored_result",
@@ -138,6 +169,7 @@
 #   "no_todo",
 #   "unjustified_no_todo_allow",
 #   "no_recursion",
+#   "state_machine_exhaustiveness",
 # ]
 
 [octet.lint_levels]

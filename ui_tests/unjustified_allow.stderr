@@ -1,15 +1,15 @@
 warning: `#[allow(...)]` without justification comment
-  --> $DIR/unjustified_allow.rs:3:1
+  --> $DIR/unjustified_allow.rs:4:1
    |
-LL | #[allow(clippy::needless_return)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | #![allow(clippy::all)]
+   | ^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
            #[allow(clippy::cast_possible_truncation)]
    = note: structured suggestion applicability: HasPlaceholders
    = note: see Tiger Style guide: Documented Suppression
 note: the lint level is defined here
-  --> $DIR/unjustified_allow.rs:1:9
+  --> $DIR/unjustified_allow.rs:3:9
    |
 LL | #![warn(unjustified_allow)]
    |         ^^^^^^^^^^^^^^^^^
@@ -19,5 +19,319 @@ help: add a local justification comment
 LL + // TODO(octet): explain why this allow is safe here
    |
 
-warning: 1 warning emitted
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:13:1
+   |
+LL | #[allow(clippy::needless_return)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:33:5
+   |
+LL |     #[allow(clippy::needless_return)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~     // TODO(octet): explain why this allow is safe here
+LL ~     #[allow(clippy::needless_return)]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:47:5
+   |
+LL |     #[allow(clippy::needless_return)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~     // TODO(octet): explain why this allow is safe here
+LL ~     #[allow(clippy::needless_return)]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:63:1
+   |
+LL | #[allow(clippy::needless_return, reason = "  ")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:83:1
+   |
+LL | #[allow(tigerstyle::no_unwrap)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:86:1
+   |
+LL | #[allow(no_unwrap)]
+   | ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:89:1
+   |
+LL | #[allow(tigerstyle::safety)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[expect(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:92:1
+   |
+LL | #[expect(clippy::needless_return)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:110:5
+   |
+LL |     #[allow(clippy::let_and_return)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~     // TODO(octet): explain why this allow is safe here
+LL ~     #[allow(clippy::let_and_return)]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:116:5
+   |
+LL |     #[allow(clippy::struct_field_names)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~     // TODO(octet): explain why this allow is safe here
+LL ~     #[allow(clippy::struct_field_names)]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:121:5
+   |
+LL |     #[allow(clippy::large_enum_variant)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~     // TODO(octet): explain why this allow is safe here
+LL ~     #[allow(clippy::large_enum_variant)]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:128:1
+   |
+LL | #[allow(clippy::needless_return)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:136:1
+   |
+LL | #[allow(clippy::needless_return)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:150:1
+   |
+LL | #[allow(clippy::needless_return)] // TODO(octet): explain why this allow is safe here
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:157:19
+   |
+LL | #[cfg_attr(all(), allow(clippy::needless_return))]
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~ #[cfg_attr(all(), // TODO(octet): explain why this allow is safe here
+LL ~                   allow(clippy::needless_return))]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:172:9
+   |
+LL |         #[allow(tigerstyle::no_unwrap)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~         // TODO(octet): explain why this allow is safe here
+LL ~         #[allow(tigerstyle::no_unwrap)]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:210:7
+   |
+LL |     #[allow(clippy::needless_return)]
+   |       ^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: see Tiger Style guide: Documented Suppression
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:238:5
+   |
+LL |     allow
+   |     ^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: see Tiger Style guide: Documented Suppression
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:246:1
+   |
+LL | #[/**/allow(clippy::needless_return)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL + // TODO(octet): explain why this allow is safe here
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:265:9
+   |
+LL |         #[allow(tigerstyle::no_unwrap)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~         // TODO(octet): explain why this allow is safe here
+LL ~         #[allow(tigerstyle::no_unwrap)]
+   |
+
+warning: `#[allow(...)]` without justification comment
+  --> $DIR/unjustified_allow.rs:285:27
+   |
+LL |         #[cfg_attr(all(), allow(tigerstyle::no_unwrap))]
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Documented Suppression): every lint suppression needs a local reason tied to the code shape Example: // Verified casts: Verus checks every narrowing in this module.
+           #[allow(clippy::cast_possible_truncation)]
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Documented Suppression
+help: add a local justification comment
+   |
+LL ~         #[cfg_attr(all(), // TODO(octet): explain why this allow is safe here
+LL ~                           allow(tigerstyle::no_unwrap))]
+   |
+
+warning: 22 warnings emitted
 

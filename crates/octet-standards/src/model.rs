@@ -650,4 +650,20 @@ impl FamilySelection {
     pub fn includes(&self, family: &str) -> bool {
         self.includes_all() || self.selected.contains(family)
     }
+
+    /// Returns selected family names that are not the pillar of any registry policy.
+    #[must_use]
+    pub fn unknown_families(&self, registry: &PolicyRegistry) -> Vec<String> {
+        self.selected
+            .iter()
+            .filter(|family| !registry.policies.iter().any(|policy| &policy.pillar == *family))
+            .cloned()
+            .collect()
+    }
+
+    /// Returns true when at least one registry policy belongs to a selected family.
+    #[must_use]
+    pub fn selects_any_policy(&self, registry: &PolicyRegistry) -> bool {
+        registry.policies.iter().any(|policy| self.includes(&policy.pillar))
+    }
 }

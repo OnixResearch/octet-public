@@ -1,0 +1,56 @@
+let contracts = import "contracts.ncl" in
+{
+  schema_version = "octet-durability-claims-catalog/v1",
+  observation_classes = [
+    "synchronization",
+    "adapter-observation",
+  ],
+  synchronization_surfaces = [
+    "std::fs::File::sync_all",
+    "std::fs::File::sync_data",
+  ],
+  flush_surfaces = [
+    "std::io::Write::flush",
+  ],
+  recovery_operations = [
+    "open",
+    "reconcile",
+    "reopen",
+    "replace",
+    "quarantine",
+    "write",
+    "write_all",
+    "write_vectored",
+  ],
+  findings = [
+    "discarded_sync_result",
+    "flush_only_durability",
+    "retry_sync_after_error",
+  ],
+  repair_options = [
+    "record an explicit uncertain outcome",
+    "quarantine the artifact",
+    "reopen or replace the handle",
+    "rewrite from the source of truth",
+    "reconcile against storage",
+  ],
+  guidance = [
+    {
+      finding = "discarded_sync_result",
+      repair = "handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, or a propagated error instead of discarding it",
+    },
+    {
+      finding = "flush_only_durability",
+      repair = "observe an explicit synchronization or configured adapter result; Write::flush() only drains user-space buffers and is not durable-persistence evidence",
+    },
+    {
+      finding = "retry_sync_after_error",
+      repair = "after a failed synchronization, rewrite from the source of truth, reopen or replace the handle, quarantine, or reconcile before observing durability again; a same-handle retry does not prove earlier bytes reached storage",
+    },
+  ],
+  non_claims = [
+    "These checks cover selected source shapes inside consumer-declared boundary functions only; they do not prove filesystem, device, or hardware durability.",
+    "Passing these checks does not prove that sync_all, sync_data, a configured commit, or an adapter observation succeeded.",
+    "The checks do not analyze aliasing, interprocedural control flow, runtime ordering, or macro-expanded synchronization.",
+  ],
+} | contracts.Catalog | contracts.CatalogRules

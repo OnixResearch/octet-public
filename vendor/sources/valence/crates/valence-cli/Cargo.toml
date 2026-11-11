@@ -1,0 +1,22 @@
+[package]
+name = "valence-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+homepage.workspace = true
+description = "CLI shell for the Valence Evidence IR"
+
+[[bin]]
+name = "valence"
+path = "src/main.rs"
+
+[dependencies]
+cap-std.workspace = true
+serde.workspace = true
+valence-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+blake3.workspace = true

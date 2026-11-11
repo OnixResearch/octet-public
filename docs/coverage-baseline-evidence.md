@@ -9,12 +9,14 @@ The `cargo-llvm-cov-octet-lib` profile selects these inputs:
 - cargo-llvm-cov 0.8.3 from the pinned nixpkgs revision
 - Rust `nightly-2026-03-21` with `llvm-tools-preview`
 - the `cargo-octet` library with all features
-- line, branch, function, and region counts
+- line, branch, function, and region counts; the fixed arguments pass `--branch` so cargo-llvm-cov measures branches
 - fixed offline arguments and bounded process limits
 - integer thresholds in basis points
 - equal-denominator and no-regression policies
 
-The checked profile identity is `b3:e221f5d35528e6979bb44ab58cc5e486109799cf99fb80fc4d85ab77a7082634`.
+The checked profile identity is `b3:67ed0ffcd6a2d5a5561bb014fc99fa58a5234ed56b5a8a5cce52db722bca932c`.
+
+A native report with a zero branch total fails with a diagnostic that names `--branch`. Without that flag, cargo-llvm-cov reports no branch counts, and Octet cannot compute the required branch metric.
 
 ## Import
 
@@ -52,11 +54,7 @@ cargo octet evidence collect \
   --artifact-dir artifacts/coverage
 ```
 
-The run uses the independent public Bounded Exec source at
-`OnixResearch/bounded-exec-public`, revision
-`ff4af395b2c415fddd1ed51f4829aeba2d4259a5`. The owner-authorized reuse covers
-the bounded process mechanism only. Historical benchmark corpus labels retain
-their original source selections; they are not fresh observations for this pin.
+The run uses Bounded Exec from `OnixResearch/bounded-exec` at revision `44eb74eb639194665ee820562d5b2ce2c3ff6a94`. The owner-authorized reuse covers the bounded process mechanism only.
 
 The shell clears the child environment. The Nix composition supplies the exact Cargo program, provider path, vendor configuration, and runtime library path.
 
@@ -65,6 +63,8 @@ Octet rejects `--command`. The profile owns all cargo-llvm-cov arguments.
 ## Comparison
 
 Octet reads native covered and total counts. It ignores producer percentages when it makes policy decisions.
+
+Octet accepts `llvm.coverage.json.export` reports with export version `2.0.1` or `3.1.0`. cargo-llvm-cov 0.8.3 with the pinned Rust nightly emits `3.1.0`. Octet rejects other export versions.
 
 The core calculates display percentages with integer basis points and floor rounding. Threshold and regression decisions use exact cross multiplication.
 

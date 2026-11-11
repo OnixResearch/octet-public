@@ -1,4 +1,26 @@
 {
+  "boolean_api_policy": {
+    "broad_suppression": "deny",
+    "exception_attribute": "local-expect",
+    "exception_owner_required": true,
+    "exception_reason_required": true,
+    "finding_baseline": "deny",
+    "non_claims": [
+      "Covered signature shapes do not prove valid state modeling or API correctness.",
+      "A Clippy co-report remains independent evidence and does not replace this lint."
+    ],
+    "parameter_type": "direct-bool",
+    "private_min_direct_bool_parameters": 2,
+    "public_scope": [
+      "free-function",
+      "inherent-method",
+      "crate-owned-trait"
+    ],
+    "skip_expansions": true,
+    "skip_external_trait_impls": true,
+    "unknown_scope": "deny",
+    "warning_budget": "deny"
+  },
   "profiles": [
     {
       "claim_scope": "direct-source-shape-policy",
@@ -15,6 +37,7 @@
       "profile_id": "robust",
       "required_lints": [
         "unjustified_allow",
+        "raw_bool_parameter",
         "ignored_result",
         "drop_must_use",
         "fallible_int_fallback",
@@ -48,6 +71,7 @@
       "profile_id": "bounded-systems",
       "required_lints": [
         "unjustified_allow",
+        "raw_bool_parameter",
         "magic_number",
         "unbounded_loop",
         "multi_lock_ordering",
@@ -97,6 +121,7 @@
       "profile_id": "deterministic-core",
       "required_lints": [
         "unjustified_allow",
+        "raw_bool_parameter",
         "magic_number",
         "unbounded_loop",
         "verified_purity",

@@ -1,0 +1,7 @@
+{
+  "schema": "cairn.receipt.v1",
+  "valid": true,
+  "count": 2,
+  "command": "test-content-hash",
+  "preserves_content_hash": "93c6e574eb1b28232a2aba63b897f6f7f2f2cf926622fece7ec9139e7eb01e5d"
+}

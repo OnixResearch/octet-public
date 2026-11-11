@@ -1,5 +1,5 @@
 warning: registered domain value `RawDomainFixture::session` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
-  --> $DIR/raw_domain_value.rs:9:5
+  --> $DIR/raw_domain_value.rs:10:5
    |
 LL |     session: String,
    |     ^^^^^^^^^^^^^^^
@@ -14,7 +14,7 @@ LL | #![warn(raw_domain_value)]
    = note: `#[warn(tigerstyle::raw_domain_value)]` implied by `#[warn(raw_domain_value)]`
 
 warning: registered domain value `RawMapFixture::sessions` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
-  --> $DIR/raw_domain_value.rs:14:5
+  --> $DIR/raw_domain_value.rs:15:5
    |
 LL |     sessions: BTreeMap<String, u64>,
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -23,7 +23,7 @@ LL |     sessions: BTreeMap<String, u64>,
    = note: see Tiger Style guide: Explicit Interfaces
 
 warning: registered domain value `RawEvent::Open::session` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
-  --> $DIR/raw_domain_value.rs:19:12
+  --> $DIR/raw_domain_value.rs:20:12
    |
 LL |     Open { session: String },
    |            ^^^^^^^^^^^^^^^
@@ -32,7 +32,7 @@ LL |     Open { session: String },
    = note: see Tiger Style guide: Explicit Interfaces
 
 warning: registered domain value `open_session::session` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
-  --> $DIR/raw_domain_value.rs:23:17
+  --> $DIR/raw_domain_value.rs:24:17
    |
 LL | fn open_session(session: String) -> SessionId {
    |                 ^^^^^^^
@@ -41,7 +41,7 @@ LL | fn open_session(session: String) -> SessionId {
    = note: see Tiger Style guide: Explicit Interfaces
 
 warning: registered domain value `current_session::return` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
-  --> $DIR/raw_domain_value.rs:28:25
+  --> $DIR/raw_domain_value.rs:29:25
    |
 LL | fn current_session() -> String {
    |                         ^^^^^^
@@ -49,4 +49,50 @@ LL | fn current_session() -> String {
    = help: Tiger Style (Nominal Domain Types): replace registered raw core values with nominal domain types and decode raw values at compatibility boundaries Example: pub struct UnitId(String);
    = note: see Tiger Style guide: Explicit Interfaces
 
-warning: 5 warnings emitted
+warning: registered domain value `RawMapFixture::sessions` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
+  --> $DIR/raw_domain_value.rs:48:9
+   |
+LL |         pub sessions: HashMap<String, u64>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): replace registered raw core values with nominal domain types and decode raw values at compatibility boundaries Example: pub struct UnitId(String);
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: registered domain value `open_session::session` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
+  --> $DIR/raw_domain_value.rs:58:25
+   |
+LL |     pub fn open_session(session: &String) -> usize {
+   |                         ^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): replace registered raw core values with nominal domain types and decode raw values at compatibility boundaries Example: pub struct UnitId(String);
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: registered domain value `current_session::return` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
+  --> $DIR/raw_domain_value.rs:63:33
+   |
+LL |     pub fn current_session() -> &'static String {
+   |                                 ^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): replace registered raw core values with nominal domain types and decode raw values at compatibility boundaries Example: pub struct UnitId(String);
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: registered domain value `open_session::session` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
+  --> $DIR/raw_domain_value.rs:71:25
+   |
+LL |     pub fn open_session(session: &str) -> usize {
+   |                         ^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): replace registered raw core values with nominal domain types and decode raw values at compatibility boundaries Example: pub struct UnitId(String);
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: registered domain value `current_session::return` uses raw `string` storage in core scope `octet.fixture.raw-domain-value`
+  --> $DIR/raw_domain_value.rs:76:33
+   |
+LL |     pub fn current_session() -> &'static str {
+   |                                 ^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Nominal Domain Types): replace registered raw core values with nominal domain types and decode raw values at compatibility boundaries Example: pub struct UnitId(String);
+   = note: see Tiger Style guide: Explicit Interfaces
+
+warning: 10 warnings emitted
+

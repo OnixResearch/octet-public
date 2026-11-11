@@ -4,6 +4,7 @@
 #![allow(tigerstyle::no_panic)]
 #![allow(tigerstyle::unchecked_narrowing)]
 #![allow(tigerstyle::no_unwrap)]
+#![allow(path_segment_repetition, reason = "fixture targets another lint; the import and path-naming lints have their own fixtures")]
 
 pub unsafe fn read_public_raw(ptr: *const u8) -> u8 {
     unsafe { *ptr }
@@ -48,5 +49,33 @@ impl UnsafeFactory for Buffer {
 pub unsafe fn public_unsafe_test_helper(ptr: *const u8) -> u8 {
     unsafe { *ptr }
 }
+
+struct PrivateBuffer {
+    ptr: *mut u8,
+}
+
+impl PrivateBuffer {
+    pub unsafe fn from_private_raw(ptr: *mut u8) -> Self {
+        Self { ptr }
+    }
+}
+
+mod private_mod {
+    pub unsafe fn read_hidden_raw(ptr: *const u8) -> u8 {
+        unsafe { *ptr }
+    }
+}
+
+pub(crate) unsafe fn read_crate_raw(ptr: *const u8) -> u8 {
+    unsafe { *ptr }
+}
+
+mod reexported_mod {
+    pub unsafe fn read_reexported_raw(ptr: *const u8) -> u8 {
+        unsafe { *ptr }
+    }
+}
+
+pub use reexported_mod::read_reexported_raw;
 
 fn main() {}

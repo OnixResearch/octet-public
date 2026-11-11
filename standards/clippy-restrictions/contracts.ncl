@@ -13,6 +13,7 @@ let ClaimScope = OneOf ["clippy-restriction-diagnostics"] in
 let RestrictionLint = OneOf [
   "dbg_macro",
   "exit",
+  "fn_params_excessive_bools",
   "host_endian_bytes",
   "iter_over_hash_type",
   "mem_forget",

@@ -1,5 +1,5 @@
 warning: `panic!` will abort the process on execution
-  --> $DIR/no_panic.rs:3:5
+  --> $DIR/no_panic.rs:5:5
    |
 LL |     panic!("something went wrong");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -9,7 +9,7 @@ LL |     panic!("something went wrong");
    = note: `#[warn(tigerstyle::no_panic)]` on by default
 
 warning: `unimplemented!` will abort the process on execution
-  --> $DIR/no_panic.rs:8:5
+  --> $DIR/no_panic.rs:10:5
    |
 LL |     unimplemented!("not done");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -17,5 +17,50 @@ LL |     unimplemented!("not done");
    = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
    = note: see Tiger Style guide: Error Handling / Panics
 
-warning: 2 warnings emitted
+warning: `panic!` will abort the process on execution
+  --> $DIR/no_panic.rs:15:5
+   |
+LL |     panic!();
+   |     ^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `unreachable!` will abort the process on execution
+  --> $DIR/no_panic.rs:20:5
+   |
+LL |     unreachable!();
+   |     ^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `unimplemented!` will abort the process on execution
+  --> $DIR/no_panic.rs:25:5
+   |
+LL |     unimplemented!();
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `panic!` will abort the process on execution
+  --> $DIR/no_panic.rs:30:5
+   |
+LL |     std::panic!("qualified panic");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: `unreachable!` will abort the process on execution
+  --> $DIR/no_panic.rs:35:5
+   |
+LL |     core::unreachable!("qualified unreachable");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Fail Fast Correctly): return errors or prove exhaustiveness instead of panicking in production code Example: return Err(Error::invalid_state());
+   = note: see Tiger Style guide: Error Handling / Panics
+
+warning: 7 warnings emitted
 

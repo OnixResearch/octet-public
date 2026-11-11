@@ -14,5 +14,20 @@ LL - struct RPCHandler {
 LL + struct RpcHandler {
    |
 
-warning: 1 warning emitted
+warning: `IOStreamJSONBody` has acronym-style capitalization
+  --> $DIR/acronym_allowlist_custom/acronym_allowlist_custom.rs:12:8
+   |
+LL | struct IOStreamJSONBody {
+   |        ^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Acronym Capitalization): capitalize acronyms like ordinary words in type and variant names Example: RpcHandler
+   = note: structured suggestion applicability: MaybeIncorrect
+   = note: see Tiger Style guide: Acronym Capitalization
+help: rename `IOStreamJSONBody` to `IOStreamJsonBody`
+   |
+LL - struct IOStreamJSONBody {
+LL + struct IOStreamJsonBody {
+   |
+
+warning: 2 warnings emitted
 

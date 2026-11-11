@@ -11,5 +11,49 @@ LL | |     }
    = note: see Tiger Style guide: Bounded Control Flow
    = note: `#[warn(tigerstyle::unbounded_loop)]` on by default
 
-warning: 1 warning emitted
+warning: loop without visible iteration bound
+  --> $DIR/unbounded_loop.rs:82:5
+   |
+LL | /     loop {
+LL | |         for item in items {
+LL | |             if *item > 3 {
+LL | |                 break;
+...  |
+LL | |         std::hint::black_box(items);
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Bounded Control Flow): bound long-running loops with an exit condition, timeout, or bounded input Example: while let Some(msg) = rx.recv().await { ... }
+   = note: see Tiger Style guide: Bounded Control Flow
+
+warning: loop without visible iteration bound
+  --> $DIR/unbounded_loop.rs:94:5
+   |
+LL | /     loop {
+LL | |         'inner: loop {
+LL | |             if std::hint::black_box(items.is_empty()) {
+LL | |                 break 'inner;
+...  |
+LL | |         std::hint::black_box(items);
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Bounded Control Flow): bound long-running loops with an exit condition, timeout, or bounded input Example: while let Some(msg) = rx.recv().await { ... }
+   = note: see Tiger Style guide: Bounded Control Flow
+
+warning: loop without visible iteration bound
+  --> $DIR/unbounded_loop.rs:106:5
+   |
+LL | /     loop {
+LL | |         'block: {
+LL | |             if std::hint::black_box(items.is_empty()) {
+LL | |                 break 'block;
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Bounded Control Flow): bound long-running loops with an exit condition, timeout, or bounded input Example: while let Some(msg) = rx.recv().await { ... }
+   = note: see Tiger Style guide: Bounded Control Flow
+
+warning: 4 warnings emitted
 

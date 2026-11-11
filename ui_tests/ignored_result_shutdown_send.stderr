@@ -1,5 +1,5 @@
 warning: `Result` value silently discarded with `let _ = ...`
-  --> $DIR/ignored_result_shutdown_send.rs:28:5
+  --> $DIR/ignored_result_shutdown_send.rs:29:5
    |
 LL |     let _ = tx.send(1);
    |     ^^^^^^^^^^^^^^^^^^^
@@ -11,11 +11,11 @@ LL |     let _ = tx.send(1);
 help: propagate the error with `?` instead of discarding
    |
 LL -     let _ = tx.send(1);
-LL +     tx.send(1)?
+LL +     tx.send(1)?;
    |
 
 warning: `Result` value silently discarded with `let _ = ...`
-  --> $DIR/ignored_result_shutdown_send.rs:32:5
+  --> $DIR/ignored_result_shutdown_send.rs:33:5
    |
 LL |     let _ = tx.send(1);
    |     ^^^^^^^^^^^^^^^^^^^
@@ -26,7 +26,7 @@ LL |     let _ = tx.send(1);
 help: propagate the error with `?` instead of discarding
    |
 LL -     let _ = tx.send(1);
-LL +     tx.send(1)?
+LL +     tx.send(1)?;
    |
 
 warning: 2 warnings emitted

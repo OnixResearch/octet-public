@@ -1,0 +1,5 @@
+schema: spec-driven
+name: enforce-proof-rail-verified-gate
+status: archived
+created: 2026-05-05
+summary: Promote verified proof rails from metadata into artifact-backed verified checker gates.

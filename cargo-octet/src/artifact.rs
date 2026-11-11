@@ -204,6 +204,8 @@ pub struct ValenceReceiptEnvelope {
     pub cargo_mutants: Option<crate::mutation::ReceiptDetails>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub benchmark_evidence: Option<crate::benchmark::ReceiptDetails>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub binary_debug_map: Option<crate::binary_debug_map::BinaryDebugMapReceiptDetails>,
     pub non_claims: Vec<String>,
 }
 
@@ -278,6 +280,9 @@ pub fn run(args: &ArtifactArgs) -> Result<i32, String> {
     }
 
     let files = read_bundle_files(&args.artifact_dir)?;
+    if let Some(output_path) = &args.emit_valence_provenance {
+        ensure_export_outside_artifact_dir(output_path, &args.artifact_dir)?;
+    }
     let input = ArtifactBundleInput {
         artifact_dir: args.artifact_dir.display().to_string(),
         files,
@@ -319,6 +324,53 @@ fn write_valence_provenance_export(
     let bytes =
         serde_json::to_vec_pretty(&export).map_err(|error| format!("serialize Valence provenance export: {error}"))?;
     write_valence_provenance_export_bytes(output_path, &bytes)
+}
+
+/// The verifier must not create or rewrite files in the bundle it checks, so the export path is
+/// resolved through symlinks and `..` and refused when it lands inside the artifact directory.
+// r[impl octet.artifact_bundle_verification.command.local]
+fn ensure_export_outside_artifact_dir(output_path: &Path, artifact_dir: &Path) -> Result<(), String> {
+    let artifact_root = std::fs::canonicalize(artifact_dir)
+        .map_err(|error| format!("resolve artifact directory {}: {error}", artifact_dir.display()))?;
+    let resolved_output = resolve_output_path(output_path)?;
+    if resolved_output.starts_with(&artifact_root) {
+        return Err(format!(
+            "refusing Valence provenance export to {}: it is inside the artifact directory {}; artifact verification \
+             must not create or rewrite files in the verified bundle, so choose a path outside it",
+            output_path.display(),
+            artifact_dir.display()
+        ));
+    }
+    Ok(())
+}
+
+/// Resolves an output path that may not exist yet: an existing path is canonicalized (following a
+/// final symlink); otherwise the nearest existing ancestor is canonicalized and the remaining
+/// components are applied lexically, matching how the writer creates missing parents.
+fn resolve_output_path(output_path: &Path) -> Result<std::path::PathBuf, String> {
+    let absolute = std::path::absolute(output_path)
+        .map_err(|error| format!("resolve output path {}: {error}", output_path.display()))?;
+    let mut existing = absolute.as_path();
+    let mut missing = Vec::new();
+    while existing.symlink_metadata().is_err() {
+        let (Some(parent), Some(component)) = (existing.parent(), existing.components().next_back()) else {
+            break;
+        };
+        missing.push(component);
+        existing = parent;
+    }
+    let mut resolved = std::fs::canonicalize(existing)
+        .map_err(|error| format!("resolve output path {}: {error}", output_path.display()))?;
+    for component in missing.into_iter().rev() {
+        match component {
+            std::path::Component::ParentDir => {
+                resolved.pop();
+            }
+            std::path::Component::Normal(name) => resolved.push(name),
+            std::path::Component::CurDir | std::path::Component::RootDir | std::path::Component::Prefix(_) => {}
+        }
+    }
+    Ok(resolved)
 }
 
 // r[impl octet.evidence_provenance.valence_export]
@@ -453,8 +505,7 @@ fn valence_receipt_envelope(
     let matching_evidence_rail_receipt =
         evidence_rail_receipt.filter(|_| record.artifact_locator == crate::evidence_rails::RECEIPT_ARTIFACT_NAME);
     let status = matching_evidence_rail_receipt
-        .map(|receipt| receipt.status.clone())
-        .unwrap_or_else(|| status_for_provenance_record(record));
+        .map_or_else(|| status_for_provenance_record(record), |receipt| receipt.status.clone());
     ValenceReceiptEnvelope {
         schema_version: VALENCE_EXPORT_RECEIPT_SCHEMA_VERSION.to_owned(),
         producer_id: record.source_id.clone(),
@@ -476,6 +527,7 @@ fn valence_receipt_envelope(
         coverage_baseline: matching_evidence_rail_receipt.and_then(|receipt| receipt.coverage_baseline.clone()),
         cargo_mutants: matching_evidence_rail_receipt.and_then(|receipt| receipt.cargo_mutants.clone()),
         benchmark_evidence: matching_evidence_rail_receipt.and_then(|receipt| receipt.benchmark_evidence.clone()),
+        binary_debug_map: matching_evidence_rail_receipt.and_then(|receipt| receipt.binary_debug_map.clone()),
         non_claims: non_claims_for_record(matching_evidence_rail_receipt),
     }
 }
@@ -661,6 +713,9 @@ fn validate_valence_receipt(record: &ValenceProvenanceRecord, diagnostics: &mut 
     if record.checker_id == crate::evidence::CHECKER_HEGEL_RS {
         validate_hegel_valence_receipt(record, diagnostics);
     }
+    if record.source_id == "octet.artifact.binary-debug-map" {
+        validate_binary_debug_map_valence_receipt(record, diagnostics);
+    }
 }
 
 fn validate_ast_grep_valence_receipt(record: &ValenceProvenanceRecord, diagnostics: &mut Vec<String>) {
@@ -692,6 +747,31 @@ fn validate_wasm_valence_receipt(record: &ValenceProvenanceRecord, diagnostics: 
     }
     if !record.receipt.non_claims.iter().any(|claim| claim == crate::wasm_artifact::REQUIRED_NON_CLAIM) {
         diagnostics.push("Wasm Valence export missing execution non-claim".to_owned());
+    }
+}
+
+fn validate_binary_debug_map_valence_receipt(record: &ValenceProvenanceRecord, diagnostics: &mut Vec<String>) {
+    if record.evidence_tier == FORMAL_PROOF_TIER {
+        diagnostics.push("binary debug-map Valence export must not use formal_proof tier".to_owned());
+    }
+    if record.evidence_tier != TRANSCRIPT_ASSERTION_TIER {
+        diagnostics.push(format!(
+            "binary debug-map Valence export must remain `{TRANSCRIPT_ASSERTION_TIER}` evidence, got `{}`",
+            record.evidence_tier
+        ));
+    }
+    match record.receipt.binary_debug_map.as_ref() {
+        Some(details) => {
+            if details.verification_role != crate::binary_debug_map::RECORDED_ONLY_ROLE {
+                diagnostics.push("binary debug-map Valence export must remain recorded_only".to_owned());
+            }
+            let mut role_diagnostics = crate::binary_debug_map::validate_handoff_role(&details.verification_role);
+            diagnostics.append(&mut role_diagnostics);
+        }
+        None => diagnostics.push("binary debug-map Valence export missing binary_debug_map receipt details".to_owned()),
+    }
+    if !record.receipt.non_claims.iter().any(|claim| claim == crate::binary_debug_map::REQUIRED_NON_CLAIM) {
+        diagnostics.push("binary debug-map Valence export missing the required linkage non-claim".to_owned());
     }
 }
 
@@ -779,6 +859,27 @@ fn validate_aeneas_proof_card_envelope(card: &ValenceProofCard, file_map: &BTree
             card.proof_or_property_id
         ));
     }
+    for (locator, expected) in formal_proof_envelope_identities(envelope) {
+        if let Some(bytes) = file_map.get(locator) {
+            let observed = crate::evidence::artifact_blake3_hex(bytes);
+            if observed != *expected {
+                diagnostics.push(format!(
+                    "Aeneas proof card `{}` artifact `{locator}` BLAKE3 mismatch",
+                    card.proof_or_property_id
+                ));
+            }
+        }
+    }
+    diagnostics.sort();
+    diagnostics.dedup();
+    diagnostics
+}
+
+/// Every artifact locator and BLAKE3 identity a formal-proof envelope binds: source bindings,
+/// artifact identities, and for Aeneas the provider profile, package lock, and stage artifacts.
+fn formal_proof_envelope_identities(
+    envelope: &octet_standards::formal_proof::FormalProofEnvelope,
+) -> Vec<(&String, &String)> {
     let mut identities = envelope
         .source_bindings
         .iter()
@@ -793,20 +894,77 @@ fn validate_aeneas_proof_card_envelope(card: &ValenceProofCard, file_map: &BTree
             identities.extend(stage.output_artifacts.iter().map(|identity| (&identity.locator, &identity.blake3)));
         }
     }
-    for (locator, expected) in identities {
-        if let Some(bytes) = file_map.get(locator) {
-            let observed = crate::evidence::artifact_blake3_hex(bytes);
-            if observed != *expected {
-                diagnostics.push(format!(
-                    "Aeneas proof card `{}` artifact `{locator}` BLAKE3 mismatch",
-                    card.proof_or_property_id
-                ));
-            }
+    identities
+}
+
+/// Prove bundles label each `formal_proof` artifact with the checked scope its proof receipt
+/// records (or, for a receipt without one, its proof card), so a resealed `fixture-only` artifact
+/// cannot be relabelled `production`.
+// r[impl octet.artifact_bundle_verification.complete_bundle]
+fn validate_formal_proof_scopes(
+    file_map: &BTreeMap<String, Vec<u8>>,
+    records: &[ProvenanceRecord],
+    diagnostics: &mut Vec<String>,
+) {
+    let recorded = recorded_formal_proof_scopes(file_map, records);
+    for record in records.iter().filter(|record| record.evidence_tier == EvidenceTier::FormalProof) {
+        match recorded.get(&record.artifact_locator) {
+            Some(scopes) if scopes.contains(&record.checked_scope) => {}
+            Some(scopes) => diagnostics.push(format!(
+                "unexpected {FIELD_CHECKED_SCOPE} for artifact `{}`; expected `{}`, got `{}`",
+                record.artifact_locator,
+                scopes.iter().map(String::as_str).collect::<Vec<_>>().join("` or `"),
+                record.checked_scope
+            )),
+            None => diagnostics.push(format!(
+                "formal_proof artifact `{}` has no proof receipt or proof card recording its {FIELD_CHECKED_SCOPE}",
+                record.artifact_locator
+            )),
         }
     }
-    diagnostics.sort();
-    diagnostics.dedup();
-    diagnostics
+}
+
+/// Maps artifact locators to the checked scopes recorded for them. A formal-proof envelope receipt
+/// binds its own locator and every artifact it identifies; any other JSON receipt binds its own
+/// locator through its top-level `checked_scope`. Proof cards bind their `receipt_path` through
+/// `checked_rust_source_scope` only when no receipt records a scope.
+fn recorded_formal_proof_scopes(
+    file_map: &BTreeMap<String, Vec<u8>>,
+    records: &[ProvenanceRecord],
+) -> BTreeMap<String, std::collections::BTreeSet<String>> {
+    let mut scopes = BTreeMap::<String, std::collections::BTreeSet<String>>::new();
+    for record in records.iter().filter(|record| record.evidence_tier == EvidenceTier::FormalProof) {
+        let Some(bytes) = file_map.get(&record.artifact_locator) else {
+            continue;
+        };
+        if let Ok(envelope) = serde_json::from_slice::<octet_standards::formal_proof::FormalProofEnvelope>(bytes) {
+            let bound = formal_proof_envelope_identities(&envelope)
+                .into_iter()
+                .map(|(locator, _)| locator)
+                .chain(std::iter::once(&record.artifact_locator));
+            for locator in bound {
+                scopes.entry(locator.clone()).or_default().insert(envelope.checked_scope.clone());
+            }
+        } else if let Some(scope) = serde_json::from_slice::<Value>(bytes)
+            .ok()
+            .and_then(|receipt| receipt.get(FIELD_CHECKED_SCOPE).and_then(Value::as_str).map(str::to_owned))
+        {
+            scopes.entry(record.artifact_locator.clone()).or_default().insert(scope);
+        }
+    }
+    let cards = file_map
+        .get(PROOF_CARDS_ARTIFACT_NAME)
+        .and_then(|bytes| serde_json::from_slice::<Value>(bytes).ok());
+    for card in cards.iter().filter_map(|deck| deck.get("cards").and_then(Value::as_array)).flatten() {
+        let receipt_path = card.get("receipt_path").and_then(Value::as_str);
+        let scope = card.get("checked_rust_source_scope").and_then(Value::as_str);
+        if let (Some(receipt_path), Some(scope)) = (receipt_path, scope) {
+            scopes
+                .entry(receipt_path.to_owned())
+                .or_insert_with(|| std::collections::BTreeSet::from([scope.to_owned()]));
+        }
+    }
+    scopes
 }
 
 fn validate_valence_proof_cards(proof_cards: &[ValenceProofCard], file_map: &BTreeMap<String, Vec<u8>>) -> Vec<String> {
@@ -874,7 +1032,9 @@ pub fn verify_bundle(input: ArtifactBundleInput) -> ArtifactVerificationReport {
         .filter(|name| *name != PROVENANCE_ARTIFACT_NAME)
         .collect::<Vec<_>>();
     let mut expected_files = provenance_expected_files.clone();
-    extend_expected_evidence_log_files(&file_map, &mut expected_files, &mut diagnostics);
+    if status.bundle_kind == BundleKind::Prove {
+        extend_expected_evidence_log_files(&file_map, &mut expected_files, &mut diagnostics);
+    }
 
     validate_file_set(&file_map, &expected_files, &mut diagnostics);
 
@@ -890,6 +1050,10 @@ pub fn verify_bundle(input: ArtifactBundleInput) -> ArtifactVerificationReport {
     );
     validate_project_architecture_bundle(&file_map, &mut diagnostics);
     validate_integrated_effect_closure_bundle(&file_map, &mut diagnostics);
+    validate_declared_phase_artifacts(&file_map, &mut diagnostics);
+    if status.bundle_kind == BundleKind::Prove {
+        validate_formal_proof_scopes(&file_map, &provenance_records, &mut diagnostics);
+    }
 
     let artifacts = verified_artifact_rows(&provenance_records, &expected_non_provenance);
     diagnostics.sort();
@@ -909,6 +1073,31 @@ pub fn verify_bundle(input: ArtifactBundleInput) -> ArtifactVerificationReport {
     }
 }
 
+/// `validate_project_architecture_bundle` and `validate_integrated_effect_closure_bundle` skip
+/// bundles that carry none of their artifacts, so a bundle that dropped every such file must still
+/// fail when `status.json` declares the phase.
+fn validate_declared_phase_artifacts(file_map: &BTreeMap<String, Vec<u8>>, diagnostics: &mut Vec<String>) {
+    let Some(status) = file_map
+        .get(STATUS_ARTIFACT_NAME)
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(bytes).ok())
+    else {
+        return;
+    };
+    for (phase, artifact_names, label) in [
+        ("architecture", PROJECT_ARCHITECTURE_ARTIFACT_NAMES, "project architecture"),
+        ("effect_closure", EFFECT_CLOSURE_ARTIFACT_NAMES, "integrated effect-closure"),
+    ] {
+        let declared = status.get("phases").and_then(|phases| phases.get(phase)).is_some_and(|value| !value.is_null());
+        if declared && !artifact_names.iter().any(|name| file_map.contains_key(*name)) {
+            diagnostics
+                .push(format!("{STATUS_ARTIFACT_NAME} declares phases.{phase} but the {label} artifacts are missing"));
+        }
+    }
+}
+
+// The project-architecture artifacts are validated as one set; the cross-artifact identity checks
+// share every parsed value.
+#[allow(clippy::too_many_lines)]
 fn validate_project_architecture_bundle(file_map: &BTreeMap<String, Vec<u8>>, diagnostics: &mut Vec<String>) {
     let present = PROJECT_ARCHITECTURE_ARTIFACT_NAMES.iter().filter(|name| file_map.contains_key(**name)).count();
     if present == 0 {
@@ -957,6 +1146,8 @@ fn validate_project_architecture_bundle(file_map: &BTreeMap<String, Vec<u8>>, di
     if ir.architecture_ir_id != octet_architecture_ir::ir_identity(&ir) {
         diagnostics.push("compiler Architecture IR identity is stale or malformed".to_owned());
     }
+    diagnostics.extend(octet_architecture_ir::verify_ir_unit_memberships(&ir));
+    diagnostics.extend(octet_architecture_ir::verify_ir_unit_bindings(&ir));
     if coverage.coverage_id != octet_architecture_ir::coverage_identity(&coverage) {
         diagnostics.push("compiler architecture coverage identity is stale or malformed".to_owned());
     }
@@ -1002,11 +1193,14 @@ fn validate_project_architecture_bundle(file_map: &BTreeMap<String, Vec<u8>>, di
         .map(|bytes| crate::evidence::artifact_blake3_hex(bytes))
         .unwrap_or_default();
     let observed_command = crate::evidence::artifact_blake3_hex(command);
+    let observed_waiver_policy =
+        octet_standards::project_architecture_policy::architecture_waiver_policy_blake3(&policy);
     let regenerated = octet_standards::project_architecture_gate::evaluate_project_architecture(
         &octet_standards::project_architecture_gate::ProjectArchitectureGateInput {
             policy: &policy,
             policy_source_blake3: &observed_policy_source,
             policy_blake3: &observed_policy,
+            waiver_policy_blake3: &observed_waiver_policy,
             lint_phase_status: &receipt.lint_phase_status,
             command_blake3: &observed_command,
             cargo_graph: &graph,
@@ -1046,6 +1240,34 @@ fn validate_project_architecture_status(
     if !status_matches {
         diagnostics.push("project architecture receipt phase status does not match status.json".to_owned());
     }
+    // The runner writes `phases.effect_closure` from the receipt's closure link (`null` when the
+    // project has none), so a flipped `admitted` flag or a dropped link cannot verify.
+    let closure_matches = status.as_ref().is_none_or(|value| {
+        serde_json::to_value(&receipt.effect_closure).is_ok_and(|expected| {
+            value.pointer("/phases/effect_closure").unwrap_or(&serde_json::Value::Null) == &expected
+        })
+    });
+    if !closure_matches {
+        diagnostics.push(format!(
+            "project architecture receipt effect-closure link does not match {STATUS_ARTIFACT_NAME} phases.effect_closure"
+        ));
+    }
+}
+
+/// Parses the integrated closure receipt, refusing a receipt under another schema before its body
+/// is decoded so it reports an unsupported schema rather than a field error.
+fn parse_effect_closure_receipt(
+    file_map: &BTreeMap<String, Vec<u8>>,
+    diagnostics: &mut Vec<String>,
+) -> Option<crate::effect_closure::EffectClosureReceipt> {
+    let unsupported_schema = file_map
+        .get(EFFECT_CLOSURE_RECEIPT_ARTIFACT_NAME)
+        .and_then(|bytes| crate::effect_closure::unsupported_receipt_schema(bytes));
+    if let Some(diagnostic) = unsupported_schema {
+        diagnostics.push(diagnostic);
+        return None;
+    }
+    parse_project_architecture_artifact(file_map, EFFECT_CLOSURE_RECEIPT_ARTIFACT_NAME, diagnostics)
 }
 
 fn validate_integrated_effect_closure_bundle(file_map: &BTreeMap<String, Vec<u8>>, diagnostics: &mut Vec<String>) {
@@ -1057,11 +1279,7 @@ fn validate_integrated_effect_closure_bundle(file_map: &BTreeMap<String, Vec<u8>
         diagnostics.push("integrated effect-closure artifact set is incomplete".to_owned());
         return;
     }
-    let receipt = parse_project_architecture_artifact::<crate::effect_closure::EffectClosureReceipt>(
-        file_map,
-        EFFECT_CLOSURE_RECEIPT_ARTIFACT_NAME,
-        diagnostics,
-    );
+    let receipt = parse_effect_closure_receipt(file_map, diagnostics);
     let policy = parse_project_architecture_artifact::<crate::effect_closure::WorkspacePolicy>(
         file_map,
         EFFECT_CLOSURE_POLICY_ARTIFACT_NAME,
@@ -1132,6 +1350,15 @@ fn validate_integrated_effect_closure_bundle(file_map: &BTreeMap<String, Vec<u8>
     if receipt.providers.iter().any(|provider| !graph_providers.contains(provider)) {
         diagnostics.push("effect-closure receipt uses a provider absent from the stored dependency graph".to_owned());
     }
+    // The receipt identity is unkeyed, so re-derive what it asserts from its bound function-address
+    // report and policy, exactly as `admit verify` does; otherwise a denied closure relabelled
+    // admitted and re-identified would verify.
+    let function_report = parse_project_architecture_artifact::<crate::admit::FunctionAddressReport>(
+        file_map,
+        FUNCTION_ADDRESS_ARTIFACT_NAME,
+        diagnostics,
+    );
+    diagnostics.extend(crate::admit::verify_bound_closure_inputs(&receipt, function_report.as_ref(), Some(&policy)));
     let linked = parent.effect_closure.as_ref().is_some_and(|closure| {
         closure.receipt_id == receipt.receipt_identity
             && closure.admitted == (receipt.status == crate::effect_closure::AdmissionStatus::Admitted)
@@ -1289,6 +1516,7 @@ fn verify_evidence_rail_bundle(
     validate_evidence_rail_record_shapes(receipt.as_ref(), &provenance_records, &mut diagnostics);
     validate_wasm_artifact_binding(receipt.as_ref(), &provenance_records, &mut diagnostics);
     validate_charon_semantic_artifact_binding(receipt.as_ref(), &provenance_records, &mut diagnostics);
+    validate_benchmark_artifact_binding(receipt.as_ref(), file_map, &mut diagnostics);
     validate_exact_provenance_coverage(&provenance_records, &expected_non_provenance, &mut diagnostics);
     let artifacts = verified_artifact_rows(&provenance_records, &expected_non_provenance);
     diagnostics.sort();
@@ -1337,6 +1565,12 @@ fn validate_evidence_rail_record_shapes(
         return;
     };
     for record in records {
+        if record.checked_scope != receipt.workspace_scope {
+            diagnostics.push(format!(
+                "unexpected {FIELD_CHECKED_SCOPE} for artifact `{}`; expected `{}`, got `{}`",
+                record.artifact_locator, receipt.workspace_scope, record.checked_scope
+            ));
+        }
         if record.artifact_locator == crate::evidence_rails::RECEIPT_ARTIFACT_NAME {
             if record.checker_id != receipt.checker_id {
                 diagnostics.push(format!(
@@ -1439,6 +1673,17 @@ fn validate_charon_semantic_artifact_binding(
             diagnostics.push(format!("Charon semantic receipt provenance must link artifact `{}`", artifact.name));
         }
     }
+}
+
+fn validate_benchmark_artifact_binding(
+    receipt: Option<&crate::evidence_rails::EvidenceRailReceipt>,
+    file_map: &BTreeMap<String, Vec<u8>>,
+    diagnostics: &mut Vec<String>,
+) {
+    let Some(details) = receipt.and_then(|receipt| receipt.benchmark_evidence.as_ref()) else {
+        return;
+    };
+    diagnostics.extend(crate::benchmark::validate_bundle(details, file_map));
 }
 
 fn inspect_status(file_map: &BTreeMap<String, Vec<u8>>) -> BundleStatus {
@@ -1571,9 +1816,12 @@ fn expected_check_extra_artifact(record: &ProvenanceRecord) -> Option<String> {
         .then(|| record.artifact_locator.clone())
 }
 
+/// A prove bundle's `proofs/` receipts and stage artifacts are recorded as `formal_proof`, or as
+/// `manual_review_required` when a blocked proof goal withheld the formal claim.
 fn expected_proof_artifact(record: &ProvenanceRecord) -> Option<String> {
-    (record.evidence_tier == EvidenceTier::FormalProof && record.artifact_locator.starts_with(PROOF_ARTIFACT_PREFIX))
-        .then(|| record.artifact_locator.clone())
+    (matches!(record.evidence_tier, EvidenceTier::FormalProof | EvidenceTier::ManualReviewRequired)
+        && record.artifact_locator.starts_with(PROOF_ARTIFACT_PREFIX))
+    .then(|| record.artifact_locator.clone())
 }
 
 fn validate_file_set(file_map: &BTreeMap<String, Vec<u8>>, expected_files: &[String], diagnostics: &mut Vec<String>) {
@@ -1590,6 +1838,9 @@ fn validate_file_set(file_map: &BTreeMap<String, Vec<u8>>, expected_files: &[Str
     }
 }
 
+/// Only `cargo octet prove` writes `evidence-log-manifest.json` next to `status.json`, and its raw
+/// logs live under `proofs/`; any other bundle kind, or a manifest locator outside `proofs/`, is
+/// left to the file-set check as an unexpected artifact without provenance.
 fn extend_expected_evidence_log_files(
     file_map: &BTreeMap<String, Vec<u8>>,
     expected_files: &mut Vec<String>,
@@ -1603,7 +1854,16 @@ fn extend_expected_evidence_log_files(
         return;
     };
     diagnostics.extend(crate::evidence_log::validate_evidence_log_manifest(&manifest, file_map));
-    expected_files.extend(crate::evidence_log::manifest_artifact_locators(&manifest));
+    for locator in crate::evidence_log::manifest_artifact_locators(&manifest) {
+        if locator.starts_with(PROOF_ARTIFACT_PREFIX) {
+            expected_files.push(locator);
+        } else {
+            diagnostics.push(format!(
+                "{} lists evidence log `{locator}` outside `{PROOF_ARTIFACT_PREFIX}`",
+                crate::evidence_log::EVIDENCE_LOG_MANIFEST_ARTIFACT
+            ));
+        }
+    }
     expected_files.sort();
     expected_files.dedup();
 }
@@ -1705,7 +1965,10 @@ fn validate_expected_record_shape(
             record.artifact_locator, expected.checker_id, record.checker_id
         ));
     }
-    if record.evidence_tier != expected.evidence_tier {
+    let withheld_formal_proof = bundle_kind == BundleKind::Prove
+        && expected.evidence_tier == EvidenceTier::FormalProof
+        && record.evidence_tier == EvidenceTier::ManualReviewRequired;
+    if record.evidence_tier != expected.evidence_tier && !withheld_formal_proof {
         diagnostics.push(format!(
             "unexpected evidence_tier for artifact `{}`; expected `{}`, got `{}`",
             record.artifact_locator,
@@ -1714,7 +1977,7 @@ fn validate_expected_record_shape(
         ));
     }
 
-    if bundle_kind == BundleKind::Prove && record.evidence_tier == EvidenceTier::FormalProof {
+    if bundle_kind == BundleKind::Prove && expected.evidence_tier == EvidenceTier::FormalProof {
         if record.checked_scope.trim().is_empty() {
             diagnostics.push(format!("missing required provenance field `{FIELD_CHECKED_SCOPE}`"));
         }
@@ -1831,6 +2094,8 @@ fn verified_artifact_rows(records: &[ProvenanceRecord], expected_non_provenance:
 
 #[cfg(test)]
 mod tests {
+    mod integrated_closure;
+    mod ownership;
     use super::*;
 
     const ARTIFACT_DIR: &str = "artifacts/octet";
@@ -1863,7 +2128,11 @@ mod tests {
     const EVIDENCE_LOG_REPLAY_COMMAND: &str = "cargo octet prove --registry policies.json --source src/lib.rs";
     const EVIDENCE_LOG_CAPTURE_SOURCE: &str = "octet.prove.stdout";
     const PROOF_RECEIPT_ARTIFACT_NAME: &str = "proofs/sample.receipt";
-    const PROOF_RECEIPT_CONTENTS: &[u8] = b"proof-result: pass sample\n";
+    const PROOF_CHECKED_SCOPE: &str = "formal-proof:fixture-only:proof.fixture#rail-0";
+    const PROOF_PRODUCTION_SCOPE: &str = "formal-proof:production:proof.fixture#rail-0";
+    const PROOF_RECEIPT_CONTENTS: &[u8] = br#"{"schema_version":"octet-verus-proof-receipt/v1","checked_scope":"formal-proof:fixture-only:proof.fixture#rail-0","status":"passed"}
+"#;
+    const PLAIN_PROOF_RECEIPT_CONTENTS: &[u8] = b"proof-result: pass sample\n";
     const PROOF_VERIFIER_IDENTITY: &str = "verus@fixture";
     const COMMAND_RECORD_INDEX: usize = 0;
     const STATUS_RECORD_INDEX: usize = 1;
@@ -2126,6 +2395,28 @@ mod tests {
     }
 
     #[test]
+    fn wasm_artifact_bundle_rejects_status_and_config_identity_drift() {
+        let added_error = verify_bundle(wasm_evidence_rail_input(|receipt| {
+            let details = receipt.wasm_artifact.as_mut().expect("Wasm details");
+            details.findings.push(crate::wasm_artifact::WasmArtifactFinding {
+                issue_code: "disallowed-import".to_owned(),
+                severity: "error".to_owned(),
+                message: "added after collection".to_owned(),
+                byte_offset: None,
+            });
+        }));
+        let relabelled = verify_bundle(wasm_evidence_rail_input(|receipt| {
+            "failed".clone_into(&mut receipt.status);
+        }));
+        let rebound = verify_bundle(wasm_evidence_rail_input(|receipt| {
+            receipt.config_identity = Some(format!("b3:{}", "0".repeat(64)));
+        }));
+        for report in [added_error, relabelled, rebound] {
+            assert_ne!(report.status, STATUS_VALID, "{:?}", report.diagnostics);
+        }
+    }
+
+    #[test]
     fn valence_export_preserves_failed_receipt_reason_without_passing_claim() {
         let export = build_valence_provenance_export(failed_evidence_rail_input()).expect("failed receipt export");
         let receipt_record = export
@@ -2286,8 +2577,8 @@ mod tests {
     }
 
     #[test]
-    fn evidence_log_manifest_extends_artifact_verification() {
-        let mut input = valid_input(OutputFormat::Human);
+    fn evidence_log_manifest_extends_prove_bundle_verification() {
+        let mut input = valid_prove_input();
         append_valid_evidence_log_manifest(&mut input);
 
         let report = verify_bundle(input);
@@ -2298,7 +2589,7 @@ mod tests {
 
     #[test]
     fn evidence_log_manifest_tampering_fails_closed() {
-        let mut input = valid_input(OutputFormat::Human);
+        let mut input = valid_prove_input();
         append_valid_evidence_log_manifest(&mut input);
         replace_file(&mut input, EVIDENCE_LOG_ARTIFACT_NAME, b"tampered proof log\n".to_vec());
 
@@ -2306,6 +2597,42 @@ mod tests {
 
         assert_eq!(report.status, STATUS_INVALID);
         assert!(report.diagnostics.iter().any(|diagnostic| diagnostic.contains("field `blake3` mismatch")));
+    }
+
+    // r[verify octet.artifact_bundle_verification.fail_closed.file_set]
+    #[test]
+    fn check_bundle_rejects_evidence_log_manifest_sidecars() {
+        let mut input = valid_input(OutputFormat::Human);
+        append_valid_evidence_log_manifest(&mut input);
+
+        let report = verify_bundle(input);
+
+        assert_eq!(report.status, STATUS_INVALID);
+        for sidecar in [
+            crate::evidence_log::EVIDENCE_LOG_MANIFEST_ARTIFACT,
+            EVIDENCE_LOG_ARTIFACT_NAME,
+        ] {
+            let expected = format!("unexpected artifact `{sidecar}`");
+            assert!(report.diagnostics.contains(&expected), "{:?}", report.diagnostics);
+        }
+    }
+
+    // r[verify octet.artifact_bundle_verification.fail_closed.file_set]
+    #[test]
+    fn prove_bundle_rejects_evidence_logs_outside_the_proofs_dir() {
+        const OUTSIDE_LOG: &str = "stale-log.txt";
+        let mut input = valid_prove_input();
+        append_evidence_log_manifest(&mut input, OUTSIDE_LOG);
+
+        let report = verify_bundle(input);
+
+        assert_eq!(report.status, STATUS_INVALID);
+        for expected in [
+            format!("unexpected artifact `{OUTSIDE_LOG}`"),
+            format!("evidence-log-manifest.json lists evidence log `{OUTSIDE_LOG}` outside `proofs/`"),
+        ] {
+            assert!(report.diagnostics.contains(&expected), "{:?}", report.diagnostics);
+        }
     }
 
     #[test]
@@ -2359,6 +2686,113 @@ mod tests {
         let stale_report = verify_bundle(stale);
         assert_eq!(stale_report.status, STATUS_INVALID);
         assert!(stale_report.diagnostics.iter().any(|diagnostic| diagnostic.contains("unexpected artifact")));
+    }
+
+    // r[verify octet.artifact_bundle_verification.complete_bundle]
+    #[test]
+    fn evidence_rail_bundle_rejects_relabelled_checked_scope() {
+        const RELABELLED_SCOPE: &str = "profile:relabelled";
+        for locator in [
+            crate::evidence_rails::RECEIPT_ARTIFACT_NAME,
+            crate::evidence_rails::SUMMARY_ARTIFACT_NAME,
+        ] {
+            let mut input = valid_evidence_rail_input(Vec::new());
+            let mut records = provenance_records_of(&input);
+            let record = records.iter_mut().find(|record| record.artifact_locator == locator).expect("rail record");
+            RELABELLED_SCOPE.clone_into(&mut record.checked_scope);
+            replace_file(
+                &mut input,
+                crate::evidence_rails::PROVENANCE_ARTIFACT_NAME,
+                render_records(&records).into_bytes(),
+            );
+
+            let report = verify_bundle(input);
+
+            assert_eq!(report.status, STATUS_INVALID);
+            let expected = format!(
+                "unexpected checked_scope for artifact `{locator}`; expected `{CHECKED_SCOPE}`, got `{RELABELLED_SCOPE}`"
+            );
+            assert!(report.diagnostics.contains(&expected), "{:?}", report.diagnostics);
+        }
+    }
+
+    // r[verify octet.artifact_bundle_verification.complete_bundle]
+    #[test]
+    fn prove_bundle_binds_formal_proof_checked_scope_to_its_receipt_or_proof_card() {
+        let relabelled = format!(
+            "unexpected checked_scope for artifact `{PROOF_RECEIPT_ARTIFACT_NAME}`; expected `{PROOF_CHECKED_SCOPE}`, got `{PROOF_PRODUCTION_SCOPE}`"
+        );
+        let cases = [
+            (PROOF_RECEIPT_CONTENTS, None, PROOF_CHECKED_SCOPE, None),
+            (PROOF_RECEIPT_CONTENTS, None, PROOF_PRODUCTION_SCOPE, Some(relabelled.clone())),
+            (PLAIN_PROOF_RECEIPT_CONTENTS, Some(PROOF_CHECKED_SCOPE), PROOF_CHECKED_SCOPE, None),
+            (PLAIN_PROOF_RECEIPT_CONTENTS, Some(PROOF_CHECKED_SCOPE), PROOF_PRODUCTION_SCOPE, Some(relabelled)),
+            (
+                PLAIN_PROOF_RECEIPT_CONTENTS,
+                None,
+                PROOF_PRODUCTION_SCOPE,
+                Some(format!(
+                    "formal_proof artifact `{PROOF_RECEIPT_ARTIFACT_NAME}` has no proof receipt or proof card recording its checked_scope"
+                )),
+            ),
+        ];
+        for (receipt, card_scope, record_scope, expected) in cases {
+            let report = verify_bundle(prove_input(receipt, card_scope, record_scope));
+            match expected {
+                None => assert_eq!(report.status, STATUS_VALID, "{record_scope}: {:?}", report.diagnostics),
+                Some(expected) => {
+                    assert_eq!(report.status, STATUS_INVALID, "{record_scope}");
+                    assert!(report.diagnostics.contains(&expected), "{:?}", report.diagnostics);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn prove_bundle_accepts_withheld_manual_review_proof_records_only() {
+        let cases = [
+            (EvidenceTier::ManualReviewRequired, Some("formal_proof provenance withheld"), None),
+            (
+                EvidenceTier::ManualReviewRequired,
+                None,
+                Some("missing required provenance field `human_action`".to_owned()),
+            ),
+            (
+                EvidenceTier::StaticLint,
+                None,
+                Some(format!(
+                    "unexpected evidence_tier for artifact `{PROOF_RECEIPT_ARTIFACT_NAME}`; expected `formal_proof`, got `static_lint`"
+                )),
+            ),
+        ];
+        for (tier, human_action, expected) in cases {
+            let mut input = prove_input(PROOF_RECEIPT_CONTENTS, None, PROOF_CHECKED_SCOPE);
+            let mut records = provenance_records_of(&input);
+            let receipt_record = records
+                .iter_mut()
+                .find(|record| record.artifact_locator == PROOF_RECEIPT_ARTIFACT_NAME)
+                .expect("receipt record");
+            receipt_record.evidence_tier = tier;
+            receipt_record.human_action = human_action.map(str::to_owned);
+            replace_file(&mut input, PROVENANCE_ARTIFACT_NAME, render_records(&records).into_bytes());
+
+            let report = verify_bundle(input);
+
+            match expected {
+                None => assert_eq!(report.status, STATUS_VALID, "{}: {:?}", tier.as_str(), report.diagnostics),
+                Some(expected) => {
+                    assert_eq!(report.status, STATUS_INVALID, "{}", tier.as_str());
+                    assert!(report.diagnostics.contains(&expected), "{:?}", report.diagnostics);
+                }
+            }
+        }
+    }
+
+    fn provenance_records_of(input: &ArtifactBundleInput) -> Vec<ProvenanceRecord> {
+        let mut diagnostics = Vec::new();
+        let records = parse_provenance_records(&collect_file_map(input.files.clone()), &mut diagnostics);
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+        records
     }
 
     #[test]
@@ -2427,6 +2861,47 @@ mod tests {
         );
     }
 
+    // r[verify octet.artifact_bundle_verification.command.local]
+    #[test]
+    fn valence_export_refuses_output_paths_inside_the_artifact_dir() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let artifact_dir = temp.path().join("artifacts");
+        std::fs::create_dir(&artifact_dir).expect("create artifact dir");
+        for file in valid_input(OutputFormat::Json).files {
+            std::fs::write(artifact_dir.join(&file.name), &file.contents).expect("write bundle file");
+        }
+        let snapshot = || {
+            read_bundle_files(&artifact_dir)
+                .expect("read bundle")
+                .into_iter()
+                .map(|file| (file.name, file.contents))
+                .collect::<Vec<_>>()
+        };
+        let original = snapshot();
+        let verify_args = |emit_valence_provenance: Option<std::path::PathBuf>| ArtifactArgs {
+            artifact_dir: artifact_dir.clone(),
+            output_format: OutputFormat::Json,
+            emit_valence_provenance,
+        };
+
+        for inside in [
+            artifact_dir.join("valence-provenance.json"),
+            artifact_dir.join(STATUS_ARTIFACT_NAME),
+            artifact_dir.join("nested").join("valence-provenance.json"),
+            temp.path().join("missing").join("..").join("artifacts").join("valence-provenance.json"),
+        ] {
+            let error = run(&verify_args(Some(inside.clone()))).expect_err("export inside artifact dir is refused");
+            assert!(error.contains("inside the artifact directory"), "{}: {error}", inside.display());
+            assert_eq!(snapshot(), original, "{} must not touch the bundle", inside.display());
+        }
+        assert_eq!(run(&verify_args(None)).expect("verify"), EXIT_VALID);
+
+        let outside = temp.path().join("valence-provenance.json");
+        assert_eq!(run(&verify_args(Some(outside.clone()))).expect("export outside"), EXIT_VALID);
+        assert!(outside.is_file());
+        assert_eq!(snapshot(), original);
+    }
+
     fn valid_input(output_format: OutputFormat) -> ArtifactBundleInput {
         let mut files = vec![
             BundleFile {
@@ -2482,19 +2957,31 @@ mod tests {
     }
 
     fn valid_prove_input() -> ArtifactBundleInput {
+        prove_input(PROOF_RECEIPT_CONTENTS, None, PROOF_CHECKED_SCOPE)
+    }
+
+    /// Builds a prove bundle around one formal-proof receipt; `card_scope` adds the proof card's
+    /// `checked_rust_source_scope` and `record_scope` labels the receipt's provenance record.
+    fn prove_input(receipt_contents: &[u8], card_scope: Option<&str>, record_scope: &str) -> ArtifactBundleInput {
         let proof_card =
             sample_valence_proof_card("octet-rerun", EvidenceTier::FormalProof.as_str(), PROOF_RECEIPT_ARTIFACT_NAME);
+        let mut proof_card = serde_json::to_value(&proof_card).expect("serialize proof card");
+        if let Some(scope) = card_scope {
+            proof_card["checked_rust_source_scope"] = serde_json::Value::from(scope);
+        }
         let proof_cards = serde_json::json!({
             "schema_version": "octet-proof-cards/v1",
             "cards": [proof_card],
         });
         let proof_cards_bytes = serde_json::to_vec_pretty(&proof_cards).expect("serialize proof cards");
+        let mut proof_record = formal_proof_record(receipt_contents);
+        record_scope.clone_into(&mut proof_record.checked_scope);
         let mut records = vec![
             record(COMMAND_ARTIFACT_NAME, COMMAND_CONTENTS, EvidenceTier::ManualReviewRequired),
             record(STATUS_ARTIFACT_NAME, prove_status_contents().as_bytes(), EvidenceTier::ManualReviewRequired),
             record(SUMMARY_ARTIFACT_NAME, SUMMARY_CONTENTS, EvidenceTier::ManualReviewRequired),
             record(PROOF_CARDS_ARTIFACT_NAME, &proof_cards_bytes, EvidenceTier::ManualReviewRequired),
-            formal_proof_record(),
+            proof_record,
         ];
         records.sort_by(|left, right| left.artifact_locator.cmp(&right.artifact_locator));
         ArtifactBundleInput {
@@ -2518,7 +3005,7 @@ mod tests {
                 },
                 BundleFile {
                     name: PROOF_RECEIPT_ARTIFACT_NAME.to_owned(),
-                    contents: PROOF_RECEIPT_CONTENTS.to_vec(),
+                    contents: receipt_contents.to_vec(),
                 },
                 BundleFile {
                     name: PROVENANCE_ARTIFACT_NAME.to_owned(),
@@ -2534,17 +3021,17 @@ mod tests {
             .replace("\n  \"metadata\"", "\n  \"bundle_kind\": \"prove\",\n  \"metadata\"")
     }
 
-    fn formal_proof_record() -> ProvenanceRecord {
+    fn formal_proof_record(receipt_contents: &[u8]) -> ProvenanceRecord {
         ProvenanceRecord {
             schema_version: crate::evidence::PROVENANCE_SCHEMA_VERSION.to_owned(),
             source_id: PROOF_SOURCE_ID.to_owned(),
             checker_id: CHECKER_OCTET_STANDARDS.to_owned(),
             evidence_tier: EvidenceTier::FormalProof,
             artifact_locator: PROOF_RECEIPT_ARTIFACT_NAME.to_owned(),
-            blake3: crate::evidence::artifact_blake3_hex(PROOF_RECEIPT_CONTENTS),
-            checked_scope: CHECKED_SCOPE.to_owned(),
+            blake3: crate::evidence::artifact_blake3_hex(receipt_contents),
+            checked_scope: PROOF_CHECKED_SCOPE.to_owned(),
             verifier_identity: Some(PROOF_VERIFIER_IDENTITY.to_owned()),
-            proof_artifact_identity: Some(crate::evidence::artifact_blake3_hex(PROOF_RECEIPT_CONTENTS)),
+            proof_artifact_identity: Some(crate::evidence::artifact_blake3_hex(receipt_contents)),
             human_action: None,
             parent_artifacts: vec![PROOF_CARDS_ARTIFACT_NAME.to_owned()],
         }
@@ -2597,13 +3084,17 @@ mod tests {
     }
 
     fn append_valid_evidence_log_manifest(input: &mut ArtifactBundleInput) {
-        let manifest = valid_evidence_log_manifest();
+        append_evidence_log_manifest(input, EVIDENCE_LOG_ARTIFACT_NAME);
+    }
+
+    fn append_evidence_log_manifest(input: &mut ArtifactBundleInput, log_locator: &str) {
+        let manifest = evidence_log_manifest(log_locator);
         input.files.push(BundleFile {
             name: crate::evidence_log::EVIDENCE_LOG_MANIFEST_ARTIFACT.to_owned(),
             contents: serde_json::to_vec_pretty(&manifest).expect("serialize evidence log manifest"),
         });
         input.files.push(BundleFile {
-            name: EVIDENCE_LOG_ARTIFACT_NAME.to_owned(),
+            name: log_locator.to_owned(),
             contents: EVIDENCE_LOG_CONTENTS.to_vec(),
         });
     }
@@ -2617,9 +3108,9 @@ mod tests {
         input
     }
 
-    fn valid_evidence_log_manifest() -> crate::evidence_log::EvidenceLogManifest {
+    fn evidence_log_manifest(log_locator: &str) -> crate::evidence_log::EvidenceLogManifest {
         crate::evidence_log::manifest_from_entries(vec![crate::evidence_log::EvidenceLogEntry::from_bytes(
-            EVIDENCE_LOG_ARTIFACT_NAME,
+            log_locator,
             EVIDENCE_LOG_CONTENTS,
             EVIDENCE_LOG_REPLAY_COMMAND,
             CHECKED_SCOPE,
@@ -2780,6 +3271,8 @@ mod tests {
             parent_artifacts: Vec::new(),
             tool_exit_code: None,
         });
+        // `evidence collect` binds the analyzed registry bytes as the config identity.
+        receipt.config_identity = Some(crate::wasm_artifact::registry_identity(registry_bytes));
         mutate(&mut receipt);
         let receipt_json = crate::evidence_rails::render_receipt_json(&receipt).expect("render Wasm rail receipt");
         let summary = crate::evidence_rails::render_summary(&receipt);

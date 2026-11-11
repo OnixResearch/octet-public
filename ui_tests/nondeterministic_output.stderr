@@ -1,5 +1,5 @@
 warning: hash-collection iteration flows into ordered output without a stable sort
-  --> $DIR/nondeterministic_output.rs:9:1
+  --> $DIR/nondeterministic_output.rs:10:1
    |
 LL | / fn names_by_hash_iteration(scores: &HashMap<String, u32>) -> Vec<String> {
 LL | |     scores.keys().cloned().collect::<Vec<_>>()

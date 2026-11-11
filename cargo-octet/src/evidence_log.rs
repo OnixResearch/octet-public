@@ -205,7 +205,7 @@ fn is_normalized_relative_locator(value: &str) -> bool {
     !is_blank(value)
         && !value.starts_with('/')
         && !value.starts_with('\\')
-        && !value.contains("\\")
+        && !value.contains('\\')
         && !value.split('/').any(|component| matches!(component, "" | "." | ".."))
 }
 

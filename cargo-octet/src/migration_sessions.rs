@@ -1,5 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
+use std::collections::BTreeSet;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -20,13 +22,23 @@ const SUPPORTED_MIGRATION_KINDS: &[&str] = &[
 ];
 const SUPPORTED_COMPATIBILITY_CLASSES: &[&str] = &["canonical", "compatibility-alias", "deprecated", "removal-target"];
 const SUPPORTED_STATUSES: &[&str] = &["planned", "in-progress", "verified", "applied", "blocked"];
+const MUTABILITY_LIVE: &str = "live";
 const MUTABILITY_ARCHIVE_READ_ONLY: &str = "archive-read-only";
 const MUTABILITY_MUTABLE_ARCHIVE: &str = "mutable-archive";
 const MUTABILITY_GENERATED: &str = "generated";
+const SUPPORTED_MUTABILITIES: &[&str] = &[
+    MUTABILITY_LIVE,
+    MUTABILITY_GENERATED,
+    MUTABILITY_ARCHIVE_READ_ONLY,
+    MUTABILITY_MUTABLE_ARCHIVE,
+];
 const OPERATION_RECORD_ONLY: &str = "record-only";
 const OPERATION_REWRITE: &str = "rewrite";
 const OPERATION_REPLACE: &str = "replace";
+const SUPPORTED_OPERATION_KINDS: &[&str] = &[OPERATION_RECORD_ONLY, OPERATION_REWRITE, OPERATION_REPLACE];
 const SAFETY_SAFE: &str = "safe";
+const SAFETY_MANUAL_REVIEW: &str = "manual-review";
+const SUPPORTED_SAFETY_CLASSES: &[&str] = &[SAFETY_SAFE, SAFETY_MANUAL_REVIEW];
 const STATUS_OPEN: &str = "open";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -275,13 +287,11 @@ pub(crate) fn verify_report(session: &StructuredMigrationSession) -> MigrationVe
 
 pub(crate) fn operation_manifest(session: &StructuredMigrationSession, dry_run: bool) -> MigrationOperationManifest {
     let mut diagnostics = validate_session(session);
-    for operation in &session.planned_operations {
-        if operation.safety != SAFETY_SAFE || operation.operation_kind != OPERATION_RECORD_ONLY {
-            diagnostics.push(format!(
-                "apply.unsupported_operation `{}` requires safety=safe and operation_kind=record-only",
-                operation.operation_id
-            ));
-        }
+    for operation in session.planned_operations.iter().filter(|operation| !is_safe_record_only(operation)) {
+        diagnostics.push(format!(
+            "apply.unsupported_operation `{}` requires safety=safe and operation_kind=record-only",
+            operation.operation_id
+        ));
     }
     diagnostics.sort();
     diagnostics.dedup();
@@ -290,10 +300,16 @@ pub(crate) fn operation_manifest(session: &StructuredMigrationSession, dry_run: 
         session_id: session.session_id.clone(),
         dry_run,
         pre_write_manifest: true,
-        operations: sorted_operations(session.planned_operations.iter()),
+        operations: sorted_operations(
+            session.planned_operations.iter().filter(|operation| is_safe_record_only(operation)),
+        ),
         diagnostics,
         non_claim_boundary: MIGRATION_NON_CLAIM_BOUNDARY,
     }
+}
+
+fn is_safe_record_only(operation: &MigrationPlannedOperation) -> bool {
+    operation.safety == SAFETY_SAFE && operation.operation_kind == OPERATION_RECORD_ONLY
 }
 
 #[cfg(test)]
@@ -374,40 +390,69 @@ fn validate_surfaces(session: &StructuredMigrationSession, diagnostics: &mut Vec
     if session.affected_surfaces.is_empty() {
         diagnostics.push("affected_surfaces missing".to_owned());
     }
+    let mut seen_locators = BTreeSet::new();
     for surface in &session.affected_surfaces {
         require_non_empty(&surface.surface_kind, "affected_surface.surface_kind", diagnostics);
         require_non_empty(&surface.locator, "affected_surface.locator", diagnostics);
-        require_non_empty(&surface.mutability, "affected_surface.mutability", diagnostics);
+        require_supported(
+            &surface.mutability,
+            SUPPORTED_MUTABILITIES,
+            "affected_surface.mutability",
+            &surface.locator,
+            diagnostics,
+        );
+        if !seen_locators.insert(surface.locator.as_str()) {
+            diagnostics.push(format!("affected_surface.duplicate_locator `{}`", surface.locator));
+        }
     }
 }
 
 fn validate_operations(session: &StructuredMigrationSession, diagnostics: &mut Vec<String>) {
     for operation in &session.planned_operations {
         require_non_empty(&operation.operation_id, "planned_operation.operation_id", diagnostics);
-        require_non_empty(&operation.operation_kind, "planned_operation.operation_kind", diagnostics);
+        require_supported(
+            &operation.operation_kind,
+            SUPPORTED_OPERATION_KINDS,
+            "planned_operation.operation_kind",
+            &operation.operation_id,
+            diagnostics,
+        );
         require_non_empty(&operation.target_locator, "planned_operation.target_locator", diagnostics);
-        require_non_empty(&operation.safety, "planned_operation.safety", diagnostics);
-        if operation.operation_kind == OPERATION_REWRITE || operation.operation_kind == OPERATION_REPLACE {
-            validate_archive_operation(operation, &session.affected_surfaces, diagnostics);
+        require_supported(
+            &operation.safety,
+            SUPPORTED_SAFETY_CLASSES,
+            "planned_operation.safety",
+            &operation.operation_id,
+            diagnostics,
+        );
+        if operation.operation_kind != OPERATION_RECORD_ONLY {
+            validate_mutating_operation(operation, &session.affected_surfaces, diagnostics);
         }
     }
 }
 
-fn validate_archive_operation(
+fn validate_mutating_operation(
     operation: &MigrationPlannedOperation,
     surfaces: &[MigrationAffectedSurface],
     diagnostics: &mut Vec<String>,
 ) {
-    let Some(surface) = surfaces.iter().find(|surface| surface.locator == operation.target_locator) else {
+    let mut targets = surfaces.iter().filter(|surface| surface.locator == operation.target_locator).peekable();
+    if targets.peek().is_none() {
+        diagnostics.push(format!(
+            "planned_operation.undeclared_target `{}` targets `{}` outside affected_surfaces",
+            operation.operation_id, operation.target_locator
+        ));
         return;
-    };
-    if surface.mutability == MUTABILITY_ARCHIVE_READ_ONLY {
+    }
+    let mutabilities: BTreeSet<&str> = targets.map(|surface| surface.mutability.as_str()).collect();
+    if mutabilities.contains(MUTABILITY_ARCHIVE_READ_ONLY) {
         diagnostics.push(format!(
             "archive_boundary.read_only_rewrite `{}` targets `{}`",
             operation.operation_id, operation.target_locator
         ));
     }
-    if surface.mutability == MUTABILITY_MUTABLE_ARCHIVE && blank_option(operation.archive_mutation_rationale.as_deref())
+    if mutabilities.contains(MUTABILITY_MUTABLE_ARCHIVE)
+        && blank_option(operation.archive_mutation_rationale.as_deref())
     {
         diagnostics
             .push(format!("archive_boundary.mutable_archive_rationale missing for `{}`", operation.operation_id));
@@ -429,6 +474,14 @@ fn validate_pointer(pointer: &MigrationPointer, field: &str, diagnostics: &mut V
 fn require_non_empty(value: &str, field: &str, diagnostics: &mut Vec<String>) {
     if value.trim().is_empty() {
         diagnostics.push(format!("{field} missing"));
+    }
+}
+
+fn require_supported(value: &str, supported: &[&str], field: &str, owner: &str, diagnostics: &mut Vec<String>) {
+    if value.trim().is_empty() {
+        diagnostics.push(format!("{field} missing"));
+    } else if !supported.contains(&value) {
+        diagnostics.push(format!("{field} unsupported `{value}` for `{owner}`"));
     }
 }
 
@@ -552,6 +605,122 @@ mod tests {
     }
 
     #[test]
+    fn archive_boundary_rejects_read_only_rewrite_shadowed_by_duplicate_live_locator() {
+        let mut session = valid_session();
+        session.affected_surfaces.insert(0, MigrationAffectedSurface {
+            surface_kind: "doc".to_owned(),
+            locator: ARCHIVE_DOC.to_owned(),
+            mutability: "live".to_owned(),
+            identity: None,
+        });
+        session
+            .planned_operations
+            .push(planned_operation("rewrite-archive", OPERATION_REWRITE, ARCHIVE_DOC));
+
+        let report = verify_report(&session);
+
+        assert!(!report.valid, "a live duplicate must not shadow the archive-read-only surface");
+        for expected in [
+            "affected_surface.duplicate_locator",
+            "archive_boundary.read_only_rewrite",
+        ] {
+            assert!(
+                report.diagnostics.iter().any(|diagnostic| diagnostic.contains(expected)),
+                "{expected}: {:?}",
+                report.diagnostics
+            );
+        }
+    }
+
+    #[test]
+    fn archive_boundary_rejects_unknown_operation_kinds_on_archive() {
+        for kind in ["delete", "Rewrite", "move"] {
+            let mut session = valid_session();
+            session.planned_operations.push(planned_operation("mutate-archive", kind, ARCHIVE_DOC));
+
+            let report = verify_report(&session);
+
+            assert!(!report.valid, "`{kind}` on an archive-read-only surface must fail verify");
+            assert!(
+                report
+                    .diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.contains("planned_operation.operation_kind unsupported")),
+                "{kind}: {:?}",
+                report.diagnostics
+            );
+        }
+    }
+
+    #[test]
+    fn archive_boundary_rejects_unknown_safety_and_mutability() {
+        let mut unknown_safety = valid_session();
+        unknown_safety.planned_operations[0].safety = "probably-safe".to_owned();
+        let mut typo_mutability = valid_session();
+        typo_mutability.affected_surfaces[1].mutability = "archive-readonly".to_owned();
+
+        let safety_report = verify_report(&unknown_safety);
+        let mutability_report = verify_report(&typo_mutability);
+
+        assert!(!safety_report.valid);
+        assert!(
+            safety_report
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.contains("planned_operation.safety unsupported"))
+        );
+        assert!(!mutability_report.valid);
+        assert!(
+            mutability_report
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.contains("affected_surface.mutability unsupported"))
+        );
+    }
+
+    #[test]
+    fn archive_boundary_rejects_mutating_operation_on_undeclared_target() {
+        let mut session = valid_session();
+        session.planned_operations.push(planned_operation(
+            "rewrite-undeclared",
+            OPERATION_REWRITE,
+            "cairn/archive/2026-01-01-legacy/proposal.md",
+        ));
+
+        let report = verify_report(&session);
+
+        assert!(!report.valid);
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.contains("planned_operation.undeclared_target")),
+            "{:?}",
+            report.diagnostics
+        );
+    }
+
+    #[test]
+    fn archive_boundary_accepts_declared_live_and_reviewed_mutable_archive_rewrites() {
+        let mut session = valid_session();
+        session.affected_surfaces.push(MigrationAffectedSurface {
+            surface_kind: "archive".to_owned(),
+            locator: "cairn/archive/2026-01-02-reviewed/tasks.md".to_owned(),
+            mutability: MUTABILITY_MUTABLE_ARCHIVE.to_owned(),
+            identity: None,
+        });
+        session.planned_operations.push(planned_operation("rewrite-live", OPERATION_REWRITE, LIVE_DOC));
+        let mut reviewed =
+            planned_operation("replace-reviewed", OPERATION_REPLACE, "cairn/archive/2026-01-02-reviewed/tasks.md");
+        reviewed.archive_mutation_rationale = Some("reviewer approved archive correction".to_owned());
+        session.planned_operations.push(reviewed);
+
+        let report = verify_report(&session);
+
+        assert!(report.valid, "unexpected diagnostics: {:?}", report.diagnostics);
+    }
+
+    #[test]
     fn apply_manifest_matches_dry_run_operations_and_is_idempotent() {
         let session = valid_session();
         let dry_run = operation_manifest(&session, true);
@@ -565,6 +734,30 @@ mod tests {
     }
 
     #[test]
+    fn apply_manifest_lists_only_safe_record_only_operations() {
+        let mut session = valid_session();
+        let mut manual_review = planned_operation("rewrite-live", OPERATION_REWRITE, LIVE_DOC);
+        manual_review.safety = SAFETY_MANUAL_REVIEW.to_owned();
+        session.planned_operations.push(manual_review);
+        session.planned_operations.push(planned_operation("replace-live", OPERATION_REPLACE, LIVE_DOC));
+
+        let manifest = operation_manifest(&session, false);
+
+        let listed = manifest.operations.iter().map(|operation| operation.operation_id.as_str()).collect::<Vec<_>>();
+        assert_eq!(listed, vec![OPERATION_ID]);
+        for unsupported in ["rewrite-live", "replace-live"] {
+            assert!(
+                manifest
+                    .diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.contains(&format!("apply.unsupported_operation `{unsupported}`"))),
+                "{unsupported}: {:?}",
+                manifest.diagnostics
+            );
+        }
+    }
+
+    #[test]
     fn boundary_helper_rejects_semantic_equivalence_overclaim() {
         let session = valid_session();
         let report = verify_report(&session);
@@ -574,6 +767,17 @@ mod tests {
 
         assert!(output_has_no_migration_overclaim(&rendered));
         assert!(!output_has_no_migration_overclaim(&overclaim));
+    }
+
+    fn planned_operation(operation_id: &str, operation_kind: &str, target_locator: &str) -> MigrationPlannedOperation {
+        MigrationPlannedOperation {
+            operation_id: operation_id.to_owned(),
+            operation_kind: operation_kind.to_owned(),
+            target_locator: target_locator.to_owned(),
+            safety: SAFETY_SAFE.to_owned(),
+            dry_run_preview: format!("would {operation_kind} {target_locator}"),
+            archive_mutation_rationale: None,
+        }
     }
 
     fn valid_session() -> StructuredMigrationSession {

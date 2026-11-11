@@ -1,0 +1,30 @@
+{
+  "body_hash": "297b70644d4c9a63fb0df22a8f346b7e600a714c471454a7784713b3983aaf74",
+  "caveats": {
+    "correctness_claim": "none",
+    "dependency_status": "source-scanner-token-set",
+    "effect_status": "unknown",
+    "identity": "source-token",
+    "macro_status": "source-visible"
+  },
+  "normalization": {
+    "content_kind": "source-token",
+    "display_root": "/workspace/source-root",
+    "version": "source-token-v1"
+  },
+  "object_hash": "a25fa62c2fa59678ad40105253f1c462e48cd0b394f8414d3cc7181d96f711ec",
+  "schema": "octet.function-object.v1",
+  "signature_hash": "2d1d6fd7359ba2e5e25737604b14fc6a46fec9c5d7be69f3e3fe021e54ffd0bc",
+  "source_token": {
+    "captured_at_timestamp": "2026-05-19T00:00:00Z",
+    "crate": "demo",
+    "definition_span": "src/lib.rs:1:1-3:2",
+    "module_path": "demo::math",
+    "name": "add_one",
+    "temp_path": "/tmp/cairn-random/src/lib.rs"
+  },
+  "toolchain": {
+    "octet_extractor": "octet 0.1.0",
+    "rustc": "rustc 1.87.0"
+  }
+}

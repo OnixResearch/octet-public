@@ -1,0 +1,38 @@
+error: tigerstyle::raw_bool_parameter_suppression: broad warning or structure-group suppression can hide `raw_bool_parameter`; use a local owned compatibility expectation
+  --> $DIR/raw_bool_parameter_guard_strict/raw_bool_parameter_guard_strict.rs:3:1
+   |
+LL | #![allow(warnings)]
+   | ^^^^^^^^^^^^^^^^^^^
+
+error: tigerstyle::raw_bool_parameter_suppression: broad warning or structure-group suppression can hide `raw_bool_parameter`; use a local owned compatibility expectation
+  --> $DIR/raw_bool_parameter_guard_strict/raw_bool_parameter_guard_strict.rs:4:1
+   |
+LL | #![allow(tigerstyle::structure)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: tigerstyle::raw_bool_parameter_suppression: `raw_bool_parameter` does not permit `#[allow]`; use a local, owned `#[expect]` for an unavoidable compatibility API
+  --> $DIR/raw_bool_parameter_guard_strict/raw_bool_parameter_guard_strict.rs:6:1
+   |
+LL | #![allow(tigerstyle::raw_bool_parameter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: tigerstyle::raw_bool_parameter_suppression: broad warning or structure-group suppression can hide `raw_bool_parameter`; use a local owned compatibility expectation
+  --> $DIR/raw_bool_parameter_guard_strict/raw_bool_parameter_guard_strict.rs:12:1
+   |
+LL | #[allow(tigerstyle::structure)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: tigerstyle::raw_bool_parameter_suppression: `raw_bool_parameter` does not permit `#[allow]`; use a local, owned `#[expect]` for an unavoidable compatibility API
+  --> $DIR/raw_bool_parameter_guard_strict/raw_bool_parameter_guard_strict.rs:21:9
+   |
+LL |         #[allow(tigerstyle::raw_bool_parameter)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: tigerstyle::raw_bool_parameter_suppression: broad warning or structure-group suppression can hide `raw_bool_parameter`; use a local owned compatibility expectation
+  --> $DIR/raw_bool_parameter_guard_strict/raw_bool_parameter_guard_strict.rs:26:27
+   |
+LL |         #[cfg_attr(all(), allow(tigerstyle::structure))]
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 6 previous errors
+

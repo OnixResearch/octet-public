@@ -1,0 +1,38 @@
+{
+  "schema": "cairn.agent-completion-negative-matrix.v1",
+  "non_passing_statuses": [
+    "failed",
+    "blocked",
+    "skipped",
+    "deferred",
+    "timed_out",
+    "cancelled",
+    "dry_run",
+    "cleanup_failed",
+    "infrastructure_error",
+    "not_selected",
+    "unknown"
+  ],
+  "cases": [
+    {"id": "missing-contract", "expected_code": "verification.missing_contract"},
+    {"id": "missing-result", "expected_code": "verification_result.missing"},
+    {"id": "duplicate-result", "expected_code": "verification_result.duplicate"},
+    {"id": "unknown-result", "expected_code": "verification_result.unknown_check"},
+    {"id": "failed-prerequisite", "expected_code": "verification_result.prerequisite_not_passing"},
+    {"id": "stale-subject", "expected_code": "verification_result.subject_stale"},
+    {"id": "registry-drift", "expected_code": "verification_result.registry_drift"},
+    {"id": "selection-drift", "expected_code": "verification_result.selection_drift"},
+    {"id": "policy-drift", "expected_code": "verification_result.policy_drift"},
+    {"id": "command-mismatch", "expected_code": "verification_result.command_mismatch"},
+    {"id": "malformed-evidence-hash", "expected_code": "verification_result.evidence_hash_invalid"},
+    {"id": "malformed-execution-receipt-hash", "expected_code": "verification_result.receipt_hash_invalid"},
+    {"id": "malformed-artifact", "expected_code": "verification_result.artifact_invalid"},
+    {"id": "unsafe-diagnostic", "expected_code": "verification_result.diagnostic_unsafe"},
+    {"id": "contradictory-legacy-success", "expected_code": "verification.missing_contract"},
+    {"id": "tampered-selection", "expected_code": "verification_contract.selection_drift"}
+  ],
+  "non_claims": [
+    "negative fixtures describe expected deterministic rejection classes only",
+    "fixture coverage does not prove check-oracle soundness or honest execution"
+  ]
+}

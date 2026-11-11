@@ -1,0 +1,34 @@
+{
+  "schema_version": "octet-binary-debug-map-analysis/v1",
+  "details": {
+    "schema_version": "octet-binary-debug-map-receipt/v1",
+    "profile_id": "elf-dwarf-v1",
+    "profile_identity": "b3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "registry_identity": "b3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "object_format": "elf",
+    "architecture": "x86_64",
+    "debug_format": "dwarf",
+    "binary_identity": "b3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "debug_source": "inline",
+    "source_roots": [{"build_root": "/build/example", "repository_root": "crates/example"}],
+    "limits": {
+      "max_binary_bytes": 8388608,
+      "max_debug_bytes": 8388608,
+      "max_sections": 128,
+      "max_units": 16,
+      "max_symbols": 4096,
+      "max_ranges": 8192,
+      "max_line_rows": 65536,
+      "max_frames": 4096,
+      "max_path_bytes": 512,
+      "max_rows": 4096
+    },
+    "rows": [],
+    "excluded_rows": 0,
+    "findings": [],
+    "truncation": {"truncated": false},
+    "verification_role": "recorded_only",
+    "non_claims": ["Binary debug-map evidence records bounded ELF/DWARF linkage only and does not prove source-to-binary semantic equivalence, compiler correctness, or behavioral correctness"]
+  },
+  "non_claims": ["Binary debug-map evidence records bounded ELF/DWARF linkage only and does not prove source-to-binary semantic equivalence, compiler correctness, or behavioral correctness"]
+}

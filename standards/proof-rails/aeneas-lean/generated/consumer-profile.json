@@ -34,7 +34,7 @@
     ],
     "stderr_max_bytes": 1048576,
     "stdout_max_bytes": 1048576,
-    "timeout_ms": 900000
+    "timeout_ms": 2700000
   },
   "schema_version": "octet-aeneas-consumer-profile/v1",
   "source": {

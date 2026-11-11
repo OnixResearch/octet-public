@@ -1,0 +1,10 @@
+{
+  "schema_version": "valence.function-address-graph.v1",
+  "function_count": 1,
+  "source_count": 1,
+  "dependency_edge_count": 1,
+  "recorded_only_count": 1,
+  "property_count": 0,
+  "failed_link_count": 0,
+  "report_hash": "2222222222222222222222222222222222222222222222222222222222222222"
+}

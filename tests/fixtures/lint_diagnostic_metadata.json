@@ -174,7 +174,7 @@
     "guide_section": "Documented Suppression",
     "domain_group": "tigerstyle::structure",
     "guidance": "every lint suppression needs a local reason tied to the code shape",
-    "docs_summary": "require local justification for `#[allow(clippy::...)]`",
+    "docs_summary": "require a local `//` comment or a non-empty `reason` on `allow` / `expect` of Clippy or Octet lints",
     "effect_family": "resource",
     "example_mode": "required",
     "example_text": "// Verified casts: Verus checks every narrowing in this module.\n#[allow(clippy::cast_possible_truncation)]"
@@ -346,6 +346,30 @@
     "effect_family": "resource",
     "example_mode": "required",
     "example_text": "fn connect(opts: ConnectOptions) -> ..."
+  },
+  {
+    "lint_name": "raw_bool_parameter",
+    "default_level": "warn",
+    "principle": "Explicit Interfaces",
+    "guide_section": "Explicit Interfaces / Boolean API Modeling",
+    "domain_group": "tigerstyle::structure",
+    "guidance": "use a domain enum, option record, typestate value, or nominal wrapper for ambiguous arguments; boolean returns, fields, and predicate values remain valid",
+    "docs_summary": "avoid direct `bool` parameters in public APIs and multiple positional booleans in private callables",
+    "effect_family": "unknown",
+    "example_mode": "required",
+    "example_text": "pub fn deploy(mode: DeploymentMode, audit: AuditPolicy)"
+  },
+  {
+    "lint_name": "raw_bool_parameter_suppression",
+    "default_level": "warn",
+    "principle": "Explicit Interfaces",
+    "guide_section": "Explicit Interfaces / Boolean API Modeling",
+    "domain_group": "tigerstyle::structure",
+    "guidance": "keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression",
+    "docs_summary": "reject broad or unjustified raw-boolean parameter suppressions",
+    "effect_family": "unknown",
+    "example_mode": "required",
+    "example_text": "#[expect(tigerstyle::raw_bool_parameter, reason = \"external compatibility contract: v1 callback ABI; owner: api-team\")]"
   },
   {
     "lint_name": "fat_trait",
@@ -570,7 +594,7 @@
     "guide_section": "Functional Core / Imperative Shell",
     "domain_group": "tigerstyle::purity",
     "guidance": "consider `const fn` for conservative private helpers when doing so does not freeze public API flexibility",
-    "docs_summary": "identify private helpers that appear eligible for `const fn`",
+    "docs_summary": "identify private free helpers in a conservative primitive HIR subset that appear eligible for `const fn`; calls, methods, closures, and type-dependent operators remain excluded",
     "effect_family": "unknown",
     "example_mode": "required",
     "example_text": "const fn clamp_to_limit(value: u32, limit: u32) -> u32"
@@ -714,7 +738,7 @@
     "guide_section": "Integer Currency",
     "domain_group": "tigerstyle::naming",
     "guidance": "store money as scaled integers, not floats",
-    "docs_summary": "avoid `f64` in price, cost, or budget fields",
+    "docs_summary": "avoid `f64` in price, cost, or budget fields and function return types",
     "effect_family": "unknown",
     "example_mode": "required",
     "example_text": "let price_micros: i64 = 125_000;"
@@ -862,5 +886,41 @@
     "effect_family": "failure",
     "example_mode": "required",
     "example_text": "while let Some(item) = stack.pop() { ... }"
+  },
+  {
+    "lint_name": "discarded_sync_result",
+    "default_level": "warn",
+    "principle": "Durable Persistence",
+    "guide_section": "Resilience / Silent error swallowing",
+    "domain_group": "tigerstyle::safety",
+    "guidance": "handle the synchronization or configured commit result; map failure to an explicit uncertain outcome, quarantine, reopen, rewrite, or reconcile instead of discarding it",
+    "docs_summary": "flag discarded synchronization and configured commit results in declared durability boundaries",
+    "effect_family": "failure",
+    "example_mode": "required",
+    "example_text": "let outcome = file.sync_all().map_err(|error| DurabilityOutcome::Uncertain(error))?;"
+  },
+  {
+    "lint_name": "flush_only_durability",
+    "default_level": "warn",
+    "principle": "Durable Persistence",
+    "guide_section": "Resilience / Silent error swallowing",
+    "domain_group": "tigerstyle::safety",
+    "guidance": "observe an explicit synchronization or configured adapter result; Write::flush() drains user-space buffers and is not durable-persistence evidence",
+    "docs_summary": "flag declared durable boundaries that observe only `Write::flush()`",
+    "effect_family": "failure",
+    "example_mode": "required",
+    "example_text": "writer.flush()?; file.sync_all()?;"
+  },
+  {
+    "lint_name": "retry_sync_after_error",
+    "default_level": "warn",
+    "principle": "Durable Persistence",
+    "guide_section": "Resilience / Silent error swallowing",
+    "domain_group": "tigerstyle::safety",
+    "guidance": "after a failed synchronization, rewrite from the source of truth, reopen or replace the handle, quarantine, or reconcile before observing durability again",
+    "docs_summary": "flag same-receiver synchronization retries after a handled failure without an admitted recovery operation",
+    "effect_family": "failure",
+    "example_mode": "required",
+    "example_text": "file.sync_all()?; file = File::create(path)?; file.write_all(bytes)?; file.sync_all()?;"
   }
 ]

@@ -1,16 +1,20 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-pub const COMPILER_ARCHITECTURE_SHARD_SCHEMA_VERSION: &str = "octet-compiler-architecture-shard/v1";
-pub const COMPILER_ARCHITECTURE_IR_SCHEMA_VERSION: &str = "octet-compiler-architecture-ir/v1";
+pub const COMPILER_ARCHITECTURE_SHARD_SCHEMA_VERSION: &str = "octet-compiler-architecture-shard/v2";
+pub const COMPILER_ARCHITECTURE_IR_SCHEMA_VERSION: &str = "octet-compiler-architecture-ir/v2";
 pub const COMPILER_ARCHITECTURE_COVERAGE_SCHEMA_VERSION: &str = "octet-compiler-architecture-coverage/v1";
 pub const COMPILER_ARCHITECTURE_ISSUE_SCHEMA_VERSION: &str = "octet-compiler-architecture-issue/v1";
 pub const COMPILER_ARCHITECTURE_RECEIPT_SCHEMA_VERSION: &str = "octet-compiler-architecture-receipt/v1";
 pub const COMPILER_ARCHITECTURE_COLLECTOR_CONTEXT_SCHEMA_VERSION: &str =
-    "octet-compiler-architecture-collector-context/v1";
+    "octet-compiler-architecture-collector-context/v3";
 pub const COMPILER_ARCHITECTURE_COLLECTOR_CONTEXT_ENV: &str = "OCTET_COMPILER_ARCHITECTURE_CONTEXT";
 pub const COMPILER_ARCHITECTURE_CONTRACT_PATH: &str =
     "standards/compiler-architecture-ir/contracts/compiler-architecture-ir.generated.ncl";
+/// Build and evidence directory names excluded from package source envelopes when they sit
+/// beside a `Cargo.toml`; files below them are generated, never workspace source.
+pub const SOURCE_BUILD_DIRECTORIES: &[&str] =
+    &["target", ".cargo-target", ".git", ".octet", ".direnv", ".devenv", ".pi"];
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -71,6 +75,8 @@ pub struct CompilationUnit {
     pub package_version: String,
     pub target_name: String,
     pub target_kind: String,
+    /// Exact workspace-relative Cargo target root observed by the compiler adapter.
+    pub source_path: String,
     pub crate_types: Vec<String>,
     pub target_triple: String,
     pub features: Vec<String>,
@@ -228,7 +234,10 @@ pub enum CompilerArchitectureFact {
         fact_id: String,
         signature_id: String,
         owner_item_id: String,
+        /// Each input's referent type; `&T` and `&mut T` inputs name `T`.
         input_type_ids: Vec<String>,
+        /// Whether each input, by position, is passed by reference rather than by value.
+        input_by_reference: Vec<bool>,
         output_type_id: String,
         is_public: bool,
     },
@@ -382,6 +391,8 @@ pub struct SourceRoleScope {
 pub struct CollectorCompilationUnit {
     pub rustc_crate_name: String,
     pub manifest_dir: String,
+    pub source_path: String,
+    pub test_configuration: bool,
     pub source_roles: Vec<SourceRoleScope>,
     pub unit: CompilationUnit,
 }
@@ -390,6 +401,7 @@ pub struct CollectorCompilationUnit {
 #[serde(deny_unknown_fields)]
 pub struct CompilerArchitectureCollectorContext {
     pub schema_version: String,
+    pub workspace_root: String,
     pub output_directory: String,
     pub limits: ArchitectureCollectionLimits,
     pub selected_units: Vec<CollectorCompilationUnit>,
@@ -405,6 +417,7 @@ pub struct CompilerArchitectureIr {
     pub architecture_ir_id: String,
     pub policy_blake3: String,
     pub units: Vec<CompilationUnit>,
+    pub unit_memberships: Vec<UnitFactMembership>,
     pub spans: Vec<SourceSpan>,
     pub facts: Vec<CompilerArchitectureFact>,
     pub unknowns: Vec<UnknownCompilerFact>,
@@ -416,6 +429,15 @@ pub struct CompilerArchitectureIr {
 pub enum CoverageStatus {
     Complete,
     Incomplete,
+}
+
+/// Observations from one validated shard, retained before cross-unit deduplication.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct UnitFactMembership {
+    pub unit_id: String,
+    pub fact_ids: Vec<String>,
+    pub unknown_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

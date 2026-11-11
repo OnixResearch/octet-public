@@ -1,0 +1,36 @@
+{
+  "schema": "cairn.structured-lifecycle.bundle.v1",
+  "specs": [
+    {
+      "id": "structured-lifecycle",
+      "purpose": "Invalid fixture with unknown task coverage link",
+      "requirements": [
+        {
+          "id": "cairn.structured.fixture.valid",
+          "strength": "MUST",
+          "statement": "validate structured lifecycle source",
+          "scenarios": [
+            {
+              "id": "valid_bundle",
+              "given": ["a typed lifecycle bundle"],
+              "when": ["Cairn validates it"],
+              "then": ["known requirement links are accepted"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "changes": [
+    {
+      "id": "demo-change",
+      "tasks": [
+        {
+          "id": "validate-fixture",
+          "covers": ["cairn.structured.fixture.missing"]
+        }
+      ],
+      "probes": []
+    }
+  ]
+}

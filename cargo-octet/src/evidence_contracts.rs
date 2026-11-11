@@ -16,6 +16,7 @@ const SARIF_DETAILS_CONTRACT_NAME: &str = "SarifImportReceiptDetailsV1";
 const COVERAGE_DETAILS_CONTRACT_NAME: &str = "CoverageBaselineReceiptDetailsV1";
 const MUTATION_DETAILS_CONTRACT_NAME: &str = "CargoMutantsReceiptDetailsV1";
 const BENCHMARK_DETAILS_CONTRACT_NAME: &str = "BenchmarkEvidenceReceiptDetailsV1";
+const BINARY_DEBUG_MAP_DETAILS_CONTRACT_NAME: &str = "BinaryDebugMapReceiptDetailsV1";
 const CHAOSCONTROL_PROOF_STYLE_INPUT_CONTRACT_NAME: &str = "ChaosControlProofStyleInputContractV1";
 const CHAOSCONTROL_PROOF_STYLE_INPUT_SCHEMA_VERSION: &str = "octet-chaoscontrol-proof-style-input-contract/v1";
 const CHAOSCONTROL_CONSUMER_REPO: &str = "github:OnixResearch/chaoscontrol";
@@ -31,6 +32,10 @@ const FINDING_SCHEMA_VERSION: u32 = 2;
 const OPTIONAL_STRING_DEFAULT: &str = "";
 const EMPTY_ARRAY_DEFAULT: &str = "[]";
 const EMPTY_RECORD_DEFAULT: &str = "{}";
+const NULL_DEFAULT: &str = "null";
+/// Marks a field the Rust DTO omits when unset (`skip_serializing_if`); rendered as Nickel
+/// `optional`.
+const OPTIONAL_FIELD_MARKER: &str = "optional";
 
 static FINDING_FIELDS: &[ContractField] = &[
     ContractField::required("version", FieldKind::ExactNumber(FINDING_SCHEMA_VERSION)),
@@ -48,8 +53,8 @@ static FINDING_FIELDS: &[ContractField] = &[
     ContractField::required("line", FieldKind::Number),
     ContractField::required("column", FieldKind::Number),
     ContractField::required("message", FieldKind::NonEmptyString),
-    ContractField::optional_string("suggestion"),
-    ContractField::optional_string("applicability"),
+    ContractField::nullable_string("suggestion"),
+    ContractField::nullable_string("applicability"),
     ContractField::required("principle", FieldKind::NonEmptyString),
     ContractField::required("effect_family", FieldKind::NonEmptyString),
     ContractField::required("evidence_tier", FieldKind::EvidenceTier),
@@ -243,6 +248,31 @@ static BENCHMARK_DETAILS_FIELDS: &[ContractField] = &[
     ContractField::required("non_claims", FieldKind::StringArray),
 ];
 
+static BINARY_DEBUG_MAP_DETAILS_FIELDS: &[ContractField] = &[
+    ContractField::required("schema_version", FieldKind::ExactString(crate::binary_debug_map::RECEIPT_SCHEMA)),
+    ContractField::required("profile_id", FieldKind::ExactString(crate::binary_debug_map::PROFILE_ID)),
+    ContractField::required("profile_identity", FieldKind::NonEmptyString),
+    ContractField::required("registry_identity", FieldKind::NonEmptyString),
+    ContractField::required("object_format", FieldKind::ExactString("elf")),
+    ContractField::required("architecture", FieldKind::NonEmptyString),
+    ContractField::required("debug_format", FieldKind::ExactString("dwarf")),
+    ContractField::required("binary_identity", FieldKind::NonEmptyString),
+    ContractField::optional("debug_companion", FieldKind::Dyn),
+    ContractField::optional_string("build_identity"),
+    ContractField::required("debug_source", FieldKind::NonEmptyString),
+    ContractField::optional_string("function_address_identity"),
+    ContractField::optional_string("requirement_refs_identity"),
+    ContractField::optional_string("requirement_registry_identity"),
+    ContractField::required("source_roots", FieldKind::DynArray),
+    ContractField::required("limits", FieldKind::Dyn),
+    ContractField::required("rows", FieldKind::DynArray),
+    ContractField::required("excluded_rows", FieldKind::Number),
+    ContractField::required("findings", FieldKind::DynArray),
+    ContractField::required("truncation", FieldKind::Dyn),
+    ContractField::required("verification_role", FieldKind::ExactString(crate::binary_debug_map::RECORDED_ONLY_ROLE)),
+    ContractField::required("non_claims", FieldKind::StringArray),
+];
+
 static CHAOSCONTROL_PROOF_STYLE_INPUT_FIELDS: &[ContractField] = &[
     ContractField::required("schema_version", FieldKind::ExactString(CHAOSCONTROL_PROOF_STYLE_INPUT_SCHEMA_VERSION)),
     ContractField::required("consumer_repo", FieldKind::NonEmptyString),
@@ -279,6 +309,7 @@ static EVIDENCE_RAIL_RECEIPT_FIELDS: &[ContractField] = &[
     },
     ContractField::required("workspace_scope", FieldKind::NonEmptyString),
     ContractField::optional_string("config_path"),
+    ContractField::optional("config_identity", FieldKind::String),
     ContractField::optional_string("baseline_identity"),
     ContractField::optional_string("lockfile_identity"),
     ContractField {
@@ -287,10 +318,12 @@ static EVIDENCE_RAIL_RECEIPT_FIELDS: &[ContractField] = &[
         default: None,
     },
     ContractField::required("status", FieldKind::NonEmptyString),
+    ContractField::required("finding_counts", FieldKind::NumberRecord),
     ContractField::required("bounded_log_identity", FieldKind::NonEmptyString),
     ContractField::required("imported_input_identity", FieldKind::NonEmptyString),
     ContractField::optional_string("advisory_database_update"),
     ContractField::optional_string("profile"),
+    ContractField::optional("tool_exit_code", FieldKind::Number),
     ContractField {
         name: "non_claims",
         kind: FieldKind::StringArray,
@@ -301,6 +334,7 @@ static EVIDENCE_RAIL_RECEIPT_FIELDS: &[ContractField] = &[
         kind: FieldKind::StringArray,
         default: Some(EMPTY_ARRAY_DEFAULT),
     },
+    ContractField::required("findings", FieldKind::DynArray),
     ContractField {
         name: "parent_artifacts",
         kind: FieldKind::StringArray,
@@ -311,11 +345,17 @@ static EVIDENCE_RAIL_RECEIPT_FIELDS: &[ContractField] = &[
         kind: FieldKind::StringArray,
         default: Some(EMPTY_ARRAY_DEFAULT),
     },
+    ContractField::optional("clippy_restrictions", FieldKind::Dyn),
+    ContractField::optional("ast_grep", FieldKind::Dyn),
+    ContractField::optional("wasm_artifact", FieldKind::Dyn),
+    ContractField::optional("charon_semantic", FieldKind::Dyn),
     ContractField {
         name: "hegel_property",
         kind: FieldKind::Dyn,
         default: Some(EMPTY_RECORD_DEFAULT),
     },
+    ContractField::optional("z4_solver", FieldKind::Dyn),
+    ContractField::optional("verifier_fixtures", FieldKind::Dyn),
     ContractField {
         name: "cargo_fuzz",
         kind: FieldKind::Dyn,
@@ -341,6 +381,8 @@ static EVIDENCE_RAIL_RECEIPT_FIELDS: &[ContractField] = &[
         kind: FieldKind::Dyn,
         default: Some(EMPTY_RECORD_DEFAULT),
     },
+    ContractField::optional("dependency_trust", FieldKind::Dyn),
+    ContractField::optional("binary_debug_map", FieldKind::Dyn),
 ];
 
 #[derive(Clone, Copy)]
@@ -349,9 +391,12 @@ enum FieldKind {
     ExactString(&'static str),
     NonEmptyString,
     String,
+    NullableString,
     Number,
+    NumberRecord,
     EvidenceTier,
     StringArray,
+    DynArray,
     Dyn,
 }
 
@@ -383,12 +428,16 @@ pub fn render_generated_contracts() -> String {
         coverage_details_schema(),
         mutation_details_schema(),
         benchmark_details_schema(),
+        binary_debug_map_details_schema(),
         evidence_rail_receipt_schema(),
         chaoscontrol_proof_style_input_schema(),
     ];
     let mut rendered = String::new();
     rendered.push_str("# @generated by cargo-octet/src/evidence_contracts.rs; do not edit by hand.\n");
     rendered.push_str("let NonEmptyString = std.contract.from_predicate (fun value => std.is_string value && std.string.length value > 0) in\n");
+    rendered.push_str(
+        "let NullableString = std.contract.from_predicate (fun value => value == null || std.is_string value) in\n",
+    );
     rendered.push_str(
         "let EvidenceTier = std.contract.from_predicate (fun value => std.is_string value && std.array.elem value [\n",
     );
@@ -489,6 +538,13 @@ fn benchmark_details_schema() -> ContractSchema {
     }
 }
 
+fn binary_debug_map_details_schema() -> ContractSchema {
+    ContractSchema {
+        name: BINARY_DEBUG_MAP_DETAILS_CONTRACT_NAME,
+        fields: BINARY_DEBUG_MAP_DETAILS_FIELDS,
+    }
+}
+
 fn evidence_rail_receipt_schema() -> ContractSchema {
     ContractSchema {
         name: EVIDENCE_RAIL_RECEIPT_CONTRACT_NAME,
@@ -519,6 +575,22 @@ impl ContractField {
             default: Some(OPTIONAL_STRING_DEFAULT),
         }
     }
+
+    const fn nullable_string(name: &'static str) -> Self {
+        Self {
+            name,
+            kind: FieldKind::NullableString,
+            default: Some(NULL_DEFAULT),
+        }
+    }
+
+    const fn optional(name: &'static str, kind: FieldKind) -> Self {
+        Self {
+            name,
+            kind,
+            default: Some(OPTIONAL_FIELD_MARKER),
+        }
+    }
 }
 
 fn render_schema(rendered: &mut String, schema: &ContractSchema) {
@@ -536,6 +608,10 @@ fn render_default(value: &str) -> String {
         " | default = []".to_owned()
     } else if value == EMPTY_RECORD_DEFAULT {
         " | default = {}".to_owned()
+    } else if value == NULL_DEFAULT {
+        " | default = null".to_owned()
+    } else if value == OPTIONAL_FIELD_MARKER {
+        " | optional".to_owned()
     } else {
         format!(" | default = {value:?}")
     }
@@ -549,9 +625,12 @@ fn render_field_kind(kind: FieldKind) -> String {
         }
         FieldKind::NonEmptyString => "NonEmptyString".to_owned(),
         FieldKind::String => "String".to_owned(),
+        FieldKind::NullableString => "NullableString".to_owned(),
         FieldKind::Number => "Number".to_owned(),
+        FieldKind::NumberRecord => "{ _ | Number }".to_owned(),
         FieldKind::EvidenceTier => "EvidenceTier".to_owned(),
         FieldKind::StringArray => "Array String".to_owned(),
+        FieldKind::DynArray => "Array Dyn".to_owned(),
         FieldKind::Dyn => "Dyn".to_owned(),
     }
 }
@@ -665,6 +744,7 @@ mod tests {
 
     const VALID_FIXTURES: &[&str] = &[
         "standards/evidence/fixtures/valid/finding_v2.ncl",
+        "standards/evidence/fixtures/valid/finding_v2_null_suggestion.ncl",
         "standards/evidence/fixtures/valid/provenance_record_v1.ncl",
         "standards/evidence/fixtures/valid/hegel_property_details_v1.ncl",
         "standards/evidence/fixtures/valid/hegel_hardened_details_v1.ncl",
@@ -673,12 +753,14 @@ mod tests {
         "standards/evidence/fixtures/valid/sarif_import_details_v1.ncl",
         "standards/evidence/fixtures/valid/coverage_baseline_details_v1.ncl",
         "standards/evidence/fixtures/valid/cargo_mutants_details_v1.ncl",
+        "standards/evidence/fixtures/valid/binary_debug_map_details_v1.ncl",
         "standards/evidence/fixtures/valid/evidence_rail_receipt_v1.ncl",
         "standards/evidence/fixtures/valid/chaoscontrol_proof_style_input_v1.ncl",
     ];
     const INVALID_FIXTURES: &[&str] = &[
         "standards/evidence/fixtures/invalid/finding_missing_lint.ncl",
         "standards/evidence/fixtures/invalid/finding_wrong_type.ncl",
+        "standards/evidence/fixtures/invalid/finding_suggestion_wrong_type.ncl",
         "standards/evidence/fixtures/invalid/provenance_bad_schema.ncl",
         "standards/evidence/fixtures/invalid/provenance_bad_tier.ncl",
         "standards/evidence/fixtures/invalid/hegel_property_missing_property_id.ncl",
@@ -688,7 +770,9 @@ mod tests {
         "standards/evidence/fixtures/invalid/sarif_import_bad_version.ncl",
         "standards/evidence/fixtures/invalid/coverage_baseline_bad_profile.ncl",
         "standards/evidence/fixtures/invalid/cargo_mutants_bad_profile.ncl",
+        "standards/evidence/fixtures/invalid/binary_debug_map_missing_non_claims.ncl",
         "standards/evidence/fixtures/invalid/evidence_rail_receipt_missing_non_claims.ncl",
+        "standards/evidence/fixtures/invalid/evidence_rail_receipt_missing_finding_counts.ncl",
         "standards/evidence/fixtures/invalid/chaoscontrol_missing_profile.ncl",
         "standards/evidence/fixtures/invalid/chaoscontrol_missing_focused_crates.ncl",
     ];
@@ -797,6 +881,264 @@ mod tests {
                 String::from_utf8_lossy(&output.stdout)
             );
         }
+    }
+
+    #[test]
+    fn emitted_findings_satisfy_generated_finding_contract() {
+        let without_suggestion = emitted_finding(None, None);
+        let with_suggestion = emitted_finding(Some("value.expect(\"reason\")"), Some("MachineApplicable"));
+        let rendered = output::render_json_lines(&[without_suggestion, with_suggestion]).expect("render findings");
+        let records: Vec<serde_json::Value> =
+            rendered.lines().map(|line| serde_json::from_str(line).expect("parse emitted finding")).collect();
+
+        for record in &records {
+            assert_eq!(wire_keys(record), contract_field_names(FINDING_FIELDS), "FindingV2 drifted from Finding");
+        }
+        assert_records_satisfy_contract(FINDING_CONTRACT_NAME, &records);
+    }
+
+    #[test]
+    fn emitted_rail_receipts_satisfy_generated_receipt_contract() {
+        let mut audit = rail_receipt(
+            evidence_rails::EvidenceRailKind::DependencyAudit,
+            include_str!("../tests/fixtures/evidence-rails/dependency-audit-denied.json"),
+            None,
+            None,
+        );
+        audit.config_identity = Some("b3:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_owned());
+        assert_eq!(
+            receipt_wire_fields(&audit),
+            contract_field_names(EVIDENCE_RAIL_RECEIPT_FIELDS),
+            "EvidenceRailReceiptV1 drifted from EvidenceRailReceipt"
+        );
+        let records = [
+            emitted_receipt_record(&audit),
+            emitted_receipt_record(&rail_receipt(
+                evidence_rails::EvidenceRailKind::ClippyCoReporting,
+                include_str!("../tests/fixtures/evidence-rails/clippy-warning.jsonl"),
+                None,
+                None,
+            )),
+            emitted_receipt_record(&rail_receipt(
+                evidence_rails::EvidenceRailKind::KaniModelCheck,
+                include_str!("../tests/fixtures/evidence-rails/kani-model-check-contract.json"),
+                None,
+                None,
+            )),
+            emitted_receipt_record(&rail_receipt(
+                evidence_rails::EvidenceRailKind::HegelProperty,
+                include_str!("../tests/fixtures/evidence-rails/hegel-property-passed.json"),
+                Some("fast"),
+                Some("cargo test hegel_property"),
+            )),
+            emitted_receipt_record(&rail_receipt(
+                evidence_rails::EvidenceRailKind::BinaryDebugMap,
+                include_str!("../tests/fixtures/evidence-rails/binary-debug-map-envelope.json"),
+                Some(crate::binary_debug_map::PROFILE_ID),
+                None,
+            )),
+            emitted_receipt_record(&rail_receipt(
+                evidence_rails::EvidenceRailKind::Z4Solver,
+                include_str!("../tests/fixtures/evidence-rails/z4-solver-sat-diagnostic.json"),
+                Some("bounded-diagnostic"),
+                Some("z4 solve --json query.smt2"),
+            )),
+            emitted_receipt_record(&rail_receipt(
+                evidence_rails::EvidenceRailKind::VerifierFixture,
+                include_str!("../tests/fixtures/evidence-rails/verifier-fixture-positive.json"),
+                Some("regression-fixtures"),
+                Some("cargo test verifier_fixture_normalization"),
+            )),
+        ];
+
+        let emitted_keys: std::collections::BTreeSet<String> = records.iter().flat_map(wire_keys).collect();
+        for key in [
+            "finding_counts",
+            "findings",
+            "config_identity",
+            "tool_exit_code",
+            "z4_solver",
+            "verifier_fixtures",
+        ] {
+            assert!(emitted_keys.contains(key), "sampled receipts never emitted `{key}`");
+        }
+        assert_records_satisfy_contract(EVIDENCE_RAIL_RECEIPT_CONTRACT_NAME, &records);
+    }
+
+    fn emitted_finding(suggestion: Option<&str>, applicability: Option<&str>) -> output::Finding {
+        output::Finding {
+            version: output::finding_version(),
+            index: "F1".to_owned(),
+            stable_id: "b3:stable".to_owned(),
+            semantic_id: "b3:semantic".to_owned(),
+            identity_status: "computed".to_owned(),
+            normalized_snippet_hash: "b3:snippet".to_owned(),
+            config_hash: "b3:config".to_owned(),
+            cache_status: "disabled".to_owned(),
+            lint: "no_unwrap".to_owned(),
+            group: "tigerstyle::safety".to_owned(),
+            severity: "warning".to_owned(),
+            file: "src/lib.rs".to_owned(),
+            line: 10,
+            column: 5,
+            message: "use of `.unwrap()`".to_owned(),
+            suggestion: suggestion.map(str::to_owned),
+            applicability: applicability.map(str::to_owned),
+            principle: "Error Handling".to_owned(),
+            effect_family: "failure".to_owned(),
+            evidence_tier: evidence::EvidenceTier::StaticLint,
+            crate_name: "consumer".to_owned(),
+        }
+    }
+
+    fn rail_receipt(
+        rail: evidence_rails::EvidenceRailKind,
+        import_text: &str,
+        profile: Option<&str>,
+        requested_command: Option<&str>,
+    ) -> evidence_rails::EvidenceRailReceipt {
+        evidence_rails::evaluate(evidence_rails::EvaluationInput {
+            rail,
+            mode: "import",
+            import_text,
+            workspace_scope: "fixture-workspace",
+            config_path: Some("deny.toml"),
+            baseline_identity: None,
+            lockfile_identity: None,
+            locked: true,
+            advisory_updated_by_prior_step: false,
+            profile,
+            requested_command,
+            parent_artifacts: Vec::new(),
+            tool_exit_code: Some(1),
+        })
+    }
+
+    fn emitted_receipt_record(receipt: &evidence_rails::EvidenceRailReceipt) -> serde_json::Value {
+        let rendered = evidence_rails::render_receipt_json(receipt).expect("render receipt");
+        serde_json::from_str(&rendered).expect("parse emitted receipt")
+    }
+
+    /// Lists every wire field of `EvidenceRailReceipt`, including fields skipped when unset.
+    /// The exhaustive pattern stops compiling when the DTO gains a field, forcing a contract
+    /// update.
+    fn receipt_wire_fields(receipt: &evidence_rails::EvidenceRailReceipt) -> std::collections::BTreeSet<String> {
+        let evidence_rails::EvidenceRailReceipt {
+            schema_version: _,
+            rail_id: _,
+            checker_id: _,
+            mode: _,
+            command_argv: _,
+            workspace_scope: _,
+            config_path: _,
+            config_identity: _,
+            baseline_identity: _,
+            lockfile_identity: _,
+            checked_rule_families: _,
+            status: _,
+            finding_counts: _,
+            bounded_log_identity: _,
+            imported_input_identity: _,
+            advisory_database_update: _,
+            profile: _,
+            tool_exit_code: _,
+            non_claims: _,
+            diagnostics: _,
+            findings: _,
+            parent_artifacts: _,
+            property_classes: _,
+            clippy_restrictions: _,
+            ast_grep: _,
+            wasm_artifact: _,
+            charon_semantic: _,
+            hegel_property: _,
+            z4_solver: _,
+            verifier_fixtures: _,
+            cargo_fuzz: _,
+            sarif_import: _,
+            coverage_baseline: _,
+            cargo_mutants: _,
+            benchmark_evidence: _,
+            dependency_trust: _,
+            binary_debug_map: _,
+        } = receipt;
+        [
+            "schema_version",
+            "rail_id",
+            "checker_id",
+            "mode",
+            "command_argv",
+            "workspace_scope",
+            "config_path",
+            "config_identity",
+            "baseline_identity",
+            "lockfile_identity",
+            "checked_rule_families",
+            "status",
+            "finding_counts",
+            "bounded_log_identity",
+            "imported_input_identity",
+            "advisory_database_update",
+            "profile",
+            "tool_exit_code",
+            "non_claims",
+            "diagnostics",
+            "findings",
+            "parent_artifacts",
+            "property_classes",
+            "clippy_restrictions",
+            "ast_grep",
+            "wasm_artifact",
+            "charon_semantic",
+            "hegel_property",
+            "z4_solver",
+            "verifier_fixtures",
+            "cargo_fuzz",
+            "sarif_import",
+            "coverage_baseline",
+            "cargo_mutants",
+            "benchmark_evidence",
+            "dependency_trust",
+            "binary_debug_map",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect()
+    }
+
+    fn wire_keys(record: &serde_json::Value) -> std::collections::BTreeSet<String> {
+        record.as_object().expect("emitted record is a JSON object").keys().cloned().collect()
+    }
+
+    fn contract_field_names(fields: &[ContractField]) -> std::collections::BTreeSet<String> {
+        fields.iter().map(|field| field.name.to_owned()).collect()
+    }
+
+    /// Applies the checked-in generated contract to emitted JSON records with `nickel export`.
+    fn assert_records_satisfy_contract(contract_name: &str, records: &[serde_json::Value]) {
+        let scratch = tempfile::tempdir().expect("create nickel scratch directory");
+        let contract_path = repo_root().join(generated_contract_path());
+        let mut program = format!("let contracts = import {:?} in\n[\n", contract_path.display().to_string());
+        for (index, record) in records.iter().enumerate() {
+            let record_name = format!("record-{index}.json");
+            std::fs::write(scratch.path().join(&record_name), record.to_string()).expect("write emitted record");
+            writeln!(program, "  (import {record_name:?}) | contracts.{contract_name},").expect("render record check");
+        }
+        program.push_str("]\n");
+        let program_path = scratch.path().join("check.ncl");
+        std::fs::write(&program_path, program).expect("write nickel program");
+
+        let output = Command::new("nickel")
+            .args(["export", "--format", "json"])
+            .arg(&program_path)
+            .output()
+            .unwrap_or_else(|error| panic!("run nickel for {contract_name}: {error}"));
+
+        assert!(
+            output.status.success(),
+            "emitted records broke {contract_name}: stderr={}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     fn chaoscontrol_contract_fixture() -> ChaosControlProofStyleInputContract {

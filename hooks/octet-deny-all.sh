@@ -3,7 +3,9 @@ set -eu
 
 # Reusable pre-commit entry point for strict Octet/Tiger Style adoption.
 # It runs from the consumer repository root, derives the pinned hook checkout,
-# and asks the Dylint driver to treat every Octet lint as deny.
+# and asks the Dylint driver to treat every Octet lint as deny. Command-line
+# lint levels win over consumer `[octet.lint_levels]`, so `dylint.toml` cannot
+# weaken these denies.
 
 script_path=$0
 case "$script_path" in
@@ -49,6 +51,8 @@ deny_lint_flags='
 -D clone_then_borrow
 -D allocation_in_loop
 -D too_many_parameters
+-D raw_bool_parameter
+-D raw_bool_parameter_suppression
 -D fat_trait
 -D concrete_construction_in_core
 -D type_accumulation
@@ -92,6 +96,9 @@ deny_lint_flags='
 -D no_todo
 -D unjustified_no_todo_allow
 -D no_recursion
+-D discarded_sync_result
+-D flush_only_durability
+-D retry_sync_after_error
 '
 deny_lint_flags=$(printf '%s\n' "$deny_lint_flags" | tr '\n' ' ')
 

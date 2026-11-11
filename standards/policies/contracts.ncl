@@ -148,6 +148,7 @@ let ReceiptBindingContract =
   OneOf [
     "none",
     "blake3-command-and-source",
+    "recorded-only",
   ]
 in
 
@@ -295,6 +296,7 @@ let ProofVerifierModeContract =
     "",
     "fixture",
     "production",
+    "recorded",
   ]
 in
 let ProofRailContract = {
@@ -416,13 +418,10 @@ let capability_mechanism_valid = fun mechanism =>
     std.array.length mechanism.capability_scope_classes > 0
     && std.array.length mechanism.capability_families > 0
     && std.array.length mechanism.core_source_scopes > 0
-    && (
-      std.array.length mechanism.capability_deterministic_handlers == 0
-      || (
-        std.array.length mechanism.capability_handler_artifacts > 0
-        && std.array.length mechanism.capability_handler_replay_commands > 0
-      )
-    )
+    && std.array.length mechanism.capability_handler_artifacts
+      == std.array.length mechanism.capability_deterministic_handlers
+    && std.array.length mechanism.capability_handler_replay_commands
+      == std.array.length mechanism.capability_deterministic_handlers
   )
 in
 let mechanism_cross_fields_valid = fun mechanism =>

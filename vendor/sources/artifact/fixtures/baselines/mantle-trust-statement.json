@@ -1,0 +1,1 @@
+{"manifest_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","metadata_manifest_digest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","schema":"mantle-oci-registry-trust-statement-v1","schema_version":1,"signature_suite":"ed25519-detached-v1","trust_domain":"onix-kernel-bundle"}

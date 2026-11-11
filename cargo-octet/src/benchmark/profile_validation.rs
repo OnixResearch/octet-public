@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
 
-use super::*;
+use super::PROFILE_ID;
+use super::Profile;
+use super::resources;
 
 const SUPPORTED_MODES: [&str; 4] = ["cold", "warm", "no_change", "incremental"];
 const REQUIRED_METRICS: [&str; 2] = ["wall_duration_ns", "output_bytes"];

@@ -1,6 +1,7 @@
 let contracts = import "../../contracts.ncl" in
 {
   schema_version = "octet-strict-rust-profiles/v1",
+  boolean_api_policy = (import "../../profiles.ncl").boolean_api_policy,
   profiles = [{
     profile_id = "empty-non-claims",
     summary = "Invalid empty non-claim fixture.",

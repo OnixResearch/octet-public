@@ -72,6 +72,15 @@ r[octet.crate_boundary_config.checks.custom_layout]
 - THEN checks MUST use the custom declarations without Octet path assumptions
 - AND valid custom layouts MUST not receive fallback-layout findings
 
+#### Scenario: Every declared core and shell crate is checked
+
+r[octet.crate_boundary_config.checks.every_crate]
+
+- GIVEN an active project policy declares more than one core or shell crate
+- WHEN architecture evaluation runs
+- THEN the `no_std`, forbidden-dependency, and external-domain checks MUST apply to every declared core crate
+- AND the shell `no_std` and inward-dependency checks MUST apply to every declared shell crate, accepting a dependency on any declared core crate
+
 #### Scenario: Boundary config is receipt-covered
 
 r[octet.crate_boundary_config.artifact]

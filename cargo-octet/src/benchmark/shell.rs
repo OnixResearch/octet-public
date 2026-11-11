@@ -1,11 +1,16 @@
 // r[impl octet.benchmark_evidence.performance_protocol]
 // r[impl octet.benchmark_evidence.resource_observation]
+use super::INPUT_SCHEMA;
+use super::Profile;
+use super::RunSet;
+use super::Sample;
+use super::WorkloadProfile;
+use super::request;
 pub(super) use super::resource_shell::read_allocation_file;
 pub(super) use super::resource_shell::scan_llvm_file;
 pub use super::runtime::RuntimeTools;
 use super::runtime::environment_observation;
 pub use super::runtime::production_tools;
-use super::*;
 
 const CACHE_ROOT: &str = ".octet/benchmark-cache";
 const HOME_ROOT: &str = ".octet/benchmark-home";
@@ -28,14 +33,14 @@ struct ObservedExecution {
 }
 
 pub fn run(workspace_root: &std::path::Path, profile: &Profile, baseline: RunSet) -> Result<RunObservation, String> {
-    run_with(workspace_root, profile, baseline, production_tools()?)
+    run_with(workspace_root, profile, baseline, &production_tools()?)
 }
 
 pub fn run_with(
     workspace_root: &std::path::Path,
     profile: &Profile,
     baseline: RunSet,
-    tools: RuntimeTools,
+    tools: &RuntimeTools,
 ) -> Result<RunObservation, String> {
     let workload = profile
         .workloads
@@ -47,7 +52,7 @@ pub fn run_with(
     prepare_directories(&workspace_root, workload)?;
     let mut retained_logs = Vec::new();
     if workload.mode == "warm" {
-        let warmup = execute_once(&workspace_root, profile, workload, &tools, 0)?;
+        let warmup = execute_once(&workspace_root, profile, workload, tools, 0)?;
         retained_logs.push(warmup.stdout);
         retained_logs.push(warmup.stderr);
     }
@@ -57,7 +62,7 @@ pub fn run_with(
         if workload.mode == "cold" {
             reset_cache(&workspace_root, workload)?;
         }
-        let observed = execute_once(&workspace_root, profile, workload, &tools, sample_index)?;
+        let observed = execute_once(&workspace_root, profile, workload, tools, sample_index)?;
         if observed.sample.outcome != "succeeded" {
             exit_code = match observed.exit_code {
                 Some(code) => code,
@@ -90,7 +95,7 @@ pub fn run_with(
         command_argv: workload.command_argv.clone(),
         mode: workload.mode.clone(),
         source_state_identity: workload.source_state_identity.clone(),
-        environment: environment_observation(profile, workload, &tools),
+        environment: environment_observation(profile, workload, tools),
         samples,
     };
     Ok(RunObservation {

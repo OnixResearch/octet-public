@@ -25,9 +25,11 @@ The skill MUST distinguish between:
 ### Requirement: Multiple Locks Without Documented Ordering
 
 The lint MUST be able to warn on struct definitions containing 2 or more fields
-of type `Mutex<_>`, `RwLock<_>`, `tokio::sync::Mutex<_>`, or
-`tokio::sync::RwLock<_>` when there is no comment in the struct body
-documenting lock acquisition order.
+of type `Mutex<_>`, `RwLock<_>`, `tokio::sync::Mutex<_>`,
+`tokio::sync::RwLock<_>`, `parking_lot::Mutex<_>`, or `parking_lot::RwLock<_>`
+when there is no comment in the struct body documenting lock acquisition order.
+`parking_lot` locks MUST be recognized through their `lock_api` definitions,
+and a lock held behind `Arc<_>` MUST count as a lock field.
 
 The lint MUST accept a comment containing "lock order" or "ordering"
 anywhere in the struct definition.
@@ -68,6 +70,13 @@ deadlocks that only appear under production concurrency.
 - GIVEN a struct with exactly one `Mutex` field
 - WHEN the lint runs
 - THEN it does NOT fire (no ordering concern)
+
+#### Scenario: Shared and parking_lot locks
+
+- GIVEN a struct with `count: Arc<parking_lot::Mutex<u64>>` and
+  `state: parking_lot::RwLock<u32>` and no ordering comment
+- WHEN the lint runs
+- THEN it warns that the struct has 2 lock fields without documented ordering
 
 ### Requirement: Public Tiger Style Concurrency And Distributed-State Review Guide
 

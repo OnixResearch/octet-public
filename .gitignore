@@ -26,3 +26,12 @@ data/
 /.agent
 /.pi
 .pi/
+# Property-test example databases written by Hegel test runs
+.hegel/
+
+# Local credentials and machine-specific agent permissions
+/.env
+/.env.*
+!/.env.example
+!/.env.*.example
+/.claude/settings.local.json

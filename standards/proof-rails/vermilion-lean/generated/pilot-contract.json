@@ -1,0 +1,74 @@
+{
+  "contract_id": "octet.bounded_increment.checked/v1",
+  "non_claims": [
+    "does not prove Vermilion, Verus, or Lean soundness",
+    "does not prove that any route refines the executable Rust function",
+    "does not prove whole-program correctness",
+    "does not prove semantic equivalence",
+    "does not establish release eligibility"
+  ],
+  "observable_failures": [
+    "None at value == u64::MAX"
+  ],
+  "overflow_behavior": "checked",
+  "postcondition": "result == Some(value + 1)",
+  "precondition": "value < u64::MAX",
+  "result_type": "Option<u64>",
+  "revision": "2026-11-09",
+  "routes": [
+    {
+      "backend": "verus",
+      "claim_scope": "u64-checked-contract-model",
+      "modeled_library_contracts": [],
+      "refinement_bridge": "open: the production Verus proof target mirrors the executable body and checks the u64 contract, but no formal plain-Rust-to-model refinement theorem is checked",
+      "refinement_bridge_id": "pilot.verus.plain-rust-refinement",
+      "required_obligations": [
+        {
+          "kind": "overflow",
+          "obligation_id": "pilot.increment.overflow-check"
+        },
+        {
+          "kind": "logical-vc",
+          "obligation_id": "pilot.increment.value"
+        }
+      ]
+    },
+    {
+      "backend": "vermilion-lean",
+      "claim_scope": "per-obligation-lean-kernel-theorem-over-pinned-verus-frontend",
+      "modeled_library_contracts": [],
+      "refinement_bridge": "open: the embedding maps u64 to Lean Int with range facts; the bridge from the generated obligation to this contract statement is not yet checked",
+      "refinement_bridge_id": "pilot.increment.refinement-to-spec",
+      "required_obligations": [
+        {
+          "kind": "overflow",
+          "obligation_id": "pilot.increment.overflow-check"
+        },
+        {
+          "kind": "logical-vc",
+          "obligation_id": "pilot.increment.value"
+        }
+      ]
+    },
+    {
+      "backend": "aeneas-lean",
+      "claim_scope": "named-theorem-over-generated-model",
+      "modeled_library_contracts": [],
+      "refinement_bridge": "open: the shipped Aeneas external fixture models a u32 increment, not this u64 checked contract",
+      "refinement_bridge_id": "pilot.aeneas.u32-to-u64-checked",
+      "required_obligations": [
+        {
+          "kind": "logical-vc",
+          "obligation_id": "aeneas.fixture.increment-model"
+        }
+      ]
+    }
+  ],
+  "schema_version": "octet-proof-semantic-contract/v1",
+  "statement": "For value < u64::MAX, increment_checked(value) == Some(value + 1); at u64::MAX it returns None. No nat reinterpretation is implied.",
+  "statement_blake3": "b3:af259da355a01524f6030f09ee196f20cb675991e4421204b63093fd017d38c4",
+  "subject_blake3": "b3:dc2836fb70d645fb0d518a05f3c245756f58cb82989c33570b73283cd0ff1098",
+  "subject_path": "standards/proof-rails/vermilion-lean/pilot/src/lib.rs",
+  "termination_scope": "single-call, no loops",
+  "width_bits": 64
+}

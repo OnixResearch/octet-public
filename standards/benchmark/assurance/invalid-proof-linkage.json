@@ -1,0 +1,16 @@
+{
+  "schema_version": "octet-benchmark-assurance-fixture/v1",
+  "fixture_id": "invalid-proof-linkage",
+  "claim": "The proof artifact is linked to the checked source bytes.",
+  "checked_policy_identity": "b3:ca0e8400a3ef7e5abf36104b36576fef198c34e0f79ebb0ce0d0f291c8a967b0",
+  "evidence_identity": "b3:b3bf68b1414c161e1384c9c5e45fb1a27c15a8556465c203943c8e7a7c8f6e98",
+  "execution": {
+    "status": "succeeded",
+    "command_identity": "b3:bdc406f2b11a2ac584ecadea4e462adec3015029115092bbcbeee039db515f0d"
+  },
+  "proof": {
+    "source_identity": "b3:fc8f186699f8a17c7a800aa8cbd80a619eccd9cf26bbcbe2d36e37fef632ee31",
+    "claimed_source_identity": "b3:43834fbad41551fbaf363352b5e9ac31c2498ad621b4b324ec673dd7a58abfc8",
+    "source_anchor": "crates/core-api/src/lib.rs:Port"
+  }
+}

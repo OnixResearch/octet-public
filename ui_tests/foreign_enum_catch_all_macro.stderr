@@ -14,8 +14,7 @@ LL |     generated_match!(ordering)
    = note: this warning originates in the macro `generated_match` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: expand wildcard into explicit variant arms
    |
-LL ~             std::cmp::Ordering::Less => todo!("handle Less"),
-LL +             std::cmp::Ordering::Equal => todo!("handle Equal"),
+LL ~             std::cmp::Ordering::Equal => todo!("handle Equal"),
 LL ~             std::cmp::Ordering::Greater => todo!("handle Greater"),
    |
 

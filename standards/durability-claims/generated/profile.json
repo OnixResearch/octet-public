@@ -1,0 +1,42 @@
+{
+  "boundaries": [
+    {
+      "adapter_observations": [],
+      "boundary_functions": [
+        "crate::wal::checkpoint",
+        "crate::wal::checkpoint_batch"
+      ],
+      "boundary_id": "wal-checkpoint",
+      "commit_surfaces": [
+        "WriteTransaction::commit"
+      ],
+      "required_observation": "synchronization",
+      "source_scope": "crates/store/src/",
+      "uncertain_outcome_types": [
+        "DurabilityOutcome",
+        "StoreError"
+      ]
+    },
+    {
+      "adapter_observations": [
+        "durable_file_publication::Publication::commit"
+      ],
+      "boundary_functions": [
+        "crate::publication::publish"
+      ],
+      "boundary_id": "published-artifact",
+      "commit_surfaces": [],
+      "required_observation": "adapter-observation",
+      "source_scope": "crates/publication/src/",
+      "uncertain_outcome_types": [
+        "PublicationOutcome"
+      ]
+    }
+  ],
+  "non_claims": [
+    "This profile declares analyzed source scopes and observation classes only; it does not prove any filesystem, device, or hardware durability property.",
+    "Passing the source checks does not prove that a synchronization call, configured commit, or adapter observation succeeded."
+  ],
+  "profile_id": "octet-durability-claims-example",
+  "schema_version": "octet-durability-claims-profile/v1"
+}

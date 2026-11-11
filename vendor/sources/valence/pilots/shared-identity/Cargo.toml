@@ -1,0 +1,17 @@
+[package]
+name = "valence-shared-identity-pilot"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+# r[impl valence.strict_rust_admission.consumer_scope.production]
+[lib]
+path = "../../crates/valence-core/src/shared_identity.rs"
+
+[dependencies]
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true

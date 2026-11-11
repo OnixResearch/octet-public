@@ -1,0 +1,4 @@
+{
+  value | Number,
+  label | String,
+}

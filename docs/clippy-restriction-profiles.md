@@ -11,10 +11,17 @@ Do **not** enable `clippy::restriction` as a group. Clippy itself recommends che
 | `production-safety` | deny | General owned production targets | `dbg_macro`, `mem_forget`, `undocumented_unsafe_blocks`, `multiple_unsafe_ops_per_block` |
 | `canonical-determinism` | deny | Canonical artifacts, evidence codecs, protocol/file-format workspaces | production set plus `host_endian_bytes`, `iter_over_hash_type` |
 | `shell-boundary-inventory` | warn | Gradual functional-core/imperative-shell cleanup | `exit` |
+| `boolean-api-modeling` | warn | Independent boolean-parameter inventory alongside Octet's strict API check | `fn_params_excessive_bools` |
 
 The source of truth is [`standards/clippy-restrictions/profiles.ncl`](../standards/clippy-restrictions/profiles.ncl). Runtime Rust consumes the checked-in generated JSON at `standards/clippy-restrictions/generated/profiles.json`. Octet's own flake `clippy` check derives and denies the `production-safety` flags from that generated catalog, so the policy owner dogfoods the general profile without duplicating its lint list.
 
 Octet's strict profiles already cover unwrap, expect-like failure paths, panic/TODO macros, unchecked arithmetic and narrowing, platform-dependent casts, deterministic output flows, and suppression governance with more stack-specific semantics. The Clippy catalog intentionally avoids duplicating those checks.
+
+The `boolean-api-modeling` profile is a deliberate co-report, not a replacement
+for [`raw_bool_parameter`](boolean-api-modeling.md). Clippy reports excessive
+boolean parameters independently; Octet also checks a *single* direct `bool`
+on covered public APIs. Keep checker IDs, rule IDs, messages, and finding
+identities distinct even when both tools report the same signature.
 
 ## Run and verify
 
@@ -36,7 +43,7 @@ cargo octet artifact verify \
   --artifact-dir artifacts/clippy-restrictions
 ```
 
-Profiled run mode uses the embedded shipped catalog by default, so downstream workspaces only need `--profile`. `--config PATH` may select another catalog, which must satisfy the same checked schema and bounded lint allowlist. The runner constructs fixed quiet workspace/all-target Clippy JSON argv and rejects `--command` rather than allowing the profile file or operator to inject arbitrary process authority. Unprofiled Clippy run and JSON import remain compatibility surfaces.
+Profiled run mode uses the embedded shipped catalog by default, so downstream workspaces only need `--profile`. `--config PATH` may select another catalog, which must satisfy the same checked schema and bounded lint allowlist. The runner constructs fixed quiet workspace/all-target Clippy JSON argv and rejects `--command` rather than allowing the profile file or operator to inject arbitrary process authority. Unprofiled Clippy run and JSON import remain compatibility surfaces; unprofiled run mode always uses the fixed `cargo clippy --message-format=json` argv and also rejects a non-empty `--command`.
 
 A profiled receipt binds:
 

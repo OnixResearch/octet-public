@@ -1,0 +1,11 @@
+{
+  "conclusion": "success",
+  "vetted_fully": [],
+  "vetted_partially": [],
+  "vetted_with_exemptions": [
+    {
+      "name": "itoa",
+      "version": "1.0.18"
+    }
+  ]
+}

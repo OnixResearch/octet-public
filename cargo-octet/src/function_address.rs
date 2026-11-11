@@ -11,7 +11,9 @@ use crate::output;
 
 pub const FUNCTION_ADDRESS_ARTIFACT_NAME: &str = "function-addresses.json";
 pub const FUNCTION_ADDRESS_DOMAIN: &str = "octet.function-address.v1";
-pub const FUNCTION_ADDRESS_CANONICALIZER: &str = "octet-source-token-function-address-v1";
+// v2 keeps literal contents, including any quoted `//` and the code after it,
+// and drops block comments. v1 addresses are not comparable and fail closed.
+pub const FUNCTION_ADDRESS_CANONICALIZER: &str = "octet-source-token-function-address-v2";
 
 const FUNCTION_ADDRESS_SCHEMA_VERSION: u32 = 1;
 const LINT_FUNCTION_ADDRESS_DUPLICATE_LOCATOR: &str = "function_address_duplicate_locator";
@@ -136,6 +138,57 @@ impl FunctionAddressCheck {
             self.paths.clone()
         }
     }
+
+    /// Rejects function-address scopes that escape the workspace root; see
+    /// [`reject_workspace_escaping_scopes`]. `origin` names where the paths came from, so the
+    /// error points at the flag or config entry the user wrote.
+    pub fn validate_paths(&self, workspace_root: &Path, origin: ScopeOrigin) -> Result<(), String> {
+        reject_workspace_escaping_scopes(workspace_root, &self.paths, origin)
+    }
+}
+
+/// Where a set of source scopes was declared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScopeOrigin {
+    FunctionAddressPathFlag,
+    CoreSourceScopes,
+}
+
+impl ScopeOrigin {
+    fn label(self) -> &'static str {
+        match self {
+            Self::FunctionAddressPathFlag => "`--function-address-path`",
+            Self::CoreSourceScopes => "`core_source_scopes` in `dylint.toml`",
+        }
+    }
+}
+
+/// Rejects scopes that escape the workspace root: a `..` component, an absolute path outside the
+/// root, or a path whose canonical form (after symlinks) leaves the root. Record paths are
+/// workspace-relative, so an escaping scope would emit records that a later baseline comparison
+/// rejects as malformed.
+pub fn reject_workspace_escaping_scopes(
+    workspace_root: &Path,
+    paths: &[PathBuf],
+    origin: ScopeOrigin,
+) -> Result<(), String> {
+    let canonical_root = std::fs::canonicalize(workspace_root)
+        .map_err(|error| format!("canonicalize workspace root {}: {error}", workspace_root.display()))?;
+    for path in paths {
+        let escapes = path.components().any(|component| component == std::path::Component::ParentDir)
+            || (path.is_absolute() && !path.starts_with(workspace_root))
+            || std::fs::canonicalize(workspace_root.join(path))
+                .is_ok_and(|canonical| !canonical.starts_with(&canonical_root));
+        if escapes {
+            return Err(format!(
+                "{} {} must stay within the workspace root {}",
+                origin.label(),
+                path.display(),
+                workspace_root.display()
+            ));
+        }
+    }
+    Ok(())
 }
 
 impl Default for FunctionAddressCheck {
@@ -205,6 +258,7 @@ pub struct FunctionAddressReport {
     pub producer: FunctionAddressProducer,
     pub tool: &'static str,
     pub source_envelopes: Vec<SourceEnvelopeRecord>,
+    pub skipped_directory_links: Vec<String>,
     pub records: Vec<FunctionAddressRecord>,
     pub diagnostic_count: usize,
     pub kamacite_projection: KamaciteProjection,
@@ -213,10 +267,21 @@ pub struct FunctionAddressReport {
     pub non_claims: Vec<&'static str>,
 }
 
+/// A symlinked directory the implicit whole-workspace scope skipped because it resolves outside the
+/// workspace root: `path` is the workspace-relative link and `target` the link text as written.
+/// Only `path` enters the artifact; the target is machine-specific (a Nix `result` link names a
+/// fresh store path after every rebuild), so it is reported to the operator but never recorded.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SkippedDirectoryLinkRecord {
+    pub path: String,
+    pub target: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct FunctionAddressRun {
     pub findings: Vec<output::Finding>,
     pub artifact_json: String,
+    pub skipped_directory_links: Vec<SkippedDirectoryLinkRecord>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -236,9 +301,16 @@ struct BaselineRecord {
 
 #[derive(Debug, Default)]
 struct BaselineIndex {
-    addresses: BTreeMap<String, String>,
+    addresses: BTreeMap<String, BaselineAddress>,
     source_identities: BTreeMap<String, String>,
     issues: Vec<BaselineIssue>,
+}
+
+#[derive(Debug)]
+struct BaselineAddress {
+    path: String,
+    name: String,
+    function_address: String,
 }
 
 #[derive(Debug)]
@@ -262,6 +334,15 @@ struct HandoffIssue {
     message: String,
 }
 
+// Collection walks files, matches baselines, and renders the artifact as one sequential pipeline
+// over shared run state. Callers validate declared scopes with `validate_paths` before Cargo runs,
+// where the error can name the flag or config entry; collection itself still refuses any scope,
+// nested `.rs` symlink, or nested directory symlink inside a declared scope that resolves outside
+// the workspace root, and any record path that is not canonical and workspace-relative. The
+// implicit whole-workspace scope skips escaping directory symlinks, such as a Nix `result` link,
+// without following them, and records each link's workspace-relative path in
+// `skipped_directory_links`.
+#[allow(clippy::too_many_lines)]
 pub fn collect_run(
     check: &FunctionAddressCheck,
     workspace_root: &Path,
@@ -270,18 +351,45 @@ pub fn collect_run(
     if !check.mode.is_enabled() {
         return Ok(None);
     }
+    let canonical_root = std::fs::canonicalize(workspace_root)
+        .map_err(|error| format!("canonicalize workspace root {}: {error}", workspace_root.display()))?;
 
     let mut files = Vec::new();
+    let mut skipped_links = Vec::new();
+    let mut scope_prefixes = Vec::new();
+    let escaping_directories = if check.paths.is_empty() {
+        fingerprint::EscapingDirectoryLinks::Skip
+    } else {
+        fingerprint::EscapingDirectoryLinks::Refuse
+    };
     for path in check.enabled_paths(workspace_root) {
         let absolute = if path.is_absolute() {
             path
         } else {
             workspace_root.join(path)
         };
-        fingerprint::collect_rust_files(&absolute, &mut files)?;
+        fingerprint::collect_contained_rust_files(
+            &absolute,
+            &canonical_root,
+            escaping_directories,
+            &mut files,
+            &mut skipped_links,
+        )?;
+        scope_prefixes.extend(checked_scope_prefix(workspace_root, &absolute));
     }
     files.sort();
     files.dedup();
+    let mut skipped_directory_links = skipped_links
+        .iter()
+        .map(|skipped| {
+            Ok(SkippedDirectoryLinkRecord {
+                path: function_record_path(workspace_root, &skipped.link)?,
+                target: determinism::normalize_path(&skipped.target),
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    skipped_directory_links.sort();
+    skipped_directory_links.dedup();
 
     let baseline = load_baseline(check.baseline.as_deref(), workspace_root)?;
     let mut records = Vec::new();
@@ -303,7 +411,17 @@ pub fn collect_run(
         });
         for span in fingerprint::find_functions(&source) {
             let function_source = function_source_for_span(&source, &span)?;
-            let record = function_address_record(&normalized_path, &source, &source_identity, &span, function_source);
+            let normalized = fingerprint::normalize_tokens(function_source);
+            let marker = function_address_marker(span.marker.as_ref(), &normalized);
+            let record = function_address_record(
+                &normalized_path,
+                &source,
+                &source_identity,
+                &span,
+                function_source,
+                &normalized,
+                marker,
+            );
             let locator = function_locator(&record.path, &record.name);
             if seen_locators.insert(locator.clone(), record.function_address.clone()).is_some() {
                 findings.push(finding_for_record(
@@ -314,13 +432,11 @@ pub fn collect_run(
                     config_hash,
                 ));
             }
-            if let Some(marker_finding) =
-                marker_finding_for_record(&record, span.marker.as_ref(), check.mode, config_hash)
-            {
+            if let Some(marker_finding) = marker_finding_for_record(&record, marker, check.mode, config_hash) {
                 findings.push(marker_finding);
             }
-            if let Some(expected_address) = baseline.addresses.get(&locator) {
-                if expected_address != &record.function_address {
+            if let Some(expected) = baseline.addresses.get(&locator) {
+                if expected.function_address != record.function_address {
                     findings.push(finding_for_record(
                         &record,
                         check.mode,
@@ -340,7 +456,7 @@ pub fn collect_run(
                         config_hash,
                     ));
                 }
-            } else if span.marker.is_none() {
+            } else if marker.is_none() {
                 findings.push(finding_for_record(
                     &record,
                     check.mode,
@@ -361,6 +477,18 @@ pub fn collect_run(
             records.push(record);
         }
     }
+    for (locator, expected) in &baseline.addresses {
+        if !seen_locators.contains_key(locator) && path_in_checked_scope(&expected.path, &scope_prefixes) {
+            let issue = BaselineIssue {
+                lint: LINT_FUNCTION_ADDRESS_STALE,
+                path: expected.path.clone(),
+                name: expected.name.clone(),
+                function_address: canonical_hash_identity(&expected.function_address),
+                message: "reviewed baseline function is no longer present in the checked scope; it was deleted or renamed, so update the reviewed receipt or inspect the change",
+            };
+            findings.push(finding_for_baseline_issue(&issue, check.mode, config_hash));
+        }
+    }
 
     let source_envelopes = source_envelopes.into_values().collect::<Vec<_>>();
     let evidence_chain_handoff = function_address_evidence_chain_handoff(config_hash, &source_envelopes, &records)?;
@@ -377,6 +505,7 @@ pub fn collect_run(
         },
         tool: env!("CARGO_PKG_VERSION"),
         source_envelopes,
+        skipped_directory_links: skipped_directory_links.iter().map(|skipped| skipped.path.clone()).collect(),
         records,
         diagnostic_count: findings.len(),
         kamacite_projection: KamaciteProjection {
@@ -407,6 +536,7 @@ pub fn collect_run(
     Ok(Some(FunctionAddressRun {
         findings,
         artifact_json,
+        skipped_directory_links,
     }))
 }
 
@@ -517,7 +647,14 @@ fn load_baseline(path: Option<&Path>, workspace_root: &Path) -> Result<BaselineI
         if let Some(source_identity) = record.source_identity.as_ref() {
             source_identities.insert(locator.clone(), source_identity.clone());
         }
-        if addresses.insert(locator, record.function_address.clone()).is_some() {
+        if addresses
+            .insert(locator, BaselineAddress {
+                path: normalized_path.clone(),
+                name: record.name.clone(),
+                function_address: record.function_address.clone(),
+            })
+            .is_some()
+        {
             issues.push(BaselineIssue {
                 lint: LINT_FUNCTION_ADDRESS_DUPLICATE_LOCATOR,
                 path: normalized_path,
@@ -558,6 +695,31 @@ fn function_locator(path: &str, name: &str) -> String {
     format!("{path}{LOCATOR_SEPARATOR}{name}")
 }
 
+/// Workspace-relative prefix of one checked scope path; empty means the whole
+/// workspace. Scopes outside the workspace or with `..` cannot hold baseline
+/// entries and yield `None`.
+fn checked_scope_prefix(workspace_root: &Path, scope: &Path) -> Option<String> {
+    let relative = scope.strip_prefix(workspace_root).ok()?;
+    let mut segments = Vec::new();
+    for component in relative.components() {
+        match component {
+            std::path::Component::Normal(segment) => segments.push(segment.to_str()?),
+            std::path::Component::CurDir => {}
+            _ => return None,
+        }
+    }
+    Some(segments.join("/"))
+}
+
+fn path_in_checked_scope(path: &str, scope_prefixes: &[String]) -> bool {
+    scope_prefixes.iter().any(|prefix| {
+        prefix.is_empty()
+            || path
+                .strip_prefix(prefix.as_str())
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with(PATH_SEPARATOR))
+    })
+}
+
 fn normalize_baseline_record_path(
     workspace_root: &Path,
     record: &BaselineRecord,
@@ -565,13 +727,11 @@ fn normalize_baseline_record_path(
 ) -> Option<String> {
     let raw_path = Path::new(&record.path);
     let normalized = if raw_path.is_absolute() {
-        match raw_path.strip_prefix(workspace_root) {
-            Ok(relative) => determinism::normalize_path(relative),
-            Err(_) => {
-                issues.push(baseline_path_issue(record, "baseline receipt path is outside workspace root"));
-                return None;
-            }
-        }
+        let Ok(relative) = raw_path.strip_prefix(workspace_root) else {
+            issues.push(baseline_path_issue(record, "baseline receipt path is outside workspace root"));
+            return None;
+        };
+        determinism::normalize_path(relative)
     } else {
         determinism::normalize_path_text(&record.path)
     };
@@ -613,14 +773,31 @@ fn mode_name(mode: FunctionAddressMode) -> &'static str {
 }
 
 fn function_record_path(workspace_root: &Path, file: &Path) -> Result<String, String> {
-    let relative = file.strip_prefix(workspace_root).map_err(|_| {
-        format!(
-            "function-address source path `{}` is outside workspace root `{}`",
-            file.display(),
-            workspace_root.display()
-        )
-    })?;
-    Ok(determinism::normalize_path(relative))
+    let relative = file
+        .strip_prefix(workspace_root)
+        .ok()
+        .map(determinism::normalize_path)
+        .filter(|relative| is_canonical_relative_path(relative))
+        .ok_or_else(|| {
+            format!(
+                "function-address source path `{}` is outside workspace root `{}`",
+                file.display(),
+                workspace_root.display()
+            )
+        })?;
+    Ok(relative)
+}
+
+/// The function-address marker for a span, if any. `cargo octet fingerprint`
+/// writes the same `// octet-fingerprint:` syntax with its token hash; a marker
+/// holding that hash is fingerprint evidence, not a reviewed function address,
+/// so it neither satisfies nor stales the function-address check. A marker with
+/// no hash stays a function-address marker and is reported as malformed.
+fn function_address_marker<'a>(
+    marker: Option<&'a fingerprint::Marker>,
+    normalized: &str,
+) -> Option<&'a fingerprint::Marker> {
+    marker.filter(|marker| marker.stored_hash() != Some(fingerprint::function_hash(normalized).as_str()))
 }
 
 fn function_address_record(
@@ -629,11 +806,12 @@ fn function_address_record(
     source_identity: &str,
     span: &fingerprint::FunctionSpan,
     function_source: &str,
+    normalized: &str,
+    marker: Option<&fingerprint::Marker>,
 ) -> FunctionAddressRecord {
-    let normalized = fingerprint::normalize_tokens(function_source);
     let dependency_set_hash = fingerprint::dependency_set_hash(function_source);
     let dependency_identity_status = fingerprint::dependency_identity_status(function_source).to_owned();
-    let function_address = function_address(&normalized, &dependency_set_hash, &dependency_identity_status);
+    let function_address = function_address(normalized, &dependency_set_hash, &dependency_identity_status);
     let (line, column) = line_column_for_offset(source, span.start);
     let mut caveats = Vec::new();
     if span.macro_calls {
@@ -648,13 +826,13 @@ fn function_address_record(
         start_byte: span.start,
         end_byte: span.end,
         function_address,
-        normalized_body_hash: determinism::full_hash(&normalized),
+        normalized_body_hash: determinism::full_hash(normalized),
         dependency_set_hash,
         dependency_identity_kind: DEPENDENCY_IDENTITY_KIND_SOURCE_TOKEN_SET.to_owned(),
         dependency_identity_status,
         source_identity: source_identity.to_owned(),
-        review: span.marker.as_ref().and_then(|marker| marker.review().map(str::to_owned)),
-        evidence: span.marker.as_ref().and_then(|marker| marker.evidence().map(str::to_owned)),
+        review: marker.and_then(|marker| marker.review().map(str::to_owned)),
+        evidence: marker.and_then(|marker| marker.evidence().map(str::to_owned)),
         caveats,
     }
 }
@@ -667,8 +845,8 @@ fn is_blake3_identity(value: &str) -> bool {
     value.strip_prefix(BLAKE3_PREFIX).is_some_and(is_blake3_hex)
 }
 
-fn marker_function_address(marker: &fingerprint::Marker) -> String {
-    format!("{BLAKE3_PREFIX}{}", marker.stored_hash())
+fn marker_function_address(stored_hash: &str) -> String {
+    format!("{BLAKE3_PREFIX}{stored_hash}")
 }
 
 #[cfg(test)]
@@ -927,7 +1105,7 @@ fn marker_finding_for_record(
     config_hash: &str,
 ) -> Option<output::Finding> {
     let marker = marker?;
-    if !is_blake3_hex(marker.stored_hash()) {
+    let Some(stored_hash) = marker.stored_hash().filter(|stored_hash| is_blake3_hex(stored_hash)) else {
         return Some(finding_for_record(
             record,
             mode,
@@ -935,8 +1113,8 @@ fn marker_finding_for_record(
             "function-address marker contains a malformed BLAKE3 digest",
             config_hash,
         ));
-    }
-    if marker_function_address(marker) != record.function_address {
+    };
+    if marker_function_address(stored_hash) != record.function_address {
         return Some(finding_for_record(
             record,
             mode,
@@ -1036,8 +1214,7 @@ fn finding_for_record(
 
 fn severity_for_mode(mode: FunctionAddressMode) -> &'static str {
     match mode {
-        FunctionAddressMode::Off => OBSERVE_SEVERITY,
-        FunctionAddressMode::Observe => OBSERVE_SEVERITY,
+        FunctionAddressMode::Off | FunctionAddressMode::Observe => OBSERVE_SEVERITY,
         FunctionAddressMode::Warn => WARNING_SEVERITY,
         FunctionAddressMode::Deny => ERROR_SEVERITY,
     }
@@ -1081,7 +1258,7 @@ mod tests {
         serde_json::from_str(&run.artifact_json).expect("parse artifact JSON")
     }
 
-    fn valid_baseline_json(records: serde_json::Value) -> String {
+    fn valid_baseline_json(records: &serde_json::Value) -> String {
         serde_json::json!({
             "records": records,
             "non_claims": REQUIRED_NON_CLAIMS,
@@ -1118,6 +1295,7 @@ mod tests {
                 language: FUNCTION_ADDRESS_SOURCE_LANGUAGE,
                 source_identity: source_identity.clone(),
             }],
+            skipped_directory_links: Vec::new(),
             records: vec![FunctionAddressRecord {
                 path: VALID_PATH.to_owned(),
                 name: VALID_FUNCTION.to_owned(),
@@ -1245,6 +1423,213 @@ mod tests {
 
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].severity, ERROR_SEVERITY);
+    }
+
+    #[test]
+    fn named_scope_that_is_missing_or_not_rust_fails_instead_of_checking_nothing() {
+        let temp = TempDir::new().expect("temp dir");
+        std::fs::write(temp.path().join("notes.txt"), "fn f() -> u32 { 1 }\n").expect("write non-rust file");
+        for named in ["typo", "notes.txt"] {
+            let check = FunctionAddressCheck {
+                mode: FunctionAddressMode::Deny,
+                paths: vec![PathBuf::from(named)],
+                baseline: None,
+            };
+            let Err(error) = collect_run(&check, temp.path(), "config") else {
+                panic!("{named} must not pass as an empty function-address scope");
+            };
+            assert!(error.contains(named), "{named}: {error}");
+        }
+    }
+
+    #[test]
+    fn explicit_scope_outside_workspace_root_is_rejected() {
+        let temp = TempDir::new().expect("temp dir");
+        let workspace = temp.path().join("workspace");
+        let shared = temp.path().join("shared");
+        std::fs::create_dir_all(workspace.join("src")).expect("create workspace source");
+        std::fs::create_dir_all(shared.join("src")).expect("create shared source");
+        std::fs::write(workspace.join("src/lib.rs"), "fn inside() -> u32 { 1 }\n").expect("write inside source");
+        std::fs::write(shared.join("src/lib.rs"), "fn outside() -> u32 { 1 }\n").expect("write shared source");
+        std::os::unix::fs::symlink(&shared, workspace.join("linked")).expect("symlink shared into workspace");
+        let check_for = |path: PathBuf| FunctionAddressCheck {
+            mode: FunctionAddressMode::Observe,
+            paths: vec![path],
+            baseline: None,
+        };
+
+        for escaping in [
+            PathBuf::from("../shared/src"),
+            PathBuf::from("src/../../shared/src"),
+            shared.join("src"),
+            PathBuf::from("linked/src"),
+        ] {
+            let check = check_for(escaping.clone());
+            if let Ok(run) = collect_run(&check, &workspace, "config") {
+                let records = run.map(|run| artifact_value(&run)["records"].clone());
+                panic!("{} must not be collected; got records {records:?}", escaping.display());
+            }
+            for (origin, named) in [
+                (ScopeOrigin::FunctionAddressPathFlag, "`--function-address-path`"),
+                (ScopeOrigin::CoreSourceScopes, "`core_source_scopes`"),
+            ] {
+                let Err(error) = check.validate_paths(&workspace, origin) else {
+                    panic!("{} must be rejected before Cargo runs", escaping.display());
+                };
+                assert!(error.contains(named), "{}: {error}", escaping.display());
+            }
+        }
+
+        for inside in [PathBuf::from("src"), PathBuf::from("./src"), workspace.join("src")] {
+            let check = check_for(inside.clone());
+            check
+                .validate_paths(&workspace, ScopeOrigin::FunctionAddressPathFlag)
+                .unwrap_or_else(|error| panic!("{}: {error}", inside.display()));
+            let run = collect_test_run(&check, &workspace, "config");
+            let artifact = artifact_value(&run);
+            assert_eq!(artifact["records"][0]["path"], "src/lib.rs", "{}", inside.display());
+        }
+    }
+
+    #[test]
+    fn nested_symlink_resolving_outside_workspace_root_is_refused() {
+        let temp = TempDir::new().expect("temp dir");
+        let workspace = temp.path().join("workspace");
+        let shared = temp.path().join("shared");
+        std::fs::create_dir_all(workspace.join("src")).expect("create workspace source");
+        std::fs::create_dir_all(workspace.join("vendored")).expect("create in-root link target");
+        std::fs::create_dir_all(&shared).expect("create shared source");
+        std::fs::write(workspace.join("src/lib.rs"), "fn inside() -> u32 { 1 }\n").expect("write inside source");
+        std::fs::write(workspace.join("vendored/mod.rs"), "fn vendored() -> u32 { 1 }\n").expect("write vendored");
+        std::fs::write(shared.join("lib.rs"), "fn outside() -> u32 { 1 }\n").expect("write shared source");
+        std::fs::write(shared.join("notes.txt"), "not rust\n").expect("write shared note");
+        std::os::unix::fs::symlink(workspace.join("vendored"), workspace.join("src/inner")).expect("in-root link");
+        std::os::unix::fs::symlink(shared.join("notes.txt"), workspace.join("src/notes.txt")).expect("note link");
+        std::os::unix::fs::symlink(temp.path().join("missing"), workspace.join("src/dangling")).expect("dangling");
+        let observe = |paths: Vec<PathBuf>| FunctionAddressCheck {
+            mode: FunctionAddressMode::Observe,
+            paths,
+            baseline: None,
+        };
+
+        let run = collect_test_run(&observe(vec![PathBuf::from("src")]), &workspace, "config");
+        let paths = artifact_value(&run)["source_envelopes"]
+            .as_array()
+            .expect("source envelopes")
+            .iter()
+            .map(|envelope| envelope["path"].as_str().expect("envelope path").to_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(paths, ["src/inner/mod.rs", "src/lib.rs"], "in-root links are followed");
+
+        // A declared scope refuses both escaping kinds; the implicit workspace scope still refuses
+        // an escaping `.rs` file link but skips an escaping directory link.
+        let declared = vec![PathBuf::from("src")];
+        for (link, target, refusing_scopes) in [
+            ("src/escape", shared.clone(), vec![declared.clone()]),
+            ("src/escape.rs", shared.join("lib.rs"), vec![declared.clone(), Vec::new()]),
+        ] {
+            std::os::unix::fs::symlink(&target, workspace.join(link)).expect("escaping link");
+            for scope in refusing_scopes {
+                match collect_run(&observe(scope.clone()), &workspace, "config") {
+                    Ok(run) => panic!(
+                        "{link} under {scope:?} must be refused; got records {:?}",
+                        run.map(|run| artifact_value(&run)["records"].clone())
+                    ),
+                    Err(error) => assert!(error.contains(link), "{link} under {scope:?}: {error}"),
+                }
+            }
+            std::fs::remove_file(workspace.join(link)).expect("remove escaping link");
+        }
+    }
+
+    #[test]
+    fn implicit_workspace_scope_skips_and_records_outside_root_directory_links() {
+        let temp = TempDir::new().expect("temp dir");
+        let workspace = temp.path().join("workspace");
+        let store = temp.path().join("store");
+        let monorepo = temp.path().join("monorepo");
+        std::fs::create_dir_all(workspace.join("src")).expect("create workspace source");
+        std::fs::create_dir_all(workspace.join("crates")).expect("create workspace crates");
+        std::fs::create_dir_all(workspace.join(".direnv/flake-inputs")).expect("create direnv inputs");
+        std::fs::create_dir_all(store.join("docs/share")).expect("create store output without Rust");
+        std::fs::create_dir_all(store.join("source/src")).expect("create store output with Rust");
+        std::fs::create_dir_all(monorepo.join("shared/src")).expect("create linked-in crate");
+        std::fs::write(workspace.join("src/lib.rs"), "fn inside() -> u32 { 1 }\n").expect("write inside source");
+        std::fs::write(store.join("docs/share/readme.txt"), "not rust\n").expect("write store note");
+        std::fs::write(store.join("source/src/lib.rs"), "fn outside() -> u32 { 1 }\n").expect("write store source");
+        std::fs::write(monorepo.join("shared/src/lib.rs"), "fn shared() -> u32 { 1 }\n").expect("write crate source");
+        let implicit = FunctionAddressCheck {
+            mode: FunctionAddressMode::Observe,
+            paths: Vec::new(),
+            baseline: None,
+        };
+        let mut result_artifacts = Vec::new();
+
+        for (link, target) in [
+            ("result", store.join("docs")),
+            ("result", store.join("source")),
+            (".direnv/flake-inputs/abc-source", store.join("source")),
+            ("crates/shared", PathBuf::from("../../monorepo/shared")),
+        ] {
+            std::os::unix::fs::symlink(&target, workspace.join(link)).expect("escaping directory link");
+            let run = collect_run(&implicit, &workspace, "config")
+                .unwrap_or_else(|error| panic!("{link} -> {}: {error}", target.display()))
+                .expect("enabled run");
+            let artifact = artifact_value(&run);
+            let paths = artifact["source_envelopes"]
+                .as_array()
+                .expect("source envelopes")
+                .iter()
+                .map(|envelope| envelope["path"].as_str().expect("envelope path").to_owned())
+                .collect::<Vec<_>>();
+            assert_eq!(paths, ["src/lib.rs"], "{link} -> {}", target.display());
+            assert_eq!(artifact["records"][0]["path"], "src/lib.rs", "{link}");
+            assert_eq!(
+                artifact["skipped_directory_links"],
+                serde_json::json!([link]),
+                "{link} -> {}",
+                target.display()
+            );
+            assert_eq!(
+                run.skipped_directory_links,
+                [SkippedDirectoryLinkRecord {
+                    path: link.to_owned(),
+                    target: target.display().to_string(),
+                }],
+                "the operator note keeps the link target"
+            );
+            if link == "result" {
+                result_artifacts.push(run.artifact_json);
+            }
+            std::fs::remove_file(workspace.join(link)).expect("remove escaping link");
+        }
+        // A rebuilt Nix `result` names a new absolute store path; the artifact must not change.
+        assert_eq!(result_artifacts.len(), 2);
+        assert_eq!(result_artifacts[0], result_artifacts[1], "artifact bytes must not depend on link targets");
+
+        std::os::unix::fs::symlink(store.join("source"), workspace.join("result")).expect("result link");
+        std::os::unix::fs::symlink("../../monorepo/shared", workspace.join("crates/shared")).expect("crate link");
+        let run = collect_test_run(&implicit, &workspace, "config");
+        assert_eq!(artifact_value(&run)["skipped_directory_links"], serde_json::json!(["crates/shared", "result"]));
+        std::fs::remove_file(workspace.join("result")).expect("remove result link");
+        std::fs::remove_file(workspace.join("crates/shared")).expect("remove crate link");
+
+        std::fs::create_dir_all(workspace.join("vendored")).expect("create in-root link target");
+        std::fs::write(workspace.join("vendored/mod.rs"), "fn vendored() -> u32 { 1 }\n").expect("write vendored");
+        std::os::unix::fs::symlink(workspace.join("vendored"), workspace.join("crates/inner")).expect("in-root link");
+        let run = collect_test_run(&implicit, &workspace, "config");
+        let artifact = artifact_value(&run);
+        assert_eq!(artifact["skipped_directory_links"], serde_json::json!([]), "in-root links are followed");
+        assert!(run.skipped_directory_links.is_empty());
+        let declared = collect_test_run(
+            &FunctionAddressCheck {
+                paths: vec![PathBuf::from("src")],
+                ..implicit
+            },
+            &workspace,
+            "config",
+        );
+        assert_eq!(artifact_value(&declared)["skipped_directory_links"], serde_json::json!([]));
     }
 
     #[test]
@@ -1388,6 +1773,7 @@ mod tests {
             start: INVERTED_START_BYTE,
             end: INVERTED_END_BYTE,
             marker: None,
+            marker_block: 0..0,
             macro_calls: false,
         };
         let out_of_range = fingerprint::FunctionSpan {
@@ -1395,6 +1781,7 @@ mod tests {
             start: 0,
             end: OUT_OF_RANGE_END_BYTE,
             marker: None,
+            marker_block: 0..0,
             macro_calls: false,
         };
 
@@ -1514,6 +1901,76 @@ mod tests {
     }
 
     #[test]
+    fn baseline_reports_deleted_or_renamed_function_as_stale() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        let baseline = temp.path().join("function-addresses.json");
+        std::fs::write(&source, "fn f() -> u32 { 1 }\nfn g() -> u32 { 2 }\n").expect("write source");
+        let observe = FunctionAddressCheck {
+            mode: FunctionAddressMode::Observe,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+        let baseline_run = collect_test_run(&observe, temp.path(), "config");
+        let reviewed_g = artifact_value(&baseline_run)["records"][1]["function_address"]
+            .as_str()
+            .expect("reviewed address for g")
+            .to_owned();
+        std::fs::write(&baseline, baseline_run.artifact_json).expect("write baseline");
+        for mode in [FunctionAddressMode::Warn, FunctionAddressMode::Deny] {
+            let check = FunctionAddressCheck {
+                mode,
+                paths: vec![PathBuf::from("lib.rs")],
+                baseline: Some(baseline.clone()),
+            };
+            for edited in [
+                "// g deleted\nfn f() -> u32 { 1 }\n",
+                "// g renamed\nfn f() -> u32 { 1 }\nfn h() -> u32 { 2 }\n",
+            ] {
+                std::fs::write(&source, edited).expect("write edited source");
+
+                let findings = collect_test_findings(&check, temp.path(), "config");
+
+                let removed =
+                    findings.iter().filter(|finding| finding.message.contains("function=g ")).collect::<Vec<_>>();
+                assert_eq!(removed.len(), 1, "{edited}: {findings:#?}");
+                assert_eq!(removed[0].lint, LINT_FUNCTION_ADDRESS_STALE);
+                assert_eq!(removed[0].severity, severity_for_mode(mode));
+                assert_eq!(removed[0].file, "lib.rs");
+                assert!(removed[0].message.contains("no longer present"));
+                assert!(removed[0].message.contains(&reviewed_g));
+                output::render_json_lines(&findings).expect("stale baseline entry renders");
+            }
+        }
+    }
+
+    #[test]
+    fn baseline_entries_outside_checked_scope_are_not_reported_stale() {
+        let temp = TempDir::new().expect("temp dir");
+        let core = temp.path().join("core/lib.rs");
+        let shell = temp.path().join("shell/lib.rs");
+        let baseline = temp.path().join("function-addresses.json");
+        for path in [&core, &shell] {
+            std::fs::create_dir_all(path.parent().expect("source parent")).expect("create source dir");
+            std::fs::write(path, "fn f() -> u32 { 1 }\n").expect("write source");
+        }
+        let observe = FunctionAddressCheck {
+            mode: FunctionAddressMode::Observe,
+            paths: Vec::new(),
+            baseline: None,
+        };
+        let baseline_run = collect_test_run(&observe, temp.path(), "config");
+        std::fs::write(&baseline, baseline_run.artifact_json).expect("write baseline");
+        let core_only = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            paths: vec![PathBuf::from("core/")],
+            baseline: Some(baseline),
+        };
+
+        assert!(collect_test_findings(&core_only, temp.path(), "config").is_empty());
+    }
+
+    #[test]
     fn baseline_receipt_missing_non_claims_reports_overclaim_boundary() {
         let temp = TempDir::new().expect("temp dir");
         let baseline = temp.path().join("function-addresses.json");
@@ -1568,6 +2025,104 @@ mod tests {
     }
 
     #[test]
+    fn marker_text_inside_block_comment_cannot_supply_a_reviewed_address() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        let check = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+        for prefix in [
+            "/* nested /* comment */\n// octet-fingerprint: b3:",
+            "/*\n#[fingerprint(b3:",
+        ] {
+            let unreviewed =
+                format!("{prefix}{}; review=R-stale; evidence=E-stale\n*/ pub fn f() -> u32 {{ 1 }}\n", "0".repeat(64));
+            std::fs::write(&source, &unreviewed).expect("write forged source");
+            let observed = collect_test_run(&check, temp.path(), "config");
+            let address = artifact_value(&observed)["records"][0]["function_address"]
+                .as_str()
+                .expect("observed address")
+                .to_owned();
+            let reviewed = unreviewed.replace(&"0".repeat(64), marker_digest(&address));
+            std::fs::write(&source, reviewed).expect("write matching forged digest");
+
+            let denied = collect_test_run(&check, temp.path(), "config");
+            assert_eq!(denied.findings.len(), 1, "{prefix}");
+            assert_eq!(denied.findings[0].lint, LINT_FUNCTION_ADDRESS_MISSING, "{prefix}");
+            assert!(artifact_value(&denied)["records"][0]["review"].is_null(), "{prefix}");
+        }
+    }
+
+    #[test]
+    fn reviewed_marker_goes_stale_when_comment_separated_export_name_changes() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        let alpha = "#[unsafe(export_name = \"alpha\")]\n// review gap\npub extern \"C\" fn exported() -> u32 { 1 }\n";
+        std::fs::write(&source, alpha).expect("write alpha source");
+        let check = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+        let observed = collect_test_run(&check, temp.path(), "config");
+        let reviewed_address = artifact_value(&observed)["records"][0]["function_address"]
+            .as_str()
+            .expect("alpha function address")
+            .to_owned();
+        let reviewed = format!(
+            "// octet-fingerprint: b3:{}; review=R-export; evidence=E-export\n{alpha}",
+            marker_digest(&reviewed_address)
+        );
+        std::fs::write(&source, &reviewed).expect("write reviewed marker");
+        assert!(collect_test_run(&check, temp.path(), "config").findings.is_empty());
+
+        std::fs::write(&source, reviewed.replace("alpha", "omega")).expect("change exported symbol");
+        let changed = collect_test_run(&check, temp.path(), "config");
+        assert_eq!(changed.findings.len(), 1);
+        assert_eq!(changed.findings[0].lint, LINT_FUNCTION_ADDRESS_STALE);
+        assert_ne!(artifact_value(&changed)["records"][0]["function_address"], reviewed_address);
+    }
+
+    #[test]
+    fn reviewed_marker_stales_on_multiline_export_and_split_visibility_edits() {
+        for (original, edited) in [
+            (
+                "#[unsafe(export_name =\n    \"alpha\"\n)]\n// gap\npub extern \"C\" fn exported() -> u32 { 1 }\n",
+                "#[unsafe(export_name =\n    \"omega\"\n)]\n// gap\npub extern \"C\" fn exported() -> u32 { 1 }\n",
+            ),
+            ("pub\nfn exported() -> u32 { 1 }\n", "fn exported() -> u32 { 1 }\n"),
+        ] {
+            let temp = TempDir::new().expect("temp dir");
+            let source = temp.path().join("lib.rs");
+            let check = FunctionAddressCheck {
+                mode: FunctionAddressMode::Deny,
+                paths: vec![PathBuf::from("lib.rs")],
+                baseline: None,
+            };
+            std::fs::write(&source, original).expect("write original function");
+            let observed = collect_test_run(&check, temp.path(), "config");
+            let reviewed_address = artifact_value(&observed)["records"][0]["function_address"]
+                .as_str()
+                .expect("original function address")
+                .to_owned();
+            let marker = format!(
+                "// octet-fingerprint: b3:{}; review=R-export; evidence=E-export\n",
+                marker_digest(&reviewed_address)
+            );
+            std::fs::write(&source, format!("{marker}{original}")).expect("write original review marker");
+            assert!(collect_test_run(&check, temp.path(), "config").findings.is_empty());
+
+            std::fs::write(&source, format!("{marker}{edited}")).expect("change reviewed source identity");
+            let changed = collect_test_run(&check, temp.path(), "config");
+            assert_eq!(changed.findings.len(), 1, "{edited}");
+            assert_eq!(changed.findings[0].lint, LINT_FUNCTION_ADDRESS_STALE);
+            assert_ne!(artifact_value(&changed)["records"][0]["function_address"], reviewed_address);
+        }
+    }
+
+    #[test]
     fn stale_marker_reports_stale_function_address() {
         let temp = TempDir::new().expect("temp dir");
         let source = temp.path().join("lib.rs");
@@ -1590,6 +2145,49 @@ mod tests {
 
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].lint, LINT_FUNCTION_ADDRESS_STALE);
+    }
+
+    #[test]
+    fn fingerprint_writer_marker_is_not_a_function_address_marker() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        let baseline = temp.path().join("function-addresses.json");
+        std::fs::write(&source, "fn f() -> u32 { 1 }\n").expect("write source");
+        let written = fingerprint::run_in(temp.path(), &crate::cli::FingerprintArgs {
+            mode: crate::cli::FingerprintMode::Write,
+            paths: vec![source.clone()],
+            output_format: crate::cli::OutputFormat::Json,
+            review_manifest: None,
+        })
+        .expect("fingerprint write");
+        assert_eq!(written, 0);
+        let marked = std::fs::read_to_string(&source).expect("read fingerprinted source");
+        assert!(marked.starts_with("// octet-fingerprint: b3:"), "{marked}");
+        let deny = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+
+        let unbaselined = collect_test_run(&deny, temp.path(), "config");
+        let lints = unbaselined.findings.iter().map(|finding| finding.lint.as_str()).collect::<Vec<_>>();
+        assert_eq!(lints, [LINT_FUNCTION_ADDRESS_MISSING]);
+        assert!(artifact_value(&unbaselined)["records"][0]["review"].is_null());
+
+        let observe = FunctionAddressCheck {
+            mode: FunctionAddressMode::Observe,
+            ..deny.clone()
+        };
+        std::fs::write(&baseline, collect_test_run(&observe, temp.path(), "config").artifact_json)
+            .expect("write baseline");
+        let baselined = FunctionAddressCheck {
+            baseline: Some(baseline),
+            ..deny
+        };
+
+        let findings = collect_test_findings(&baselined, temp.path(), "config");
+
+        assert!(findings.is_empty(), "{findings:#?}");
     }
 
     #[test]
@@ -1627,12 +2225,139 @@ mod tests {
     }
 
     #[test]
+    fn documentation_examples_do_not_create_missing_or_duplicate_locators() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        std::fs::write(
+            &source,
+            "/// ```compile_fail\n/// fn forge() {}\n/// ```\n///\n/// ```compile_fail\n/// fn forge() {}\n/// ```\npub fn real() -> u32 { 1 }\n",
+        )
+        .expect("write source");
+        let check = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+
+        let run = collect_test_run(&check, temp.path(), "config");
+
+        assert_eq!(run.findings.len(), 1);
+        assert_eq!(run.findings[0].lint, LINT_FUNCTION_ADDRESS_MISSING);
+        assert!(run.findings[0].message.contains("; function=real "));
+        let artifact = artifact_value(&run);
+        let records = artifact["records"].as_array().expect("records array");
+        let names = records.iter().map(|record| record["name"].as_str()).collect::<Vec<_>>();
+        assert_eq!(names, [Some("real")]);
+    }
+
+    #[test]
+    fn array_typed_signatures_are_checked_instead_of_skipped() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        let text = "trait Pairs {\n    fn first(&self) -> [u8; 2];\n}\nfn pair(bytes: [u8; 2]) -> [bool; 2] {\n    [bytes[0] == 0, bytes[1] == 0]\n}\n";
+        std::fs::write(&source, text).expect("write source");
+        let check = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+
+        let run = collect_test_run(&check, temp.path(), "config");
+
+        assert_eq!(run.findings.len(), 1);
+        assert_eq!(run.findings[0].lint, LINT_FUNCTION_ADDRESS_MISSING);
+        assert!(run.findings[0].message.contains("; function=pair "));
+        let artifact = artifact_value(&run);
+        let records = artifact["records"].as_array().expect("records array");
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0]["start_byte"], text.find("fn pair").expect("pair definition"));
+        assert_eq!(records[0]["end_byte"], text.trim_end().len());
+    }
+
+    #[test]
+    fn macro_context_follows_real_macro_calls_not_keywords_or_quoted_text() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        std::fs::write(
+            &source,
+            "fn guarded(ready: bool) -> bool { if !(ready) { return false; } true }\n\
+             fn quoted() -> &'static str { \"fake!(x) at https://example.invalid\" }\n\
+             fn after_url() -> bool { let _url = \"https://example.invalid\"; assert!(true); true }\n\
+             fn listed() -> Vec<u8> { vec![1] }\n",
+        )
+        .expect("write source");
+        let check = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+
+        let run = collect_test_run(&check, temp.path(), "config");
+
+        let artifact = artifact_value(&run);
+        let statuses = artifact["records"]
+            .as_array()
+            .expect("records array")
+            .iter()
+            .map(|record| (record["name"].as_str(), record["dependency_identity_status"].as_str()))
+            .collect::<Vec<_>>();
+        assert_eq!(statuses, [
+            (Some("guarded"), Some("source-scanner-token-set")),
+            (Some("quoted"), Some("source-scanner-token-set")),
+            (Some("after_url"), Some("unsupported-macro-context")),
+            (Some("listed"), Some("unsupported-macro-context")),
+        ]);
+        let unsupported = run
+            .findings
+            .iter()
+            .filter(|finding| finding.lint == LINT_FUNCTION_ADDRESS_UNSUPPORTED)
+            .filter_map(|finding| finding.message.split("; function=").nth(1)?.split(' ').next())
+            .collect::<Vec<_>>();
+        assert_eq!(unsupported, ["after_url", "listed"]);
+        assert!(run.findings.iter().all(|finding| finding.severity == ERROR_SEVERITY));
+    }
+
+    #[test]
+    fn reviewed_marker_fails_closed_for_code_after_quoted_slashes() {
+        let temp = TempDir::new().expect("temp dir");
+        let source = temp.path().join("lib.rs");
+        let reviewed = "pub fn fetch() -> u32 {\n    let _endpoint = \"https://example.invalid/api\"; 1\n}\n";
+        std::fs::write(&source, reviewed).expect("write reviewed source");
+        let observe = FunctionAddressCheck {
+            mode: FunctionAddressMode::Observe,
+            paths: vec![PathBuf::from("lib.rs")],
+            baseline: None,
+        };
+        let reviewed_run = collect_test_run(&observe, temp.path(), "config");
+        let address = artifact_value(&reviewed_run)["records"][0]["function_address"]
+            .as_str()
+            .expect("reviewed function address")
+            .to_owned();
+        let marker = format!("// octet-fingerprint: {address}; review=R-1; evidence=E-1\n");
+        let deny = FunctionAddressCheck {
+            mode: FunctionAddressMode::Deny,
+            ..observe
+        };
+
+        let comment_only = reviewed.replace("; 1", "; 1 // still one");
+        std::fs::write(&source, format!("{marker}{comment_only}")).expect("write comment-only edit");
+        assert!(collect_test_findings(&deny, temp.path(), "config").is_empty());
+
+        let aborts = reviewed.replace("; 1", "; std::process::abort()");
+        std::fs::write(&source, format!("{marker}{aborts}")).expect("write hidden behavior edit");
+        let findings = collect_test_findings(&deny, temp.path(), "config");
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].lint, LINT_FUNCTION_ADDRESS_STALE);
+        assert!(findings[0].message.contains("; function=fetch "));
+    }
+
+    #[test]
     fn duplicate_baseline_receipt_reports_duplicate_locator() {
         let temp = TempDir::new().expect("temp dir");
         let baseline = temp.path().join("function-addresses.json");
         std::fs::write(
             &baseline,
-            valid_baseline_json(serde_json::json!([
+            valid_baseline_json(&serde_json::json!([
                 {"path": "src/lib.rs", "name": "f", "function_address": determinism::full_hash("one")},
                 {"path": "src/lib.rs", "name": "f", "function_address": determinism::full_hash("two")}
             ])),
@@ -1646,8 +2371,9 @@ mod tests {
 
         let findings = collect_test_findings(&check, temp.path(), "config");
 
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].lint, LINT_FUNCTION_ADDRESS_DUPLICATE_LOCATOR);
+        let lints = findings.iter().map(|finding| finding.lint.as_str()).collect::<Vec<_>>();
+        assert_eq!(lints, [LINT_FUNCTION_ADDRESS_DUPLICATE_LOCATOR, LINT_FUNCTION_ADDRESS_STALE]);
+        assert!(findings[1].message.contains("no longer present"));
     }
 
     #[test]
@@ -1682,7 +2408,7 @@ mod tests {
         let baseline = temp.path().join("function-addresses.json");
         std::fs::write(
             &baseline,
-            valid_baseline_json(serde_json::json!([
+            valid_baseline_json(&serde_json::json!([
                 {"path": "/outside/src/lib.rs", "name": "f", "function_address": determinism::full_hash("one")}
             ])),
         )
@@ -1708,7 +2434,7 @@ mod tests {
         let baseline = temp.path().join("function-addresses.json");
         std::fs::write(
             &baseline,
-            valid_baseline_json(serde_json::json!([
+            valid_baseline_json(&serde_json::json!([
                 {"path": "src/../lib.rs", "name": "f", "function_address": determinism::full_hash("one")}
             ])),
         )
@@ -1735,7 +2461,7 @@ mod tests {
         let baseline = temp.path().join("function-addresses.json");
         std::fs::write(
             &baseline,
-            valid_baseline_json(serde_json::json!([
+            valid_baseline_json(&serde_json::json!([
                 {"path": absolute_path.display().to_string(), "name": "f", "function_address": determinism::full_hash("one")},
                 {"path": "src/lib.rs", "name": "f", "function_address": determinism::full_hash("two")}
             ])),
@@ -1749,9 +2475,9 @@ mod tests {
 
         let findings = collect_test_findings(&check, temp.path(), "config");
 
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].lint, LINT_FUNCTION_ADDRESS_DUPLICATE_LOCATOR);
-        assert_eq!(findings[0].file, "src/lib.rs");
+        let lints = findings.iter().map(|finding| finding.lint.as_str()).collect::<Vec<_>>();
+        assert_eq!(lints, [LINT_FUNCTION_ADDRESS_DUPLICATE_LOCATOR, LINT_FUNCTION_ADDRESS_STALE]);
+        assert!(findings.iter().all(|finding| finding.file == "src/lib.rs"));
     }
 
     #[test]
@@ -1760,7 +2486,7 @@ mod tests {
         let baseline = temp.path().join("function-addresses.json");
         std::fs::write(
             &baseline,
-            valid_baseline_json(serde_json::json!([
+            valid_baseline_json(&serde_json::json!([
                 {"path": "src/lib.rs", "name": "f", "function_address": "not-a-blake3-address"}
             ])),
         )
@@ -1779,11 +2505,11 @@ mod tests {
         let warn_findings = collect_test_findings(&warn, temp.path(), "config");
         let deny_findings = collect_test_findings(&deny, temp.path(), "config");
 
-        assert_eq!(warn_findings.len(), 1);
-        assert_eq!(warn_findings[0].lint, LINT_FUNCTION_ADDRESS_MALFORMED);
-        assert_eq!(warn_findings[0].severity, WARNING_SEVERITY);
-        assert_eq!(deny_findings.len(), 1);
-        assert_eq!(deny_findings[0].severity, ERROR_SEVERITY);
+        let lints = warn_findings.iter().map(|finding| finding.lint.as_str()).collect::<Vec<_>>();
+        assert_eq!(lints, [LINT_FUNCTION_ADDRESS_MALFORMED, LINT_FUNCTION_ADDRESS_STALE]);
+        assert!(warn_findings.iter().all(|finding| finding.severity == WARNING_SEVERITY));
+        assert_eq!(deny_findings.len(), lints.len());
+        assert!(deny_findings.iter().all(|finding| finding.severity == ERROR_SEVERITY));
         output::render_json_lines(&warn_findings).expect("warn findings render");
         output::render_json_lines(&deny_findings).expect("deny findings render");
     }
@@ -1792,7 +2518,7 @@ mod tests {
     fn baseline_receipt_overclaim_reports_overclaim() {
         let temp = TempDir::new().expect("temp dir");
         let baseline = temp.path().join("function-addresses.json");
-        let mut receipt = serde_json::from_str::<serde_json::Value>(&valid_baseline_json(serde_json::json!([])))
+        let mut receipt = serde_json::from_str::<serde_json::Value>(&valid_baseline_json(&serde_json::json!([])))
             .expect("baseline JSON");
         receipt["claims"] = serde_json::json!(["proves release eligibility"]);
         std::fs::write(&baseline, receipt.to_string()).expect("write baseline");
@@ -1812,7 +2538,7 @@ mod tests {
     fn baseline_receipt_dependency_closure_overclaim_reports_overclaim() {
         let temp = TempDir::new().expect("temp dir");
         let baseline = temp.path().join("function-addresses.json");
-        let mut receipt = serde_json::from_str::<serde_json::Value>(&valid_baseline_json(serde_json::json!([])))
+        let mut receipt = serde_json::from_str::<serde_json::Value>(&valid_baseline_json(&serde_json::json!([])))
             .expect("baseline JSON");
         receipt["claims"] = serde_json::json!(["records complete semantic closure"]);
         std::fs::write(&baseline, receipt.to_string()).expect("write baseline");

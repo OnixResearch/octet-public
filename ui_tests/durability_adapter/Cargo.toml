@@ -1,0 +1,9 @@
+[package]
+name = "durability-adapter-fixture"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+path = "durability_adapter.rs"
+
+[workspace]

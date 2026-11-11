@@ -1,0 +1,12 @@
+warning: `raw_bool_parameter` does not permit `#[allow]`; use a local, owned `#[expect]` for an unavoidable compatibility API
+  --> $DIR/raw_bool_parameter_crate_suppression.rs:3:1
+   |
+LL | #![allow(tigerstyle::raw_bool_parameter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Explicit Interfaces): keep compatibility exceptions on one callable with a specific external contract and named owner; do not allow broad suppression Example: #[expect(tigerstyle::raw_bool_parameter, reason = "external compatibility contract: v1 callback ABI; owner: api-team")]
+   = note: see Tiger Style guide: Explicit Interfaces / Boolean API Modeling
+   = note: `#[warn(tigerstyle::raw_bool_parameter_suppression)]` on by default
+
+warning: 1 warning emitted
+

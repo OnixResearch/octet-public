@@ -19,5 +19,107 @@ LL -     pub cost_usd: f64,
 LL +     pub cost_usd_micros: i64,
    |
 
-warning: 1 warning emitted
+warning: floating point type for currency field `monthly_fees`
+  --> $DIR/float_for_currency.rs:28:5
+   |
+LL |     pub monthly_fees: f64,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Integer Currency
+help: use integer type with unit suffix, e.g. `monthly_fees_micros: i64`
+   |
+LL -     pub monthly_fees: f64,
+LL +     pub monthly_fees_micros: i64,
+   |
+
+warning: floating point type for currency field `balances_total`
+  --> $DIR/float_for_currency.rs:29:5
+   |
+LL |     pub balances_total: f64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Integer Currency
+help: use integer type with unit suffix, e.g. `balances_total_micros: i64`
+   |
+LL -     pub balances_total: f64,
+LL +     pub balances_total_micros: i64,
+   |
+
+warning: floating point type for currency field `registration_fee`
+  --> $DIR/float_for_currency.rs:34:5
+   |
+LL |     pub registration_fee: f64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Integer Currency
+help: use integer type with unit suffix, e.g. `registration_fee_micros: i64`
+   |
+LL -     pub registration_fee: f64,
+LL +     pub registration_fee_micros: i64,
+   |
+
+warning: floating point type for currency field `operation_cost`
+  --> $DIR/float_for_currency.rs:35:5
+   |
+LL |     pub operation_cost: f64,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Integer Currency
+help: use integer type with unit suffix, e.g. `operation_cost_micros: i64`
+   |
+LL -     pub operation_cost: f64,
+LL +     pub operation_cost_micros: i64,
+   |
+
+warning: floating point type for currency field `corporate_budget`
+  --> $DIR/float_for_currency.rs:36:5
+   |
+LL |     pub corporate_budget: f32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: structured suggestion applicability: HasPlaceholders
+   = note: see Tiger Style guide: Integer Currency
+help: use integer type with unit suffix, e.g. `corporate_budget_micros: i64`
+   |
+LL -     pub corporate_budget: f32,
+LL +     pub corporate_budget_micros: i64,
+   |
+
+warning: floating point return type for currency function `total_cost`
+  --> $DIR/float_for_currency.rs:46:20
+   |
+LL | fn total_cost() -> f64 {
+   |                    ^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: see Tiger Style guide: Integer Currency
+
+warning: floating point return type for currency function `price`
+  --> $DIR/float_for_currency.rs:62:24
+   |
+LL |     fn price(&self) -> f32 {
+   |                        ^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: see Tiger Style guide: Integer Currency
+
+warning: floating point return type for currency function `quote_amount`
+  --> $DIR/float_for_currency.rs:74:31
+   |
+LL |     fn quote_amount(&self) -> f64;
+   |                               ^^^
+   |
+   = help: Tiger Style (Integer Currency): store money as scaled integers, not floats Example: let price_micros: i64 = 125_000;
+   = note: see Tiger Style guide: Integer Currency
+
+warning: 9 warnings emitted
 

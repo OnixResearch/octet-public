@@ -1,0 +1,44 @@
+{
+  "schema": "electrical.circuit-primitive-graph.v1",
+  "graph_hash": "942c174e6994d2ddfe9d1aa6058bdedcb48d13a4c3ec89a1025a633934541f46",
+  "normalization": {
+    "version": "electrical-circuit-primitive-v1"
+  },
+  "source_artifact_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+  "tool": {
+    "name": "cairn-fixture",
+    "version": "0.1.0"
+  },
+  "reference_node": "gnd",
+  "nodes": [
+    {"id": "gnd"},
+    {"id": "vin"},
+    {"id": "vout"}
+  ],
+  "nets": [
+    {"id": "net_gnd", "nodes": ["gnd"]},
+    {"id": "net_vin", "nodes": ["vin"]},
+    {"id": "net_vout", "nodes": ["vout"]}
+  ],
+  "components": [
+    {
+      "id": "r1",
+      "kind": "resistor",
+      "terminal_bindings": {"p": "net_vin"},
+      "value": {
+        "normalized_value": 1000.0,
+        "si_dimension": "ohm",
+        "display_unit": "kOhm",
+        "normalization_version": "si-v1"
+      }
+    }
+  ],
+  "non_claims": [
+    "no_simulation_correctness",
+    "no_analog_equivalence",
+    "no_electrical_safety",
+    "no_regulatory_compliance",
+    "no_layout_correctness",
+    "no_manufacturability"
+  ]
+}

@@ -1,0 +1,43 @@
+warning: item name `widget_count` repeats `widget` from ancestor path segment `widget`
+  --> $DIR/gui_tests/gui_tests.rs:14:5
+   |
+LL | /     pub fn widget_count() -> u32 {
+LL | |         0
+LL | |     }
+   | |_____^
+   |
+   = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::path_segment_repetition)]` on by default
+
+warning: non-trait import `Button` hides the owner path; prefer the qualified path at the use site
+  --> $DIR/gui_tests/gui_tests.rs:20:1
+   |
+LL | use crate::widget::Button;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::non_trait_imports)]` on by default
+
+warning: non-trait import `BTreeMap as Registry` hides the owner path; prefer the qualified path at the use site
+  --> $DIR/gui_tests/gui_tests.rs:23:1
+   |
+LL | use std::collections::BTreeMap as Registry;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+   = note: see Tiger Style guide: Naming
+
+warning: renamed import `BTreeMap as Registry` hides the original searchable name
+  --> $DIR/gui_tests/gui_tests.rs:23:1
+   |
+LL | use std::collections::BTreeMap as Registry;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Tiger Style (Searchable Import Names): avoid `use ... as ...` aliases that hide the original searchable item name Example: use crate::transport::Config;
+   = note: see Tiger Style guide: Naming
+   = note: `#[warn(tigerstyle::renamed_imports)]` on by default
+
+warning: 4 warnings emitted
+

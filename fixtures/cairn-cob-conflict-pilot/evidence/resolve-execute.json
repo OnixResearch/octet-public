@@ -3,11 +3,11 @@
     {
       "artifact": "tasks",
       "basis": [
-        "91ad968acd64ce5d4d26439e9ba72261c96e2653",
-        "bdac0c8ff7cc99c781d382d43e69b9a8e10dc1fe"
+        "2ba95e8204bd05dd566d93f7f5f9ac68f7126904",
+        "e73bf24a150c12c5cbeda410c40d113d002ef259"
       ],
-      "content_blake3": "8f3e024e6456bd60b64831bac8808eab13f9006341eb5ffcb00d3a787fe7827c",
-      "content_bytes": 60,
+      "content_blake3": "7f8eca743500d0d33ded2ec7f0a17e0d45821359630933250943fa2571d305bc",
+      "content_bytes": 2200,
       "kind": "set_artifact",
       "removed": false
     }
@@ -16,7 +16,7 @@
     "authority_class": "signed_creator",
     "cryptographically_verified": true,
     "currently_authorized": true,
-    "id": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
+    "id": "z6MkrYePae54PSMayuv3YJJcPV65GE6Mhvuq2537cmJybFCW",
     "source": "explicit_cob_keystore_and_embedded_authority"
   },
   "artifact_conflicts": [
@@ -24,18 +24,18 @@
       "artifact": "tasks",
       "heads": [
         {
-          "actor": "z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU",
-          "content_blake3": "bf05be03e78208d0e3a9d8a2b97788934291b6083dd6021f993b338acd49b1fc",
-          "content_bytes": 61,
+          "actor": "z6MkrYePae54PSMayuv3YJJcPV65GE6Mhvuq2537cmJybFCW",
+          "content_blake3": "7f8eca743500d0d33ded2ec7f0a17e0d45821359630933250943fa2571d305bc",
+          "content_bytes": 2200,
           "deleted": false,
-          "revision_id": "91ad968acd64ce5d4d26439e9ba72261c96e2653"
+          "revision_id": "2ba95e8204bd05dd566d93f7f5f9ac68f7126904"
         },
         {
-          "actor": "z6Mkg49NtQR2LyYRDCQFK4w1VVHqhypZSSRo7HsyuN7SV7v5",
-          "content_blake3": "8f3e024e6456bd60b64831bac8808eab13f9006341eb5ffcb00d3a787fe7827c",
-          "content_bytes": 60,
+          "actor": "z6Mkgvh5Qq4bjh8BZUDwPB9ZPNoQvHGMu1wvPX2KRyPNUDtq",
+          "content_blake3": "fb6963a6391aa2524c5d31a0531362e8a334f3f1b0f70026f7781a328c93ec22",
+          "content_bytes": 2201,
           "deleted": false,
-          "revision_id": "bdac0c8ff7cc99c781d382d43e69b9a8e10dc1fe"
+          "revision_id": "e73bf24a150c12c5cbeda410c40d113d002ef259"
         }
       ]
     }
@@ -43,7 +43,7 @@
   "backend": "radicle-cob.v1",
   "base_revision": {
     "kind": "git_oid",
-    "value": "b91fdcff9139492e55a7e64a142de6d0684ddb03"
+    "value": "22722030cd734900c565840997a62b36055aa85d"
   },
   "blocked": false,
   "blockers": [],
@@ -51,10 +51,10 @@
   "command": "collaboration resolve",
   "compatibility_command": "cob resolve",
   "delegates": [
-    "z6MkvHHbrGisC4BxN9M8b95EdXTidoFjeRE3i7Qc355d6yqU"
+    "z6Mkgvh5Qq4bjh8BZUDwPB9ZPNoQvHGMu1wvPX2KRyPNUDtq"
   ],
   "dry_run": false,
-  "expected_content_root": "45b5026f17e748f810599399b88556c01df8fec4311bf5dc4692e6691d0b827f",
+  "expected_content_root": "7dd70c82ceeba898e794cbb0e7f964e2ee70914c1858ea0dee111f9183d83ac6",
   "format_libraries": {
     "git-ref-format-core": "0.6.0",
     "git2": "0.20.4",
@@ -62,8 +62,8 @@
     "radicle-crypto": "0.17.0",
     "radicle-oid": "0.2.0"
   },
-  "input_hash": "f509b594ec400ce0c6c6be7c84cd90df2c9eb4ae6ba62f0f0fd526dd21e8bfb3",
-  "input_state_hash": "f509b594ec400ce0c6c6be7c84cd90df2c9eb4ae6ba62f0f0fd526dd21e8bfb3",
+  "input_hash": "43267f6822bfb76815fe5639f94b9a7615aeed57baaec6a6ec6e047008394e35",
+  "input_state_hash": "43267f6822bfb76815fe5639f94b9a7615aeed57baaec6a6ec6e047008394e35",
   "lifecycle_heads": [],
   "lifecycle_reset": false,
   "mutated": true,
@@ -74,25 +74,25 @@
     "an explicit lifecycle reset to open does not prove review, approval, evidence truth, source correctness, archive execution, or release eligibility",
     "local signed COB resolution does not prove node participation, publication, synchronization, peer convergence, availability, or remote trust"
   ],
-  "object_id": "030a0e27d379e6e5ff67f6eac940e2369a8169b1",
-  "observed_policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
-  "operation_plan_id": "b745ecb8fd4b94e5daa8545114dcd24fe951c2b3f60954ce43bd979cfa5e4851",
-  "plan_hash": "1299fd8db106747924bd8d2d856d511c9deec08b14af1fc3693ce86c78b23a74",
-  "policy": "cairn-default",
+  "object_id": "0702d3bd89a7be698cd24ec343323d7786a99d6d",
+  "observed_policy_hash": "0d5e71092b45e2a8cfbaed4edffe6b01cd6cd0e4dc71f9c86fc1d0bf82cc70fc",
+  "operation_plan_id": "26dcbe384c1e385403ae07c652a16d9448ac449f5603636dde831c1808afbade",
+  "plan_hash": "c28bd3d241ed47388311bfa6f6af496764ae5696b4ec2ab4120a71d7ecff30e6",
+  "policy": "octet-default",
   "policy_current": true,
-  "policy_hash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
-  "receipt_hash": "78c5ec509116407e1ddf7b3889caef9da814a10a26441ab395d891103af784d7",
-  "result_content_root": "45b5026f17e748f810599399b88556c01df8fec4311bf5dc4692e6691d0b827f",
-  "result_operation_id": "61922203bead59f454200971ffcd9e016f84840e",
-  "result_state_hash": "675181463713e9277193a3c9f081b5276992a31234ffc353a7d0187e8858279e",
-  "root": "inspection-workspace",
+  "policy_hash": "0d5e71092b45e2a8cfbaed4edffe6b01cd6cd0e4dc71f9c86fc1d0bf82cc70fc",
+  "receipt_hash": "14aac08c40f783c1ce8c7ab4e61849af844c8f6654dc0c13cd8df3d75d500915",
+  "result_content_root": "7dd70c82ceeba898e794cbb0e7f964e2ee70914c1858ea0dee111f9183d83ac6",
+  "result_operation_id": "3669f3e1001bba8878d9ad4bcaf874d21207703b",
+  "result_state_hash": "0b843293c31ed26eb4e1572915b1701e05a5ed9af61efe6c7db8c614346135a8",
+  "root": ".",
   "selected_artifacts": [
     {
       "artifact": "tasks",
-      "revision_id": "bdac0c8ff7cc99c781d382d43e69b9a8e10dc1fe"
+      "revision_id": "2ba95e8204bd05dd566d93f7f5f9ac68f7126904"
     }
   ],
   "valid": true,
   "verdict": "PASS",
-  "workspace_id": "workspace:synthetic-cob-conflict"
+  "workspace_id": "workspace:octet"
 }

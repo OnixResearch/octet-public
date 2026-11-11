@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
 description = "Custom lints enforcing Tiger Style coding principles under Octet's closed-interface model"
+repository = "https://github.com/OnixResearch/octet"
+homepage = "https://octet.dev"
+readme = "README.md"
 
 [lib]
 name = "octet"
@@ -29,8 +32,14 @@ rustc_private = true
 
 [workspace]
 resolver = "2"
-members = ["cargo-octet", "crates/octet-architecture-ir", "crates/octet-lint-metadata", "crates/octet-standards"]
-exclude = ["crates/valence-core"]
+members = [
+  "cargo-octet",
+  "crates/octet-architecture-ir",
+  "crates/octet-lint-metadata",
+  "crates/octet-merge-rail",
+  "crates/octet-standards",
+]
+exclude = ["crates/valence-core", "vendor/sources/artifact"]
 
 [workspace.metadata.octet]
 default_scope = ["--workspace"]

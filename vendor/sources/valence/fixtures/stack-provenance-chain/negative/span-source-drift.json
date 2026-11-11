@@ -1,0 +1,319 @@
+{
+  "schema": "valence.stack-provenance-graph-input.v1",
+  "artifacts": [
+    {
+      "artifact_id": "b3:18eb860ef633c7e330c1c49f7d7a420f9169c8f0554ab5d6d72e45592d2652e3",
+      "artifact_kind": "requirement",
+      "producer_role": "valence",
+      "verification_role": "boundary",
+      "evidence_tier": "provenance_export",
+      "canonical_hash": "18eb860ef633c7e330c1c49f7d7a420f9169c8f0554ab5d6d72e45592d2652e3",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.canonical_chain_identity]"
+      ],
+      "span_ids": [],
+      "parent_artifact_ids": [],
+      "display_path": "cairn/specs/stack-provenance-adapter/spec.md",
+      "payload": {
+        "requirement_id": "valence.stack_provenance_adapter.canonical_chain_identity"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "artifact_id": "b3:cf4c045412eb6f05812bd42da438818b6ffd1e20f03fb6de0f62116b7db9d505",
+      "artifact_kind": "span",
+      "producer_role": "octet",
+      "verification_role": "recorded_only",
+      "evidence_tier": "source_shape_check",
+      "canonical_hash": "cf4c045412eb6f05812bd42da438818b6ffd1e20f03fb6de0f62116b7db9d505",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.canonical_chain_identity]"
+      ],
+      "span_ids": [
+        "src/lib.rs:10:1"
+      ],
+      "parent_artifact_ids": [
+        "b3:18eb860ef633c7e330c1c49f7d7a420f9169c8f0554ab5d6d72e45592d2652e3"
+      ],
+      "display_path": "crates/valence-core/src/lib.rs",
+      "payload": {
+        "source_content_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "stated_source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "artifact_id": "b3:30565abf058f60fc3e6b52fd638c3bc12f6f2dee809cc980fcc44ed8c0cb10fa",
+      "artifact_kind": "proof_artifact",
+      "producer_role": "trellis",
+      "verification_role": "property",
+      "evidence_tier": "formal_proof",
+      "canonical_hash": "30565abf058f60fc3e6b52fd638c3bc12f6f2dee809cc980fcc44ed8c0cb10fa",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.typed_edges]"
+      ],
+      "span_ids": [
+        "proof:fixture"
+      ],
+      "parent_artifact_ids": [
+        "b3:18eb860ef633c7e330c1c49f7d7a420f9169c8f0554ab5d6d72e45592d2652e3",
+        "b3:bbadfe2aaa3aaa2aadad7dc6f06504a172be57e82794aa381fe5631bd942dd42"
+      ],
+      "display_path": "artifacts/trellis/proof.json",
+      "payload": {
+        "proof_id": "trellis.fixture.proof"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "artifact_id": "b3:5e83d795c6b14ba2dcc5201a0e3834e2d7f104caba6139db034c81c972d7a2b9",
+      "artifact_kind": "receipt",
+      "producer_role": "octet",
+      "verification_role": "property",
+      "evidence_tier": "formal_proof",
+      "canonical_hash": "5e83d795c6b14ba2dcc5201a0e3834e2d7f104caba6139db034c81c972d7a2b9",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.typed_edges]"
+      ],
+      "span_ids": [
+        "receipt:octet"
+      ],
+      "parent_artifact_ids": [
+        "b3:30565abf058f60fc3e6b52fd638c3bc12f6f2dee809cc980fcc44ed8c0cb10fa",
+        "b3:bbadfe2aaa3aaa2aadad7dc6f06504a172be57e82794aa381fe5631bd942dd42"
+      ],
+      "display_path": "artifacts/octet/status.json",
+      "payload": {
+        "receipt": "octet verifier passed"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "artifact_id": "b3:8e375ca2effaeec21b999c528e5969a660218ca99e9e0ef07b27005ac01fb897",
+      "artifact_kind": "proof_artifact",
+      "producer_role": "manual_review",
+      "verification_role": "recorded_only",
+      "evidence_tier": "manual_review_required",
+      "canonical_hash": "8e375ca2effaeec21b999c528e5969a660218ca99e9e0ef07b27005ac01fb897",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.non_claim_policy]"
+      ],
+      "span_ids": [
+        "review:fixture"
+      ],
+      "parent_artifact_ids": [
+        "b3:5e83d795c6b14ba2dcc5201a0e3834e2d7f104caba6139db034c81c972d7a2b9"
+      ],
+      "display_path": "reviews/manual.md",
+      "payload": {
+        "review": "operator reviewed imported proof context"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "artifact_id": "b3:95b688d0c34ed614711dc744cfeff06f28c9a157ae1cf92a37dacb65c1cf211a",
+      "artifact_kind": "sidecar",
+      "producer_role": "valence",
+      "verification_role": "boundary",
+      "evidence_tier": "provenance_export",
+      "canonical_hash": "95b688d0c34ed614711dc744cfeff06f28c9a157ae1cf92a37dacb65c1cf211a",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.graph_report]"
+      ],
+      "span_ids": [
+        "sidecar:valence"
+      ],
+      "parent_artifact_ids": [
+        "b3:5e83d795c6b14ba2dcc5201a0e3834e2d7f104caba6139db034c81c972d7a2b9",
+        "b3:8e375ca2effaeec21b999c528e5969a660218ca99e9e0ef07b27005ac01fb897"
+      ],
+      "display_path": "external-evidence/stack-provenance.json",
+      "payload": {
+        "schema": "valence.stack-provenance-sidecar.v1"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "artifact_id": "b3:b8b2176a9fac5dac38ca755a0af0ba459eaad5499ecf2734a2a40cf2f261dea4",
+      "artifact_kind": "release_bundle",
+      "producer_role": "mantle",
+      "verification_role": "recorded_only",
+      "evidence_tier": "release_bundle",
+      "canonical_hash": "b8b2176a9fac5dac38ca755a0af0ba459eaad5499ecf2734a2a40cf2f261dea4",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.non_claim_policy]"
+      ],
+      "span_ids": [
+        "bundle:mantle"
+      ],
+      "parent_artifact_ids": [
+        "b3:95b688d0c34ed614711dc744cfeff06f28c9a157ae1cf92a37dacb65c1cf211a"
+      ],
+      "display_path": "release/mantle-bundle.json",
+      "payload": {
+        "role": "stack-provenance-trace"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "artifact_id": "b3:47fb421c7f478152782ebc6d06ab4f5d0b5cf22ad0e0f5120405aa0b60dd7658",
+      "artifact_kind": "lifecycle_gate",
+      "producer_role": "cairn",
+      "verification_role": "boundary",
+      "evidence_tier": "lifecycle_gate",
+      "canonical_hash": "47fb421c7f478152782ebc6d06ab4f5d0b5cf22ad0e0f5120405aa0b60dd7658",
+      "requirement_ids": [
+        "r[valence.stack_provenance_adapter.non_claim_policy]"
+      ],
+      "span_ids": [
+        "gate:cairn"
+      ],
+      "parent_artifact_ids": [
+        "b3:b8b2176a9fac5dac38ca755a0af0ba459eaad5499ecf2734a2a40cf2f261dea4"
+      ],
+      "display_path": "cairn/gate.json",
+      "payload": {
+        "gate": "release-readiness"
+      },
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "b3:763d8d70992ebe0ecf123919eea8b6fec8de7eee40a54ed815663f4be57731d2",
+      "edge_kind": "proves_local_property",
+      "source_artifact_id": "b3:30565abf058f60fc3e6b52fd638c3bc12f6f2dee809cc980fcc44ed8c0cb10fa",
+      "target_artifact_id": "b3:5e83d795c6b14ba2dcc5201a0e3834e2d7f104caba6139db034c81c972d7a2b9",
+      "producer_role": "trellis",
+      "consumer_role": "octet",
+      "claim_scope": "stack_provenance.v1.identity_linkage_only",
+      "evidence_tier": "formal_proof",
+      "required_non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "edge_id": "b3:e78cf01acd5eac1a052e3232324b5bd3f8be81ce7dba08d1b8f33da099bb1ce0",
+      "edge_kind": "checks_source_shape",
+      "source_artifact_id": "b3:bbadfe2aaa3aaa2aadad7dc6f06504a172be57e82794aa381fe5631bd942dd42",
+      "target_artifact_id": "b3:5e83d795c6b14ba2dcc5201a0e3834e2d7f104caba6139db034c81c972d7a2b9",
+      "producer_role": "octet",
+      "consumer_role": "octet",
+      "claim_scope": "stack_provenance.v1.identity_linkage_only",
+      "evidence_tier": "source_shape_check",
+      "required_non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "edge_id": "b3:ba06f5b404deec7076d186a6f92b7cbc72e65e1b7f75ac7f6aba770b84109f9c",
+      "edge_kind": "exports_provenance",
+      "source_artifact_id": "b3:5e83d795c6b14ba2dcc5201a0e3834e2d7f104caba6139db034c81c972d7a2b9",
+      "target_artifact_id": "b3:95b688d0c34ed614711dc744cfeff06f28c9a157ae1cf92a37dacb65c1cf211a",
+      "producer_role": "octet",
+      "consumer_role": "valence",
+      "claim_scope": "stack_provenance.v1.identity_linkage_only",
+      "evidence_tier": "provenance_export",
+      "required_non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "edge_id": "b3:4b2e35a301211af60868fee5087c9fba40be4756ed6acda3619eee72b47a2b95",
+      "edge_kind": "manual_review_input",
+      "source_artifact_id": "b3:8e375ca2effaeec21b999c528e5969a660218ca99e9e0ef07b27005ac01fb897",
+      "target_artifact_id": "b3:95b688d0c34ed614711dc744cfeff06f28c9a157ae1cf92a37dacb65c1cf211a",
+      "producer_role": "manual_review",
+      "consumer_role": "valence",
+      "claim_scope": "stack_provenance.v1.manual_review_input",
+      "evidence_tier": "manual_review_required",
+      "required_non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "edge_id": "b3:89064e1a6a9c4a77548624e41154fdc98f18687a6812d41a4f1d0f4f5e4cd293",
+      "edge_kind": "bundled_into_release",
+      "source_artifact_id": "b3:95b688d0c34ed614711dc744cfeff06f28c9a157ae1cf92a37dacb65c1cf211a",
+      "target_artifact_id": "b3:b8b2176a9fac5dac38ca755a0af0ba459eaad5499ecf2734a2a40cf2f261dea4",
+      "producer_role": "valence",
+      "consumer_role": "mantle",
+      "claim_scope": "stack_provenance.v1.identity_linkage_only",
+      "evidence_tier": "release_bundle",
+      "required_non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    },
+    {
+      "edge_id": "b3:dff00f765157a97c61ab16faab110ba935c6574e4fc1cbb9c3d8d6f5d69d35c5",
+      "edge_kind": "satisfies_gate",
+      "source_artifact_id": "b3:b8b2176a9fac5dac38ca755a0af0ba459eaad5499ecf2734a2a40cf2f261dea4",
+      "target_artifact_id": "b3:47fb421c7f478152782ebc6d06ab4f5d0b5cf22ad0e0f5120405aa0b60dd7658",
+      "producer_role": "mantle",
+      "consumer_role": "cairn",
+      "claim_scope": "stack_provenance.v1.lifecycle_policy_conformance",
+      "evidence_tier": "lifecycle_gate",
+      "required_non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ],
+      "non_claims": [
+        "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+        "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+      ]
+    }
+  ],
+  "non_claims": [
+    "stack provenance graph verifies identity, linkage, role, digest, and non-claim policy only; it does not prove behavioral correctness, verifier soundness, release eligibility, or requirement satisfaction",
+    "stack provenance proves identity and linkage only; it does not prove behavioral correctness, semantic equivalence, whole-program safety, or requirement satisfaction"
+  ]
+}
